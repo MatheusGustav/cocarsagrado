@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cocar Sagrado</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=Raleway:wght@400&display=swap" rel="stylesheet">
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { 
+            font-family: 'Raleway', sans-serif; 
+            background: url('fundo.jpg') center/cover fixed no-repeat #0a1a0a; 
+            color: #ffffff; 
+            line-height: 1.6;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        header { 
+            background-color: rgba(13, 54, 16, 0.9); 
+            padding: 2rem 1rem; 
+            text-align: center; 
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+        }
+        h1 { font-family: 'Cinzel', serif; font-size: 1.8rem; letter-spacing: 2px; color: #ffd700; }
+        .subtitle { font-size: 0.9rem; color: #c8e6c9; margin-top: 0.5rem; }
+        
+        .nav-bar { display: flex; justify-content: center; gap: 10px; margin-top: 1.5rem; flex-wrap: wrap; }
+        .nav-bar button { 
+            background: #1b5e20; border: 1px solid #ffd700; color: #ffd700;
+            padding: 8px 16px; border-radius: 4px; cursor: pointer;
+            font-family: 'Cinzel', serif; font-size: 0.8rem; transition: 0.3s;
+        }
+        .nav-bar button:hover { background: #ffd700; color: #0d3610; }
+
+        section { display: none; padding: 2rem 1rem; max-width: 600px; margin: 0 auto; width: 100%; }
+        section.active { display: block; }
+        
+        h2, h3 { 
+            font-family: 'Cinzel', serif; 
+            color: #ffd700; 
+            text-align: center; 
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+        }
+        
+        h2 { margin-bottom: 0.5rem; }
+        
+        /* CORREÇÃO AQUI: Esta classe agora tem a cor, fonte e contraste corretos */
+        .info-click { 
+            text-align: center; 
+            color: #ffd700; 
+            font-family: 'Cinzel', serif;
+            font-size: 1rem; 
+            font-weight: bold;
+            margin-bottom: 2rem; 
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.9);
+        }
+
+        h3 { margin: 2rem 0 1rem; border-bottom: 1px solid #ffd700; padding-bottom: 0.5rem; }
+
+        .description-box { 
+            background-color: #0d3610; 
+            padding: 2rem; 
+            border-radius: 8px; 
+            border-left: 4px solid #ffd700;
+            margin-bottom: 1.5rem;
+        }
+
+        .gallery { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); 
+            gap: 20px; 
+        }
+        .gallery a { display: block; border: 2px solid #1b5e20; border-radius: 6px; overflow: hidden; transition: 0.3s; }
+        .gallery a:hover { border-color: #ffd700; transform: scale(1.02); }
+        .gallery img { width: 100%; height: auto; display: block; }
+
+        .socials { display: flex; flex-direction: column; gap: 10px; }
+        .socials a { 
+            display: block; text-align: center; padding: 1rem; 
+            background: #1b5e20; color: #fff; text-decoration: none; 
+            border-radius: 4px; font-family: 'Cinzel', serif;
+        }
+
+        footer { text-align: center; padding: 2rem; font-size: 0.8rem; color: #ccc; margin-top: auto; }
+        .img-externa { display: block; width: 100%; max-width: 250px; margin: 0 auto 1.5rem; border-radius: 8px; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>Cocar Sagrado</h1>
+        <div class="subtitle">Camila e Matheus</div>
+        <div class="nav-bar">
+            <button onclick="showSection('copa1')">Sobre</button>
+            <button onclick="showSection('copa2')">Catálogo</button>
+            <button onclick="showSection('copa3')">Contato</button>
+        </div>
+    </header>
+
+    <section id="copa1" class="active">
+        <h2>Sobre</h2>
+        <div class="description-box">
+            O Cocar Sagrado é uma iniciativa que visa entregar atendimento fluido e humanizado, abrangendo de forma profunda e técnica nas questões apresentadas, a fim de direcionar e esclarecer. Há mais de cinco anos, nosso diferencial é a qualidade e o tempo de atendimento, trazendo total amparo até nas leituras mais simples. O foco é o bom relacionamento, bem-estar e clareza de nossos consulentes e amigos.
+        </div>
+        <img src="caboclo.jpg" class="img-externa" alt="Cocar">
+        <div class="description-box">
+            "Tragam luz e clareza a quem procurar prontas respostas e prontas palavras, pois a clareza e calma são a chave da alma."
+        </div>
+    </section>
+
+    <section id="copa2">
+        <h2>Catálogo</h2>
+        <div class="info-click">Toque na imagem para agendar via WhatsApp</div>
+
+        <h3>BUZIOS</h3>
+        <div class="gallery">
+            <a href="https://wa.me/5528999476620?text=Olá,%20gostaria%20de%20agendar%20o%20jogo%20de%20buzios%20avulso" target="_blank"><img src="cocar1.jpg"></a>
+            <a href="https://wa.me/5528999476620?text=Olá,%20gostaria%20de%20agendar%20o%20jogo%20de%20buzios%20completo" target="_blank"><img src="cocar2.jpg"></a>
+            <a href="https://wa.me/5528999476620?text=Olá,%20gostaria%20de%20agendar%20a%20confirmação%20de%20orixás" target="_blank"><img src="cocar3.jpg"></a>
+            <a href="https://wa.me/5528999476620?text=Olá,%20gostaria%20de%20agendar%20a%20cabala%20de%20odu" target="_blank"><img src="cocar4.jpg"></a>
+            <a href="https://wa.me/5528999476620?text=Olá,%20gostaria%20de%20agendar%20o%20jogo%20de%20confirmação%20de%20exu" target="_blank"><img src="cocar5.jpg"></a>
+        </div>
+
+        <h3>CARTAS</h3>
+        <div class="gallery">
+            <a href="https://wa.me/5527998528483?text=Olá,%20gostaria%20de%20agendar%20a%20tenda%20cigana%20avulsa" target="_blank"><img src="cocar6.jpg"></a>
+            <a href="https://wa.me/5527998528483?text=Olá,%20gostaria%20de%20agendar%20a%20tenda%20cigana%20completa" target="_blank"><img src="cocar7.jpg"></a>
+            <a href="https://wa.me/5527998528483?text=Olá,%20gostaria%20de%20agendar%20as%20águas%20de%20oxum" target="_blank"><img src="cocar8.jpg"></a>
+            <a href="https://wa.me/5527998528483?text=Olá,%20gostaria%20de%20agendar%20a%20rosa%20de%20vênus" target="_blank"><img src="cocar9.jpg"></a>
+            <a href="https://wa.me/5527998528483?text=Olá,%20gostaria%20de%20agendar%20a%20leitura%20dos%20mentores" target="_blank"><img src="cocar10.jpg"></a>
+        </div>
+
+        <h3>ATENDIMENTOS RADIESTÉSICOS</h3>
+        <div class="gallery">
+            <a href="https://wa.me/5527998528483?text=Olá,%20gostaria%20de%20agendar%20a%20mesa%20radiônica" target="_blank"><img src="cocar11.jpg"></a>
+            <a href="https://wa.me/5527998528483?text=Olá,%20gostaria%20de%20agendar%20os%20registros%20akashicos" target="_blank"><img src="cocar12.jpg"></a>
+            <a href="https://wa.me/5527998528483?text=Olá,%20gostaria%20de%20agendar%20o%20theta%20healing" target="_blank"><img src="cocar13.jpg"></a>
+            <a href="https://wa.me/5527998528483?text=Olá,%20gostaria%20de%20agendar%20a%20mesa%20mediúnica" target="_blank"><img src="cocar14.jpg"></a>
+        </div>
+    </section>
+
+    <section id="copa3">
+        <h2>Contato</h2>
+        <div class="socials">
+            <a href="https://www.instagram.com/cocarsagrado?igsh=MXVvMzVlMHVpcGwyYw==" target="_blank">Instagram</a>
+            <a href="https://www.tiktok.com/@cocarsagrado?_r=1&_t=ZS-94Rxmt4Oa5i" target="_blank">TikTok</a>
+            <a href="mailto:cocarsagrado@gmail.com" target="_blank">E-mail</a>
+            <a href="https://Wa.me//5527998528483" target="_blank">WhatsApp</a>
+        </div>
+    </section>
+
+    <footer>© 2026 Cocar Sagrado</footer>
+
+    <script>
+        function showSection(id){
+            document.querySelectorAll("section").forEach(sec => sec.classList.remove("active"));
+            document.getElementById(id).classList.add("active");
+        }
+    </script>
+</body>
+</html>
