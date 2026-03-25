@@ -37,27 +37,13 @@
         section { display: none; padding: 2rem 1rem; max-width: 600px; margin: 0 auto; width: 100%; }
         section.active { display: block; }
         
-        h2, h3 { 
+        h2 { 
             font-family: 'Cinzel', serif; 
             color: #ffd700; 
             text-align: center; 
             text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+            margin-bottom: 1.5rem;
         }
-        
-        h2 { margin-bottom: 0.5rem; }
-        
-        /* CORREÇÃO AQUI: Esta classe agora tem a cor, fonte e contraste corretos */
-        .info-click { 
-            text-align: center; 
-            color: #ffd700; 
-            font-family: 'Cinzel', serif;
-            font-size: 1rem; 
-            font-weight: bold;
-            margin-bottom: 2rem; 
-            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.9);
-        }
-
-        h3 { margin: 2rem 0 1rem; border-bottom: 1px solid #ffd700; padding-bottom: 0.5rem; }
 
         .description-box { 
             background-color: #0d3610; 
@@ -67,14 +53,103 @@
             margin-bottom: 1.5rem;
         }
 
-        .gallery { 
-            display: grid; 
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); 
-            gap: 20px; 
+        /* --- ESTILO DA VITRINE INTERATIVA --- */
+        .vitrine-container {
+            text-decoration: none;
+            display: block;
+            margin: 0 auto;
+            width: 100%;
+            max-width: 450px;
+            transition: transform 0.3s ease;
         }
-        .gallery a { display: block; border: 2px solid #1b5e20; border-radius: 6px; overflow: hidden; transition: 0.3s; }
-        .gallery a:hover { border-color: #ffd700; transform: scale(1.02); }
-        .gallery img { width: 100%; height: auto; display: block; }
+
+        .vitrine-container:hover {
+            transform: scale(1.02);
+        }
+
+        .fachada-loja {
+            background-color: #061a07; /* Verde bem escuro */
+            border: 8px solid #041005;
+            border-radius: 10px 10px 0 0;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            overflow: hidden;
+        }
+
+        .letreiro {
+            background-color: #041005;
+            padding: 15px;
+            text-align: center;
+            border-bottom: 3px solid #ffd700;
+            position: relative;
+        }
+
+        .letreiro h3 {
+            font-family: 'Cinzel', serif;
+            color: #ffd700;
+            font-size: 1.5rem;
+            letter-spacing: 5px;
+            margin: 0;
+            text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+        }
+
+        .luminarias {
+            display: flex;
+            justify-content: space-around;
+            padding-bottom: 5px;
+        }
+
+        .lampada {
+            width: 15px;
+            height: 8px;
+            background: #ffd700;
+            border-radius: 0 0 10px 10px;
+            box-shadow: 0 5px 10px #ffd700;
+        }
+
+        .vidro-vitrine {
+            background: rgba(255, 255, 255, 0.05);
+            margin: 20px;
+            padding: 15px;
+            border: 4px solid #0d3610;
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            min-height: 300px;
+            position: relative;
+        }
+
+        .vidro-vitrine::after {
+            content: "";
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(135deg, rgba(255,255,255,0.1) 0%, transparent 50%);
+            pointer-events: none;
+        }
+
+        .produto-mini {
+            width: 100%;
+            aspect-ratio: 1/1;
+            object-fit: cover;
+            border: 1px solid #ffd700;
+            border-radius: 2px;
+            filter: brightness(0.8);
+        }
+
+        .base-loja {
+            height: 20px;
+            background: #041005;
+            border-top: 2px solid #0d3610;
+        }
+
+        .instrucao-clique {
+            text-align: center;
+            color: #c8e6c9;
+            font-size: 0.8rem;
+            margin-top: 15px;
+            font-style: italic;
+        }
+
+        /* --- FIM DA VITRINE --- */
 
         .socials { display: flex; flex-direction: column; gap: 10px; }
         .socials a { 
@@ -112,33 +187,39 @@
 
     <section id="copa2">
         <h2>Catálogo</h2>
-        <div class="info-click">Toque na imagem para agendar via WhatsApp</div>
-
-        <h3>BUZIOS</h3>
-        <div class="gallery">
-            <a href="https://wa.me/5528999476620?text=Olá,%20gostaria%20de%20agendar%20o%20jogo%20de%20buzios%20avulso" target="_blank"><img src="cocar1.jpg"></a>
-            <a href="https://wa.me/5528999476620?text=Olá,%20gostaria%20de%20agendar%20o%20jogo%20de%20buzios%20completo" target="_blank"><img src="cocar2.jpg"></a>
-            <a href="https://wa.me/5528999476620?text=Olá,%20gostaria%20de%20agendar%20a%20confirmação%20de%20orixás" target="_blank"><img src="cocar3.jpg"></a>
-            <a href="https://wa.me/5528999476620?text=Olá,%20gostaria%20de%20agendar%20a%20cabala%20de%20odu" target="_blank"><img src="cocar4.jpg"></a>
-            <a href="https://wa.me/5528999476620?text=Olá,%20gostaria%20de%20agendar%20o%20jogo%20de%20confirmação%20de%20exu" target="_blank"><img src="cocar5.jpg"></a>
-        </div>
-
-        <h3>CARTAS</h3>
-        <div class="gallery">
-            <a href="https://wa.me/5527998528483?text=Olá,%20gostaria%20de%20agendar%20a%20tenda%20cigana%20avulsa" target="_blank"><img src="cocar6.jpg"></a>
-            <a href="https://wa.me/5527998528483?text=Olá,%20gostaria%20de%20agendar%20a%20tenda%20cigana%20completa" target="_blank"><img src="cocar7.jpg"></a>
-            <a href="https://wa.me/5527998528483?text=Olá,%20gostaria%20de%20agendar%20as%20águas%20de%20oxum" target="_blank"><img src="cocar8.jpg"></a>
-            <a href="https://wa.me/5527998528483?text=Olá,%20gostaria%20de%20agendar%20a%20rosa%20de%20vênus" target="_blank"><img src="cocar9.jpg"></a>
-            <a href="https://wa.me/5527998528483?text=Olá,%20gostaria%20de%20agendar%20a%20leitura%20dos%20mentores" target="_blank"><img src="cocar10.jpg"></a>
-        </div>
-
-        <h3>ATENDIMENTOS RADIESTÉSICOS</h3>
-        <div class="gallery">
-            <a href="https://wa.me/5527998528483?text=Olá,%20gostaria%20de%20agendar%20a%20mesa%20radiônica" target="_blank"><img src="cocar11.jpg"></a>
-            <a href="https://wa.me/5527998528483?text=Olá,%20gostaria%20de%20agendar%20os%20registros%20akashicos" target="_blank"><img src="cocar12.jpg"></a>
-            <a href="https://wa.me/5527998528483?text=Olá,%20gostaria%20de%20agendar%20o%20theta%20healing" target="_blank"><img src="cocar13.jpg"></a>
-            <a href="https://wa.me/5527998528483?text=Olá,%20gostaria%20de%20agendar%20a%20mesa%20mediúnica" target="_blank"><img src="cocar14.jpg"></a>
-        </div>
+        
+        <a href="atendimento.html" class="vitrine-container">
+            <div class="fachada-loja">
+                <div class="letreiro">
+                    <div class="luminarias">
+                        <div class="lampada"></div>
+                        <div class="lampada"></div>
+                        <div class="lampada"></div>
+                    </div>
+                    <h3>CATÁLOGO</h3>
+                </div>
+                
+                <div class="vidro-vitrine">
+                    <img src="cocar1.jpg" class="produto-mini">
+                    <img src="cocar2.jpg" class="produto-mini">
+                    <img src="cocar3.jpg" class="produto-mini">
+                    <img src="cocar4.jpg" class="produto-mini">
+                    <img src="cocar5.jpg" class="produto-mini">
+                    <img src="cocar6.jpg" class="produto-mini">
+                    <img src="cocar7.jpg" class="produto-mini">
+                    <img src="cocar8.jpg" class="produto-mini">
+                    <img src="cocar9.jpg" class="produto-mini">
+                    <img src="cocar10.jpg" class="produto-mini">
+                    <img src="cocar11.jpg" class="produto-mini">
+                    <img src="cocar12.jpg" class="produto-mini">
+                    <img src="cocar13.jpg" class="produto-mini">
+                    <img src="cocar14.jpg" class="produto-mini">
+                </div>
+                
+                <div class="base-loja"></div>
+            </div>
+            <p class="instrucao-clique">Toque na vitrine para escolher seu atendimento</p>
+        </a>
     </section>
 
     <section id="copa3">
