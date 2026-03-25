@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
@@ -68,7 +68,7 @@
         }
 
         .fachada-loja {
-            background-color: #061a07; /* Verde bem escuro */
+            background-color: #061a07;
             border: 8px solid #041005;
             border-radius: 10px 10px 0 0;
             box-shadow: 0 10px 30px rgba(0,0,0,0.5);
@@ -80,7 +80,6 @@
             padding: 15px;
             text-align: center;
             border-bottom: 3px solid #ffd700;
-            position: relative;
         }
 
         .letreiro h3 {
@@ -89,21 +88,6 @@
             font-size: 1.5rem;
             letter-spacing: 5px;
             margin: 0;
-            text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
-        }
-
-        .luminarias {
-            display: flex;
-            justify-content: space-around;
-            padding-bottom: 5px;
-        }
-
-        .lampada {
-            width: 15px;
-            height: 8px;
-            background: #ffd700;
-            border-radius: 0 0 10px 10px;
-            box-shadow: 0 5px 10px #ffd700;
         }
 
         .vidro-vitrine {
@@ -114,16 +98,6 @@
             display: grid;
             grid-template-columns: repeat(4, 1fr);
             gap: 10px;
-            min-height: 300px;
-            position: relative;
-        }
-
-        .vidro-vitrine::after {
-            content: "";
-            position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: linear-gradient(135deg, rgba(255,255,255,0.1) 0%, transparent 50%);
-            pointer-events: none;
         }
 
         .produto-mini {
@@ -131,14 +105,11 @@
             aspect-ratio: 1/1;
             object-fit: cover;
             border: 1px solid #ffd700;
-            border-radius: 2px;
-            filter: brightness(0.8);
         }
 
         .base-loja {
             height: 20px;
             background: #041005;
-            border-top: 2px solid #0d3610;
         }
 
         .instrucao-clique {
@@ -148,8 +119,6 @@
             margin-top: 15px;
             font-style: italic;
         }
-
-        /* --- FIM DA VITRINE --- */
 
         .socials { display: flex; flex-direction: column; gap: 10px; }
         .socials a { 
@@ -177,12 +146,9 @@
     <section id="copa1" class="active">
         <h2>Sobre</h2>
         <div class="description-box">
-            O Cocar Sagrado é uma iniciativa que visa entregar atendimento fluido e humanizado, abrangendo de forma profunda e técnica nas questões apresentadas, a fim de direcionar e esclarecer. Há mais de cinco anos, nosso diferencial é a qualidade e o tempo de atendimento, trazendo total amparo até nas leituras mais simples. O foco é o bom relacionamento, bem-estar e clareza de nossos consulentes e amigos.
+            O Cocar Sagrado é uma iniciativa que visa entregar atendimento fluido e humanizado...
         </div>
         <img src="caboclo.jpg" class="img-externa" alt="Cocar">
-        <div class="description-box">
-            "Tragam luz e clareza a quem procurar prontas respostas e prontas palavras, pois a clareza e calma são a chave da alma."
-        </div>
     </section>
 
     <section id="copa2">
@@ -191,11 +157,6 @@
         <a href="atendimento.html" class="vitrine-container">
             <div class="fachada-loja">
                 <div class="letreiro">
-                    <div class="luminarias">
-                        <div class="lampada"></div>
-                        <div class="lampada"></div>
-                        <div class="lampada"></div>
-                    </div>
                     <h3>CATÁLOGO</h3>
                 </div>
                 
@@ -225,10 +186,7 @@
     <section id="copa3">
         <h2>Contato</h2>
         <div class="socials">
-            <a href="https://www.instagram.com/cocarsagrado?igsh=MXVvMzVlMHVpcGwyYw==" target="_blank">Instagram</a>
-            <a href="https://www.tiktok.com/@cocarsagrado?_r=1&_t=ZS-94Rxmt4Oa5i" target="_blank">TikTok</a>
-            <a href="mailto:cocarsagrado@gmail.com" target="_blank">E-mail</a>
-            <a href="https://Wa.me//5527998528483" target="_blank">WhatsApp</a>
+            <a href="https://wa.me//5527998528483" target="_blank">WhatsApp</a>
         </div>
     </section>
 
