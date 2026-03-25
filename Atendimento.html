@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Atendimento - Cocar Sagrado</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=Raleway:wght@400&display=swap" rel="stylesheet">
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { 
+            font-family: 'Raleway', sans-serif; 
+            background: #0a1a0a; 
+            color: #ffffff; 
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            background-color: #0d3610;
+            border: 2px solid #ffd700;
+            border-radius: 8px;
+            padding: 2rem;
+            max-width: 500px;
+            width: 100%;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+        h1 { font-family: 'Cinzel', serif; color: #ffd700; margin-bottom: 1.5rem; font-size: 1.5rem; }
+        p { margin-bottom: 2rem; color: #c8e6c9; }
+        .btn-atendimento {
+            display: block;
+            width: 100%;
+            padding: 1.2rem;
+            margin-bottom: 1rem;
+            background: #1b5e20;
+            color: #ffd700;
+            text-decoration: none;
+            border: 1px solid #ffd700;
+            border-radius: 4px;
+            font-family: 'Cinzel', serif;
+            font-size: 0.9rem;
+            transition: 0.3s;
+            text-align: center;
+        }
+        .btn-atendimento:hover {
+            background: #ffd700;
+            color: #0d3610;
+        }
+        .voltar {
+            margin-top: 1rem;
+            display: inline-block;
+            color: #ccc;
+            text-decoration: none;
+            font-size: 0.8rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Escolha seu Atendimento</h1>
+        <p>Como você deseja prosseguir com seu agendamento?</p>
+        <a href="https://wa.me/5528999476620?text=Olá,%20vi%20o%20catálogo%20e%20gostaria%20de%20agendar%20um%20jogo%20de%20Búzios" class="btn-atendimento">
+            Agendar Búzios (Matheus)
+        </a>
+        <a href="https://wa.me/5527998528483?text=Olá,%20vi%20o%20catálogo%20e%20gostaria%20de%20agendar%20uma%20leitura%20ou%20mesa" class="btn-atendimento">
+            Agendar Cartas / Radiestesia (Camila)
+        </a>
+        <a href="index.html" class="voltar">← Voltar para o site</a>
+    </div>
+</body>
+</html>
