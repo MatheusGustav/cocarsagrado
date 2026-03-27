@@ -275,6 +275,88 @@
             color: #c8e6c9;
             padding: 1rem;
         }
+/* --- ESTILO DO NOVO CATÁLOGO FILTRÁVEL --- */
+.tab-container {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    margin-bottom: 2rem;
+    flex-wrap: wrap;
+}
+
+.tab-btn {
+    background: rgba(255, 215, 0, 0.05);
+    border: 1px solid rgba(255, 215, 0, 0.3);
+    color: #ffd700;
+    padding: 10px 20px;
+    font-family: 'Cinzel', serif;
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border-radius: 4px;
+}
+
+.tab-btn.active-tab {
+    background: #ffd700;
+    color: #050d05;
+    font-weight: bold;
+    box-shadow: 0 0 15px rgba(255, 215, 0, 0.4);
+}
+
+.category-content {
+    display: none; /* Esconde as categorias por padrão */
+    animation: fadeIn 0.5s ease;
+}
+
+.category-content.active-category {
+    display: block; /* Mostra apenas a ativa */
+}
+
+/* Card Slim (Sem descrição) */
+.card-slim {
+    display: flex;
+    flex-direction: column;
+    text-decoration: none;
+    background: rgba(13, 54, 16, 0.4);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 215, 0, 0.2);
+    border-radius: 8px;
+    overflow: hidden;
+    transition: all 0.4s ease;
+}
+
+.card-slim:hover {
+    border-color: #ffd700;
+    transform: translateY(-5px);
+}
+
+.card-body-slim {
+    padding: 1.2rem;
+    text-align: center;
+}
+
+.card-title-slim {
+    font-family: 'Cinzel', serif;
+    color: #ffd700;
+    font-size: 1rem;
+    margin-bottom: 1rem;
+}
+
+.btn-agendar {
+    display: inline-block;
+    border: 1px solid #ffd700;
+    color: #ffd700;
+    padding: 6px 15px;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    border-radius: 20px;
+    transition: 0.3s;
+}
+
+.card-slim:hover .btn-agendar {
+    background: #ffd700;
+    color: #050d05;
+}
     </style>
 </head>
 <body>
@@ -301,91 +383,128 @@
             </div>
         </section>
 
-        <section id="copa2">
-            <h2>Nosso Catálogo</h2>
-            <div class="info-click">Selecione o atendimento desejado para agendar via WhatsApp</div>
+<section id="copa2">
+    <h2>Nosso Catálogo</h2>
+    
+    <div class="tab-container">
+        <button class="tab-btn active-tab" onclick="openCategory(event, 'buzios')">Búzios</button>
+        <button class="tab-btn" onclick="openCategory(event, 'cartas')">Cartas</button>
+        <button class="tab-btn" onclick="openCategory(event, 'radiestesia')">Radiestesia</button>
+    </div>
 
-            <h3>Oráculos de Búzios</h3>
-            <div class="gallery">
-                <a href="https://wa.me/5528999476620?text=Olá,%20gostaria%20de%20agendar%20o%20jogo%20de%20buzios%20avulso" target="_blank" class="card">
-                    <div class="img-wrapper"><img src="cocar1.jpg" alt="Jogo de Búzios Avulso"></div>
-                    <div class="card-title">Búzios Avulso</div>
-                </a>
-                <a href="https://wa.me/5528999476620?text=Olá,%20gostaria%20de%20agendar%20o%20jogo%20de%20buzios%20completo" target="_blank" class="card">
-                    <div class="img-wrapper"><img src="cocar2.jpg" alt="Jogo de Búzios Completo"></div>
-                    <div class="card-title">Búzios Completo</div>
-                </a>
-                <a href="https://wa.me/5528999476620?text=Olá,%20gostaria%20de%20agendar%20a%20confirmação%20de%20orixás" target="_blank" class="card">
-                    <div class="img-wrapper"><img src="cocar3.jpg" alt="Confirmação de Orixás"></div>
-                    <div class="card-title">Confirmação de Orixás</div>
-                </a>
-                <a href="https://wa.me/5528999476620?text=Olá,%20gostaria%20de%20agendar%20a%20cabala%20de%20odu" target="_blank" class="card">
-                    <div class="img-wrapper"><img src="cocar4.jpg" alt="Cabala de Odu"></div>
-                    <div class="card-title">Cabala de Odu</div>
-                </a>
-                <a href="https://wa.me/5528999476620?text=Olá,%20gostaria%20de%20agendar%20o%20jogo%20de%20confirmação%20de%20exu" target="_blank" class="card">
-                    <div class="img-wrapper"><img src="cocar5.jpg" alt="Confirmação de Exu"></div>
-                    <div class="card-title">Confirmação de Exu</div>
-                </a>
-            </div>
+    <div id="buzios" class="category-content active-category">
+        <div class="gallery">
+            <a href="https://wa.me/5528999476620?text=Olá,%20gostaria%20de%20agendar%20o%20jogo%20de%20buzios%20avulso" target="_blank" class="card-slim">
+                <div class="img-wrapper"><img src="cocar1.jpg" alt="Búzios Avulso"></div>
+                <div class="card-body-slim">
+                    <div class="card-title-slim">Búzios Avulso</div>
+                    <span class="btn-agendar">Agendar</span>
+                </div>
+            </a>
+            <a href="https://wa.me/5528999476620?text=Olá,%20gostaria%20de%20agendar%20o%20jogo%20de%20buzios%20completo" target="_blank" class="card-slim">
+                <div class="img-wrapper"><img src="cocar2.jpg" alt="Búzios Completo"></div>
+                <div class="card-body-slim">
+                    <div class="card-title-slim">Búzios Completo</div>
+                    <span class="btn-agendar">Agendar</span>
+                </div>
+            </a>
+            <a href="https://wa.me/5528999476620?text=Olá,%20gostaria%20de%20agendar%20a%20confirmação%20de%20orixás" target="_blank" class="card-slim">
+                <div class="img-wrapper"><img src="cocar3.jpg" alt="Confirmação de Orixás"></div>
+                <div class="card-body-slim">
+                    <div class="card-title-slim">Confirmação de Orixás</div>
+                    <span class="btn-agendar">Agendar</span>
+                </div>
+            </a>
+            <a href="https://wa.me/5528999476620?text=Olá,%20gostaria%20de%20agendar%20a%20cabala%20de%20odu" target="_blank" class="card-slim">
+                <div class="img-wrapper"><img src="cocar4.jpg" alt="Cabala de Odu"></div>
+                <div class="card-body-slim">
+                    <div class="card-title-slim">Cabala de Odu</div>
+                    <span class="btn-agendar">Agendar</span>
+                </div>
+            </a>
+            <a href="https://wa.me/5528999476620?text=Olá,%20gostaria%20de%20agendar%20o%20jogo%20de%20confirmação%20de%20exu" target="_blank" class="card-slim">
+                <div class="img-wrapper"><img src="cocar5.jpg" alt="Confirmação de Exu"></div>
+                <div class="card-body-slim">
+                    <div class="card-title-slim">Confirmação de Exu</div>
+                    <span class="btn-agendar">Agendar</span>
+                </div>
+            </a>
+        </div>
+    </div>
 
-            <h3>Leitura de Cartas</h3>
-            <div class="gallery">
-                <a href="https://wa.me/5527998528483?text=Olá,%20gostaria%20de%20agendar%20a%20tenda%20cigana%20avulsa" target="_blank" class="card">
-                    <div class="img-wrapper"><img src="cocar6.jpg" alt="Tenda Cigana Avulsa"></div>
-                    <div class="card-title">Tenda Cigana Avulsa</div>
-                </a>
-                <a href="https://wa.me/5527998528483?text=Olá,%20gostaria%20de%20agendar%20a%20tenda%20cigana%20completa" target="_blank" class="card">
-                    <div class="img-wrapper"><img src="cocar7.jpg" alt="Tenda Cigana Completa"></div>
-                    <div class="card-title">Tenda Cigana Completa</div>
-                </a>
-                <a href="https://wa.me/5527998528483?text=Olá,%20gostaria%20de%20agendar%20as%20águas%20de%20oxum" target="_blank" class="card">
-                    <div class="img-wrapper"><img src="cocar8.jpg" alt="Águas de Oxum"></div>
-                    <div class="card-title">Águas de Oxum</div>
-                </a>
-                <a href="https://wa.me/5527998528483?text=Olá,%20gostaria%20de%20agendar%20a%20rosa%20de%20vênus" target="_blank" class="card">
-                    <div class="img-wrapper"><img src="cocar9.jpg" alt="Rosa de Vênus"></div>
-                    <div class="card-title">Rosa de Vênus</div>
-                </a>
-                <a href="https://wa.me/5527998528483?text=Olá,%20gostaria%20de%20agendar%20a%20leitura%20dos%20mentores" target="_blank" class="card">
-                    <div class="img-wrapper"><img src="cocar10.jpg" alt="Leitura dos Mentores"></div>
-                    <div class="card-title">Leitura dos Mentores</div>
-                </a>
-            </div>
+    <div id="cartas" class="category-content">
+        <div class="gallery">
+            <a href="https://wa.me/5527998528483?text=Olá,%20gostaria%20de%20agendar%20a%20tenda%20cigana%20avulsa" target="_blank" class="card-slim">
+                <div class="img-wrapper"><img src="cocar6.jpg" alt="Tenda Cigana Avulsa"></div>
+                <div class="card-body-slim">
+                    <div class="card-title-slim">Tenda Cigana Avulsa</div>
+                    <span class="btn-agendar">Agendar</span>
+                </div>
+            </a>
+            <a href="https://wa.me/5527998528483?text=Olá,%20gostaria%20de%20agendar%20a%20tenda%20cigana%20completa" target="_blank" class="card-slim">
+                <div class="img-wrapper"><img src="cocar7.jpg" alt="Tenda Cigana Completa"></div>
+                <div class="card-body-slim">
+                    <div class="card-title-slim">Tenda Cigana Completa</div>
+                    <span class="btn-agendar">Agendar</span>
+                </div>
+            </a>
+            <a href="https://wa.me/5527998528483?text=Olá,%20gostaria%20de%20agendar%20as%20águas%20de%20oxum" target="_blank" class="card-slim">
+                <div class="img-wrapper"><img src="cocar8.jpg" alt="Águas de Oxum"></div>
+                <div class="card-body-slim">
+                    <div class="card-title-slim">Águas de Oxum</div>
+                    <span class="btn-agendar">Agendar</span>
+                </div>
+            </a>
+            <a href="https://wa.me/5527998528483?text=Olá,%20gostaria%20de%20agendar%20a%20rosa%20de%20vênus" target="_blank" class="card-slim">
+                <div class="img-wrapper"><img src="cocar9.jpg" alt="Rosa de Vênus"></div>
+                <div class="card-body-slim">
+                    <div class="card-title-slim">Rosa de Vênus</div>
+                    <span class="btn-agendar">Agendar</span>
+                </div>
+            </a>
+            <a href="https://wa.me/5527998528483?text=Olá,%20gostaria%20de%20agendar%20a%20leitura%20dos%20mentores" target="_blank" class="card-slim">
+                <div class="img-wrapper"><img src="cocar10.jpg" alt="Leitura dos Mentores"></div>
+                <div class="card-body-slim">
+                    <div class="card-title-slim">Leitura dos Mentores</div>
+                    <span class="btn-agendar">Agendar</span>
+                </div>
+            </a>
+        </div>
+    </div>
 
-            <h3>Atendimentos Radiestésicos</h3>
-            <div class="gallery">
-                <a href="https://wa.me/5527998528483?text=Olá,%20gostaria%20de%20agendar%20a%20mesa%20radiônica" target="_blank" class="card">
-                    <div class="img-wrapper"><img src="cocar11.jpg" alt="Mesa Radiônica"></div>
-                    <div class="card-title">Mesa Radiônica</div>
-                </a>
-                <a href="https://wa.me/5527998528483?text=Olá,%20gostaria%20de%20agendar%20os%20registros%20akashicos" target="_blank" class="card">
-                    <div class="img-wrapper"><img src="cocar12.jpg" alt="Registros Akáshicos"></div>
-                    <div class="card-title">Registros Akáshicos</div>
-                </a>
-                <a href="https://wa.me/5527998528483?text=Olá,%20gostaria%20de%20agendar%20o%20theta%20healing" target="_blank" class="card">
-                    <div class="img-wrapper"><img src="cocar13.jpg" alt="Theta Healing"></div>
-                    <div class="card-title">Theta Healing</div>
-                </a>
-                <a href="https://wa.me/5527998528483?text=Olá,%20gostaria%20de%20agendar%20a%20mesa%20mediúnica" target="_blank" class="card">
-                    <div class="img-wrapper"><img src="cocar14.jpg" alt="Mesa Mediúnica"></div>
-                    <div class="card-title">Mesa Mediúnica</div>
-                </a>
-            </div>
-        </section>
-
-        <section id="copa3">
-            <h2>Entre em Contato</h2>
-            <div class="description-box" style="text-align: center; margin-bottom: 2rem;">
-                Acompanhe nosso trabalho nas redes sociais ou fale diretamente conosco para tirar dúvidas.
-            </div>
-            <div class="socials">
-                <a href="https://www.instagram.com/cocarsagrado?igsh=MXVvMzVlMHVpcGwyYw==" target="_blank">Instagram</a>
-                <a href="https://www.tiktok.com/@cocarsagrado?_r=1&_t=ZS-94Rxmt4Oa5i" target="_blank">TikTok</a>
-                <a href="mailto:cocarsagrado@gmail.com" target="_blank">E-mail</a>
-                <a href="https://Wa.me//5527998528483" target="_blank">WhatsApp</a>
-            </div>
-        </section>
+    <div id="radiestesia" class="category-content">
+        <div class="gallery">
+            <a href="https://wa.me/5527998528483?text=Olá,%20gostaria%20de%20agendar%20a%20mesa%20radiônica" target="_blank" class="card-slim">
+                <div class="img-wrapper"><img src="cocar11.jpg" alt="Mesa Radiônica"></div>
+                <div class="card-body-slim">
+                    <div class="card-title-slim">Mesa Radiônica</div>
+                    <span class="btn-agendar">Agendar</span>
+                </div>
+            </a>
+            <a href="https://wa.me/5527998528483?text=Olá,%20gostaria%20de%20agendar%20os%20registros%20akashicos" target="_blank" class="card-slim">
+                <div class="img-wrapper"><img src="cocar12.jpg" alt="Registros Akáshicos"></div>
+                <div class="card-body-slim">
+                    <div class="card-title-slim">Registros Akáshicos</div>
+                    <span class="btn-agendar">Agendar</span>
+                </div>
+            </a>
+            <a href="https://wa.me/5527998528483?text=Olá,%20gostaria%20de%20agendar%20o%20theta%20healing" target="_blank" class="card-slim">
+                <div class="img-wrapper"><img src="cocar13.jpg" alt="Theta Healing"></div>
+                <div class="card-body-slim">
+                    <div class="card-title-slim">Theta Healing</div>
+                    <span class="btn-agendar">Agendar</span>
+                </div>
+            </a>
+            <a href="https://wa.me/5527998528483?text=Olá,%20gostaria%20de%20agendar%20a%20mesa%20mediúnica" target="_blank" class="card-slim">
+                <div class="img-wrapper"><img src="cocar14.jpg" alt="Mesa Mediúnica"></div>
+                <div class="card-body-slim">
+                    <div class="card-title-slim">Mesa Mediúnica</div>
+                    <span class="btn-agendar">Agendar</span>
+                </div>
+            </a>
+        </div>
+    </div>
+</section>
     </main>
 
     <footer>
@@ -407,6 +526,23 @@
                 behavior: 'smooth'
             });
         }
+        function openCategory(evt, categoryName) {
+    // Esconde todas as categorias
+    var contents = document.getElementsByClassName("category-content");
+    for (var i = 0; i < contents.length; i++) {
+        contents[i].classList.remove("active-category");
+    }
+
+    // Remove a classe 'active-tab' de todos os botões
+    var tabs = document.getElementsByClassName("tab-btn");
+    for (var i = 0; i < tabs.length; i++) {
+        tabs[i].classList.remove("active-tab");
+    }
+
+    // Mostra a categoria atual e adiciona a classe 'active-tab' ao botão clicado
+    document.getElementById(categoryName).classList.add("active-category");
+    evt.currentTarget.classList.add("active-tab");
+}
     </script>
 </body>
 </html>
