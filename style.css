@@ -274,6 +274,10 @@
     gap: 10px;
     margin-bottom: 2rem;
     flex-wrap: wrap;
+    background: rgba(5, 13, 5, 0.85);
+    padding: 1rem;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 215, 0, 0.2);
 }
 
 .tab-btn {
@@ -325,6 +329,8 @@
 .card-body-slim {
     padding: 1.2rem;
     text-align: center;
+    background: rgba(5, 13, 5, 0.85);
+    border-top: 1px solid rgba(255, 215, 0, 0.2);
 }
 
 .card-title-slim {
