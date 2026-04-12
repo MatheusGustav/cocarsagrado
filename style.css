@@ -274,14 +274,10 @@
     gap: 10px;
     margin-bottom: 2rem;
     flex-wrap: wrap;
-    background: rgba(5, 13, 5, 0.85);
-    padding: 1rem;
-    border-radius: 8px;
-    border: 1px solid rgba(255, 215, 0, 0.2);
 }
 
 .tab-btn {
-    background: rgba(255, 215, 0, 0.05);
+    background: rgba(9, 80, 15, 0.9);
     border: 1px solid rgba(255, 215, 0, 0.3);
     color: #ffd700;
     padding: 10px 20px;
@@ -292,7 +288,7 @@
     border-radius: 4px;
 }
 
-.tab-btn.active-tab {
+.tab-btn:hover, .tab-btn.active-tab {
     background: #ffd700;
     color: #050d05;
     font-weight: bold;
@@ -329,7 +325,7 @@
 .card-body-slim {
     padding: 1.2rem;
     text-align: center;
-    background: rgba(5, 13, 5, 0.85);
+    background: rgba(28, 83, 28, 0.64);
     border-top: 1px solid rgba(255, 215, 0, 0.2);
 }
 
