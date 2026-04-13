@@ -40,6 +40,8 @@
             margin-top: 0.5rem; 
             letter-spacing: 1px;
         }
+
+        /* Botoes da transicao entre as copas (Sobre, Catalogo e Contato) */
         
         .nav-bar { 
             display: flex; 
@@ -264,10 +266,12 @@
             text-align: center;
             font-style: italic;
             font-size: 1.2rem;
-            color: #c8e6c9;
+            color: #ffffff;
             padding: 1rem;
         }
-/* --- ESTILO DO NOVO CATÁLOGO FILTRÁVEL --- */
+
+        
+        /* Estilos para as abas de categorias dentro do catálogo */
 .tab-container {
     display: flex;
     justify-content: center;
@@ -277,15 +281,19 @@
 }
 
 .tab-btn {
-    background: rgba(9, 80, 15, 0.9);
-    border: 1px solid rgba(255, 215, 0, 0.3);
+    background: rgba(13, 54, 16, 0.7);
+    border: 1px solid #ffd700;
     color: #ffd700;
-    padding: 10px 20px;
+    padding: 10px 24px;
     font-family: 'Cinzel', serif;
-    font-size: 0.8rem;
+    font-size: 0.9rem;
+    letter-spacing: 1px;
     cursor: pointer;
-    transition: all 0.3s ease;
+    transition: all 0.4s ease;
     border-radius: 4px;
+    position: relative;
+    overflow: hidden;
+    backdrop-filter: blur(5px);
 }
 
 .tab-btn:hover, .tab-btn.active-tab {
