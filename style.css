@@ -11,12 +11,25 @@
         
         body { 
             font-family: 'Raleway', sans-serif; 
-            background: url('images/fundo.jpg') center/cover fixed no-repeat #0a1a0a; 
+            background-color: #0a1a0a;
+            background-image: url('images/fundo.jpg');
+            background-position: center top;
+            background-size: cover;
+            background-repeat: no-repeat;
+            background-attachment: fixed;
             color: #ffffff; 
             line-height: 1.6;
             min-height: 100vh;
             display: flex;
             flex-direction: column;
+        }
+
+        @media (min-width: 320px) and (max-width: 1024px) {
+            body {
+                background-size: cover;
+                background-position: center center;
+                background-attachment: scroll;
+            }
         }
 
         header { 
