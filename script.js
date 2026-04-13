@@ -30,3 +30,32 @@ function openCategory(evt, categoryName) {
     document.getElementById(categoryName).classList.add("active-category");
     evt.currentTarget.classList.add("active-tab");
 }
+
+function isTikTokInAppBrowser() {
+    var userAgent = navigator.userAgent.toLowerCase();
+    return userAgent.includes("tiktok") || userAgent.includes("musical_ly") || userAgent.includes("bytedance");
+}
+
+function setupTikTokNotice() {
+    var notice = document.getElementById("tiktok-notice");
+    var closeButton = document.getElementById("tiktok-notice-close");
+
+    if (!notice || !closeButton || !isTikTokInAppBrowser()) {
+        return;
+    }
+
+    if (window.localStorage.getItem("tiktokNoticeDismissed") === "true") {
+        return;
+    }
+
+    notice.hidden = false;
+    notice.classList.add("is-visible");
+
+    closeButton.addEventListener("click", function () {
+        notice.classList.remove("is-visible");
+        notice.hidden = true;
+        window.localStorage.setItem("tiktokNoticeDismissed", "true");
+    });
+}
+
+document.addEventListener("DOMContentLoaded", setupTikTokNotice);
