@@ -32,8 +32,17 @@ function openCategory(evt, categoryName) {
 }
 
 function isTikTokInAppBrowser() {
-    var userAgent = navigator.userAgent.toLowerCase();
-    return userAgent.includes("tiktok") || userAgent.includes("musical_ly") || userAgent.includes("bytedance");
+    // Modo de teste: adicione ?aviso=1 na URL para forçar o aviso aparecer
+    if (new URLSearchParams(window.location.search).get("aviso") === "1") {
+        return true;
+    }
+    var ua = navigator.userAgent.toLowerCase();
+    return ua.includes("tiktok") ||
+           ua.includes("musical_ly") ||
+           ua.includes("bytedance") ||
+           ua.includes("aweme") ||
+           ua.includes("bytelocale") ||
+           ua.includes("bytedancewebview");
 }
 
 function setupTikTokNotice() {
