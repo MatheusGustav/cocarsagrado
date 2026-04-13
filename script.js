@@ -44,17 +44,12 @@ function setupTikTokNotice() {
         return;
     }
 
-    if (window.localStorage.getItem("tiktokNoticeDismissed") === "true") {
-        return;
-    }
-
     notice.hidden = false;
     notice.classList.add("is-visible");
 
     closeButton.addEventListener("click", function () {
         notice.classList.remove("is-visible");
         notice.hidden = true;
-        window.localStorage.setItem("tiktokNoticeDismissed", "true");
     });
 }
 
