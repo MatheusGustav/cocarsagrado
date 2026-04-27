@@ -1,449 +1,1415 @@
-* { 
-            box-sizing: border-box; 
-            margin: 0; 
-            padding: 0; 
-        }
+/* ============================================================
+   COCAR SAGRADO — STYLESHEET COMPLETO
+   Organizado em seções comentadas para fácil personalização
+   Tipografia: Cormorant Garamond (títulos) + DM Sans (corpo)
+   Paleta: Roxo sagrado (#26215C, #3C3489, #534AB7, #EEEDFE)
+           Teal calmante (#1D9E75, #E1F5EE)
+           Âmbar terroso (#BA7517, #FAEEDA)
+   ============================================================ */
 
-        :root {
-            --header-scene: url('images/header.jpg');
-            --footer-scene: url('images/rodapé.jpg');
-        }
-        
-        body { 
-            font-family: 'Raleway', sans-serif; 
-            background-color: #0a1a0a;
-            background-image: url('images/fundo.jpg');
-            background-position: center top;
-            background-size: cover;
-            background-repeat: no-repeat;
-            background-attachment: fixed;
-            color: #ffffff; 
-            line-height: 1.6;
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-        }
 
-        @media (min-width: 320px) and (max-width: 1024px) {
-            body {
-                background-size: cover;
-                background-position: center center;
-                background-attachment: scroll;
-            }
-        }
-
-        .in-app-notice {
-            position: sticky;
-            top: 0;
-            z-index: 1000;
-            display: none;
-            align-items: center;
-            justify-content: space-between;
-            gap: 1rem;
-            padding: 0.95rem 1rem;
-            background: linear-gradient(135deg, rgba(8, 34, 12, 0.97), rgba(4, 18, 7, 0.96));
-            border-bottom: 1px solid rgba(255, 215, 0, 0.35);
-            box-shadow: 0 10px 24px rgba(0, 0, 0, 0.45);
-            backdrop-filter: blur(10px);
-        }
-
-        .in-app-notice.is-visible {
-            display: flex;
-        }
-
-        .in-app-notice__content {
-            max-width: 840px;
-        }
-
-        .in-app-notice__content strong {
-            display: block;
-            margin-bottom: 0.25rem;
-            font-family: 'Cinzel', serif;
-            color: #ffd700;
-            letter-spacing: 0.8px;
-        }
-
-        .in-app-notice__content p {
-            margin: 0;
-            color: #f4f7f2;
-            font-size: 0.95rem;
-        }
-
-        .in-app-notice button {
-            flex-shrink: 0;
-            padding: 0.7rem 1rem;
-            border: 1px solid rgba(255, 215, 0, 0.45);
-            border-radius: 999px;
-            background: rgba(255, 215, 0, 0.12);
-            color: #ffd700;
-            font-family: 'Cinzel', serif;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-
-        .in-app-notice button:hover {
-            background: #ffd700;
-            color: #050d05;
-        }
-
-        @media (max-width: 640px) {
-            .in-app-notice {
-                align-items: flex-start;
-                flex-direction: column;
-            }
-
-            .in-app-notice button {
-                width: 100%;
-            }
-        }
-
-        header { 
-            background:
-                radial-gradient(ellipse at center, rgba(0,0,0,0.08) 28%, rgba(0,0,0,0.68) 100%),
-                linear-gradient(to bottom, rgba(0,0,0,0.46) 0%, rgba(0,0,0,0.20) 40%, rgba(0,0,0,0.62) 100%),
-                var(--header-scene) center top/cover no-repeat;
-            padding: 2.5rem 1rem; 
-            text-align: center; 
-            border-bottom: 1px solid rgba(255, 215, 0, 0.3);
-            box-shadow: 0 4px 20px rgba(0,0,0,0.6);
-        }
-        
-        h1 { 
-            font-family: 'Cinzel', serif; 
-            font-size: 2.2rem; 
-            letter-spacing: 3px; 
-            color: #ffd700; 
-            text-transform: uppercase;
-            text-shadow: 0 2px 2px rgba(0, 0, 0, 0.75), 0 8px 18px rgba(0, 0, 0, 0.95);
-        }
-        
-        .subtitle { 
-            font-family: 'Cinzel', serif;
-            font-size: 1rem; 
-            color: #c8e6c9; 
-            margin-top: 0.5rem; 
-            letter-spacing: 1px;
-            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.9);
-        }
-
-        /* Botoes da transicao entre as copas (Sobre, Catalogo e Contato) */
-        
-        .nav-bar { 
-            display: flex; 
-            justify-content: center; 
-            gap: 15px; 
-            margin-top: 2rem; 
-            flex-wrap: wrap; 
-        }
-        
-        .nav-bar button { 
-            background: rgba(13, 54, 16, 0.7); 
-            border: 1px solid #ffd700; 
-            color: #ffd700;
-            padding: 10px 24px; 
-            border-radius: 4px; 
-            cursor: pointer;
-            font-family: 'Cinzel', serif; 
-            font-size: 0.9rem; 
-            letter-spacing: 1px;
-            transition: all 0.4s ease;
-            position: relative;
-            overflow: hidden;
-            backdrop-filter: blur(5px);
-        }
-        
-        .nav-bar button:hover, .nav-bar button.active-btn { 
-            background: #ffd700; 
-            color: #050d05; 
-            box-shadow: 0 0 15px rgba(255, 215, 0, 0.4);
-            font-weight: bold;
-        }
-
-        main {
-            flex-grow: 1;
-        }
-
-        section { 
-            display: none; 
-            padding: 3rem 1.5rem; 
-            max-width: 900px; 
-            margin: 0 auto; 
-            width: 100%; 
-            animation: fadeIn 0.6s ease-out forwards;
-        }
-        
-        section.active { 
-            display: block; 
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(15px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        
-        h2 { 
-            font-family: 'Cinzel', serif; 
-            color: #ffd700; 
-            text-align: center; 
-            font-size: 2rem;
-            margin-bottom: 1.5rem;
-            letter-spacing: 2px;
-            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.9);
-        }
-
-        h3 { 
-            font-family: 'Cinzel', serif; 
-            color: #e8c600; 
-            text-align: center; 
-            font-size: 1.4rem;
-            margin: 3rem 0 1.5rem; 
-            border-bottom: 1px solid rgba(255, 215, 0, 0.3); 
-            padding-bottom: 0.8rem; 
-            letter-spacing: 1px;
-            text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.8);
-        }
-        
-        .info-click { 
-            text-align: center; 
-            color: #fff; 
-            font-family: 'Raleway', sans-serif;
-            font-size: 0.95rem; 
-            margin-bottom: 2.5rem; 
-            background: rgba(13, 54, 16, 0.85);
-            display: inline-block;
-            padding: 8px 20px;
-            border-radius: 20px;
-            border: 1px solid rgba(255, 215, 0, 0.4);
-            position: relative;
-            left: 50%;
-            transform: translateX(-50%);
-            backdrop-filter: blur(5px);
-            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
-        }
-
-        .description-box { 
-            background: linear-gradient(160deg, rgba(8, 34, 12, 0.92), rgba(5, 22, 9, 0.88)); 
-            backdrop-filter: blur(8px);
-            padding: 2.5rem; 
-            border-radius: 8px; 
-            border-left: 4px solid #ffd700;
-            margin-bottom: 2rem;
-            box-shadow: 0 8px 25px rgba(0,0,0,0.6);
-            font-size: 1.05rem;
-            text-align: justify;
-            line-height: 1.8;
-            color: #ffffff;
-        }
-
-        .gallery { 
-            display: grid; 
-            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); 
-            gap: 25px; 
-        }
-
-        .card { 
-            display: flex;
-            flex-direction: column;
-            text-decoration: none;
-            background: rgba(8, 33, 10, 0.9);
-            border: 1px solid rgba(255, 215, 0, 0.3);
-            border-radius: 8px; 
-            overflow: hidden; 
-            transition: all 0.4s ease; 
-            box-shadow: 0 4px 15px rgba(0,0,0,0.6);
-        }
-
-        .card:hover { 
-            border-color: #ffd700; 
-            transform: translateY(-5px); 
-            box-shadow: 0 10px 30px rgba(255, 215, 0, 0.2);
-        }
-
-  /* Removemos o 'aspect-ratio' para o card se ajustar à imagem */
-        .img-wrapper {
-            width: 100%;
-            height: auto; 
-            overflow: hidden;
-            background: transparent; /* Remove qualquer cor de fundo */
-            display: block; /* Garante que não haja espaços extras */
-        }
-
-        /* A imagem agora ocupa 100% da largura e ajusta a altura sozinha */
-        .gallery img { 
-            width: 100%; 
-            height: auto; 
-            display: block; 
-            object-fit: contain; /* Garante que nada seja cortado */
-            transition: transform 0.6s ease;
-        }
-
-        .card:hover img {
-            transform: scale(1.05);
-        }
-
-        .card-title {
-            padding: 1.2rem 1rem;
-            text-align: center;
-            font-family: 'Cinzel', serif;
-            color: #ffd700;
-            font-size: 1rem;
-            font-weight: 700;
-            letter-spacing: 1px;
-            background: linear-gradient(to top, rgba(5, 13, 5, 1), rgba(8, 33, 10, 0.9));
-            border-top: 1px solid rgba(255, 215, 0, 0.1);
-        }
-
-        .socials { 
-            display: grid; 
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); 
-            gap: 15px; 
-            max-width: 600px;
-            margin: 0 auto;
-        }
-
-        .socials a { 
-            display: flex; 
-            align-items: center;
-            justify-content: center;
-            padding: 1.2rem; 
-            background: linear-gradient(160deg, rgba(10, 38, 14, 0.9), rgba(6, 24, 10, 0.86)); 
-            border: 1px solid rgba(255, 215, 0, 0.4);
-            color: #ffd700; 
-            text-decoration: none; 
-            border-radius: 6px; 
-            font-family: 'Cinzel', serif;
-            font-size: 1.1rem;
-            transition: all 0.3s ease;
-            backdrop-filter: blur(5px);
-            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
-        }
-
-        .socials a:hover {
-            background: #ffd700;
-            color: #050d05;
-            box-shadow: 0 0 15px rgba(255, 215, 0, 0.4);
-            transform: translateY(-3px);
-        }
-
-        footer { 
-            text-align: center; 
-            padding: 2rem; 
-            font-family: 'Cinzel', serif;
-            font-size: 0.9rem; 
-            color: rgba(255, 255, 255, 0.7); 
-            margin-top: auto; 
-            background:
-                radial-gradient(ellipse at center, rgba(0,0,0,0.10) 24%, rgba(0,0,0,0.72) 100%),
-                linear-gradient(to top, rgba(0,0,0,0.66) 0%, rgba(0,0,0,0.22) 45%, rgba(0,0,0,0.58) 100%),
-                var(--footer-scene) center bottom/cover no-repeat;
-            border-top: 1px solid rgba(255, 215, 0, 0.2);
-            backdrop-filter: blur(10px);
-            text-shadow: 0 2px 10px rgba(0,0,0,0.85);
-        }
-
-        .img-externa { 
-            display: block; 
-            width: 100%; 
-            max-width: 300px; 
-            margin: 2rem auto; 
-            border-radius: 8px; 
-            border: 2px solid rgba(255, 215, 0, 0.4);
-            box-shadow: 0 10px 30px rgba(0,0,0,0.8);
-        }
-        
-        .citacao {
-            text-align: center;
-            font-style: italic;
-            font-size: 1.2rem;
-            color: #ffffff;
-            padding: 1rem;
-        }
-
-        
- /* Estilos para as abas de categorias dentro do catálogo */
-.tab-container {
-    display: flex;
-    justify-content: center;
-    gap: 10px;
-    margin-bottom: 2rem;
-    flex-wrap: wrap;
+/* === RESET E GERAIS ===
+   Zera margens e padding padrão do navegador.
+   box-sizing: border-box garante que padding não "estoure" a largura. */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
 }
 
-.tab-btn {
-    background: rgba(13, 54, 16, 0.7);
-    border: 1px solid #ffd700;
-    color: #ffd700;
-    padding: 10px 24px;
-    font-family: 'Cinzel', serif;
-    font-size: 0.9rem;
-    letter-spacing: 1px;
-    cursor: pointer;
-    transition: all 0.4s ease;
-    border-radius: 4px;
-    position: relative;
-    overflow: hidden;
-    backdrop-filter: blur(5px);
+/* === VARIÁVEIS CSS ===
+   Centralize aqui todas as cores, fontes e tamanhos.
+   Para mudar a paleta do site inteiro, basta alterar estas variáveis. */
+:root {
+  /* Cores roxo (cor principal espiritual) */
+  --roxo-900: #26215C;
+  --roxo-800: #3C3489;
+  --roxo-600: #534AB7;
+  --roxo-400: #7F77DD;
+  --roxo-200: #AFA9EC;
+  --roxo-100: #CECBF6;
+  --roxo-50:  #EEEDFE;
+  --roxo-bg:  #F7F5FF;
+
+  /* Cores teal (calma, natureza) */
+  --teal-800: #085041;
+  --teal-600: #0F6E56;
+  --teal-400: #1D9E75;
+  --teal-200: #5DCAA5;
+  --teal-50:  #E1F5EE;
+
+  /* Cores âmbar (terra, sabedoria) */
+  --amber-800: #633806;
+  --amber-600: #854F0B;
+  --amber-400: #BA7517;
+  --amber-200: #EF9F27;
+  --amber-50:  #FAEEDA;
+
+  /* Cinzas neutros */
+  --cinza-900: #1a1a1a;
+  --cinza-700: #3a3a3a;
+  --cinza-500: #6b6b6b;
+  --cinza-300: #c5c5c5;
+  --cinza-100: #f5f5f5;
+
+  /* Tipografia */
+  --fonte-titulo: 'Cormorant Garamond', Georgia, serif;
+  --fonte-corpo:  'DM Sans', system-ui, sans-serif;
+
+  /* Espaçamentos e raios */
+  --raio-sm:  6px;
+  --raio-md:  10px;
+  --raio-lg:  16px;
+  --raio-xl:  24px;
+  --borda:    0.5px solid rgba(83, 74, 183, 0.18);
+
+  /* Animação padrão */
+  --transicao: 0.2s ease;
 }
 
-.tab-btn:hover, .tab-btn.active-tab {
-    background: #ffd700;
-    color: #050d05;
-    font-weight: bold;
-    box-shadow: 0 0 15px rgba(255, 215, 0, 0.4);
+/* === BASE DO DOCUMENTO === */
+html {
+  scroll-behavior: smooth; /* Scroll suave ao clicar em âncoras de navegação */
 }
 
-.category-content {
-    display: none; /* Esconde as categorias por padrão */
-    animation: fadeIn 0.5s ease;
+body {
+  font-family: var(--fonte-corpo);
+  font-size: 16px;
+  line-height: 1.6;
+  color: var(--cinza-900);
+  background-color: #fff;
+  -webkit-font-smoothing: antialiased; /* Melhora renderização de texto em telas retina */
 }
 
-.category-content.active-category {
-    display: block; /* Mostra apenas a ativa */
+/* === CONTAINER ===
+   Largura máxima centralizada com padding lateral para mobile */
+.container {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 0 24px;
 }
 
-/* Card Slim (Sem descrição) */
-.card-slim {
-    display: flex;
+img {
+  max-width: 100%;
+  display: block;
+}
+
+a {
+  text-decoration: none;
+  color: inherit;
+}
+
+
+/* ============================================================
+   COMPONENTES REUTILIZÁVEIS
+   ============================================================ */
+
+/* === EYEBROW (texto pequeno acima dos títulos) === */
+.eyebrow {
+  font-family: var(--fonte-corpo);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--roxo-600);
+  margin-bottom: 0.5rem;
+  display: block;
+}
+
+.eyebrow--muted {
+  color: var(--cinza-500);
+}
+
+/* === TÍTULOS DE SEÇÃO === */
+.section-title {
+  font-family: var(--fonte-titulo);
+  font-size: clamp(26px, 4vw, 36px); /* Responsivo: menor em mobile, maior em desktop */
+  font-weight: 500;
+  color: var(--cinza-900);
+  line-height: 1.2;
+  margin-bottom: 1rem;
+}
+
+.section-sub {
+  font-size: 14px;
+  color: var(--cinza-500);
+  line-height: 1.75;
+  max-width: 560px;
+}
+
+.section-header {
+  text-align: center;
+  margin-bottom: 2.5rem;
+}
+
+.section-header .section-sub {
+  margin: 0 auto;
+}
+
+/* === BOTÕES ===
+   btn-fill: botão sólido roxo — ação principal
+   btn-outline: botão com borda — ação secundária */
+.btn-fill {
+  display: inline-block;
+  padding: 12px 24px;
+  font-family: var(--fonte-corpo);
+  font-size: 13px;
+  font-weight: 500;
+  background: var(--roxo-800);
+  color: var(--roxo-50);
+  border: none;
+  border-radius: var(--raio-md);
+  cursor: pointer;
+  transition: background var(--transicao), transform var(--transicao);
+}
+
+.btn-fill:hover {
+  background: var(--roxo-900);
+  transform: translateY(-1px); /* Leve flutuação ao hover */
+}
+
+.btn-fill:active {
+  transform: translateY(0);
+}
+
+/* Variante de largura total para contexto de contato */
+.btn-fill--block {
+  display: block;
+  width: 100%;
+  text-align: center;
+  padding: 13px;
+}
+
+.btn-outline {
+  display: inline-block;
+  padding: 12px 22px;
+  font-family: var(--fonte-corpo);
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--roxo-800);
+  background: transparent;
+  border: 0.5px solid var(--roxo-600);
+  border-radius: var(--raio-md);
+  cursor: pointer;
+  transition: background var(--transicao), color var(--transicao);
+}
+
+.btn-outline:hover {
+  background: var(--roxo-50);
+}
+
+.btn-outline-small {
+  display: inline-block;
+  padding: 8px 16px;
+  font-size: 11px;
+  color: var(--roxo-800);
+  background: transparent;
+  border: 0.5px solid var(--roxo-200);
+  border-radius: 20px;
+  cursor: pointer;
+  transition: background var(--transicao);
+}
+
+.btn-outline-small:hover {
+  background: var(--roxo-50);
+}
+
+.btn-outline-cta {
+  display: inline-block;
+  padding: 11px 22px;
+  font-size: 13px;
+  color: var(--roxo-800);
+  background: transparent;
+  border: 0.5px solid var(--roxo-200);
+  border-radius: var(--raio-md);
+  transition: background var(--transicao);
+}
+
+.btn-outline-cta:hover {
+  background: rgba(238, 237, 254, 0.5);
+}
+
+/* === ÍCONES DE CATEGORIAS DO CATÁLOGO ===
+   Bolinhas coloridas que representam cada tipo de serviço */
+.cat-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+}
+
+.icon-purple      { background: var(--roxo-600); }
+.icon-purple-dark { background: var(--roxo-800); }
+.icon-purple-mid  { background: var(--roxo-400); }
+.icon-teal        { background: var(--teal-400); }
+.icon-teal-dark   { background: var(--teal-600); }
+.icon-amber       { background: var(--amber-400); }
+.icon-amber-dark  { background: var(--amber-600); }
+
+
+/* ============================================================
+   OVERLAY DE PRIMEIRA VISITA
+   Aparece centralizado com backdrop escurecido.
+   Controlado pelo JavaScript via classe .overlay--hidden
+   ============================================================ */
+.overlay-backdrop {
+  position: fixed; /* Cobre toda a tela independente do scroll */
+  inset: 0;
+  background: rgba(38, 33, 92, 0.5); /* Roxo sagrado semi-transparente */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  /* Animação de entrada suave */
+  animation: fadeInOverlay 0.4s ease;
+}
+
+/* Estado oculto: JS adiciona esta classe para esconder o overlay */
+.overlay-backdrop.overlay--hidden {
+  display: none;
+}
+
+/* Backdrop com blur na página de fundo (efeito desfoque) */
+body.overlay-active .header,
+body.overlay-active main,
+body.overlay-active .footer {
+  filter: blur(4px);
+  pointer-events: none; /* Impede cliques enquanto overlay está aberto */
+  transition: filter 0.3s ease;
+}
+
+@keyframes fadeInOverlay {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* Card central do overlay */
+.overlay-card {
+  background: #fff;
+  border: 0.5px solid var(--roxo-200);
+  border-radius: var(--raio-xl);
+  width: 90%;
+  max-width: 380px;
+  overflow: hidden;
+  position: relative;
+  /* Animação de entrada do card (sobe levemente) */
+  animation: slideUpCard 0.4s ease;
+}
+
+@keyframes slideUpCard {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Botão X para fechar o overlay */
+.overlay-close {
+  position: absolute;
+  top: 14px;
+  right: 16px;
+  font-size: 14px;
+  color: var(--roxo-200);
+  background: none;
+  border: none;
+  cursor: pointer;
+  line-height: 1;
+  transition: color var(--transicao);
+  z-index: 2;
+}
+
+.overlay-close:hover {
+  color: var(--roxo-600);
+}
+
+/* Área superior colorida do overlay */
+.overlay-top {
+  background: var(--roxo-bg);
+  padding: 2.5rem 2rem 2rem;
+  text-align: center;
+  border-bottom: 0.5px solid var(--roxo-100);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+/* Ornamento circular decorativo */
+.overlay-ornament {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: var(--roxo-50);
+  border: 0.5px solid var(--roxo-200);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.overlay-ornament-inner {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--roxo-600);
+}
+
+.overlay-eyebrow {
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--roxo-600);
+  font-weight: 500;
+}
+
+.overlay-title {
+  font-family: var(--fonte-titulo);
+  font-size: 28px;
+  font-weight: 500;
+  color: var(--roxo-900);
+  line-height: 1.25;
+}
+
+/* Corpo do overlay */
+.overlay-body {
+  padding: 1.5rem 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.overlay-text {
+  font-size: 13px;
+  color: var(--cinza-500);
+  line-height: 1.8;
+  text-align: center;
+}
+
+.overlay-divider {
+  height: 0.5px;
+  background: rgba(83, 74, 183, 0.15);
+}
+
+.overlay-quote {
+  font-family: var(--fonte-titulo);
+  font-size: 14px;
+  font-style: italic;
+  color: var(--roxo-600);
+  text-align: center;
+  line-height: 1.7;
+}
+
+/* Botões do overlay */
+.overlay-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 0 2rem 2rem;
+}
+
+.btn-ghost-overlay {
+  display: block;
+  width: 100%;
+  padding: 10px;
+  font-size: 12px;
+  font-family: var(--fonte-corpo);
+  color: var(--cinza-500);
+  background: transparent;
+  border: 0.5px solid var(--cinza-300);
+  border-radius: var(--raio-md);
+  cursor: pointer;
+  transition: background var(--transicao);
+  text-align: center;
+}
+
+.btn-ghost-overlay:hover {
+  background: var(--cinza-100);
+}
+
+
+/* ============================================================
+   HEADER / NAVEGAÇÃO
+   position: sticky faz o header "grudar" no topo ao rolar
+   ============================================================ */
+.header {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(8px); /* Efeito vidro fosco ao rolar sobre conteúdo */
+  border-bottom: var(--borda);
+  transition: box-shadow var(--transicao);
+}
+
+/* Classe adicionada via JS ao rolar a página (add shadow on scroll) */
+.header.scrolled {
+  box-shadow: 0 1px 20px rgba(38, 33, 92, 0.06);
+}
+
+.header-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 64px;
+  gap: 2rem;
+}
+
+/* Marca / Logo */
+.brand {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  flex-shrink: 0;
+}
+
+.brand-logo {
+  font-family: var(--fonte-titulo);
+  font-size: 18px;
+  font-weight: 500;
+  color: var(--roxo-900);
+  letter-spacing: 0.02em;
+  line-height: 1;
+}
+
+.brand-sub {
+  font-size: 10px;
+  color: var(--roxo-600);
+  letter-spacing: 0.06em;
+}
+
+/* Links de navegação */
+.nav-links {
+  display: flex;
+  gap: 28px;
+  align-items: center;
+}
+
+.nav-link {
+  font-size: 13px;
+  color: var(--cinza-500);
+  transition: color var(--transicao);
+  position: relative;
+}
+
+.nav-link::after {
+  content: '';
+  position: absolute;
+  bottom: -3px;
+  left: 0;
+  width: 0;
+  height: 1px;
+  background: var(--roxo-600);
+  transition: width var(--transicao);
+}
+
+.nav-link:hover {
+  color: var(--roxo-800);
+}
+
+.nav-link:hover::after {
+  width: 100%;
+}
+
+/* CTA do header */
+.btn-nav {
+  display: inline-block;
+  padding: 8px 16px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--roxo-800);
+  background: var(--roxo-50);
+  border: 0.5px solid var(--roxo-200);
+  border-radius: var(--raio-md);
+  transition: background var(--transicao);
+  flex-shrink: 0;
+}
+
+.btn-nav:hover {
+  background: var(--roxo-100);
+}
+
+/* Botão hambúrguer — visível apenas em mobile */
+.hamburger {
+  display: none;
+  flex-direction: column;
+  gap: 5px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+}
+
+.hamburger span {
+  display: block;
+  width: 22px;
+  height: 1.5px;
+  background: var(--roxo-800);
+  border-radius: 2px;
+  transition: transform var(--transicao), opacity var(--transicao);
+}
+
+/* Animação do hambúrguer ao abrir menu (X) */
+.hamburger.open span:nth-child(1) { transform: translateY(6.5px) rotate(45deg); }
+.hamburger.open span:nth-child(2) { opacity: 0; }
+.hamburger.open span:nth-child(3) { transform: translateY(-6.5px) rotate(-45deg); }
+
+
+/* ============================================================
+   SEÇÃO HERO
+   Layout de duas colunas: texto à esquerda, pills à direita
+   ============================================================ */
+.hero {
+  background: var(--roxo-bg);
+  border-bottom: var(--borda);
+  overflow: hidden;
+}
+
+.hero-inner {
+  display: grid;
+  grid-template-columns: 1fr 1fr; /* Duas colunas iguais */
+  min-height: 520px;
+  gap: 3rem;
+  align-items: center;
+  padding-top: 4rem;
+  padding-bottom: 4rem;
+}
+
+/* Coluna esquerda do hero */
+.hero-left {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.hero-title {
+  font-family: var(--fonte-titulo);
+  font-size: clamp(36px, 5vw, 56px);
+  font-weight: 500;
+  color: var(--roxo-900);
+  line-height: 1.1;
+}
+
+.hero-quote {
+  font-family: var(--fonte-titulo);
+  font-size: 14px;
+  font-style: italic;
+  color: var(--roxo-600);
+  line-height: 1.8;
+  border-left: 2px solid var(--roxo-200);
+  padding-left: 14px;
+  border-radius: 0; /* Sem arredondamento em bordas de um lado só */
+  max-width: 420px;
+}
+
+.hero-btns {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+/* Coluna direita do hero */
+.hero-right {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.hero-right-label {
+  font-size: 11px;
+  color: var(--cinza-500);
+  letter-spacing: 0.05em;
+}
+
+/* Pílulas de serviços */
+.service-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.pill {
+  font-size: 11px;
+  padding: 6px 12px;
+  border-radius: 20px; /* Totalmente arredondado para formato pílula */
+  background: var(--roxo-50);
+  color: var(--roxo-800);
+  border: 0.5px solid var(--roxo-200);
+  transition: background var(--transicao);
+}
+
+.pill:hover {
+  background: var(--roxo-100);
+}
+
+/* Placeholder da foto dos atendentes */
+.hero-photo-placeholder {
+  flex: 1;
+  min-height: 140px;
+  background: #fff;
+  border: var(--borda);
+  border-radius: var(--raio-lg);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  /* SUBSTITUIR por <img src="foto-camila-matheus.jpg" alt="Camila e Matheus"> */
+}
+
+.photo-circle {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: var(--roxo-200);
+}
+
+.photo-caption {
+  font-size: 11px;
+  color: var(--cinza-500);
+}
+
+
+/* ============================================================
+   ANIMAÇÕES DE ENTRADA (fade-in)
+   fade-in: ativa ao carregar a página (hero)
+   fade-in-scroll: ativa ao rolar (via JS com IntersectionObserver)
+   ============================================================ */
+.fade-in {
+  opacity: 0;
+  transform: translateY(20px);
+  animation: fadeUp 0.7s ease forwards;
+}
+
+.fade-in--delay {
+  animation-delay: 0.2s; /* Atraso para criar efeito cascata */
+}
+
+.fade-in-scroll {
+  opacity: 0;
+  transform: translateY(24px);
+  transition: opacity 0.6s ease, transform 0.6s ease;
+}
+
+/* Classe adicionada pelo JS quando o elemento entra na viewport */
+.fade-in-scroll.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+
+/* ============================================================
+   SEÇÃO SOBRE
+   ============================================================ */
+.sobre {
+  padding: 5rem 0;
+  border-bottom: var(--borda);
+}
+
+.sobre-inner {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4rem;
+  align-items: center;
+}
+
+.sobre-body {
+  font-size: 14px;
+  color: var(--cinza-500);
+  line-height: 1.85;
+  margin-top: 0.75rem;
+}
+
+/* Cards de estatísticas */
+.sobre-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.stat-card {
+  background: var(--roxo-bg);
+  border: var(--borda);
+  border-radius: var(--raio-lg);
+  padding: 1.25rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.stat-num {
+  font-family: var(--fonte-titulo);
+  font-size: 42px;
+  font-weight: 500;
+  color: var(--roxo-800);
+  line-height: 1;
+}
+
+.stat-label {
+  font-size: 12px;
+  color: var(--roxo-600);
+}
+
+
+/* ============================================================
+   SEÇÃO CATÁLOGO
+   ============================================================ */
+.catalogo {
+  padding: 5rem 0;
+  background: #fafafa;
+  border-bottom: var(--borda);
+}
+
+/* Filtros de categoria */
+.cat-filters {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 2rem;
+  justify-content: center;
+}
+
+.cat-filter {
+  font-size: 12px;
+  font-family: var(--fonte-corpo);
+  padding: 7px 16px;
+  border-radius: 20px;
+  border: 0.5px solid rgba(83, 74, 183, 0.2);
+  color: var(--cinza-500);
+  background: #fff;
+  cursor: pointer;
+  transition: all var(--transicao);
+}
+
+.cat-filter:hover {
+  border-color: var(--roxo-400);
+  color: var(--roxo-800);
+}
+
+/* Filtro ativo (selecionado) */
+.cat-filter.active {
+  background: var(--roxo-800);
+  color: var(--roxo-50);
+  border-color: var(--roxo-800);
+}
+
+/* Grade de cards do catálogo */
+.cat-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr)); /* 3 colunas responsivas */
+  gap: 16px;
+}
+
+/* Card individual de serviço */
+.cat-card {
+  background: #fff;
+  border: 0.5px solid rgba(83, 74, 183, 0.12);
+  border-radius: var(--raio-lg);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  transition: transform var(--transicao), border-color var(--transicao);
+}
+
+.cat-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--roxo-200);
+}
+
+/* Card oculto pelo filtro JS */
+.cat-card.hidden {
+  display: none;
+}
+
+/* Imagem/cor do topo do card */
+.cat-card-img {
+  height: 80px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cat-card-img.purple { background: var(--roxo-50); }
+.cat-card-img.teal   { background: var(--teal-50); }
+.cat-card-img.amber  { background: var(--amber-50); }
+
+/* Corpo do card */
+.cat-body {
+  padding: 12px 14px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.cat-name {
+  font-family: var(--fonte-titulo);
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--cinza-900);
+}
+
+.cat-desc {
+  font-size: 11px;
+  color: var(--cinza-500);
+  line-height: 1.65;
+  flex: 1;
+}
+
+/* Rodapé do card (quem atende + botão) */
+.cat-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  border-top: 0.5px solid rgba(83, 74, 183, 0.1);
+}
+
+.cat-who {
+  font-size: 10px;
+  color: var(--cinza-500);
+  font-style: italic;
+}
+
+.cat-btn {
+  font-size: 11px;
+  font-family: var(--fonte-corpo);
+  font-weight: 500;
+  padding: 6px 14px;
+  border-radius: 20px;
+  background: var(--roxo-800);
+  color: var(--roxo-50);
+  border: none;
+  cursor: pointer;
+  transition: background var(--transicao);
+  display: inline-block;
+}
+
+.cat-btn:hover {
+  background: var(--roxo-900);
+}
+
+
+/* ============================================================
+   SEÇÃO CONECTAR (Instagram + Contato)
+   Duas colunas lado a lado
+   ============================================================ */
+.conectar {
+  padding: 5rem 0;
+  border-bottom: var(--borda);
+}
+
+/* Grid de duas colunas */
+.conectar-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4rem;
+  align-items: start;
+}
+
+/* Coluna Instagram */
+.col-ig {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  padding: 2rem;
+  background: var(--roxo-bg);
+  border: var(--borda);
+  border-radius: var(--raio-xl);
+}
+
+.col-ig-body {
+  font-size: 13px;
+  color: var(--roxo-600);
+  line-height: 1.8;
+}
+
+/* Preview dos posts do Instagram (substituir por widget real) */
+.ig-posts-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.ig-post {
+  aspect-ratio: 1;
+  border-radius: 10px;
+  background: var(--roxo-50);
+  border: 0.5px solid var(--roxo-100);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 12px;
+}
+
+/* Post principal (destaque) */
+.ig-post--main {
+  background: var(--roxo-100);
+  border-color: var(--roxo-400);
+}
+
+.ig-post-lines {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  width: 100%;
+}
+
+.ig-line {
+  height: 5px;
+  border-radius: 3px;
+  background: var(--roxo-200);
+  width: 70%;
+}
+
+.ig-line--dark {
+  background: var(--roxo-600);
+}
+
+.ig-line--short {
+  width: 50%;
+}
+
+.ig-post-label {
+  font-size: 9px;
+  color: var(--roxo-600);
+  font-weight: 500;
+}
+
+/* Rodapé da coluna Instagram */
+.ig-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.ig-handle {
+  font-size: 13px;
+  color: var(--roxo-800);
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ig-handle::before {
+  content: '';
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--roxo-600);
+}
+
+/* Coluna de contato */
+.col-contact {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.col-contact-intro {
+  font-size: 13px;
+  color: var(--cinza-500);
+  line-height: 1.8;
+}
+
+/* Cards de cada atendente */
+.person-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.person-card {
+  background: #fafafa;
+  border: 0.5px solid rgba(83, 74, 183, 0.12);
+  border-radius: var(--raio-lg);
+  padding: 14px 16px;
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  transition: border-color var(--transicao);
+}
+
+.person-card:hover {
+  border-color: var(--roxo-200);
+}
+
+/* Avatar com inicial do atendente */
+.person-avatar {
+  width: 40px;
+  height: 40px;
+  min-width: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 500;
+  font-size: 15px;
+}
+
+/* Roxo para Camila, teal para Matheus */
+.avatar-c { background: var(--roxo-100); color: var(--roxo-900); }
+.avatar-m { background: var(--teal-50);  color: var(--teal-800); }
+
+.person-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+}
+
+.person-name {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--cinza-900);
+}
+
+.person-services {
+  font-size: 11px;
+  color: var(--cinza-500);
+  line-height: 1.5;
+}
+
+.person-wa {
+  font-size: 12px;
+  color: var(--roxo-600);
+  margin-top: 4px;
+  transition: color var(--transicao);
+}
+
+.person-wa:hover {
+  color: var(--roxo-800);
+}
+
+/* Extras de contato (e-mail, redes) */
+.contact-extras {
+  border-top: 0.5px solid rgba(83, 74, 183, 0.1);
+  padding-top: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.contact-email-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.contact-label {
+  font-size: 12px;
+  color: var(--cinza-500);
+}
+
+.contact-val {
+  font-size: 12px;
+  color: var(--roxo-600);
+  transition: color var(--transicao);
+}
+
+.contact-val:hover {
+  color: var(--roxo-800);
+}
+
+/* Pílulas de redes sociais */
+.contact-social-row {
+  display: flex;
+  gap: 8px;
+}
+
+.social-pill {
+  font-size: 11px;
+  padding: 6px 14px;
+  border-radius: 20px;
+  border: 0.5px solid rgba(83, 74, 183, 0.2);
+  color: var(--cinza-500);
+  background: transparent;
+  transition: all var(--transicao);
+}
+
+.social-pill:hover {
+  border-color: var(--roxo-400);
+  color: var(--roxo-800);
+  background: var(--roxo-50);
+}
+
+
+/* ============================================================
+   SEÇÃO DEPOIMENTOS
+   ============================================================ */
+.depoimentos {
+  padding: 5rem 0;
+  background: #fafafa;
+  border-bottom: var(--borda);
+}
+
+.depos-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  margin-bottom: 2.5rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.depos-count {
+  font-size: 12px;
+  color: var(--cinza-500);
+  font-style: italic;
+}
+
+/* Grade de depoimentos: 3 colunas */
+.depos-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+/* Card individual de depoimento */
+.depo-card {
+  background: #fff;
+  border: 0.5px solid rgba(83, 74, 183, 0.1);
+  border-radius: var(--raio-lg);
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  transition: border-color var(--transicao);
+}
+
+.depo-card:hover {
+  border-color: var(--roxo-200);
+}
+
+/* Estrelas douradas */
+.depo-stars {
+  display: flex;
+  gap: 2px;
+}
+
+.star {
+  color: var(--amber-400);
+  font-size: 13px;
+}
+
+.depo-text {
+  font-family: var(--fonte-titulo);
+  font-size: 15px;
+  font-style: italic;
+  color: var(--cinza-700);
+  line-height: 1.75;
+  flex: 1;
+}
+
+/* Rodapé do card de depoimento */
+.depo-author {
+  border-top: 0.5px solid rgba(83, 74, 183, 0.1);
+  padding-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.depo-name {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--cinza-900);
+}
+
+.depo-service {
+  font-size: 11px;
+  color: var(--roxo-600);
+}
+
+
+/* ============================================================
+   BARRA CTA FINAL
+   Fundo roxo claro, texto + dois botões
+   ============================================================ */
+.cta-bar {
+  background: var(--roxo-50);
+  border-top: var(--borda);
+  border-bottom: var(--borda);
+  padding: 2.5rem 0;
+}
+
+.cta-bar-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 2rem;
+  flex-wrap: wrap;
+}
+
+.cta-bar-title {
+  font-family: var(--fonte-titulo);
+  font-size: 22px;
+  font-weight: 500;
+  color: var(--roxo-900);
+}
+
+.cta-bar-sub {
+  font-size: 13px;
+  color: var(--roxo-600);
+  margin-top: 4px;
+}
+
+.cta-bar-btns {
+  display: flex;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+
+/* ============================================================
+   RODAPÉ (FOOTER)
+   ============================================================ */
+.footer {
+  padding: 1.5rem 0;
+  background: #fff;
+  border-top: var(--borda);
+}
+
+.footer-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.footer-brand {
+  font-size: 12px;
+  color: var(--cinza-500);
+}
+
+.footer-links {
+  display: flex;
+  gap: 20px;
+}
+
+.footer-link {
+  font-size: 12px;
+  color: var(--cinza-500);
+  transition: color var(--transicao);
+}
+
+.footer-link:hover {
+  color: var(--roxo-800);
+}
+
+
+/* ============================================================
+   MENU MOBILE
+   O menu de navegação colapsa em telas pequenas
+   ============================================================ */
+@media (max-width: 768px) {
+
+  /* Esconde links de navegação e mostra hambúrguer */
+  .nav-links {
+    display: none;
+    position: absolute;
+    top: 64px;
+    left: 0;
+    right: 0;
+    background: #fff;
     flex-direction: column;
-    text-decoration: none;
-    background: linear-gradient(165deg, rgba(9, 35, 13, 0.78), rgba(5, 20, 8, 0.72));
-    backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 215, 0, 0.2);
-    border-radius: 8px;
-    overflow: hidden;
-    transition: all 0.4s ease;
-}
+    padding: 1.5rem 24px;
+    gap: 20px;
+    border-bottom: var(--borda);
+    box-shadow: 0 8px 20px rgba(38, 33, 92, 0.06);
+  }
 
-.card-slim:hover {
-    border-color: #ffd700;
-    transform: translateY(-5px);
-}
+  /* Classe adicionada pelo JS ao abrir o menu */
+  .nav-links.open {
+    display: flex;
+  }
 
-.card-body-slim {
-    padding: 1.2rem;
+  .hamburger {
+    display: flex;
+  }
+
+  .btn-nav {
+    display: none; /* Esconde CTA do header em mobile */
+  }
+
+  /* Hero: empilha as colunas verticalmente */
+  .hero-inner {
+    grid-template-columns: 1fr;
+    padding-top: 2.5rem;
+    padding-bottom: 2.5rem;
+    gap: 2rem;
+  }
+
+  .hero-photo-placeholder {
+    min-height: 100px;
+  }
+
+  /* Sobre: empilha colunas */
+  .sobre-inner {
+    grid-template-columns: 1fr;
+    gap: 2rem;
+  }
+
+  .sobre-stats {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+
+  .stat-card {
+    flex: 1;
+    min-width: 120px;
+  }
+
+  /* Catálogo: 2 colunas em tablet, 1 em mobile */
+  .cat-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  /* Conectar: empilha colunas */
+  .conectar-grid {
+    grid-template-columns: 1fr;
+    gap: 2rem;
+  }
+
+  /* Depoimentos: 1 coluna */
+  .depos-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .depos-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  /* CTA bar: empilha texto e botões */
+  .cta-bar-inner {
+    flex-direction: column;
     text-align: center;
-    background: linear-gradient(to top, rgba(7, 29, 11, 0.92), rgba(11, 42, 16, 0.82));
-    border-top: 1px solid rgba(255, 215, 0, 0.2);
+  }
+
+  .cta-bar-btns {
+    justify-content: center;
+  }
 }
 
-.card-title-slim {
-    font-family: 'Cinzel', serif;
-    color: #ffd700;
-    font-size: 1rem;
-    margin-bottom: 1rem;
-}
+/* Mobile pequeno: catálogo em 1 coluna */
+@media (max-width: 480px) {
+  .cat-grid {
+    grid-template-columns: 1fr;
+  }
 
-.btn-agendar {
-    display: inline-block;
-    border: 1px solid #ffd700;
-    color: #ffd700;
-    padding: 6px 15px;
-    font-size: 0.7rem;
-    text-transform: uppercase;
-    border-radius: 20px;
-    transition: 0.3s;
-}
+  .cat-filters {
+    gap: 6px;
+  }
 
-.card-slim:hover .btn-agendar {
-    background: #ffd700;
-    color: #050d05;
+  .overlay-card {
+    width: 95%;
+  }
+}

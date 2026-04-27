@@ -1,183 +1,552 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cocar Sagrado</title>
-    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Raleway:wght@300;400;600&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Cocar Sagrado — Camila &amp; Matheus</title>
+  <meta name="description" content="Atendimentos holísticos com clareza, calma e conexão espiritual. Búzios, Mesa Cigana, Registros Akáshicos, Theta Healing e muito mais." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-    <div id="tiktok-notice" class="in-app-notice" hidden>
-        <div class="in-app-notice__content">
-            <strong>Melhor experiência no navegador</strong>
-            <p>Clique no <strong style="font-size:1.1rem; letter-spacing:0.05em;">⋯</strong> e escolha "Executar no navegador" para usar o site com mais estabilidade. 💚</p>
+
+  <!-- ============================
+       OVERLAY DE PRIMEIRA VISITA
+       Controlado via localStorage
+       ============================ -->
+  <div class="overlay-backdrop" id="overlayBackdrop" aria-modal="true" role="dialog" aria-labelledby="overlayTitle">
+    <div class="overlay-card">
+      <button class="overlay-close" id="overlayClose" aria-label="Fechar">&#10005;</button>
+
+      <div class="overlay-top">
+        <div class="overlay-ornament">
+          <div class="overlay-ornament-inner"></div>
         </div>
-        <button id="tiktok-notice-close" type="button" aria-label="Fechar aviso">Entendi</button>
+        <p class="overlay-eyebrow">Bem-vindo ao Cocar Sagrado</p>
+        <h2 class="overlay-title" id="overlayTitle">Algo especial<br>aguarda por você</h2>
+      </div>
+
+      <div class="overlay-body">
+        <p class="overlay-text">
+          Camila e Matheus oferecem atendimentos holísticos únicos — com escuta, técnica e mais de cinco anos de presença e cuidado.
+        </p>
+        <div class="overlay-divider"></div>
+        <p class="overlay-quote">
+          "Tragam luz e clareza a quem procurar prontas respostas e prontas palavras."
+        </p>
+      </div>
+
+      <div class="overlay-actions">
+        <button class="btn-fill" id="overlayEnter">Conhecer os atendimentos</button>
+        <button class="btn-ghost-overlay" id="overlaySkip">Explorar o site primeiro</button>
+      </div>
     </div>
+  </div>
 
-    <header>
-        <h1>Cocar Sagrado</h1>
-        <div class="subtitle">Camila e Matheus</div>
-        <div class="nav-bar">
-            <button onclick="showSection('copa1', this)" class="active-btn">Sobre</button>
-            <button onclick="showSection('copa2', this)">Catálogo</button>
-            <button onclick="showSection('copa3', this)">Contato</button>
+  <!-- ============================
+       HEADER / NAVEGAÇÃO
+       ============================ -->
+  <header class="header" id="header">
+    <div class="container header-inner">
+      <div class="brand">
+        <span class="brand-logo">Cocar Sagrado</span>
+        <span class="brand-sub">Camila &amp; Matheus</span>
+      </div>
+      <nav class="nav-links" id="navLinks">
+        <a href="#sobre" class="nav-link">Sobre</a>
+        <a href="#catalogo" class="nav-link">Catálogo</a>
+        <a href="#depoimentos" class="nav-link">Depoimentos</a>
+        <a href="#contato" class="nav-link">Contato</a>
+      </nav>
+      <a href="https://wa.me/5527998528483" target="_blank" rel="noopener" class="btn-nav">Agendar consulta</a>
+      <button class="hamburger" id="hamburger" aria-label="Menu">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </header>
+
+  <main>
+
+    <!-- ============================
+         SEÇÃO HERO
+         ============================ -->
+    <section class="hero" id="inicio">
+      <div class="container hero-inner">
+
+        <div class="hero-left fade-in">
+          <p class="eyebrow">Atendimento holístico desde 2019</p>
+          <h1 class="hero-title">Clareza, calma<br>e conexão<br>espiritual</h1>
+          <blockquote class="hero-quote">
+            "Tragam luz e clareza a quem procurar prontas respostas e prontas palavras, pois a clareza e calma são a chave da alma."
+          </blockquote>
+          <div class="hero-btns">
+            <a href="#catalogo" class="btn-fill">Ver catálogo</a>
+            <a href="#sobre" class="btn-outline">Saiba mais</a>
+          </div>
         </div>
-    </header>
 
-    <main>
-        <section id="copa1" class="active">
-            <h2>Sobre Nós</h2>
-            <div class="description-box">
-                O Cocar Sagrado é uma iniciativa que visa entregar atendimento fluido e humanizado, abrangendo de forma profunda e técnica nas questões apresentadas, a fim de direcionar e esclarecer. Há mais de cinco anos, nosso diferencial é a qualidade e o tempo de atendimento, trazendo total amparo até nas leituras mais simples. O foco é o bom relacionamento, bem-estar e clareza de nossos consulentes e amigos.
+        <div class="hero-right fade-in fade-in--delay">
+          <p class="hero-right-label">Nossos atendimentos</p>
+          <div class="service-pills">
+            <span class="pill">Búzios</span>
+            <span class="pill">Mesa Cigana</span>
+            <span class="pill">Confirmação de Orixás</span>
+            <span class="pill">Cabala de Odu</span>
+            <span class="pill">Mesa Mediúnica</span>
+            <span class="pill">Registros Akáshicos</span>
+            <span class="pill">Theta Healing</span>
+            <span class="pill">Mesa Radiônica</span>
+            <span class="pill">Águas de Oxum</span>
+            <span class="pill">Leitura dos Mentores</span>
+            <span class="pill">Rosa de Vênus</span>
+            <span class="pill">Confirmação de Exu</span>
+          </div>
+          <div class="hero-photo-placeholder">
+            <div class="photo-circle"></div>
+            <p class="photo-caption">Camila &amp; Matheus</p>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ============================
+         SEÇÃO SOBRE
+         ============================ -->
+    <section class="sobre" id="sobre">
+      <div class="container sobre-inner">
+        <div class="sobre-text fade-in-scroll">
+          <p class="eyebrow">Quem somos</p>
+          <h2 class="section-title">Mais de cinco anos de<br>atendimento humanizado</h2>
+          <p class="sobre-body">
+            O Cocar Sagrado é uma iniciativa que visa entregar atendimento fluido e humanizado, abrangendo de forma profunda e técnica nas questões apresentadas, a fim de direcionar e esclarecer.
+          </p>
+          <p class="sobre-body">
+            Há mais de cinco anos, nosso diferencial é a qualidade e o tempo de atendimento, trazendo total amparo até nas leituras mais simples. O foco é o bom relacionamento, bem-estar e clareza de nossos consulentes e amigos.
+          </p>
+        </div>
+        <div class="sobre-stats fade-in-scroll">
+          <div class="stat-card">
+            <span class="stat-num">+5</span>
+            <span class="stat-label">anos de atendimento</span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-num">13</span>
+            <span class="stat-label">modalidades disponíveis</span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-num">2</span>
+            <span class="stat-label">especialistas dedicados</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================
+         SEÇÃO CATÁLOGO
+         ============================ -->
+    <section class="catalogo" id="catalogo">
+      <div class="container">
+        <div class="section-header fade-in-scroll">
+          <p class="eyebrow">Nosso catálogo</p>
+          <h2 class="section-title">Encontre o atendimento<br>que ressoa com você</h2>
+          <p class="section-sub">Cada modalidade é um caminho diferente para clareza, equilíbrio e conexão. Explore e agende diretamente pelo WhatsApp.</p>
+        </div>
+
+        <!-- Filtros de categoria -->
+        <div class="cat-filters" id="catFilters">
+          <button class="cat-filter active" data-filter="todos">Todos</button>
+          <button class="cat-filter" data-filter="buzios">Búzios</button>
+          <button class="cat-filter" data-filter="cartas">Cartas</button>
+          <button class="cat-filter" data-filter="radiestesia">Radiestesia</button>
+          <button class="cat-filter" data-filter="camila">Com Camila</button>
+          <button class="cat-filter" data-filter="matheus">Com Matheus</button>
+        </div>
+
+        <!-- Grade de serviços -->
+        <div class="cat-grid" id="catGrid">
+
+          <!-- BÚZIOS -->
+          <article class="cat-card" data-category="buzios matheus">
+            <div class="cat-card-img purple">
+              <div class="cat-icon icon-purple"></div>
             </div>
-            <img src="images/caboclo.jpg" class="img-externa" alt="Indígena Norte Americano">
-            <div class="description-box citacao">
-                "Tragam luz e clareza a quem procurar prontas respostas e prontas palavras, pois a clareza e calma são a chave da alma."
+            <div class="cat-body">
+              <h3 class="cat-name">Búzios Avulso</h3>
+              <p class="cat-desc">Jogo de búzios focado em uma questão específica, com orientação direta e precisa dos orixás.</p>
             </div>
-        </section>
-
-<section id="copa2">
-    <h2>Nosso Catálogo</h2>
-    
-    <div class="tab-container">
-        <button class="tab-btn active-tab" onclick="openCategory(event, 'buzios')">Búzios</button>
-        <button class="tab-btn" onclick="openCategory(event, 'cartas')">Cartas</button>
-        <button class="tab-btn" onclick="openCategory(event, 'radiestesia')">Radiestesia</button>
-    </div>
-
-    <div id="buzios" class="category-content active-category">
-        <div class="gallery">
-            <a href="https://wa.me/5528999476620?text=Olá,%20gostaria%20de%20agendar%20o%20jogo%20de%20buzios%20avulso" target="_blank" class="card-slim">
-                <div class="img-wrapper"><img src="images/cocar1.jpg" alt="Búzios Avulso"></div>
-                <div class="card-body-slim">
-                    <div class="card-title-slim">Búzios Avulso</div>
-                    <span class="btn-agendar">Agendar</span>
-                </div>
-            </a>
-            <a href="https://wa.me/5528999476620?text=Olá,%20gostaria%20de%20agendar%20o%20jogo%20de%20buzios%20completo" target="_blank" class="card-slim">
-                <div class="img-wrapper"><img src="images/cocar2.jpg" alt="Búzios Completo"></div>
-                <div class="card-body-slim">
-                    <div class="card-title-slim">Búzios Completo</div>
-                    <span class="btn-agendar">Agendar</span>
-                </div>
-            </a>
-            <a href="https://wa.me/5528999476620?text=Olá,%20gostaria%20de%20agendar%20a%20confirmação%20de%20orixás" target="_blank" class="card-slim">
-                <div class="img-wrapper"><img src="images/cocar3.jpg" alt="Confirmação de Orixás"></div>
-                <div class="card-body-slim">
-                    <div class="card-title-slim">Confirmação de Orixás</div>
-                    <span class="btn-agendar">Agendar</span>
-                </div>
-            </a>
-            <a href="https://wa.me/5528999476620?text=Olá,%20gostaria%20de%20agendar%20a%20cabala%20de%20odu" target="_blank" class="card-slim">
-                <div class="img-wrapper"><img src="images/cocar4.jpg" alt="Cabala de Odu"></div>
-                <div class="card-body-slim">
-                    <div class="card-title-slim">Cabala de Odu</div>
-                    <span class="btn-agendar">Agendar</span>
-                </div>
-            </a>
-            <a href="https://wa.me/5528999476620?text=Olá,%20gostaria%20de%20agendar%20o%20jogo%20de%20confirmação%20de%20exu" target="_blank" class="card-slim">
-                <div class="img-wrapper"><img src="images/cocar5.jpg" alt="Confirmação de Exu"></div>
-                <div class="card-body-slim">
-                    <div class="card-title-slim">Confirmação de Exu</div>
-                    <span class="btn-agendar">Agendar</span>
-                </div>
-            </a>
-        </div>
-    </div>
-
-    <div id="cartas" class="category-content">
-        <div class="gallery">
-            <a href="https://wa.me/5527998528483?text=Olá,%20gostaria%20de%20agendar%20a%20tenda%20cigana%20avulsa" target="_blank" class="card-slim">
-                <div class="img-wrapper"><img src="images/cocar6.jpg" alt="Tenda Cigana Avulsa"></div>
-                <div class="card-body-slim">
-                    <div class="card-title-slim">Mesa Cigana Avulsa</div>
-                    <span class="btn-agendar">Agendar</span>
-                </div>
-            </a>
-            <a href="https://wa.me/5527998528483?text=Olá,%20gostaria%20de%20agendar%20a%20tenda%20cigana%20completa" target="_blank" class="card-slim">
-                <div class="img-wrapper"><img src="images/cocar7.jpg" alt="Tenda Cigana Completa"></div>
-                <div class="card-body-slim">
-                    <div class="card-title-slim">Mesa Cigana Completa</div>
-                    <span class="btn-agendar">Agendar</span>
-                </div>
-            </a>
-            <a href="https://wa.me/5527998528483?text=Olá,%20gostaria%20de%20agendar%20as%20águas%20de%20oxum" target="_blank" class="card-slim">
-                <div class="img-wrapper"><img src="images/cocar8.jpg" alt="Águas de Oxum"></div>
-                <div class="card-body-slim">
-                    <div class="card-title-slim">Águas de Oxum</div>
-                    <span class="btn-agendar">Agendar</span>
-                </div>
-            </a>
-            <a href="https://wa.me/5527998528483?text=Olá,%20gostaria%20de%20agendar%20a%20rosa%20de%20vênus" target="_blank" class="card-slim">
-                <div class="img-wrapper"><img src="images/cocar9.jpg" alt="Rosa de Vênus"></div>
-                <div class="card-body-slim">
-                    <div class="card-title-slim">Rosa de Vênus</div>
-                    <span class="btn-agendar">Agendar</span>
-                </div>
-            </a>
-            <a href="https://wa.me/5527998528483?text=Olá,%20gostaria%20de%20agendar%20a%20leitura%20dos%20mentores" target="_blank" class="card-slim">
-                <div class="img-wrapper"><img src="images/cocar10.jpg" alt="Leitura dos Mentores"></div>
-                <div class="card-body-slim">
-                    <div class="card-title-slim">Leitura dos Mentores</div>
-                    <span class="btn-agendar">Agendar</span>
-                </div>
-            </a>
-            <a href="https://wa.me/5527998528483?text=Olá,%20gostaria%20de%20agendar%20a%20mesa%20mediúnica" target="_blank" class="card-slim">
-                <div class="img-wrapper"><img src="images/cocar14.jpg" alt="Mesa Mediúnica"></div>
-                <div class="card-body-slim">
-                    <div class="card-title-slim">Mesa Mediúnica</div>
-                    <span class="btn-agendar">Agendar</span>
-                </div>
-            </a>
-        </div>
-    </div>
-
-    <div id="radiestesia" class="category-content">
-        <div class="gallery">
-            <a href="https://wa.me/5527998528483?text=Olá,%20gostaria%20de%20agendar%20a%20mesa%20radiônica" target="_blank" class="card-slim">
-                <div class="img-wrapper"><img src="images/cocar11.jpg" alt="Mesa Radiônica"></div>
-                <div class="card-body-slim">
-                    <div class="card-title-slim">Mesa Radiônica</div>
-                    <span class="btn-agendar">Agendar</span>
-                </div>
-            </a>
-            <a href="https://wa.me/5527998528483?text=Olá,%20gostaria%20de%20agendar%20os%20registros%20akashicos" target="_blank" class="card-slim">
-                <div class="img-wrapper"><img src="images/cocar12.jpg" alt="Registros Akáshicos"></div>
-                <div class="card-body-slim">
-                    <div class="card-title-slim">Registros Akáshicos</div>
-                    <span class="btn-agendar">Agendar</span>
-                </div>
-            </a>
-            <a href="https://wa.me/5527998528483?text=Olá,%20gostaria%20de%20agendar%20o%20theta%20healing" target="_blank" class="card-slim">
-                <div class="img-wrapper"><img src="images/cocar13.jpg" alt="Theta Healing"></div>
-                <div class="card-body-slim">
-                    <div class="card-title-slim">Theta Healing</div>
-                    <span class="btn-agendar">Agendar</span>
-                </div>
-            </a>
-        </div>
-    </div>
-</section>
-<section id="copa3">
-            <h2>Entre em Contato</h2>
-            <div class="description-box" style="text-align: center; margin-bottom: 2rem;">
-                Acompanhe nosso trabalho nas redes sociais ou fale diretamente conosco para tirar dúvidas.
+            <div class="cat-footer">
+              <span class="cat-who">com Matheus</span>
+              <a href="https://wa.me/5528999476620?text=Olá,%20gostaria%20de%20agendar%20o%20jogo%20de%20buzios%20avulso" target="_blank" rel="noopener" class="cat-btn">Agendar</a>
             </div>
-            <div class="socials">
-                <a href="https://www.instagram.com/cocarsagrado?igsh=MXVvMzVlMHVpcGwyYw==" target="_blank">Instagram</a>
-                <a href="https://www.tiktok.com/@cocarsagrado?_r=1&_t=ZS-94Rxmt4Oa5i" target="_blank">TikTok</a>
-                <a href="mailto:cocarsagrado@gmail.com" target="_blank">E-mail</a>
-                <a href="https://wa.me/5527998528483" target="_blank">WhatsApp</a>
+          </article>
+
+          <article class="cat-card" data-category="buzios matheus">
+            <div class="cat-card-img purple">
+              <div class="cat-icon icon-purple-dark"></div>
             </div>
-        </section>
-    </main>
+            <div class="cat-body">
+              <h3 class="cat-name">Búzios Completo</h3>
+              <p class="cat-desc">Jogo completo com leitura aprofundada dos orixás e orientação detalhada para todas as áreas da vida.</p>
+            </div>
+            <div class="cat-footer">
+              <span class="cat-who">com Matheus</span>
+              <a href="https://wa.me/5528999476620?text=Olá,%20gostaria%20de%20agendar%20o%20jogo%20de%20buzios%20completo" target="_blank" rel="noopener" class="cat-btn">Agendar</a>
+            </div>
+          </article>
 
-    <footer>
-        © 2026 Cocar Sagrado
-    </footer>
+          <article class="cat-card" data-category="buzios matheus">
+            <div class="cat-card-img purple">
+              <div class="cat-icon icon-purple-mid"></div>
+            </div>
+            <div class="cat-body">
+              <h3 class="cat-name">Confirmação de Orixás</h3>
+              <p class="cat-desc">Identificação do seu orixá de cabeça e frente através do jogo de búzios sagrado.</p>
+            </div>
+            <div class="cat-footer">
+              <span class="cat-who">com Matheus</span>
+              <a href="https://wa.me/5528999476620?text=Olá,%20gostaria%20de%20agendar%20a%20confirmação%20de%20orixás" target="_blank" rel="noopener" class="cat-btn">Agendar</a>
+            </div>
+          </article>
 
-    <script src="script.js"></script>
+          <article class="cat-card" data-category="buzios matheus">
+            <div class="cat-card-img purple">
+              <div class="cat-icon icon-teal"></div>
+            </div>
+            <div class="cat-body">
+              <h3 class="cat-name">Cabala de Odu</h3>
+              <p class="cat-desc">Leitura cabalística dos odus do jogo de búzios para orientação espiritual profunda e direcionada.</p>
+            </div>
+            <div class="cat-footer">
+              <span class="cat-who">com Matheus</span>
+              <a href="https://wa.me/5528999476620?text=Olá,%20gostaria%20de%20agendar%20a%20cabala%20de%20odu" target="_blank" rel="noopener" class="cat-btn">Agendar</a>
+            </div>
+          </article>
+
+          <article class="cat-card" data-category="buzios matheus">
+            <div class="cat-card-img purple">
+              <div class="cat-icon icon-purple"></div>
+            </div>
+            <div class="cat-body">
+              <h3 class="cat-name">Confirmação de Exu</h3>
+              <p class="cat-desc">Jogo de confirmação voltado à identificação e orientação do Exu guardião pessoal.</p>
+            </div>
+            <div class="cat-footer">
+              <span class="cat-who">com Matheus</span>
+              <a href="https://wa.me/5528999476620?text=Olá,%20gostaria%20de%20agendar%20o%20jogo%20de%20confirmação%20de%20exu" target="_blank" rel="noopener" class="cat-btn">Agendar</a>
+            </div>
+          </article>
+
+          <!-- CARTAS -->
+          <article class="cat-card" data-category="cartas camila">
+            <div class="cat-card-img teal">
+              <div class="cat-icon icon-teal"></div>
+            </div>
+            <div class="cat-body">
+              <h3 class="cat-name">Mesa Cigana Avulsa</h3>
+              <p class="cat-desc">Leitura focada com as cartas ciganas, trazendo clareza objetiva para uma área específica da vida.</p>
+            </div>
+            <div class="cat-footer">
+              <span class="cat-who">com Camila</span>
+              <a href="https://wa.me/5527998528483?text=Olá,%20gostaria%20de%20agendar%20a%20tenda%20cigana%20avulsa" target="_blank" rel="noopener" class="cat-btn">Agendar</a>
+            </div>
+          </article>
+
+          <article class="cat-card" data-category="cartas camila">
+            <div class="cat-card-img teal">
+              <div class="cat-icon icon-teal-dark"></div>
+            </div>
+            <div class="cat-body">
+              <h3 class="cat-name">Mesa Cigana Completa</h3>
+              <p class="cat-desc">Leitura aprofundada com as cartas ciganas, cobrindo amor, trabalho, saúde e espiritualidade.</p>
+            </div>
+            <div class="cat-footer">
+              <span class="cat-who">com Camila</span>
+              <a href="https://wa.me/5527998528483?text=Olá,%20gostaria%20de%20agendar%20a%20tenda%20cigana%20completa" target="_blank" rel="noopener" class="cat-btn">Agendar</a>
+            </div>
+          </article>
+
+          <article class="cat-card" data-category="cartas camila">
+            <div class="cat-card-img teal">
+              <div class="cat-icon icon-amber"></div>
+            </div>
+            <div class="cat-body">
+              <h3 class="cat-name">Águas de Oxum</h3>
+              <p class="cat-desc">Ritual de limpeza e conexão com a energia de Oxum, para harmonização emocional e espiritual.</p>
+            </div>
+            <div class="cat-footer">
+              <span class="cat-who">com Camila</span>
+              <a href="https://wa.me/5527998528483?text=Olá,%20gostaria%20de%20agendar%20as%20águas%20de%20oxum" target="_blank" rel="noopener" class="cat-btn">Agendar</a>
+            </div>
+          </article>
+
+          <article class="cat-card" data-category="cartas camila">
+            <div class="cat-card-img teal">
+              <div class="cat-icon icon-teal"></div>
+            </div>
+            <div class="cat-body">
+              <h3 class="cat-name">Rosa de Vênus</h3>
+              <p class="cat-desc">Leitura especial voltada para amor, relacionamentos e conexões afetivas sob a influência de Vênus.</p>
+            </div>
+            <div class="cat-footer">
+              <span class="cat-who">com Camila</span>
+              <a href="https://wa.me/5527998528483?text=Olá,%20gostaria%20de%20agendar%20a%20rosa%20de%20vênus" target="_blank" rel="noopener" class="cat-btn">Agendar</a>
+            </div>
+          </article>
+
+          <article class="cat-card" data-category="cartas camila">
+            <div class="cat-card-img teal">
+              <div class="cat-icon icon-purple-mid"></div>
+            </div>
+            <div class="cat-body">
+              <h3 class="cat-name">Leitura dos Mentores</h3>
+              <p class="cat-desc">Conexão e leitura com os guias e mentores espirituais que acompanham sua jornada de vida.</p>
+            </div>
+            <div class="cat-footer">
+              <span class="cat-who">com Camila</span>
+              <a href="https://wa.me/5527998528483?text=Olá,%20gostaria%20de%20agendar%20a%20leitura%20dos%20mentores" target="_blank" rel="noopener" class="cat-btn">Agendar</a>
+            </div>
+          </article>
+
+          <article class="cat-card" data-category="cartas camila">
+            <div class="cat-card-img teal">
+              <div class="cat-icon icon-teal-dark"></div>
+            </div>
+            <div class="cat-body">
+              <h3 class="cat-name">Mesa Mediúnica</h3>
+              <p class="cat-desc">Atendimento mediúnico com conexão espiritual profunda para orientação e clareza da alma.</p>
+            </div>
+            <div class="cat-footer">
+              <span class="cat-who">com Camila</span>
+              <a href="https://wa.me/5527998528483?text=Olá,%20gostaria%20de%20agendar%20a%20mesa%20mediúnica" target="_blank" rel="noopener" class="cat-btn">Agendar</a>
+            </div>
+          </article>
+
+          <!-- RADIESTESIA -->
+          <article class="cat-card" data-category="radiestesia camila">
+            <div class="cat-card-img amber">
+              <div class="cat-icon icon-amber"></div>
+            </div>
+            <div class="cat-body">
+              <h3 class="cat-name">Mesa Radiônica</h3>
+              <p class="cat-desc">Trabalho radiestésico para harmonização energética, limpeza e equilíbrio dos campos sutis.</p>
+            </div>
+            <div class="cat-footer">
+              <span class="cat-who">com Camila</span>
+              <a href="https://wa.me/5527998528483?text=Olá,%20gostaria%20de%20agendar%20a%20mesa%20radiônica" target="_blank" rel="noopener" class="cat-btn">Agendar</a>
+            </div>
+          </article>
+
+          <article class="cat-card" data-category="radiestesia camila">
+            <div class="cat-card-img amber">
+              <div class="cat-icon icon-amber-dark"></div>
+            </div>
+            <div class="cat-body">
+              <h3 class="cat-name">Registros Akáshicos</h3>
+              <p class="cat-desc">Acesso aos registros da alma para compreender padrões, missão de vida e bloqueios energéticos profundos.</p>
+            </div>
+            <div class="cat-footer">
+              <span class="cat-who">com Camila</span>
+              <a href="https://wa.me/5527998528483?text=Olá,%20gostaria%20de%20agendar%20os%20registros%20akashicos" target="_blank" rel="noopener" class="cat-btn">Agendar</a>
+            </div>
+          </article>
+
+          <article class="cat-card" data-category="radiestesia camila">
+            <div class="cat-card-img amber">
+              <div class="cat-icon icon-teal"></div>
+            </div>
+            <div class="cat-body">
+              <h3 class="cat-name">Theta Healing</h3>
+              <p class="cat-desc">Técnica de meditação profunda para reprogramar crenças limitantes e acessar o estado teta de cura.</p>
+            </div>
+            <div class="cat-footer">
+              <span class="cat-who">com Camila</span>
+              <a href="https://wa.me/5527998528483?text=Olá,%20gostaria%20de%20agendar%20o%20theta%20healing" target="_blank" rel="noopener" class="cat-btn">Agendar</a>
+            </div>
+          </article>
+
+        </div><!-- /cat-grid -->
+      </div>
+    </section>
+
+    <!-- ============================
+         SEÇÃO CONECTAR + CONTATO
+         ============================ -->
+    <section class="conectar" id="contato">
+      <div class="container">
+
+        <div class="conectar-grid">
+
+          <!-- Coluna Instagram -->
+          <div class="col-ig fade-in-scroll">
+            <p class="eyebrow">Siga nossa jornada</p>
+            <h2 class="section-title">Onde a espiritualidade<br>encontra o cotidiano</h2>
+            <p class="col-ig-body">Partilhamos reflexões, aberturas espirituais e novidades toda semana. Acompanhe o Cocar Sagrado e deixe que a energia chegue até você.</p>
+
+            <!-- Preview simulado do Instagram (substituir por widget Elfsight/Behold) -->
+            <div class="ig-posts-grid">
+              <div class="ig-post ig-post--main">
+                <div class="ig-post-lines">
+                  <div class="ig-line ig-line--dark"></div>
+                  <div class="ig-line"></div>
+                </div>
+                <span class="ig-post-label">Último post</span>
+              </div>
+              <div class="ig-post">
+                <div class="ig-post-lines">
+                  <div class="ig-line"></div>
+                  <div class="ig-line ig-line--short"></div>
+                </div>
+                <span class="ig-post-label">Anterior</span>
+              </div>
+              <div class="ig-post">
+                <div class="ig-post-lines">
+                  <div class="ig-line"></div>
+                  <div class="ig-line ig-line--short"></div>
+                </div>
+                <span class="ig-post-label">Anterior</span>
+              </div>
+            </div>
+
+            <div class="ig-footer">
+              <span class="ig-handle">@cocarsagrado</span>
+              <a href="https://www.instagram.com/cocarsagrado" target="_blank" rel="noopener" class="btn-outline-small">Seguir no Instagram</a>
+            </div>
+          </div>
+
+          <!-- Coluna Contato -->
+          <div class="col-contact fade-in-scroll">
+            <p class="eyebrow eyebrow--muted">Fale com a gente</p>
+            <h2 class="section-title">Sua jornada tem<br>um próximo passo</h2>
+            <p class="col-contact-intro">Cada pessoa que chega até nós traz uma história única. Estamos aqui para ouvir, orientar e acolher — sem pressa e sem julgamento.</p>
+
+            <div class="person-cards">
+
+              <div class="person-card">
+                <div class="person-avatar avatar-c">C</div>
+                <div class="person-info">
+                  <span class="person-name">Camila</span>
+                  <span class="person-services">Mesa Cigana · Registros Akáshicos · Theta Healing · Águas de Oxum · e mais</span>
+                  <a href="https://wa.me/5527998528483" target="_blank" rel="noopener" class="person-wa">WhatsApp (27) 99852-8483</a>
+                </div>
+              </div>
+
+              <div class="person-card">
+                <div class="person-avatar avatar-m">M</div>
+                <div class="person-info">
+                  <span class="person-name">Matheus</span>
+                  <span class="person-services">Búzios · Confirmação de Orixás · Cabala de Odu · Mesa Mediúnica · e mais</span>
+                  <a href="https://wa.me/5528999476620" target="_blank" rel="noopener" class="person-wa">WhatsApp (28) 99947-6620</a>
+                </div>
+              </div>
+
+            </div>
+
+            <div class="contact-extras">
+              <div class="contact-email-row">
+                <span class="contact-label">E-mail geral</span>
+                <a href="mailto:cocarsagrado@gmail.com" class="contact-val">cocarsagrado@gmail.com</a>
+              </div>
+              <div class="contact-social-row">
+                <a href="https://www.instagram.com/cocarsagrado" target="_blank" rel="noopener" class="social-pill">Instagram</a>
+                <a href="https://www.tiktok.com/@cocarsagrado" target="_blank" rel="noopener" class="social-pill">TikTok</a>
+              </div>
+            </div>
+
+            <a href="https://wa.me/5527998528483" target="_blank" rel="noopener" class="btn-fill btn-fill--block">Agendar meu atendimento</a>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================
+         SEÇÃO DEPOIMENTOS
+         ============================ -->
+    <section class="depoimentos" id="depoimentos">
+      <div class="container">
+        <div class="depos-header fade-in-scroll">
+          <div>
+            <p class="eyebrow">Depoimentos</p>
+            <h2 class="section-title">O que dizem quem<br>já passou por aqui</h2>
+          </div>
+          <p class="depos-count">+5 anos · centenas de consulentes</p>
+        </div>
+
+        <div class="depos-grid">
+
+          <article class="depo-card fade-in-scroll">
+            <div class="depo-stars">
+              <span class="star">&#9733;</span><span class="star">&#9733;</span><span class="star">&#9733;</span><span class="star">&#9733;</span><span class="star">&#9733;</span>
+            </div>
+            <p class="depo-text">"O atendimento foi transformador. Saí com uma clareza e uma leveza que não sentia há muito tempo. A Camila tem uma escuta rara e muito especial."</p>
+            <div class="depo-author">
+              <span class="depo-name">Ana C.</span>
+              <span class="depo-service">Búzios Completo</span>
+            </div>
+          </article>
+
+          <article class="depo-card fade-in-scroll">
+            <div class="depo-stars">
+              <span class="star">&#9733;</span><span class="star">&#9733;</span><span class="star">&#9733;</span><span class="star">&#9733;</span><span class="star">&#9733;</span>
+            </div>
+            <p class="depo-text">"A mesa cigana foi precisa e muito acolhedora. Saí com orientações que realmente me ajudaram a tomar decisões importantes. Recomendo de coração."</p>
+            <div class="depo-author">
+              <span class="depo-name">Rafael M.</span>
+              <span class="depo-service">Mesa Cigana Completa</span>
+            </div>
+          </article>
+
+          <article class="depo-card fade-in-scroll">
+            <div class="depo-stars">
+              <span class="star">&#9733;</span><span class="star">&#9733;</span><span class="star">&#9733;</span><span class="star">&#9733;</span><span class="star">&#9733;</span>
+            </div>
+            <p class="depo-text">"Fui com o coração pesado e saí com a certeza de que estava no caminho certo. O Matheus tem uma técnica impecável e uma presença muito tranquilizadora."</p>
+            <div class="depo-author">
+              <span class="depo-name">Julia S.</span>
+              <span class="depo-service">Registros Akáshicos</span>
+            </div>
+          </article>
+
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================
+         BARRA CTA FINAL
+         ============================ -->
+    <section class="cta-bar">
+      <div class="container cta-bar-inner">
+        <div class="cta-bar-text">
+          <p class="cta-bar-title">Pronto para dar o próximo passo?</p>
+          <p class="cta-bar-sub">Escolha o atendimento que ressoa com você e agende pelo WhatsApp.</p>
+        </div>
+        <div class="cta-bar-btns">
+          <a href="#catalogo" class="btn-outline-cta">Ver catálogo</a>
+          <a href="https://wa.me/5527998528483" target="_blank" rel="noopener" class="btn-fill">Agendar agora</a>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ============================
+       RODAPÉ
+       ============================ -->
+  <footer class="footer">
+    <div class="container footer-inner">
+      <span class="footer-brand">© 2026 Cocar Sagrado — Camila &amp; Matheus</span>
+      <div class="footer-links">
+        <a href="https://www.instagram.com/cocarsagrado" target="_blank" rel="noopener" class="footer-link">Instagram</a>
+        <a href="https://www.tiktok.com/@cocarsagrado" target="_blank" rel="noopener" class="footer-link">TikTok</a>
+        <a href="https://wa.me/5527998528483" target="_blank" rel="noopener" class="footer-link">WhatsApp</a>
+        <a href="mailto:cocarsagrado@gmail.com" class="footer-link">E-mail</a>
+      </div>
+    </div>
+  </footer>
+
+  <script src="script.js"></script>
 </body>
 </html>
