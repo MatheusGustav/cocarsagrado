@@ -54,16 +54,18 @@ function aplicarDescontoAutomatico() {
     </div>
   `;
 
-  // Estilo inline do banner (para não depender do CSS externo)
+  // Estilo inline do banner (paleta Cocar Sagrado: verde floresta + dourado)
   banner.style.cssText = `
-    background: #3C3489;
-    color: #EEEDFE;
+    background: #013718;
+    color: #F5E8C0;
     font-size: 12px;
+    letter-spacing: 0.04em;
     text-align: center;
     padding: 10px 16px;
     position: relative;
     z-index: 200;
     font-family: 'DM Sans', sans-serif;
+    border-bottom: 1px solid rgba(201, 168, 76, 0.25);
   `;
 
   // Insere o banner antes do header
@@ -80,7 +82,7 @@ function aplicarDescontoAutomatico() {
   btnFechar.style.cssText = `
     background: none;
     border: none;
-    color: #EEEDFE;
+    color: #F5E8C0;
     cursor: pointer;
     font-size: 14px;
     margin-left: 16px;

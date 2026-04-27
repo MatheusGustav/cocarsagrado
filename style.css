@@ -1,88 +1,92 @@
 /* ============================================================
-   COCAR SAGRADO — STYLESHEET COMPLETO
-   Organizado em seções comentadas para fácil personalização
-   Tipografia: Cormorant Garamond (títulos) + DM Sans (corpo)
-   Paleta: Roxo sagrado (#26215C, #3C3489, #534AB7, #EEEDFE)
-           Teal calmante (#1D9E75, #E1F5EE)
-           Âmbar terroso (#BA7517, #FAEEDA)
+   COCAR SAGRADO — STYLESHEET
+   Identidade visual: minimalista, premium, espiritual.
+   Paleta: Verde floresta sagrado + Dourado cerimonial sobre ivory.
+   Tipografia: Cormorant Garamond (títulos serif) + DM Sans (corpo).
    ============================================================ */
 
 
-/* === RESET E GERAIS ===
-   Zera margens e padding padrão do navegador.
-   box-sizing: border-box garante que padding não "estoure" a largura. */
+/* === RESET E GERAIS === */
 *, *::before, *::after {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
 }
 
-/* === VARIÁVEIS CSS ===
-   Centralize aqui todas as cores, fontes e tamanhos.
-   Para mudar a paleta do site inteiro, basta alterar estas variáveis. */
+/* === VARIÁVEIS CSS — PALETA OFICIAL COCAR SAGRADO === */
 :root {
-  /* Cores roxo (cor principal espiritual) */
-  --roxo-900: #26215C;
-  --roxo-800: #3C3489;
-  --roxo-600: #534AB7;
-  --roxo-400: #7F77DD;
-  --roxo-200: #AFA9EC;
-  --roxo-100: #CECBF6;
-  --roxo-50:  #EEEDFE;
-  --roxo-bg:  #F7F5FF;
+  /* === PRIMÁRIAS (verde floresta) === */
+  --color-primary:          #013718;
+  --color-primary-hover:    #025522;
+  --color-primary-deep:     #022D13;
+  --color-primary-light:    #1A7A42;
+  --color-primary-whisper:  #D4EBD9;
 
-  /* Cores teal (calma, natureza) */
-  --teal-800: #085041;
-  --teal-600: #0F6E56;
-  --teal-400: #1D9E75;
-  --teal-200: #5DCAA5;
-  --teal-50:  #E1F5EE;
+  /* === DOURADO CERIMONIAL === */
+  --color-gold:             #C9A84C;
+  --color-gold-deep:        #B8902A;
+  --color-gold-shadow:      #7A5618;
+  --color-gold-light:       #E2C97E;
+  --color-gold-mist:        #F5E8C0;
 
-  /* Cores âmbar (terra, sabedoria) */
-  --amber-800: #633806;
-  --amber-600: #854F0B;
-  --amber-400: #BA7517;
-  --amber-200: #EF9F27;
-  --amber-50:  #FAEEDA;
+  /* === FUNDOS === */
+  --color-bg-page:          #F5F0E8;
+  --color-bg-section-alt:   #EDE7DC;
+  --color-bg-card:          #FFFFFF;
+  --color-bg-dark:          #013718;
+  --color-bg-dark-deep:     #022D13;
 
-  /* Cinzas neutros */
-  --cinza-900: #1a1a1a;
-  --cinza-700: #3a3a3a;
-  --cinza-500: #6b6b6b;
-  --cinza-300: #c5c5c5;
-  --cinza-100: #f5f5f5;
+  /* === TEXTO === */
+  --color-text-primary:     #1A1410;
+  --color-text-body:        #4A4238;
+  --color-text-muted:       #8C8478;
+  --color-text-link:        #C9A84C;
+  --color-text-on-dark:     #F5F0E8;
 
-  /* Tipografia */
-  --fonte-titulo: 'Cormorant Garamond', Georgia, serif;
-  --fonte-corpo:  'DM Sans', system-ui, sans-serif;
+  /* === NEUTROS === */
+  --color-neutral-white:    #FFFFFF;
+  --color-neutral-ivory:    #F5F0E8;
+  --color-neutral-sand:     #EDE7DC;
+  --color-neutral-stone:    #C8C0B4;
+  --color-neutral-driftwood:#8C8478;
 
-  /* Espaçamentos e raios */
-  --raio-sm:  6px;
-  --raio-md:  10px;
-  --raio-lg:  16px;
-  --raio-xl:  24px;
-  --borda:    0.5px solid rgba(83, 74, 183, 0.18);
+  /* === ESTADOS === */
+  --color-hover-gold:       #B8902A;
+  --color-hover-green:      #025522;
+  --color-focus-ring:       #E2C97E;
+  --color-success:          #1A6B3C;
+  --color-error:            #8B3A1E;
 
-  /* Animação padrão */
+  /* === TIPOGRAFIA === */
+  --fonte-titulo: 'Cormorant Garamond', Georgia, 'Times New Roman', serif;
+  --fonte-corpo:  'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+
+  /* === RAIOS E BORDAS === */
+  --raio-sm:  4px;
+  --raio-md:  6px;
+  --raio-lg:  8px;
+  --raio-xl:  16px;
+  --borda-sutil: 1px solid var(--color-neutral-stone);
+  --borda-dourada-translucida: 1px solid rgba(201, 168, 76, 0.2);
+
+  /* === ANIMAÇÃO PADRÃO === */
   --transicao: 0.2s ease;
 }
 
 /* === BASE DO DOCUMENTO === */
 html {
-  scroll-behavior: smooth; /* Scroll suave ao clicar em âncoras de navegação */
+  scroll-behavior: smooth;
 }
 
 body {
   font-family: var(--fonte-corpo);
   font-size: 16px;
-  line-height: 1.6;
-  color: var(--cinza-900);
-  background-color: #fff;
-  -webkit-font-smoothing: antialiased; /* Melhora renderização de texto em telas retina */
+  line-height: 1.7;
+  color: var(--color-text-body);
+  background-color: var(--color-bg-page);
+  -webkit-font-smoothing: antialiased;
 }
 
-/* === CONTAINER ===
-   Largura máxima centralizada com padding lateral para mobile */
 .container {
   max-width: 1100px;
   margin: 0 auto;
@@ -99,6 +103,24 @@ a {
   color: inherit;
 }
 
+/* === FOCUS RING ACESSÍVEL ===
+   Aplica anel de foco dourado em qualquer elemento interativo focado por teclado. */
+a:focus-visible,
+button:focus-visible,
+.btn-fill:focus-visible,
+.btn-outline:focus-visible,
+.btn-outline-small:focus-visible,
+.btn-outline-cta:focus-visible,
+.btn-nav:focus-visible,
+.cat-btn:focus-visible,
+.cat-filter:focus-visible,
+.social-pill:focus-visible,
+.nav-link:focus-visible {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: 2px;
+  border-radius: var(--raio-md);
+}
+
 
 /* ============================================================
    COMPONENTES REUTILIZÁVEIS
@@ -109,30 +131,31 @@ a {
   font-family: var(--fonte-corpo);
   font-size: 10px;
   font-weight: 500;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: var(--roxo-600);
+  color: var(--color-gold-deep);
   margin-bottom: 0.5rem;
   display: block;
 }
 
 .eyebrow--muted {
-  color: var(--cinza-500);
+  color: var(--color-text-muted);
 }
 
 /* === TÍTULOS DE SEÇÃO === */
 .section-title {
   font-family: var(--fonte-titulo);
-  font-size: clamp(26px, 4vw, 36px); /* Responsivo: menor em mobile, maior em desktop */
+  font-size: clamp(28px, 4vw, 38px);
   font-weight: 500;
-  color: var(--cinza-900);
+  color: var(--color-text-primary);
+  letter-spacing: 0.02em;
   line-height: 1.2;
   margin-bottom: 1rem;
 }
 
 .section-sub {
   font-size: 14px;
-  color: var(--cinza-500);
+  color: var(--color-text-muted);
   line-height: 1.75;
   max-width: 560px;
 }
@@ -147,32 +170,32 @@ a {
 }
 
 /* === BOTÕES ===
-   btn-fill: botão sólido roxo — ação principal
-   btn-outline: botão com borda — ação secundária */
+   btn-fill: ação principal (verde floresta).
+   btn-outline: ação secundária com borda. */
 .btn-fill {
   display: inline-block;
-  padding: 12px 24px;
+  padding: 12px 26px;
   font-family: var(--fonte-corpo);
   font-size: 13px;
-  font-weight: 500;
-  background: var(--roxo-800);
-  color: var(--roxo-50);
-  border: none;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  background: var(--color-primary);
+  color: var(--color-text-on-dark);
+  border: 1px solid var(--color-primary);
   border-radius: var(--raio-md);
   cursor: pointer;
-  transition: background var(--transicao), transform var(--transicao);
+  transition: background var(--transicao), border-color var(--transicao), transform 0.1s ease;
 }
 
 .btn-fill:hover {
-  background: var(--roxo-900);
-  transform: translateY(-1px); /* Leve flutuação ao hover */
+  background: var(--color-primary-hover);
+  border-color: var(--color-primary-hover);
 }
 
 .btn-fill:active {
-  transform: translateY(0);
+  transform: scale(0.97);
 }
 
-/* Variante de largura total para contexto de contato */
 .btn-fill--block {
   display: block;
   width: 100%;
@@ -182,98 +205,106 @@ a {
 
 .btn-outline {
   display: inline-block;
-  padding: 12px 22px;
+  padding: 11px 24px;
   font-family: var(--fonte-corpo);
   font-size: 13px;
-  font-weight: 400;
-  color: var(--roxo-800);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--color-primary);
   background: transparent;
-  border: 0.5px solid var(--roxo-600);
+  border: 1px solid var(--color-primary);
+  border-radius: var(--raio-md);
+  cursor: pointer;
+  transition: background var(--transicao), color var(--transicao), border-color var(--transicao);
+}
+
+.btn-outline:hover {
+  background: var(--color-primary);
+  color: var(--color-text-on-dark);
+}
+
+.btn-outline-small {
+  display: inline-block;
+  padding: 8px 18px;
+  font-family: var(--fonte-corpo);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--color-primary);
+  background: transparent;
+  border: 1px solid var(--color-gold);
   border-radius: var(--raio-md);
   cursor: pointer;
   transition: background var(--transicao), color var(--transicao);
 }
 
-.btn-outline:hover {
-  background: var(--roxo-50);
-}
-
-.btn-outline-small {
-  display: inline-block;
-  padding: 8px 16px;
-  font-size: 11px;
-  color: var(--roxo-800);
-  background: transparent;
-  border: 0.5px solid var(--roxo-200);
-  border-radius: 20px;
-  cursor: pointer;
-  transition: background var(--transicao);
-}
-
 .btn-outline-small:hover {
-  background: var(--roxo-50);
+  background: var(--color-gold);
+  color: var(--color-primary-deep);
 }
 
 .btn-outline-cta {
   display: inline-block;
-  padding: 11px 22px;
+  padding: 11px 24px;
+  font-family: var(--fonte-corpo);
   font-size: 13px;
-  color: var(--roxo-800);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--color-primary);
   background: transparent;
-  border: 0.5px solid var(--roxo-200);
+  border: 1px solid var(--color-primary);
   border-radius: var(--raio-md);
-  transition: background var(--transicao);
+  transition: background var(--transicao), color var(--transicao);
 }
 
 .btn-outline-cta:hover {
-  background: rgba(238, 237, 254, 0.5);
+  background: var(--color-primary);
+  color: var(--color-text-on-dark);
 }
 
 /* === ÍCONES DE CATEGORIAS DO CATÁLOGO ===
-   Bolinhas coloridas que representam cada tipo de serviço */
+   Bolinhas decorativas dentro do header de cada card.
+   Variações sutis em verde + dourado para diferenciar categorias
+   (sem qualquer associação a pessoas individuais). */
 .cat-icon {
   width: 36px;
   height: 36px;
   border-radius: 50%;
+  border: 1px solid rgba(0, 0, 0, 0.05);
 }
 
-.icon-purple      { background: var(--roxo-600); }
-.icon-purple-dark { background: var(--roxo-800); }
-.icon-purple-mid  { background: var(--roxo-400); }
-.icon-teal        { background: var(--teal-400); }
-.icon-teal-dark   { background: var(--teal-600); }
-.icon-amber       { background: var(--amber-400); }
-.icon-amber-dark  { background: var(--amber-600); }
+.icon-purple      { background: var(--color-primary); }
+.icon-purple-dark { background: var(--color-primary-deep); }
+.icon-purple-mid  { background: var(--color-primary-light); }
+.icon-teal        { background: var(--color-gold); }
+.icon-teal-dark   { background: var(--color-gold-deep); }
+.icon-amber       { background: var(--color-gold-light); }
+.icon-amber-dark  { background: var(--color-gold-shadow); }
 
 
 /* ============================================================
    OVERLAY DE PRIMEIRA VISITA
-   Aparece centralizado com backdrop escurecido.
-   Controlado pelo JavaScript via classe .overlay--hidden
    ============================================================ */
 .overlay-backdrop {
-  position: fixed; /* Cobre toda a tela independente do scroll */
+  position: fixed;
   inset: 0;
-  background: rgba(38, 33, 92, 0.5); /* Roxo sagrado semi-transparente */
+  background: rgba(2, 45, 19, 0.55); /* verde escuro semi-transparente */
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 1000;
-  /* Animação de entrada suave */
   animation: fadeInOverlay 0.4s ease;
 }
 
-/* Estado oculto: JS adiciona esta classe para esconder o overlay */
 .overlay-backdrop.overlay--hidden {
   display: none;
 }
 
-/* Backdrop com blur na página de fundo (efeito desfoque) */
 body.overlay-active .header,
 body.overlay-active main,
 body.overlay-active .footer {
   filter: blur(4px);
-  pointer-events: none; /* Impede cliques enquanto overlay está aberto */
+  pointer-events: none;
   transition: filter 0.3s ease;
 }
 
@@ -282,16 +313,15 @@ body.overlay-active .footer {
   to   { opacity: 1; }
 }
 
-/* Card central do overlay */
 .overlay-card {
-  background: #fff;
-  border: 0.5px solid var(--roxo-200);
+  background: var(--color-bg-card);
+  border: 1px solid var(--color-gold-light);
   border-radius: var(--raio-xl);
   width: 90%;
   max-width: 380px;
   overflow: hidden;
   position: relative;
-  /* Animação de entrada do card (sobe levemente) */
+  box-shadow: 0 12px 40px rgba(1, 55, 24, 0.18);
   animation: slideUpCard 0.4s ease;
 }
 
@@ -300,13 +330,12 @@ body.overlay-active .footer {
   to   { opacity: 1; transform: translateY(0); }
 }
 
-/* Botão X para fechar o overlay */
 .overlay-close {
   position: absolute;
   top: 14px;
   right: 16px;
   font-size: 14px;
-  color: var(--roxo-200);
+  color: var(--color-text-muted);
   background: none;
   border: none;
   cursor: pointer;
@@ -316,28 +345,27 @@ body.overlay-active .footer {
 }
 
 .overlay-close:hover {
-  color: var(--roxo-600);
+  color: var(--color-primary);
 }
 
-/* Área superior colorida do overlay */
+/* Topo do overlay — verde floresta com toque dourado */
 .overlay-top {
-  background: var(--roxo-bg);
+  background: var(--color-bg-dark);
   padding: 2.5rem 2rem 2rem;
   text-align: center;
-  border-bottom: 0.5px solid var(--roxo-100);
+  border-bottom: var(--borda-dourada-translucida);
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 12px;
 }
 
-/* Ornamento circular decorativo */
 .overlay-ornament {
   width: 48px;
   height: 48px;
   border-radius: 50%;
-  background: var(--roxo-50);
-  border: 0.5px solid var(--roxo-200);
+  background: rgba(245, 232, 192, 0.08);
+  border: 1px solid var(--color-gold-light);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -347,14 +375,14 @@ body.overlay-active .footer {
   width: 22px;
   height: 22px;
   border-radius: 50%;
-  background: var(--roxo-600);
+  background: var(--color-gold);
 }
 
 .overlay-eyebrow {
   font-size: 10px;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: var(--roxo-600);
+  color: var(--color-gold-light);
   font-weight: 500;
 }
 
@@ -362,11 +390,11 @@ body.overlay-active .footer {
   font-family: var(--fonte-titulo);
   font-size: 28px;
   font-weight: 500;
-  color: var(--roxo-900);
+  color: var(--color-text-on-dark);
+  letter-spacing: 0.02em;
   line-height: 1.25;
 }
 
-/* Corpo do overlay */
 .overlay-body {
   padding: 1.5rem 2rem;
   display: flex;
@@ -376,26 +404,25 @@ body.overlay-active .footer {
 
 .overlay-text {
   font-size: 13px;
-  color: var(--cinza-500);
+  color: var(--color-text-body);
   line-height: 1.8;
   text-align: center;
 }
 
 .overlay-divider {
-  height: 0.5px;
-  background: rgba(83, 74, 183, 0.15);
+  height: 1px;
+  background: var(--color-neutral-stone);
 }
 
 .overlay-quote {
   font-family: var(--fonte-titulo);
-  font-size: 14px;
+  font-size: 15px;
   font-style: italic;
-  color: var(--roxo-600);
+  color: var(--color-primary);
   text-align: center;
   line-height: 1.7;
 }
 
-/* Botões do overlay */
 .overlay-actions {
   display: flex;
   flex-direction: column;
@@ -409,44 +436,43 @@ body.overlay-active .footer {
   padding: 10px;
   font-size: 12px;
   font-family: var(--fonte-corpo);
-  color: var(--cinza-500);
+  color: var(--color-text-muted);
   background: transparent;
-  border: 0.5px solid var(--cinza-300);
+  border: 1px solid var(--color-neutral-stone);
   border-radius: var(--raio-md);
   cursor: pointer;
-  transition: background var(--transicao);
+  transition: background var(--transicao), color var(--transicao);
   text-align: center;
 }
 
 .btn-ghost-overlay:hover {
-  background: var(--cinza-100);
+  background: var(--color-bg-section-alt);
+  color: var(--color-text-body);
 }
 
 
 /* ============================================================
    HEADER / NAVEGAÇÃO
-   position: sticky faz o header "grudar" no topo ao rolar
+   Fundo verde floresta com sticky e borda dourada translúcida.
    ============================================================ */
 .header {
   position: sticky;
   top: 0;
   z-index: 100;
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(8px); /* Efeito vidro fosco ao rolar sobre conteúdo */
-  border-bottom: var(--borda);
+  background: var(--color-bg-dark);
+  border-bottom: var(--borda-dourada-translucida);
   transition: box-shadow var(--transicao);
 }
 
-/* Classe adicionada via JS ao rolar a página (add shadow on scroll) */
 .header.scrolled {
-  box-shadow: 0 1px 20px rgba(38, 33, 92, 0.06);
+  box-shadow: 0 1px 20px rgba(2, 45, 19, 0.25);
 }
 
 .header-inner {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  height: 64px;
+  height: 68px;
   gap: 2rem;
 }
 
@@ -454,23 +480,24 @@ body.overlay-active .footer {
 .brand {
   display: flex;
   flex-direction: column;
-  gap: 1px;
+  gap: 2px;
   flex-shrink: 0;
 }
 
 .brand-logo {
   font-family: var(--fonte-titulo);
-  font-size: 18px;
-  font-weight: 500;
-  color: var(--roxo-900);
-  letter-spacing: 0.02em;
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--color-text-on-dark);
+  letter-spacing: 0.04em;
   line-height: 1;
 }
 
 .brand-sub {
   font-size: 10px;
-  color: var(--roxo-600);
-  letter-spacing: 0.06em;
+  font-weight: 400;
+  color: var(--color-gold-light);
+  letter-spacing: 0.08em;
 }
 
 /* Links de navegação */
@@ -482,49 +509,60 @@ body.overlay-active .footer {
 
 .nav-link {
   font-size: 13px;
-  color: var(--cinza-500);
-  transition: color var(--transicao);
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  color: var(--color-text-on-dark);
+  opacity: 0.85;
+  transition: color var(--transicao), opacity var(--transicao);
   position: relative;
 }
 
 .nav-link::after {
   content: '';
   position: absolute;
-  bottom: -3px;
+  bottom: -4px;
   left: 0;
   width: 0;
   height: 1px;
-  background: var(--roxo-600);
+  background: var(--color-gold);
   transition: width var(--transicao);
 }
 
 .nav-link:hover {
-  color: var(--roxo-800);
+  color: var(--color-gold);
+  opacity: 1;
 }
 
 .nav-link:hover::after {
   width: 100%;
 }
 
-/* CTA do header */
+/* CTA do header — botão dourado */
 .btn-nav {
   display: inline-block;
-  padding: 8px 16px;
+  padding: 9px 18px;
+  font-family: var(--fonte-corpo);
   font-size: 12px;
-  font-weight: 500;
-  color: var(--roxo-800);
-  background: var(--roxo-50);
-  border: 0.5px solid var(--roxo-200);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--color-primary-deep);
+  background: var(--color-gold);
+  border: 1px solid var(--color-gold);
   border-radius: var(--raio-md);
-  transition: background var(--transicao);
+  transition: background var(--transicao), border-color var(--transicao), transform 0.1s ease;
   flex-shrink: 0;
 }
 
 .btn-nav:hover {
-  background: var(--roxo-100);
+  background: var(--color-gold-deep);
+  border-color: var(--color-gold-deep);
 }
 
-/* Botão hambúrguer — visível apenas em mobile */
+.btn-nav:active {
+  transform: scale(0.97);
+}
+
+/* Hambúrguer (mobile) */
 .hamburger {
   display: none;
   flex-direction: column;
@@ -539,12 +577,11 @@ body.overlay-active .footer {
   display: block;
   width: 22px;
   height: 1.5px;
-  background: var(--roxo-800);
+  background: var(--color-text-on-dark);
   border-radius: 2px;
   transition: transform var(--transicao), opacity var(--transicao);
 }
 
-/* Animação do hambúrguer ao abrir menu (X) */
 .hamburger.open span:nth-child(1) { transform: translateY(6.5px) rotate(45deg); }
 .hamburger.open span:nth-child(2) { opacity: 0; }
 .hamburger.open span:nth-child(3) { transform: translateY(-6.5px) rotate(-45deg); }
@@ -552,58 +589,61 @@ body.overlay-active .footer {
 
 /* ============================================================
    SEÇÃO HERO
-   Layout de duas colunas: texto à esquerda, pills à direita
+   Fundo ivory cremoso, com tipografia serif elegante.
    ============================================================ */
 .hero {
-  background: var(--roxo-bg);
-  border-bottom: var(--borda);
+  background: var(--color-bg-page);
+  border-bottom: 1px solid var(--color-neutral-stone);
   overflow: hidden;
 }
 
 .hero-inner {
   display: grid;
-  grid-template-columns: 1fr 1fr; /* Duas colunas iguais */
-  min-height: 520px;
+  grid-template-columns: 1fr 1fr;
+  min-height: 540px;
   gap: 3rem;
   align-items: center;
-  padding-top: 4rem;
-  padding-bottom: 4rem;
+  padding-top: 4.5rem;
+  padding-bottom: 4.5rem;
 }
 
-/* Coluna esquerda do hero */
 .hero-left {
   display: flex;
   flex-direction: column;
-  gap: 1.25rem;
+  gap: 1.5rem;
 }
 
 .hero-title {
   font-family: var(--fonte-titulo);
-  font-size: clamp(36px, 5vw, 56px);
+  font-size: clamp(38px, 5.5vw, 60px);
   font-weight: 500;
-  color: var(--roxo-900);
-  line-height: 1.1;
+  color: var(--color-text-primary);
+  letter-spacing: 0.01em;
+  line-height: 1.08;
 }
 
+/* Citação destaque com borda dourada à esquerda */
 .hero-quote {
   font-family: var(--fonte-titulo);
-  font-size: 14px;
+  font-size: 15px;
   font-style: italic;
-  color: var(--roxo-600);
+  color: var(--color-primary);
   line-height: 1.8;
-  border-left: 2px solid var(--roxo-200);
-  padding-left: 14px;
-  border-radius: 0; /* Sem arredondamento em bordas de um lado só */
-  max-width: 420px;
+  border-left: 4px solid var(--color-gold);
+  padding: 0.5rem 1rem 0.5rem 1.5rem;
+  background: var(--color-primary-whisper);
+  border-radius: 0 var(--raio-sm) var(--raio-sm) 0;
+  max-width: 460px;
 }
 
 .hero-btns {
   display: flex;
-  gap: 10px;
+  gap: 12px;
   flex-wrap: wrap;
+  margin-top: 0.25rem;
 }
 
-/* Coluna direita do hero */
+/* Coluna direita */
 .hero-right {
   display: flex;
   flex-direction: column;
@@ -612,11 +652,13 @@ body.overlay-active .footer {
 
 .hero-right-label {
   font-size: 11px;
-  color: var(--cinza-500);
-  letter-spacing: 0.05em;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
 }
 
-/* Pílulas de serviços */
+/* Pílulas de serviços — uniformes, sem distinção por pessoa */
 .service-pills {
   display: flex;
   flex-wrap: wrap;
@@ -625,50 +667,54 @@ body.overlay-active .footer {
 
 .pill {
   font-size: 11px;
-  padding: 6px 12px;
-  border-radius: 20px; /* Totalmente arredondado para formato pílula */
-  background: var(--roxo-50);
-  color: var(--roxo-800);
-  border: 0.5px solid var(--roxo-200);
-  transition: background var(--transicao);
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  padding: 7px 14px;
+  border-radius: 20px;
+  background: var(--color-bg-card);
+  color: var(--color-primary);
+  border: 1px solid var(--color-neutral-stone);
+  transition: background var(--transicao), border-color var(--transicao), color var(--transicao);
 }
 
 .pill:hover {
-  background: var(--roxo-100);
+  background: var(--color-primary-whisper);
+  border-color: var(--color-gold);
+  color: var(--color-primary-deep);
 }
 
-/* Placeholder da foto dos atendentes */
+/* Placeholder da foto */
 .hero-photo-placeholder {
   flex: 1;
   min-height: 140px;
-  background: #fff;
-  border: var(--borda);
+  background: var(--color-bg-card);
+  border: 1px solid var(--color-gold-light);
   border-radius: var(--raio-lg);
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   gap: 8px;
-  /* SUBSTITUIR por <img src="foto-camila-matheus.jpg" alt="Camila e Matheus"> */
 }
 
 .photo-circle {
   width: 56px;
   height: 56px;
   border-radius: 50%;
-  background: var(--roxo-200);
+  background: var(--color-gold-mist);
+  border: 1px solid var(--color-gold-light);
 }
 
 .photo-caption {
   font-size: 11px;
-  color: var(--cinza-500);
+  font-style: italic;
+  color: var(--color-text-muted);
+  letter-spacing: 0.04em;
 }
 
 
 /* ============================================================
-   ANIMAÇÕES DE ENTRADA (fade-in)
-   fade-in: ativa ao carregar a página (hero)
-   fade-in-scroll: ativa ao rolar (via JS com IntersectionObserver)
+   ANIMAÇÕES DE ENTRADA
    ============================================================ */
 .fade-in {
   opacity: 0;
@@ -677,7 +723,7 @@ body.overlay-active .footer {
 }
 
 .fade-in--delay {
-  animation-delay: 0.2s; /* Atraso para criar efeito cascata */
+  animation-delay: 0.2s;
 }
 
 .fade-in-scroll {
@@ -686,7 +732,6 @@ body.overlay-active .footer {
   transition: opacity 0.6s ease, transform 0.6s ease;
 }
 
-/* Classe adicionada pelo JS quando o elemento entra na viewport */
 .fade-in-scroll.visible {
   opacity: 1;
   transform: translateY(0);
@@ -703,7 +748,8 @@ body.overlay-active .footer {
    ============================================================ */
 .sobre {
   padding: 5rem 0;
-  border-bottom: var(--borda);
+  background: var(--color-bg-page);
+  border-bottom: 1px solid var(--color-neutral-stone);
 }
 
 .sobre-inner {
@@ -714,10 +760,11 @@ body.overlay-active .footer {
 }
 
 .sobre-body {
-  font-size: 14px;
-  color: var(--cinza-500);
-  line-height: 1.85;
+  font-size: 15px;
+  color: var(--color-text-body);
+  line-height: 1.8;
   margin-top: 0.75rem;
+  max-width: 560px;
 }
 
 /* Cards de estatísticas */
@@ -728,26 +775,34 @@ body.overlay-active .footer {
 }
 
 .stat-card {
-  background: var(--roxo-bg);
-  border: var(--borda);
+  background: var(--color-bg-card);
+  border: 1px solid var(--color-neutral-stone);
+  border-left: 3px solid var(--color-gold);
   border-radius: var(--raio-lg);
-  padding: 1.25rem 1.5rem;
+  padding: 1.4rem 1.6rem;
   display: flex;
   flex-direction: column;
   gap: 4px;
+  transition: border-color var(--transicao), box-shadow var(--transicao);
+}
+
+.stat-card:hover {
+  border-color: var(--color-gold);
+  box-shadow: 0 4px 16px rgba(1, 55, 24, 0.06);
 }
 
 .stat-num {
   font-family: var(--fonte-titulo);
-  font-size: 42px;
-  font-weight: 500;
-  color: var(--roxo-800);
+  font-size: 44px;
+  font-weight: 600;
+  color: var(--color-primary);
   line-height: 1;
 }
 
 .stat-label {
   font-size: 12px;
-  color: var(--roxo-600);
+  letter-spacing: 0.04em;
+  color: var(--color-text-muted);
 }
 
 
@@ -756,86 +811,93 @@ body.overlay-active .footer {
    ============================================================ */
 .catalogo {
   padding: 5rem 0;
-  background: #fafafa;
-  border-bottom: var(--borda);
+  background: var(--color-bg-section-alt);
+  border-bottom: 1px solid var(--color-neutral-stone);
 }
 
-/* Filtros de categoria */
+/* Filtros de categoria — tabs */
 .cat-filters {
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
-  margin-bottom: 2rem;
+  margin-bottom: 2.5rem;
   justify-content: center;
+  padding: 8px;
+  background: var(--color-bg-card);
+  border: 1px solid var(--color-neutral-stone);
+  border-radius: var(--raio-lg);
+  width: fit-content;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .cat-filter {
   font-size: 12px;
   font-family: var(--fonte-corpo);
-  padding: 7px 16px;
-  border-radius: 20px;
-  border: 0.5px solid rgba(83, 74, 183, 0.2);
-  color: var(--cinza-500);
-  background: #fff;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  padding: 8px 18px;
+  border-radius: var(--raio-md);
+  border: none;
+  color: var(--color-text-body);
+  background: transparent;
   cursor: pointer;
-  transition: all var(--transicao);
+  transition: background var(--transicao), color var(--transicao);
 }
 
 .cat-filter:hover {
-  border-color: var(--roxo-400);
-  color: var(--roxo-800);
+  background: var(--color-primary-hover);
+  color: var(--color-text-on-dark);
 }
 
-/* Filtro ativo (selecionado) */
 .cat-filter.active {
-  background: var(--roxo-800);
-  color: var(--roxo-50);
-  border-color: var(--roxo-800);
+  background: var(--color-primary);
+  color: var(--color-text-on-dark);
 }
 
-/* Grade de cards do catálogo */
+/* Grade de cards */
 .cat-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr)); /* 3 colunas responsivas */
-  gap: 16px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
 }
 
-/* Card individual de serviço */
 .cat-card {
-  background: #fff;
-  border: 0.5px solid rgba(83, 74, 183, 0.12);
+  background: var(--color-bg-card);
+  border: 1px solid var(--color-neutral-stone);
   border-radius: var(--raio-lg);
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  transition: transform var(--transicao), border-color var(--transicao);
+  transition: border-color var(--transicao), box-shadow var(--transicao), transform var(--transicao);
 }
 
 .cat-card:hover {
+  border-color: var(--color-gold);
+  box-shadow: 0 4px 16px rgba(1, 55, 24, 0.08);
   transform: translateY(-2px);
-  border-color: var(--roxo-200);
 }
 
-/* Card oculto pelo filtro JS */
 .cat-card.hidden {
   display: none;
 }
 
-/* Imagem/cor do topo do card */
+/* Topo do card — fundo decorativo (mantém variação visual entre categorias,
+   mas sem associação a pessoas) */
 .cat-card-img {
-  height: 80px;
+  height: 92px;
   display: flex;
   align-items: center;
   justify-content: center;
+  border-bottom: 1px solid var(--color-neutral-stone);
 }
 
-.cat-card-img.purple { background: var(--roxo-50); }
-.cat-card-img.teal   { background: var(--teal-50); }
-.cat-card-img.amber  { background: var(--amber-50); }
+.cat-card-img.purple { background: var(--color-primary-whisper); }
+.cat-card-img.teal   { background: var(--color-gold-mist); }
+.cat-card-img.amber  { background: var(--color-bg-section-alt); }
 
-/* Corpo do card */
 .cat-body {
-  padding: 12px 14px;
+  padding: 14px 16px;
   flex: 1;
   display: flex;
   flex-direction: column;
@@ -844,62 +906,86 @@ body.overlay-active .footer {
 
 .cat-name {
   font-family: var(--fonte-titulo);
-  font-size: 16px;
-  font-weight: 500;
-  color: var(--cinza-900);
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: var(--color-text-primary);
 }
 
 .cat-desc {
-  font-size: 11px;
-  color: var(--cinza-500);
+  font-size: 12px;
+  color: var(--color-text-body);
   line-height: 1.65;
   flex: 1;
 }
 
-/* Rodapé do card (quem atende + botão) */
 .cat-footer {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 10px 14px;
-  border-top: 0.5px solid rgba(83, 74, 183, 0.1);
+  padding: 12px 16px;
+  border-top: 1px solid var(--color-neutral-stone);
+  background: var(--color-bg-page);
 }
 
 .cat-who {
   font-size: 10px;
-  color: var(--cinza-500);
+  letter-spacing: 0.04em;
+  color: var(--color-text-muted);
   font-style: italic;
 }
 
+/* Botão Agendar — dourado cerimonial */
 .cat-btn {
-  font-size: 11px;
+  font-size: 12px;
   font-family: var(--fonte-corpo);
-  font-weight: 500;
-  padding: 6px 14px;
-  border-radius: 20px;
-  background: var(--roxo-800);
-  color: var(--roxo-50);
-  border: none;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  padding: 7px 18px;
+  border-radius: var(--raio-md);
+  background: var(--color-gold);
+  color: var(--color-primary-deep);
+  border: 1px solid var(--color-gold);
   cursor: pointer;
-  transition: background var(--transicao);
+  transition: background var(--transicao), border-color var(--transicao), transform 0.1s ease;
   display: inline-block;
 }
 
 .cat-btn:hover {
-  background: var(--roxo-900);
+  background: var(--color-gold-deep);
+  border-color: var(--color-gold-deep);
+}
+
+.cat-btn:active {
+  transform: scale(0.97);
 }
 
 
 /* ============================================================
    SEÇÃO CONECTAR (Instagram + Contato)
-   Duas colunas lado a lado
+   Fundo escuro verde — destaque do convite à conexão.
    ============================================================ */
 .conectar {
   padding: 5rem 0;
-  border-bottom: var(--borda);
+  background: var(--color-bg-dark);
+  color: var(--color-text-on-dark);
+  border-bottom: var(--borda-dourada-translucida);
 }
 
-/* Grid de duas colunas */
+/* Em fundo escuro, títulos e eyebrow viram dourados/claros */
+.conectar .section-title {
+  color: var(--color-text-on-dark);
+}
+
+.conectar .eyebrow {
+  color: var(--color-gold-light);
+}
+
+.conectar .eyebrow--muted {
+  color: var(--color-gold-light);
+  opacity: 0.7;
+}
+
 .conectar-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -913,18 +999,19 @@ body.overlay-active .footer {
   flex-direction: column;
   gap: 1.25rem;
   padding: 2rem;
-  background: var(--roxo-bg);
-  border: var(--borda);
+  background: rgba(245, 232, 192, 0.04);
+  border: 1px solid var(--color-gold-light);
   border-radius: var(--raio-xl);
 }
 
 .col-ig-body {
-  font-size: 13px;
-  color: var(--roxo-600);
+  font-size: 14px;
+  color: var(--color-text-on-dark);
+  opacity: 0.85;
   line-height: 1.8;
 }
 
-/* Preview dos posts do Instagram (substituir por widget real) */
+/* Preview dos posts */
 .ig-posts-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -933,9 +1020,9 @@ body.overlay-active .footer {
 
 .ig-post {
   aspect-ratio: 1;
-  border-radius: 10px;
-  background: var(--roxo-50);
-  border: 0.5px solid var(--roxo-100);
+  border-radius: var(--raio-md);
+  background: rgba(245, 232, 192, 0.06);
+  border: 1px solid rgba(226, 201, 126, 0.3);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -944,10 +1031,9 @@ body.overlay-active .footer {
   padding: 12px;
 }
 
-/* Post principal (destaque) */
 .ig-post--main {
-  background: var(--roxo-100);
-  border-color: var(--roxo-400);
+  background: rgba(201, 168, 76, 0.12);
+  border-color: var(--color-gold);
 }
 
 .ig-post-lines {
@@ -960,12 +1046,14 @@ body.overlay-active .footer {
 .ig-line {
   height: 5px;
   border-radius: 3px;
-  background: var(--roxo-200);
+  background: var(--color-gold-light);
   width: 70%;
+  opacity: 0.5;
 }
 
 .ig-line--dark {
-  background: var(--roxo-600);
+  background: var(--color-gold);
+  opacity: 1;
 }
 
 .ig-line--short {
@@ -974,11 +1062,12 @@ body.overlay-active .footer {
 
 .ig-post-label {
   font-size: 9px;
-  color: var(--roxo-600);
-  font-weight: 500;
+  color: var(--color-gold-light);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
 }
 
-/* Rodapé da coluna Instagram */
 .ig-footer {
   display: flex;
   align-items: center;
@@ -989,7 +1078,7 @@ body.overlay-active .footer {
 
 .ig-handle {
   font-size: 13px;
-  color: var(--roxo-800);
+  color: var(--color-gold-light);
   font-weight: 500;
   display: flex;
   align-items: center;
@@ -1002,7 +1091,7 @@ body.overlay-active .footer {
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: var(--roxo-600);
+  background: var(--color-gold);
 }
 
 /* Coluna de contato */
@@ -1013,12 +1102,13 @@ body.overlay-active .footer {
 }
 
 .col-contact-intro {
-  font-size: 13px;
-  color: var(--cinza-500);
+  font-size: 14px;
+  color: var(--color-text-on-dark);
+  opacity: 0.85;
   line-height: 1.8;
 }
 
-/* Cards de cada atendente */
+/* Cards de cada atendente — visual uniforme, sem distinção colorida por pessoa */
 .person-cards {
   display: flex;
   flex-direction: column;
@@ -1026,36 +1116,43 @@ body.overlay-active .footer {
 }
 
 .person-card {
-  background: #fafafa;
-  border: 0.5px solid rgba(83, 74, 183, 0.12);
+  background: rgba(245, 232, 192, 0.04);
+  border: 1px solid var(--color-gold-light);
   border-radius: var(--raio-lg);
-  padding: 14px 16px;
+  padding: 16px 18px;
   display: flex;
   gap: 14px;
   align-items: flex-start;
-  transition: border-color var(--transicao);
+  transition: background var(--transicao), border-color var(--transicao);
 }
 
 .person-card:hover {
-  border-color: var(--roxo-200);
+  background: rgba(201, 168, 76, 0.08);
+  border-color: var(--color-gold);
 }
 
-/* Avatar com inicial do atendente */
+/* Avatar uniforme para ambas as pessoas — sem diferenciação cromática */
 .person-avatar {
-  width: 40px;
-  height: 40px;
-  min-width: 40px;
+  width: 42px;
+  height: 42px;
+  min-width: 42px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-weight: 500;
-  font-size: 15px;
+  font-family: var(--fonte-titulo);
+  font-weight: 600;
+  font-size: 17px;
+  background: var(--color-gold);
+  color: var(--color-primary-deep);
+  border: 1px solid var(--color-gold-light);
 }
 
-/* Roxo para Camila, teal para Matheus */
-.avatar-c { background: var(--roxo-100); color: var(--roxo-900); }
-.avatar-m { background: var(--teal-50);  color: var(--teal-800); }
+.avatar-c,
+.avatar-m {
+  background: var(--color-gold);
+  color: var(--color-primary-deep);
+}
 
 .person-info {
   display: flex;
@@ -1065,59 +1162,68 @@ body.overlay-active .footer {
 }
 
 .person-name {
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--cinza-900);
+  font-family: var(--fonte-titulo);
+  font-size: 17px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--color-text-on-dark);
 }
 
 .person-services {
   font-size: 11px;
-  color: var(--cinza-500);
-  line-height: 1.5;
+  color: var(--color-text-on-dark);
+  opacity: 0.75;
+  line-height: 1.6;
 }
 
 .person-wa {
   font-size: 12px;
-  color: var(--roxo-600);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--color-gold);
   margin-top: 4px;
   transition: color var(--transicao);
 }
 
 .person-wa:hover {
-  color: var(--roxo-800);
+  color: var(--color-gold-light);
 }
 
-/* Extras de contato (e-mail, redes) */
+/* Extras de contato */
 .contact-extras {
-  border-top: 0.5px solid rgba(83, 74, 183, 0.1);
+  border-top: var(--borda-dourada-translucida);
   padding-top: 1rem;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
 }
 
 .contact-email-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 6px;
 }
 
 .contact-label {
   font-size: 12px;
-  color: var(--cinza-500);
+  letter-spacing: 0.04em;
+  color: var(--color-text-on-dark);
+  opacity: 0.7;
 }
 
 .contact-val {
-  font-size: 12px;
-  color: var(--roxo-600);
+  font-size: 13px;
+  color: var(--color-gold);
   transition: color var(--transicao);
 }
 
 .contact-val:hover {
-  color: var(--roxo-800);
+  color: var(--color-gold-light);
 }
 
-/* Pílulas de redes sociais */
+/* Pílulas de redes sociais — em fundo escuro */
 .contact-social-row {
   display: flex;
   gap: 8px;
@@ -1125,18 +1231,32 @@ body.overlay-active .footer {
 
 .social-pill {
   font-size: 11px;
-  padding: 6px 14px;
-  border-radius: 20px;
-  border: 0.5px solid rgba(83, 74, 183, 0.2);
-  color: var(--cinza-500);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  padding: 7px 16px;
+  border-radius: var(--raio-md);
+  border: 1px solid var(--color-gold-light);
+  color: var(--color-text-on-dark);
   background: transparent;
-  transition: all var(--transicao);
+  transition: background var(--transicao), color var(--transicao), border-color var(--transicao);
 }
 
 .social-pill:hover {
-  border-color: var(--roxo-400);
-  color: var(--roxo-800);
-  background: var(--roxo-50);
+  background: var(--color-gold);
+  color: var(--color-primary-deep);
+  border-color: var(--color-gold);
+}
+
+/* No fundo escuro, o btn-fill principal vira dourado para máximo contraste */
+.col-contact .btn-fill {
+  background: var(--color-gold);
+  color: var(--color-primary-deep);
+  border-color: var(--color-gold);
+}
+
+.col-contact .btn-fill:hover {
+  background: var(--color-gold-deep);
+  border-color: var(--color-gold-deep);
 }
 
 
@@ -1145,8 +1265,8 @@ body.overlay-active .footer {
    ============================================================ */
 .depoimentos {
   padding: 5rem 0;
-  background: #fafafa;
-  border-bottom: var(--borda);
+  background: var(--color-bg-page);
+  border-bottom: 1px solid var(--color-neutral-stone);
 }
 
 .depos-header {
@@ -1160,83 +1280,83 @@ body.overlay-active .footer {
 
 .depos-count {
   font-size: 12px;
-  color: var(--cinza-500);
+  letter-spacing: 0.04em;
+  color: var(--color-text-muted);
   font-style: italic;
 }
 
-/* Grade de depoimentos: 3 colunas */
 .depos-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 16px;
+  gap: 18px;
 }
 
-/* Card individual de depoimento */
 .depo-card {
-  background: #fff;
-  border: 0.5px solid rgba(83, 74, 183, 0.1);
+  background: var(--color-bg-card);
+  border: 1px solid var(--color-neutral-stone);
   border-radius: var(--raio-lg);
-  padding: 1.5rem;
+  padding: 1.75rem;
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  transition: border-color var(--transicao);
+  gap: 12px;
+  transition: border-color var(--transicao), box-shadow var(--transicao);
 }
 
 .depo-card:hover {
-  border-color: var(--roxo-200);
+  border-color: var(--color-gold);
+  box-shadow: 0 4px 16px rgba(1, 55, 24, 0.06);
 }
 
-/* Estrelas douradas */
 .depo-stars {
   display: flex;
   gap: 2px;
 }
 
 .star {
-  color: var(--amber-400);
-  font-size: 13px;
+  color: var(--color-gold);
+  font-size: 14px;
 }
 
 .depo-text {
   font-family: var(--fonte-titulo);
-  font-size: 15px;
+  font-size: 16px;
   font-style: italic;
-  color: var(--cinza-700);
+  color: var(--color-text-body);
   line-height: 1.75;
   flex: 1;
 }
 
-/* Rodapé do card de depoimento */
 .depo-author {
-  border-top: 0.5px solid rgba(83, 74, 183, 0.1);
-  padding-top: 10px;
+  border-top: 1px solid var(--color-neutral-stone);
+  padding-top: 12px;
   display: flex;
   flex-direction: column;
   gap: 3px;
 }
 
 .depo-name {
-  font-size: 12px;
-  font-weight: 500;
-  color: var(--cinza-900);
+  font-family: var(--fonte-titulo);
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--color-text-primary);
 }
 
 .depo-service {
   font-size: 11px;
-  color: var(--roxo-600);
+  letter-spacing: 0.04em;
+  color: var(--color-gold-deep);
 }
 
 
 /* ============================================================
    BARRA CTA FINAL
-   Fundo roxo claro, texto + dois botões
    ============================================================ */
 .cta-bar {
-  background: var(--roxo-50);
-  border-top: var(--borda);
-  border-bottom: var(--borda);
-  padding: 2.5rem 0;
+  background: var(--color-primary-whisper);
+  border-top: 1px solid var(--color-gold-light);
+  border-bottom: 1px solid var(--color-gold-light);
+  padding: 2.75rem 0;
 }
 
 .cta-bar-inner {
@@ -1249,31 +1369,32 @@ body.overlay-active .footer {
 
 .cta-bar-title {
   font-family: var(--fonte-titulo);
-  font-size: 22px;
+  font-size: 24px;
   font-weight: 500;
-  color: var(--roxo-900);
+  letter-spacing: 0.02em;
+  color: var(--color-primary);
 }
 
 .cta-bar-sub {
   font-size: 13px;
-  color: var(--roxo-600);
+  color: var(--color-text-body);
   margin-top: 4px;
 }
 
 .cta-bar-btns {
   display: flex;
-  gap: 10px;
+  gap: 12px;
   flex-shrink: 0;
 }
 
 
 /* ============================================================
-   RODAPÉ (FOOTER)
+   RODAPÉ
    ============================================================ */
 .footer {
-  padding: 1.5rem 0;
-  background: #fff;
-  border-top: var(--borda);
+  padding: 1.75rem 0;
+  background: var(--color-bg-dark-deep);
+  border-top: 1px solid rgba(201, 168, 76, 0.15);
 }
 
 .footer-inner {
@@ -1286,47 +1407,50 @@ body.overlay-active .footer {
 
 .footer-brand {
   font-size: 12px;
-  color: var(--cinza-500);
+  letter-spacing: 0.04em;
+  color: var(--color-text-on-dark);
+  opacity: 0.6;
 }
 
 .footer-links {
   display: flex;
-  gap: 20px;
+  gap: 22px;
 }
 
 .footer-link {
   font-size: 12px;
-  color: var(--cinza-500);
-  transition: color var(--transicao);
+  letter-spacing: 0.04em;
+  color: var(--color-text-on-dark);
+  opacity: 0.7;
+  transition: color var(--transicao), opacity var(--transicao);
 }
 
 .footer-link:hover {
-  color: var(--roxo-800);
+  color: var(--color-gold);
+  opacity: 1;
 }
 
 
 /* ============================================================
-   MENU MOBILE
-   O menu de navegação colapsa em telas pequenas
+   RESPONSIVO
    ============================================================ */
 @media (max-width: 768px) {
 
-  /* Esconde links de navegação e mostra hambúrguer */
+  /* Menu mobile colapsa em painel verde */
   .nav-links {
     display: none;
     position: absolute;
-    top: 64px;
+    top: 68px;
     left: 0;
     right: 0;
-    background: #fff;
+    background: var(--color-bg-dark);
     flex-direction: column;
     padding: 1.5rem 24px;
     gap: 20px;
-    border-bottom: var(--borda);
-    box-shadow: 0 8px 20px rgba(38, 33, 92, 0.06);
+    border-bottom: var(--borda-dourada-translucida);
+    box-shadow: 0 8px 20px rgba(2, 45, 19, 0.25);
   }
 
-  /* Classe adicionada pelo JS ao abrir o menu */
   .nav-links.open {
     display: flex;
   }
@@ -1336,10 +1460,10 @@ body.overlay-active .footer {
   }
 
   .btn-nav {
-    display: none; /* Esconde CTA do header em mobile */
+    display: none;
   }
 
-  /* Hero: empilha as colunas verticalmente */
+  /* Hero empilhado */
   .hero-inner {
     grid-template-columns: 1fr;
     padding-top: 2.5rem;
@@ -1351,7 +1475,7 @@ body.overlay-active .footer {
     min-height: 100px;
   }
 
-  /* Sobre: empilha colunas */
+  /* Sobre empilhado */
   .sobre-inner {
     grid-template-columns: 1fr;
     gap: 2rem;
@@ -1364,21 +1488,21 @@ body.overlay-active .footer {
 
   .stat-card {
     flex: 1;
-    min-width: 120px;
+    min-width: 140px;
   }
 
-  /* Catálogo: 2 colunas em tablet, 1 em mobile */
+  /* Catálogo: 2 colunas em tablet */
   .cat-grid {
     grid-template-columns: repeat(2, 1fr);
   }
 
-  /* Conectar: empilha colunas */
+  /* Conectar empilhado */
   .conectar-grid {
     grid-template-columns: 1fr;
     gap: 2rem;
   }
 
-  /* Depoimentos: 1 coluna */
+  /* Depoimentos em coluna única */
   .depos-grid {
     grid-template-columns: 1fr;
   }
@@ -1388,7 +1512,7 @@ body.overlay-active .footer {
     align-items: flex-start;
   }
 
-  /* CTA bar: empilha texto e botões */
+  /* CTA bar empilhada */
   .cta-bar-inner {
     flex-direction: column;
     text-align: center;
@@ -1399,7 +1523,7 @@ body.overlay-active .footer {
   }
 }
 
-/* Mobile pequeno: catálogo em 1 coluna */
+/* Mobile pequeno */
 @media (max-width: 480px) {
   .cat-grid {
     grid-template-columns: 1fr;
@@ -1407,9 +1531,24 @@ body.overlay-active .footer {
 
   .cat-filters {
     gap: 6px;
+    width: 100%;
+    justify-content: stretch;
+  }
+
+  .cat-filter {
+    flex: 1;
+    min-width: max-content;
   }
 
   .overlay-card {
     width: 95%;
+  }
+
+  .header-inner {
+    height: 60px;
+  }
+
+  .nav-links {
+    top: 60px;
   }
 }
