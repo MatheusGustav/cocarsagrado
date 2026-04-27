@@ -1,3 +1,4 @@
+
 /* ============================================================
    COCAR SAGRADO — STYLESHEET
    Identidade visual: minimalista, premium, espiritual.
@@ -1407,7 +1408,6 @@ body.overlay-active .footer {
   .header {
     background: linear-gradient(
       to right,
-      var(--color-bg-page) 50%,
       var(--color-bg-dark) 50%
     );
   }
@@ -1525,14 +1525,10 @@ body.overlay-active .footer {
   }
 
   /* === FOOTER dividido === */
-  .footer {
-    background: linear-gradient(
-      to right,
-      var(--color-bg-page) 50%,
-      var(--color-bg-dark-deep) 50%
-    );
-    border-top: none;
-  }
+ .footer {
+  background: var(--color-bg-dark-deep);
+  border-top: none;
+}
 
   .footer-brand {
     color: var(--color-text-primary);
@@ -1589,6 +1585,7 @@ body.overlay-active .footer {
   .hero-logo-slot {
     width: 160px;
     height: 160px;
+    border-radius: 50%;
   }
 
   .hero-medallion {
