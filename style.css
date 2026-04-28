@@ -89,13 +89,14 @@ body {
 }
 
 .container {
-  max-width: 1100px;
+  max-width: 1200px;
   margin: 0 auto;
-  padding: 0 24px;
+  padding: 0 clamp(24px, 5vw, 56px);
 }
 
 img {
   max-width: 100%;
+  height: auto;
   display: block;
 }
 
@@ -163,7 +164,7 @@ button:focus-visible,
 
 .section-header {
   text-align: center;
-  margin-bottom: 2.5rem;
+  margin-bottom: 3.5rem;
 }
 
 .section-header .section-sub {
@@ -465,7 +466,7 @@ body.overlay-active .footer {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  height: 68px;
+  height: 60px;
   gap: 2rem;
 }
 
@@ -493,11 +494,24 @@ body.overlay-active .footer {
   letter-spacing: 0.08em;
 }
 
-/* Links de navegação */
+/* Links de navegação — mobile: painel colapsável */
 .nav-links {
+  display: none;
+  position: absolute;
+  top: 60px;
+  left: 0;
+  right: 0;
+  background: var(--color-bg-dark);
+  flex-direction: column;
+  padding: 1.5rem 24px;
+  gap: 20px;
+  border-bottom: var(--borda-dourada-translucida);
+  box-shadow: 0 8px 20px rgba(2, 45, 19, 0.25);
+  z-index: 99;
+}
+
+.nav-links.open {
   display: flex;
-  gap: 28px;
-  align-items: center;
 }
 
 .nav-link {
@@ -532,7 +546,7 @@ body.overlay-active .footer {
 
 /* CTA do header — botão dourado */
 .btn-nav {
-  display: inline-block;
+  display: none;
   padding: 9px 18px;
   font-family: var(--fonte-corpo);
   font-size: 12px;
@@ -557,13 +571,17 @@ body.overlay-active .footer {
 
 /* Hambúrguer (mobile) */
 .hamburger {
-  display: none;
+  display: flex;
   flex-direction: column;
   gap: 5px;
   background: none;
   border: none;
   cursor: pointer;
-  padding: 4px;
+  padding: 0;
+  min-width: 44px;
+  min-height: 44px;
+  justify-content: center;
+  align-items: center;
 }
 
 .hamburger span {
@@ -592,12 +610,11 @@ body.overlay-active .footer {
 
 .hero-inner {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  min-height: 540px;
-  gap: 3rem;
+  grid-template-columns: 1fr;
+  gap: clamp(2rem, 5vw, 5rem);
   align-items: center;
-  padding-top: 4.5rem;
-  padding-bottom: 4.5rem;
+  padding-top: clamp(2.5rem, 7vw, 7rem);
+  padding-bottom: clamp(2.5rem, 7vw, 7rem);
 }
 
 .hero-left {
@@ -666,13 +683,12 @@ body.overlay-active .footer {
   gap: 2rem;
   align-items: center;
   justify-content: center;
-  min-height: 100%;
 }
 
 /* Slot vazio para receber a logomarca redonda — sem fundo e sem borda. */
 .hero-logo-slot {
-  width: 220px;
-  height: 220px;
+  width: 160px;
+  height: 160px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -734,15 +750,15 @@ body.overlay-active .footer {
    SEÇÃO SOBRE
    ============================================================ */
 .sobre {
-  padding: 5rem 0;
+  padding: clamp(5rem, 8vw, 7.5rem) 0;
   background: var(--color-bg-page);
   border-bottom: 1px solid var(--color-neutral-stone);
 }
 
 .sobre-inner {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 4rem;
+  grid-template-columns: 1fr;
+  gap: clamp(2rem, 6vw, 6rem);
   align-items: center;
 }
 
@@ -766,10 +782,10 @@ body.overlay-active .footer {
   border: 1px solid var(--color-neutral-stone);
   border-left: 3px solid var(--color-gold);
   border-radius: var(--raio-lg);
-  padding: 1.4rem 1.6rem;
+  padding: 1.75rem 2rem;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 6px;
   transition: border-color var(--transicao), box-shadow var(--transicao);
 }
 
@@ -797,7 +813,7 @@ body.overlay-active .footer {
    SEÇÃO CATÁLOGO
    ============================================================ */
 .catalogo {
-  padding: 5rem 0;
+  padding: clamp(5rem, 8vw, 7.5rem) 0;
   background: var(--color-bg-section-alt);
   border-bottom: 1px solid var(--color-neutral-stone);
 }
@@ -808,7 +824,7 @@ body.overlay-active .footer {
   display: flex;
   gap: 6px;
   flex-wrap: wrap;
-  margin-bottom: 2.5rem;
+  margin-bottom: 3rem;
   justify-content: center;
   padding: 6px;
   background: var(--color-bg-page);
@@ -824,7 +840,8 @@ body.overlay-active .footer {
   font-family: var(--fonte-corpo);
   font-weight: 600;
   letter-spacing: 0.04em;
-  padding: 8px 18px;
+  padding: 10px 18px;
+  min-height: 44px;
   border-radius: var(--raio-md);
   border: 1px solid transparent;
   color: var(--color-primary);
@@ -854,8 +871,8 @@ body.overlay-active .footer {
 /* Grade de cards */
 .cat-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 18px;
+  grid-template-columns: 1fr;
+  gap: 24px;
 }
 
 .cat-card {
@@ -883,7 +900,7 @@ body.overlay-active .footer {
    O fundo herda do próprio card (creme uniforme), eliminando o conflito
    de tons sobre o lado verde do layout dividido. */
 .cat-card-img {
-  padding: 18px 0 8px;
+  padding: 24px 0 10px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -891,11 +908,11 @@ body.overlay-active .footer {
 }
 
 .cat-body {
-  padding: 14px 16px;
+  padding: 20px 20px 16px;
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
 }
 
 .cat-name {
@@ -917,7 +934,7 @@ body.overlay-active .footer {
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  padding: 12px 16px;
+  padding: 14px 20px;
   border-top: 1px solid rgba(1, 55, 24, 0.12);
   background: transparent;
 }
@@ -928,7 +945,10 @@ body.overlay-active .footer {
   font-family: var(--fonte-corpo);
   font-weight: 600;
   letter-spacing: 0.04em;
-  padding: 7px 18px;
+  padding: 10px 18px;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
   border-radius: var(--raio-md);
   background: var(--color-gold);
   color: var(--color-primary-deep);
@@ -953,7 +973,7 @@ body.overlay-active .footer {
    Fundo escuro verde — destaque do convite à conexão.
    ============================================================ */
 .conectar {
-  padding: 5rem 0;
+  padding: clamp(5rem, 8vw, 7.5rem) 0;
   background: var(--color-bg-dark);
   color: var(--color-text-on-dark);
   border-bottom: var(--borda-dourada-translucida);
@@ -975,8 +995,8 @@ body.overlay-active .footer {
 
 .conectar-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 4rem;
+  grid-template-columns: 1fr;
+  gap: clamp(2rem, 6vw, 6rem);
   align-items: start;
 }
 
@@ -984,8 +1004,8 @@ body.overlay-active .footer {
 .col-ig {
   display: flex;
   flex-direction: column;
-  gap: 1.25rem;
-  padding: 2rem;
+  gap: 1.5rem;
+  padding: clamp(1.5rem, 3vw, 2.5rem);
   background: rgba(245, 232, 192, 0.04);
   border: 1px solid var(--color-gold-light);
   border-radius: var(--raio-xl);
@@ -1085,7 +1105,7 @@ body.overlay-active .footer {
 .col-contact {
   display: flex;
   flex-direction: column;
-  gap: 1.25rem;
+  gap: 1.5rem;
 }
 
 .col-contact-intro {
@@ -1251,7 +1271,7 @@ body.overlay-active .footer {
    SEÇÃO DEPOIMENTOS
    ============================================================ */
 .depoimentos {
-  padding: 5rem 0;
+  padding: clamp(5rem, 8vw, 7.5rem) 0;
   background: var(--color-bg-page);
   border-bottom: 1px solid var(--color-neutral-stone);
 }
@@ -1263,7 +1283,7 @@ body.overlay-active .footer {
   flex-direction: column;
   align-items: flex-start;
   text-align: left;
-  margin-bottom: 2.5rem;
+  margin-bottom: 3rem;
   gap: 0.5rem;
 }
 
@@ -1276,8 +1296,8 @@ body.overlay-active .footer {
 
 .depos-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 18px;
+  grid-template-columns: 1fr;
+  gap: 24px;
 }
 
 /* Cards "fantasma" — molduras douradas vazias prontas para receber imagens. */
@@ -1285,7 +1305,7 @@ body.overlay-active .footer {
   background: transparent;
   border: 1px solid rgba(226, 201, 126, 0.35);
   border-radius: var(--raio-lg);
-  padding: 1.5rem;
+  padding: 2rem;
   min-height: 300px;
   transition: border-color var(--transicao);
 }
@@ -1302,7 +1322,7 @@ body.overlay-active .footer {
   background: var(--color-primary-whisper);
   border-top: 1px solid var(--color-gold-light);
   border-bottom: 1px solid var(--color-gold-light);
-  padding: 2.75rem 0;
+  padding: clamp(3rem, 5vw, 5rem) 0;
 }
 
 .cta-bar-inner {
@@ -1311,6 +1331,8 @@ body.overlay-active .footer {
   justify-content: space-between;
   gap: 2rem;
   flex-wrap: wrap;
+  flex-direction: column;
+  text-align: center;
 }
 
 .cta-bar-title {
@@ -1331,6 +1353,7 @@ body.overlay-active .footer {
   display: flex;
   gap: 12px;
   flex-shrink: 0;
+  justify-content: center;
 }
 
 
@@ -1378,10 +1401,102 @@ body.overlay-active .footer {
 
 
 /* ============================================================
-   LAYOUT VERTICAL SPLIT — Branco (esquerda) | Verde (direita)
-   Aplica somente em desktop. Em mobile o layout volta ao normal.
+   RESPONSIVO — MOBILE FIRST
    ============================================================ */
+
+/* ===== Mobile Large / Tablet Portrait: 481px+ ===== */
+@media (min-width: 481px) {
+
+  .header-inner {
+    height: 68px;
+  }
+
+  .nav-links {
+    top: 68px;
+  }
+
+  .cat-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .depos-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* ===== Tablet / Desktop: 769px+ (Split Layout) ===== */
 @media (min-width: 769px) {
+
+  /* === Navegação desktop === */
+  .nav-links {
+    display: flex;
+    position: static;
+    flex-direction: row;
+    background: transparent;
+    padding: 0;
+    gap: 28px;
+    border-bottom: none;
+    box-shadow: none;
+    align-items: center;
+    z-index: auto;
+  }
+
+  .hamburger {
+    display: none;
+  }
+
+  .btn-nav {
+    display: inline-block;
+  }
+
+  /* === Header === */
+  .header-inner {
+    height: 68px;
+  }
+
+  /* === Grid layouts === */
+  .hero-inner {
+    grid-template-columns: 1fr 1fr;
+    min-height: 580px;
+    gap: clamp(3rem, 5vw, 5rem);
+    padding-top: clamp(4.5rem, 7vw, 7rem);
+    padding-bottom: clamp(4.5rem, 7vw, 7rem);
+  }
+
+  .hero-right {
+    min-height: 100%;
+  }
+
+  .hero-logo-slot {
+    width: 220px;
+    height: 220px;
+  }
+
+  .sobre-inner {
+    grid-template-columns: 1fr 1fr;
+    gap: clamp(3rem, 6vw, 6rem);
+  }
+
+  .cat-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .conectar-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: clamp(3rem, 6vw, 6rem);
+  }
+
+  .depos-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  /* === CTA bar === */
+  .cta-bar-inner {
+    flex-direction: row;
+    text-align: left;
+  }
+
+  /* === Split Layout — Branco (esquerda) | Verde (direita) === */
 
   /* Fundo dividido fixo na viewport */
   body {
@@ -1444,9 +1559,6 @@ body.overlay-active .footer {
     box-shadow: 0 1px 20px rgba(1, 55, 24, 0.12);
   }
 
-  /* Header em modo dividido — uma única cor dourada para todos os textos
-     garante legibilidade em ambos os lados (creme e verde escuro), sem
-     que o link "Depoimentos" seja cortado pela divisória central. */
   .brand-logo { color: var(--color-gold-deep); }
   .brand-sub  { color: var(--color-gold-deep); opacity: 0.85; }
 
@@ -1459,38 +1571,35 @@ body.overlay-active .footer {
     color: var(--color-primary-deep);
   }
 
-  /* Garante que o sublinhado do hover também use a paleta dourada padrão. */
   .header .nav-link::after {
     background: var(--color-gold-deep);
   }
 
-  /* === HERO ===
-     hero-left fica sobre branco (estilos atuais já são escuros — ok).
-     hero-right fica sobre verde — slot da logo e medalhão dourado. */
+  /* === HERO === */
+  .hero-left  { padding-right: clamp(2rem, 3.5vw, 4rem); }
+  .hero-right { padding-left:  clamp(2rem, 3.5vw, 4rem); }
 
-  /* === SOBRE ===
-     sobre-text sobre branco (ok). sobre-stats à direita: cards já são
-     brancos com texto escuro, contrastam bem sobre verde. */
+  /* === SOBRE === */
+  .sobre-text  { padding-right: clamp(2rem, 3.5vw, 4rem); }
+  .sobre-stats { padding-left:  clamp(2rem, 3.5vw, 4rem); }
 
-  /* === CATÁLOGO ===
-     section-header centralizado cruzaria a divisão — alinha à esquerda
-     dentro do lado branco. */
+  /* === CATÁLOGO === */
   .catalogo .section-header {
     text-align: left;
     max-width: 50%;
-    padding-right: 2rem;
-    margin-bottom: 2.5rem;
+    padding-right: 3rem;
+    margin-bottom: 3.5rem;
   }
   .catalogo .section-header .section-sub { margin: 0; }
 
-  /* Filtros já têm fundo branco próprio — ficam como pílula central. */
-
-  /* === CONECTAR ===
-     col-ig (esquerda) agora sobre branco: inverter tons claros para escuros.
-     col-contact (direita) continua sobre verde — mantém os estilos atuais. */
+  /* === CONECTAR === */
   .col-ig {
     background: var(--color-bg-card);
     border-color: var(--color-gold-light);
+    margin-right: clamp(1.5rem, 2.5vw, 3rem);
+  }
+  .col-contact {
+    padding-left: clamp(2rem, 3.5vw, 4rem);
   }
   .conectar .col-ig .section-title { color: var(--color-text-primary); }
   .conectar .col-ig .eyebrow       { color: var(--color-gold-deep); }
@@ -1521,16 +1630,13 @@ body.overlay-active .footer {
     border-color: var(--color-gold);
   }
 
-  /* === DEPOIMENTOS ===
-     Cabeçalho contido inteiramente no lado claro (branco) — título e
-     subtítulo nunca caem sobre o verde, o que os tornaria ilegíveis. */
+  /* === DEPOIMENTOS === */
   .depoimentos .depos-header {
     max-width: 50%;
-    padding-right: 2rem;
+    padding-right: clamp(2rem, 3.5vw, 4rem);
   }
 
-  /* === CTA BAR ===
-     texto à esquerda sobre branco; botões à direita sobre verde. */
+  /* === CTA BAR === */
   .cta-bar { border-top: none; border-bottom: none; }
 
   .cta-bar-btns .btn-outline-cta {
@@ -1553,10 +1659,10 @@ body.overlay-active .footer {
   }
 
   /* === FOOTER dividido === */
- .footer {
-  background: var(--color-bg-dark-deep);
-  border-top: none;
-}
+  .footer {
+    background: var(--color-bg-dark-deep);
+    border-top: none;
+  }
 
   .footer-brand {
     color: var(--color-text-primary);
@@ -1564,137 +1670,9 @@ body.overlay-active .footer {
   }
 }
 
-
-/* ============================================================
-   RESPONSIVO
-   ============================================================ */
-@media (max-width: 768px) {
-
-  /* Menu mobile colapsa em painel verde */
-  .nav-links {
-    display: none;
-    position: absolute;
-    top: 68px;
-    left: 0;
-    right: 0;
-    background: var(--color-bg-dark);
-    flex-direction: column;
-    padding: 1.5rem 24px;
-    gap: 20px;
-    border-bottom: var(--borda-dourada-translucida);
-    box-shadow: 0 8px 20px rgba(2, 45, 19, 0.25);
-  }
-
-  .nav-links.open {
-    display: flex;
-  }
-
-  .hamburger {
-    display: flex;
-  }
-
-  .btn-nav {
-    display: none;
-  }
-
-  /* Hero empilhado */
-  .hero-inner {
-    grid-template-columns: 1fr;
-    padding-top: 2.5rem;
-    padding-bottom: 2.5rem;
-    gap: 2rem;
-  }
-
-  /* No mobile, hero-right reduz e centraliza naturalmente */
-  .hero-right {
-    min-height: 0;
-  }
-
-  .hero-logo-slot {
-    width: 160px;
-    height: 160px;
-    border-radius: 50%;
-  }
-
-  .hero-medallion {
-    width: 140px;
-    height: 140px;
-  }
-
-  /* Sobre empilhado */
-  .sobre-inner {
-    grid-template-columns: 1fr;
-    gap: 2rem;
-  }
-
-  .sobre-stats {
-    flex-direction: row;
-    flex-wrap: wrap;
-  }
-
-  .stat-card {
-    flex: 1;
-    min-width: 140px;
-  }
-
-  /* Catálogo: 2 colunas em tablet */
-  .cat-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-
-  /* Conectar empilhado */
-  .conectar-grid {
-    grid-template-columns: 1fr;
-    gap: 2rem;
-  }
-
-  /* Depoimentos em coluna única */
-  .depos-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .depos-header {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-
-  /* CTA bar empilhada */
-  .cta-bar-inner {
-    flex-direction: column;
-    text-align: center;
-  }
-
-  .cta-bar-btns {
-    justify-content: center;
-  }
-}
-
-/* Mobile pequeno */
-@media (max-width: 480px) {
-  .cat-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .cat-filters {
-    gap: 6px;
-    width: 100%;
-    justify-content: stretch;
-  }
-
-  .cat-filter {
-    flex: 1;
-    min-width: max-content;
-  }
-
-  .overlay-card {
-    width: 95%;
-  }
-
-  .header-inner {
-    height: 60px;
-  }
-
-  .nav-links {
-    top: 60px;
+/* ===== Wide Desktop: 1441px+ ===== */
+@media (min-width: 1441px) {
+  .container {
+    max-width: 1320px;
   }
 }
