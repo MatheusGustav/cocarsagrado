@@ -1396,11 +1396,20 @@ body.overlay-active .footer {
   /* Seções transparentes — herdam o fundo do body */
   .hero,
   .sobre,
-  .catalogo,
   .conectar,
-  .depoimentos,
   .cta-bar {
     background: transparent;
+    border-bottom: none;
+  }
+
+  /* Catálogo e depoimentos: fundo sólido, sem herdar o verde do body */
+  .catalogo {
+    background: var(--color-bg-section-alt);
+    border-bottom: none;
+  }
+
+  .depoimentos {
+    background: var(--color-bg-page);
     border-bottom: none;
   }
 
