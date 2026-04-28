@@ -1393,27 +1393,32 @@ body.overlay-active .footer {
     background-attachment: fixed;
   }
 
-  /* Seções transparentes — herdam o fundo do body (cream esq, verde dir) */
-  .hero,
+  /* Conectar herda fundo do body (cream esq, verde dir) */
   .conectar {
     background: transparent;
     border-bottom: none;
   }
 
-  /* Sobre: verde na esquerda, cream na direita */
+  /* Hero herda fundo do body (cream esq, verde dir) */
+  .hero {
+    background: transparent;
+    border-bottom: none;
+  }
+
+  /* Sobre: cream na esquerda, verde na direita */
   .sobre {
     background: linear-gradient(
       to right,
-      var(--color-bg-dark) 50%,
-      var(--color-bg-page) 50%
+      var(--color-bg-page) 50%,
+      var(--color-bg-dark) 50%
     );
     border-bottom: none;
   }
 
-  /* Texto da coluna esquerda visível no fundo verde */
-  .sobre-text .eyebrow        { color: var(--color-gold-light); }
-  .sobre-text .section-title  { color: var(--color-text-on-dark); }
-  .sobre-text .sobre-body     { color: var(--color-text-on-dark); }
+  /* Texto da coluna esquerda sobre cream — cores escuras padrão */
+  .sobre-text .eyebrow        { color: var(--color-gold-deep); }
+  .sobre-text .section-title  { color: var(--color-text-primary); }
+  .sobre-text .sobre-body     { color: var(--color-text-body); }
 
   .cta-bar {
     background: var(--color-primary-whisper);
