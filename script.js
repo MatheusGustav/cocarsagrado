@@ -293,7 +293,7 @@ function inicializarFiltrosCatalogo() {
       cardsCatalogo.forEach(card => {
         const categorias = card.dataset.category || '';
 
-        if (filtroSelecionado === 'todos' || categorias.includes(filtroSelecionado)) {
+        if (filtroSelecionado === 'todos' || categorias.split(' ').includes(filtroSelecionado)) {
           card.classList.remove('hidden');
           // Pequena animação de reaparecimento
           card.style.animation = 'none';
@@ -332,7 +332,7 @@ function inicializarScrollSuave() {
       const alturaHeader = header ? header.offsetHeight : 0;
 
       const posicaoDestino = destino.getBoundingClientRect().top
-        + window.pageYOffset
+        + window.scrollY
         - alturaHeader
         - 16; // 16px de respiro extra
 
@@ -372,5 +372,4 @@ document.addEventListener('DOMContentLoaded', () => {
   // 6. Scroll suave para âncoras
   inicializarScrollSuave();
 
-  console.log('✨ Cocar Sagrado — site inicializado com sucesso.');
 });
