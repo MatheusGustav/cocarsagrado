@@ -1937,3 +1937,242 @@ body.overlay-active .footer {
     color: var(--color-primary-deep);
   }
 }
+
+
+/* ============================================================
+   ANIMAÇÕES DECORATIVAS HAND-DRAWN
+   Camada fixa, pointer-events: none — sem interferir no site.
+   ============================================================ */
+
+.deco-bg {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  overflow: hidden;
+}
+
+/* === SOL === */
+.deco-sol {
+  position: absolute;
+  top: 80px;
+  right: 40px;
+  width: 88px;
+  height: 88px;
+  opacity: 0;
+  transition: opacity 0.8s ease;
+}
+
+.deco-sol-svg {
+  width: 100%;
+  height: 100%;
+  animation: solGirar 60s linear infinite, solPulso 4s ease-in-out infinite;
+  transform-origin: center;
+}
+
+@keyframes solGirar {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+@keyframes solPulso {
+  0%, 100% { opacity: 0.55; }
+  50%       { opacity: 0.85; }
+}
+
+/* === NUVENS === */
+.deco-nuvem {
+  position: absolute;
+  opacity: 0;
+  transition: opacity 0.8s ease;
+  will-change: transform;
+}
+
+.deco-nuvem--1 {
+  top: 110px;
+  left: -180px;
+  width: 160px;
+  animation: nuvemFlutuar1 28s linear infinite;
+}
+
+.deco-nuvem--2 {
+  top: 180px;
+  left: -140px;
+  width: 130px;
+  animation: nuvemFlutuar2 38s linear infinite;
+  animation-delay: -12s;
+}
+
+.deco-nuvem--3 {
+  top: 240px;
+  left: -120px;
+  width: 100px;
+  animation: nuvemFlutuar3 22s linear infinite;
+  animation-delay: -7s;
+}
+
+@keyframes nuvemFlutuar1 {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(calc(100vw + 200px)); }
+}
+
+@keyframes nuvemFlutuar2 {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(calc(100vw + 160px)); }
+}
+
+@keyframes nuvemFlutuar3 {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(calc(100vw + 130px)); }
+}
+
+/* === ESTRELINHAS (modo claro) === */
+.deco-estrela {
+  position: absolute;
+  opacity: 0;
+  transition: opacity 0.8s ease;
+}
+
+.deco-estrela--a {
+  top: 160px;
+  right: 160px;
+  width: 20px;
+  animation: estrelaScintila 3s ease-in-out infinite;
+}
+
+.deco-estrela--b {
+  top: 300px;
+  right: 90px;
+  width: 16px;
+  animation: estrelaScintila 4.5s ease-in-out infinite;
+  animation-delay: -1.5s;
+}
+
+.deco-estrela--c {
+  top: 420px;
+  right: 200px;
+  width: 12px;
+  animation: estrelaScintila 3.8s ease-in-out infinite;
+  animation-delay: -2.2s;
+}
+
+@keyframes estrelaScintila {
+  0%, 100% { opacity: 0.3; transform: scale(0.85) rotate(0deg); }
+  50%       { opacity: 1;   transform: scale(1.15) rotate(15deg); }
+}
+
+/* === LUA (modo escuro) === */
+.deco-lua {
+  position: absolute;
+  top: 80px;
+  right: 44px;
+  width: 90px;
+  height: 90px;
+  opacity: 0;
+  transition: opacity 0.8s ease;
+  animation: luaFlutua 8s ease-in-out infinite;
+}
+
+@keyframes luaFlutua {
+  0%, 100% { transform: translateY(0px)   rotate(-2deg); }
+  50%       { transform: translateY(-8px)  rotate(2deg); }
+}
+
+/* === ESTRELAS NOITE === */
+.deco-stars-night {
+  position: absolute;
+  top: 60px;
+  left: 0;
+  right: 0;
+  width: 100%;
+  opacity: 0;
+  transition: opacity 0.8s ease;
+}
+
+.deco-stars-night svg {
+  width: 100%;
+}
+
+/* Twinkle individual por classe */
+.star-twinkle { animation: starTwinkle 3s ease-in-out infinite; }
+.s1 { animation-delay: 0s; }
+.s2 { animation-delay: 0.6s; }
+.s3 { animation-delay: 1.2s; }
+.s4 { animation-delay: 1.8s; }
+.s5 { animation-delay: 2.4s; }
+.s6 { animation-delay: 0.3s; }
+.s7 { animation-delay: 0.9s; }
+.s8 { animation-delay: 1.5s; }
+
+@keyframes starTwinkle {
+  0%, 100% { opacity: 0.2; r: attr(r); }
+  50%       { opacity: 1;   }
+}
+
+/* === ESPIRAIS === */
+.deco-espiral {
+  position: absolute;
+  opacity: 0;
+  transition: opacity 0.8s ease;
+  animation: espiralRotaciona 20s linear infinite;
+}
+
+.deco-espiral--1 {
+  bottom: 120px;
+  left: 60px;
+  width: 60px;
+}
+
+.deco-espiral--2 {
+  bottom: 200px;
+  right: 80px;
+  width: 50px;
+  animation-direction: reverse;
+  animation-duration: 25s;
+}
+
+@keyframes espiralRotaciona {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+/* === VISIBILIDADE POR TEMA === */
+
+/* Modo claro: sol, nuvens, estrelinhas, espirais visíveis */
+:root:not([data-theme="dark"]) .deco-sol        { opacity: 1; }
+:root:not([data-theme="dark"]) .deco-nuvem      { opacity: 0.75; }
+:root:not([data-theme="dark"]) .deco-estrela    { opacity: 1; }
+:root:not([data-theme="dark"]) .deco-espiral    { opacity: 0.35; }
+
+/* Modo escuro: lua, estrelas noite, espirais */
+[data-theme="dark"] .deco-lua          { opacity: 0.9; }
+[data-theme="dark"] .deco-stars-night  { opacity: 0.85; }
+[data-theme="dark"] .deco-espiral      { opacity: 0.25; }
+
+/* Espirais no escuro ficam douradas */
+[data-theme="dark"] .deco-espiral svg path {
+  stroke: #E2C97E;
+}
+
+/* Reduz animações se usuário preferir movimento reduzido */
+@media (prefers-reduced-motion: reduce) {
+  .deco-sol-svg,
+  .deco-nuvem,
+  .deco-estrela,
+  .deco-lua,
+  .deco-espiral,
+  .star-twinkle {
+    animation: none !important;
+  }
+}
+
+/* Mobile: elementos menores e reposicionados */
+@media (max-width: 768px) {
+  .deco-sol       { width: 58px; height: 58px; top: 70px; right: 18px; }
+  .deco-lua       { width: 60px; height: 60px; top: 70px; right: 18px; }
+  .deco-estrela--a { right: 90px;  top: 130px; }
+  .deco-estrela--b { right: 40px;  top: 220px; }
+  .deco-estrela--c { right: 110px; top: 320px; }
+  .deco-espiral--1 { left: 20px;   bottom: 80px; }
+  .deco-espiral--2 { right: 20px;  bottom: 140px; }
+}
