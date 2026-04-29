@@ -609,6 +609,7 @@ body.overlay-active .footer {
    Fundo ivory cremoso, com tipografia serif elegante.
    ============================================================ */
 .hero {
+  position: relative;
   background: var(--color-bg-page);
   border-bottom: 1px solid var(--color-neutral-stone);
   overflow: hidden;
@@ -628,6 +629,8 @@ body.overlay-active .footer {
 }
 
 .hero-inner {
+  position: relative;
+  z-index: 1;
   display: grid;
   grid-template-columns: 1fr;
   gap: clamp(2rem, 5vw, 5rem);
@@ -1945,7 +1948,7 @@ body.overlay-active .footer {
    ============================================================ */
 
 .deco-bg {
-  position: fixed;
+  position: absolute;
   inset: 0;
   pointer-events: none;
   z-index: 0;
@@ -2166,13 +2169,61 @@ body.overlay-active .footer {
   }
 }
 
-/* Mobile: elementos menores e reposicionados */
+/* Mobile: elementos menores, posicionados na área de conteúdo */
 @media (max-width: 768px) {
-  .deco-sol       { width: 58px; height: 58px; top: 70px; right: 18px; }
-  .deco-lua       { width: 60px; height: 60px; top: 70px; right: 18px; }
-  .deco-estrela--a { right: 90px;  top: 130px; }
-  .deco-estrela--b { right: 40px;  top: 220px; }
-  .deco-estrela--c { right: 110px; top: 320px; }
-  .deco-espiral--1 { left: 20px;   bottom: 80px; }
-  .deco-espiral--2 { right: 20px;  bottom: 140px; }
+  .deco-sol        { width: 52px; height: 52px; top: 72px; right: 18px; }
+  .deco-lua        { width: 54px; height: 54px; top: 72px; right: 18px; }
+  .deco-estrela--a { right: 60px;  top: 130px; }
+  .deco-estrela--b { right: 30px;  top: 240px; }
+  .deco-estrela--c { right: 80px;  top: 360px; }
+  .deco-espiral--1 { left: 14px;  bottom: 80px; }
+  .deco-espiral--2 { right: 14px; bottom: 150px; }
+}
+
+/* Desktop: clipa toda a camada ao lado claro (esquerdo).
+   Modo escuro: esquerdo vira preto (#0A0A0A) — mesmo clip.
+   As nuvens entram pela esquerda e somem no meio — efeito natural. */
+@media (min-width: 769px) {
+  .deco-bg {
+    clip-path: inset(0 50% 0 0);
+  }
+
+  /* Sol e Lua: canto superior direito do painel esquerdo */
+  .deco-sol {
+    top: 90px;
+    right: auto;
+    left: calc(50% - 115px);
+  }
+
+  .deco-lua {
+    top: 90px;
+    right: auto;
+    left: calc(50% - 115px);
+  }
+
+  /* Estrelas: espalhadas pelo painel esquerdo */
+  .deco-estrela--a {
+    top: 200px;
+    right: auto;
+    left: calc(50% - 180px);
+  }
+
+  .deco-estrela--b {
+    top: 370px;
+    right: auto;
+    left: calc(50% - 290px);
+  }
+
+  .deco-estrela--c {
+    top: 530px;
+    right: auto;
+    left: 80px;
+  }
+
+  /* Segunda espiral move para o painel esquerdo */
+  .deco-espiral--2 {
+    right: auto;
+    left: calc(50% - 90px);
+    bottom: 200px;
+  }
 }
