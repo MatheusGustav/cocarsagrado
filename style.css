@@ -1698,3 +1698,242 @@ body.overlay-active .footer {
     max-width: 1320px;
   }
 }
+
+
+/* ============================================================
+   TOGGLE DE TEMA (SOL / LUA)
+   ============================================================ */
+.theme-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  min-width: 36px;
+  background: transparent;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 18px;
+  line-height: 1;
+  flex-shrink: 0;
+  transition: background 0.2s ease;
+}
+
+.theme-toggle:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.theme-toggle:active {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.theme-toggle:focus {
+  outline: none;
+}
+
+.theme-toggle:focus-visible {
+  box-shadow: 0 0 0 2px var(--color-focus-ring);
+}
+
+@keyframes theme-spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+.theme-toggle.rotating {
+  animation: theme-spin 0.4s ease;
+}
+
+.theme-toggle .icon-dark { display: none; }
+.theme-toggle .icon-light { display: inline; }
+
+[data-theme="dark"] .theme-toggle .icon-dark { display: inline; }
+[data-theme="dark"] .theme-toggle .icon-light { display: none; }
+
+/* Wrapper do toggle dentro do nav — mobile: primeiro item + label */
+.nav-theme-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 5px;
+  order: -1;
+  padding-bottom: 14px;
+  border-bottom: 1px solid rgba(245, 232, 192, 0.12);
+}
+
+.nav-theme-label {
+  font-family: var(--fonte-corpo);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.5);
+  padding-left: 2px;
+  user-select: none;
+}
+
+/* Desktop: inline após "Contato", sem label */
+@media (min-width: 769px) {
+  .nav-theme-wrapper {
+    flex-direction: row;
+    align-items: center;
+    order: 0;
+    padding-bottom: 0;
+    border-bottom: none;
+    gap: 0;
+  }
+
+  .nav-theme-label {
+    display: none;
+  }
+}
+
+
+/* ============================================================
+   MODO ESCURO — [data-theme="dark"]
+   ============================================================ */
+[data-theme="dark"] {
+  /* Fundos */
+  --color-bg-page:          #0A0A0A;
+  --color-bg-section-alt:   #111111;
+  --color-bg-card:          #1A1A1A;
+  --color-bg-dark:          #0D1F12;
+  --color-bg-dark-deep:     #0D1F12;
+  --color-primary-whisper:  #013718;
+
+  /* Textos */
+  --color-text-primary:     #F5F1E8;
+  --color-text-body:        #D4D4D4;
+  --color-text-muted:       #A0A0A0;
+  --color-text-on-dark:     #F5F1E8;
+
+  /* Neutros */
+  --color-neutral-white:    #1A1A1A;
+  --color-neutral-ivory:    #0A0A0A;
+  --color-neutral-sand:     #111111;
+  --color-neutral-stone:    #2A2A2A;
+  --color-neutral-driftwood:#A0A0A0;
+
+  /* Gold mist */
+  --color-gold-mist:        #1A1500;
+
+  /* Bordas */
+  --borda-dourada-translucida: 1px solid rgba(201, 168, 76, 0.12);
+}
+
+/* Transição suave ao trocar de tema */
+.theme-switching *,
+.theme-switching *::before,
+.theme-switching *::after {
+  transition: background-color 0.3s ease, background 0.3s ease,
+              color 0.3s ease, border-color 0.3s ease,
+              box-shadow 0.3s ease !important;
+}
+
+/* Citação hero — verde → dourado para contraste em fundo escuro */
+[data-theme="dark"] .hero-quote {
+  color: var(--color-gold);
+}
+
+/* Citação do overlay */
+[data-theme="dark"] .overlay-quote {
+  color: var(--color-gold);
+}
+
+/* Números das estatísticas */
+[data-theme="dark"] .stat-num {
+  color: var(--color-gold-light);
+}
+
+/* Cards do catálogo */
+[data-theme="dark"] .cat-card {
+  border-color: #2A2A2A;
+  box-shadow: 0 0 8px rgba(201, 169, 97, 0.06);
+}
+
+[data-theme="dark"] .cat-card:hover {
+  border-color: var(--color-gold);
+  box-shadow: 0 4px 16px rgba(201, 169, 97, 0.12);
+}
+
+[data-theme="dark"] .cat-footer {
+  border-top-color: #2A2A2A;
+}
+
+/* Filtros */
+[data-theme="dark"] .cat-filters {
+  border-color: rgba(201, 168, 76, 0.2);
+}
+
+[data-theme="dark"] .cat-filter {
+  color: var(--color-text-muted);
+}
+
+[data-theme="dark"] .cat-filter:hover {
+  background: rgba(245, 240, 232, 0.06);
+  color: var(--color-text-primary);
+  border-color: rgba(245, 240, 232, 0.15);
+}
+
+[data-theme="dark"] .cat-filter.active {
+  color: var(--color-gold-light);
+}
+
+/* Botão outline em fundo escuro */
+[data-theme="dark"] .btn-outline {
+  color: var(--color-gold-light);
+  border-color: rgba(226, 201, 126, 0.5);
+}
+
+[data-theme="dark"] .btn-outline:hover {
+  background: var(--color-primary);
+  color: var(--color-gold-light);
+  border-color: var(--color-primary);
+}
+
+/* Botão ghost do overlay */
+[data-theme="dark"] .btn-ghost-overlay {
+  border-color: #333333;
+  color: var(--color-text-muted);
+}
+
+[data-theme="dark"] .btn-ghost-overlay:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--color-text-body);
+}
+
+/* Backdrop do overlay */
+[data-theme="dark"] .overlay-backdrop {
+  background: rgba(0, 0, 0, 0.8);
+}
+
+/* Glow sutil nos botões principais */
+[data-theme="dark"] .btn-fill {
+  box-shadow: 0 0 16px rgba(1, 55, 24, 0.3);
+}
+
+/* CTA bar */
+[data-theme="dark"] .cta-bar-title {
+  color: var(--color-text-primary);
+}
+
+/* Cards de depoimentos */
+[data-theme="dark"] .depo-card {
+  border-color: rgba(201, 168, 76, 0.15);
+}
+
+/* Handle e btn do Instagram no desktop (fundo claro → escuro) */
+@media (min-width: 769px) {
+  [data-theme="dark"] .col-ig .ig-handle { color: var(--color-gold); }
+
+  [data-theme="dark"] .col-ig .btn-outline-small {
+    color: var(--color-gold-light);
+    border-color: var(--color-gold);
+  }
+
+  [data-theme="dark"] .col-ig .btn-outline-small:hover {
+    background: var(--color-gold);
+    color: var(--color-primary-deep);
+  }
+}

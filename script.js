@@ -357,7 +357,38 @@ function inicializarScrollSuave() {
 
 
 /* ============================================================
-   7. INICIALIZAÇÃO GERAL
+   7. TOGGLE DE TEMA (CLARO / ESCURO)
+   ============================================================ */
+
+const CHAVE_TEMA = 'cocarsagrado-theme';
+
+function inicializarToggleTema() {
+  const btn = document.getElementById('theme-toggle');
+  if (!btn) return;
+
+  btn.addEventListener('click', () => {
+    const temaAtual = document.documentElement.getAttribute('data-theme') || 'light';
+    const novoTema = temaAtual === 'dark' ? 'light' : 'dark';
+
+    // Rotação via keyframe CSS — sem stutter ao remover
+    btn.classList.add('rotating');
+    btn.addEventListener('animationend', () => {
+      btn.classList.remove('rotating');
+      btn.blur();
+    }, { once: true });
+
+    // Transições suaves durante a troca de tema
+    document.documentElement.classList.add('theme-switching');
+    document.documentElement.setAttribute('data-theme', novoTema);
+    setTimeout(() => document.documentElement.classList.remove('theme-switching'), 350);
+
+    try { localStorage.setItem(CHAVE_TEMA, novoTema); } catch(e) {}
+  });
+}
+
+
+/* ============================================================
+   8. INICIALIZAÇÃO GERAL
    ============================================================
    DOMContentLoaded garante que o HTML está totalmente carregado
    antes de qualquer manipulação do DOM.
@@ -382,5 +413,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // 6. Scroll suave para âncoras
   inicializarScrollSuave();
+
+  // 7. Toggle de tema claro/escuro
+  inicializarToggleTema();
 
 });
