@@ -281,27 +281,38 @@ function inicializarFiltrosCatalogo() {
   const cardsCatalogo = document.querySelectorAll('.cat-card');
   if (!botoesFiltro.length || !cardsCatalogo.length) return;
 
+  let pendingTimers = [];
+
   botoesFiltro.forEach(botao => {
     botao.addEventListener('click', () => {
-      const filtroSelecionado = botao.dataset.filter;
+      const filtro = botao.dataset.filter;
 
-      // Atualiza estado ativo dos botões
+      pendingTimers.forEach(clearTimeout);
+      pendingTimers = [];
+
       botoesFiltro.forEach(b => b.classList.remove('active'));
       botao.classList.add('active');
 
-      // Mostra/esconde cards conforme o filtro
       cardsCatalogo.forEach(card => {
-        const categorias = card.dataset.category || '';
+        const cats = card.dataset.category || '';
+        const mostrar = filtro === 'todos' || cats.split(' ').includes(filtro);
+        const visivel = !card.classList.contains('hidden');
 
-        if (filtroSelecionado === 'todos' || categorias.split(' ').includes(filtroSelecionado)) {
+        card.classList.remove('entrando', 'saindo');
+
+        if (mostrar && !visivel) {
           card.classList.remove('hidden');
-          // Pequena animação de reaparecimento
-          card.style.animation = 'none';
-          requestAnimationFrame(() => {
-            card.style.animation = '';
-          });
-        } else {
-          card.classList.add('hidden');
+          void card.offsetWidth; // força reflow para a animação iniciar do zero
+          card.classList.add('entrando');
+          const t = setTimeout(() => card.classList.remove('entrando'), 350);
+          pendingTimers.push(t);
+        } else if (!mostrar && visivel) {
+          card.classList.add('saindo');
+          const t = setTimeout(() => {
+            card.classList.remove('saindo');
+            card.classList.add('hidden');
+          }, 220);
+          pendingTimers.push(t);
         }
       });
     });

@@ -268,11 +268,17 @@ button:focus-visible,
    Bolinha verde escuro com anel dourado fino — uniforme em todos os cards,
    sem diferenciar categoria ou profissional. */
 .cat-icon {
-  width: 36px;
-  height: 36px;
+  width: 44px;
+  height: 44px;
   border-radius: 50%;
   background: var(--color-primary);
   box-shadow: 0 0 0 2px var(--color-gold-light);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  line-height: 1;
+  flex-shrink: 0;
 }
 
 
@@ -907,6 +913,25 @@ body.overlay-active .footer {
 
 .cat-card.hidden {
   display: none;
+}
+
+@keyframes catalogoEntrar {
+  from { opacity: 0; transform: translateY(10px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes catalogoSair {
+  from { opacity: 1; transform: scale(1); }
+  to   { opacity: 0; transform: scale(0.97); }
+}
+
+.cat-card.entrando {
+  animation: catalogoEntrar 0.3s ease forwards;
+}
+
+.cat-card.saindo {
+  animation: catalogoSair 0.2s ease forwards;
+  pointer-events: none;
 }
 
 /* Topo do card — espaço respirado para o ícone, sem faixa de cor extra.
@@ -1559,33 +1584,17 @@ body.overlay-active .footer {
     border-bottom: none;
   }
 
-  /* === HEADER dividido === */
+  /* === HEADER === */
   .header {
-    background: linear-gradient(
-      to right,
-      var(--color-bg-page) 50%,
-      var(--color-bg-dark) 50%
-    );
+    background: var(--color-bg-dark);
   }
 
   .header.scrolled {
     box-shadow: 0 1px 20px rgba(1, 55, 24, 0.12);
   }
 
-  .brand-logo { color: var(--color-gold-deep); }
-  .brand-sub  { color: var(--color-gold-deep); opacity: 0.85; }
-
-  .header .nav-link {
-    color: var(--color-gold-deep);
-    opacity: 1;
-  }
-
   .header .nav-link:hover {
-    color: var(--color-primary-deep);
-  }
-
-  .header .nav-link::after {
-    background: var(--color-gold-deep);
+    color: var(--color-gold-light);
   }
 
   /* === HERO === */
@@ -1678,7 +1687,7 @@ body.overlay-active .footer {
   }
 
   .footer-brand {
-    color: var(--color-text-primary);
+    color: var(--color-text-on-dark);
     opacity: 0.85;
   }
 }
