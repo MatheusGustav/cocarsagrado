@@ -388,7 +388,33 @@ function inicializarToggleTema() {
 
 
 /* ============================================================
-   8. INICIALIZAÇÃO GERAL
+   8. ANIMAÇÕES DECORATIVAS HAND-DRAWN
+   ============================================================
+   As animações CSS já controlam visibilidade via :root e
+   [data-theme="dark"]. Esta função garante que ao trocar o
+   tema as nuvens reiniciem a posição para não aparecer no meio.
+   ============================================================ */
+
+function inicializarDecoracoes() {
+  const nuvens = document.querySelectorAll('.deco-nuvem');
+  if (!nuvens.length) return;
+
+  // Reinicia animação das nuvens ao trocar tema (evita posição estranha)
+  const btn = document.getElementById('theme-toggle');
+  if (btn) {
+    btn.addEventListener('click', () => {
+      nuvens.forEach(n => {
+        n.style.animation = 'none';
+        void n.offsetWidth;
+        n.style.animation = '';
+      });
+    });
+  }
+}
+
+
+/* ============================================================
+   9. INICIALIZAÇÃO GERAL
    ============================================================
    DOMContentLoaded garante que o HTML está totalmente carregado
    antes de qualquer manipulação do DOM.
@@ -416,5 +442,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // 7. Toggle de tema claro/escuro
   inicializarToggleTema();
+
+  // 8. Decorações hand-drawn
+  inicializarDecoracoes();
 
 });
