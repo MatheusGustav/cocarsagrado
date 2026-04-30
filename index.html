@@ -456,29 +456,9 @@
             <h2 class="section-title">Onde a espiritualidade<br>encontra o cotidiano</h2>
             <p class="col-ig-body">Partilhamos reflexões, aberturas espirituais e novidades toda semana. Acompanhe o Cocar Sagrado e deixe que a energia chegue até você.</p>
 
-            <!-- Preview simulado do Instagram (substituir por widget Elfsight/Behold) -->
-            <div class="ig-posts-grid">
-              <div class="ig-post ig-post--main">
-                <div class="ig-post-lines">
-                  <div class="ig-line ig-line--dark"></div>
-                  <div class="ig-line"></div>
-                </div>
-                <span class="ig-post-label">Último post</span>
-              </div>
-              <div class="ig-post">
-                <div class="ig-post-lines">
-                  <div class="ig-line"></div>
-                  <div class="ig-line ig-line--short"></div>
-                </div>
-                <span class="ig-post-label">Anterior</span>
-              </div>
-              <div class="ig-post">
-                <div class="ig-post-lines">
-                  <div class="ig-line"></div>
-                  <div class="ig-line ig-line--short"></div>
-                </div>
-                <span class="ig-post-label">Anterior</span>
-              </div>
+            <!-- Widget EmbedSocial -->
+            <div class="ig-widget-wrap">
+              <div class="embedsocial-hashtag" data-ref="bbef6142cfb0bd5eaed5a67e1e8195c3bad2e1d4"></div>
             </div>
 
             <div class="ig-footer">
@@ -587,5 +567,43 @@
   </footer>
 
   <script src="script.js"></script>
+  <script>
+    (function(d, s, id) {
+      var js;
+      if (d.getElementById(id)) { return; }
+      js = d.createElement(s);
+      js.id = id;
+      js.src = "https://embedsocial.com/cdn/ht.js";
+      d.getElementsByTagName("head")[0].appendChild(js);
+    }(document, "script", "EmbedSocialHashtagScript"));
+  </script>
+  <script>
+    (function () {
+      function fixEmbedWidget() {
+        var wrap = document.querySelector('.ig-widget-wrap');
+        if (!wrap) return;
+        wrap.querySelectorAll('.esu-inner-container').forEach(function (el) {
+          el.style.setProperty('background', 'transparent', 'important');
+          el.style.setProperty('padding', '0', 'important');
+        });
+        wrap.querySelectorAll('.esu-card').forEach(function (el) {
+          el.style.setProperty('background', 'transparent', 'important');
+          el.style.setProperty('box-shadow', 'none', 'important');
+        });
+      }
+
+      // Dispara quando EmbedSocial renderiza os elementos
+      var domObs = new MutationObserver(fixEmbedWidget);
+      domObs.observe(document.body, { childList: true, subtree: true });
+
+      // Re-dispara quando o tema muda (light ↔ dark)
+      var themeObs = new MutationObserver(function (mutations) {
+        mutations.forEach(function (m) {
+          if (m.attributeName === 'data-theme') fixEmbedWidget();
+        });
+      });
+      themeObs.observe(document.documentElement, { attributes: true });
+    })();
+  </script>
 </body>
 </html>
