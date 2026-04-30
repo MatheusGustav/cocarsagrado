@@ -1058,61 +1058,43 @@ body.overlay-active .footer {
   line-height: 1.8;
 }
 
-/* Preview dos posts */
-.ig-posts-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 8px;
-}
-
-.ig-post {
-  aspect-ratio: 1;
-  border-radius: var(--raio-md);
-  background: rgba(245, 232, 192, 0.06);
-  border: 1px solid rgba(226, 201, 126, 0.3);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  padding: 12px;
-}
-
-.ig-post--main {
-  background: rgba(201, 168, 76, 0.12);
-  border-color: var(--color-gold);
-}
-
-.ig-post-lines {
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
+/* Widget EmbedSocial */
+.ig-widget-wrap {
   width: 100%;
+  border-radius: var(--raio-md);
+  overflow: hidden;
 }
 
-.ig-line {
-  height: 5px;
-  border-radius: 3px;
-  background: var(--color-gold-light);
-  width: 70%;
-  opacity: 0.5;
+.ig-widget-wrap .embedsocial-hashtag {
+  width: 100% !important;
 }
 
-.ig-line--dark {
-  background: var(--color-gold);
-  opacity: 1;
+/* Grid 3 colunas no desktop */
+.ig-widget-wrap #embedsocial-hashtag-grid,
+.ig-widget-wrap .es-items-col {
+  grid-template-columns: repeat(3, 1fr) !important;
+  gap: 8px !important;
 }
 
-.ig-line--short {
-  width: 50%;
+/* 1 coluna no mobile */
+@media (max-width: 480px) {
+  .ig-widget-wrap #embedsocial-hashtag-grid,
+  .ig-widget-wrap .es-items-col {
+    grid-template-columns: 1fr !important;
+  }
 }
 
-.ig-post-label {
-  font-size: 9px;
-  color: var(--color-gold-light);
-  font-weight: 600;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+/* Bordas arredondadas nos posts */
+.ig-widget-wrap .es-item,
+.ig-widget-wrap .es-post-imagewrap {
+  border-radius: var(--raio-md) !important;
+  overflow: hidden !important;
+}
+
+
+/* Esconde o branding EmbedSocial */
+.ig-widget-wrap .feed-powered-by-es {
+  display: none !important;
 }
 
 .ig-footer {
@@ -1632,23 +1614,6 @@ body.overlay-active .footer {
     color: var(--color-text-body);
     opacity: 1;
   }
-  .col-ig .ig-post {
-    background: var(--color-bg-page);
-    border-color: var(--color-neutral-stone);
-  }
-  .col-ig .ig-post--main {
-    background: var(--color-gold-mist);
-    border-color: var(--color-gold);
-  }
-  .col-ig .ig-line {
-    background: var(--color-gold-deep);
-    opacity: 0.45;
-  }
-  .col-ig .ig-line--dark {
-    background: var(--color-gold-deep);
-    opacity: 1;
-  }
-  .col-ig .ig-post-label { color: var(--color-gold-deep); }
   .col-ig .ig-handle     { color: var(--color-primary); }
   .col-ig .btn-outline-small {
     color: var(--color-primary);
