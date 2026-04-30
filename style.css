@@ -1063,6 +1063,7 @@ body.overlay-active .footer {
   width: 100%;
   border-radius: var(--raio-md);
   overflow: hidden;
+  box-shadow: inset 0 0 0 6px var(--color-bg-dark);
 }
 
 .ig-widget-wrap .embedsocial-hashtag {

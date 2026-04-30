@@ -456,10 +456,39 @@
             <h2 class="section-title">Onde a espiritualidade<br>encontra o cotidiano</h2>
             <p class="col-ig-body">Partilhamos reflexões, aberturas espirituais e novidades toda semana. Acompanhe o Cocar Sagrado e deixe que a energia chegue até você.</p>
 
-            <!-- Widget EmbedSocial -->
-            <div class="ig-widget-wrap">
-              <div class="embedsocial-hashtag" data-ref="bbef6142cfb0bd5eaed5a67e1e8195c3bad2e1d4"></div>
-            </div>
+            <!-- WIDGET INSTAGRAM - SOMENTE 3 QUADRADINHOS -->
+<div class="instagram-grid-cocar" id="instagramPostsCocar"></div>
+
+<style>
+.instagram-grid-cocar {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    width: 100%;
+    max-width: 500px;
+}
+
+.post-item-cocar {
+    position: relative;
+    aspect-ratio: 1;
+    border-radius: 12px;
+    overflow: hidden;
+    cursor: pointer;
+    transition: transform 0.3s ease;
+    background: linear-gradient(135deg, #d4b896 0%, #c9a876 100%);
+}
+
+.post-item-cocar:hover {
+    transform: translateY(-3px);
+}
+
+.post-item-cocar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+</style>
+            <!-- FIM DO WIDGET -->
 
             <div class="ig-footer">
               <span class="ig-handle">@cocarsagrado</span>
@@ -568,42 +597,51 @@
 
   <script src="script.js"></script>
   <script>
-    (function(d, s, id) {
-      var js;
-      if (d.getElementById(id)) { return; }
-      js = d.createElement(s);
-      js.id = id;
-      js.src = "https://embedsocial.com/cdn/ht.js";
-      d.getElementsByTagName("head")[0].appendChild(js);
-    }(document, "script", "EmbedSocialHashtagScript"));
-  </script>
-  <script>
-    (function () {
-      function fixEmbedWidget() {
-        var wrap = document.querySelector('.ig-widget-wrap');
-        if (!wrap) return;
-        wrap.querySelectorAll('.esu-inner-container').forEach(function (el) {
-          el.style.setProperty('background', 'transparent', 'important');
-          el.style.setProperty('padding', '0', 'important');
-        });
-        wrap.querySelectorAll('.esu-card').forEach(function (el) {
-          el.style.setProperty('background', 'transparent', 'important');
-          el.style.setProperty('box-shadow', 'none', 'important');
-        });
-      }
+(function() {
+    const USERNAME = 'cocarsagrado';
+    const MAX_POSTS = 3;
 
-      // Dispara quando EmbedSocial renderiza os elementos
-      var domObs = new MutationObserver(fixEmbedWidget);
-      domObs.observe(document.body, { childList: true, subtree: true });
+    async function loadInstagramPosts() {
+        const grid = document.getElementById('instagramPostsCocar');
 
-      // Re-dispara quando o tema muda (light ↔ dark)
-      var themeObs = new MutationObserver(function (mutations) {
-        mutations.forEach(function (m) {
-          if (m.attributeName === 'data-theme') fixEmbedWidget();
-        });
-      });
-      themeObs.observe(document.documentElement, { attributes: true });
-    })();
+        try {
+            const response = await fetch(`https://www.instagram.com/api/v1/users/web_profile_info/?username=${USERNAME}`, {
+                headers: { 'x-ig-app-id': '936619743392459' }
+            });
+
+            if (!response.ok) throw new Error('Erro');
+
+            const data = await response.json();
+            const posts = data.data.user.edge_owner_to_timeline_media.edges.slice(0, MAX_POSTS);
+
+            grid.innerHTML = '';
+
+            posts.forEach(({ node }) => {
+                const post = document.createElement('div');
+                post.className = 'post-item-cocar';
+                post.onclick = () => window.open(`https://instagram.com/p/${node.shortcode}`, '_blank');
+                post.innerHTML = `<img src="${node.thumbnail_src}" alt="Instagram" loading="lazy">`;
+                grid.appendChild(post);
+            });
+
+        } catch (error) {
+            // Fallback silencioso - mostra quadrados vazios
+            grid.innerHTML = '';
+            for (let i = 0; i < MAX_POSTS; i++) {
+                const placeholder = document.createElement('div');
+                placeholder.className = 'post-item-cocar';
+                placeholder.onclick = () => window.open('https://instagram.com/cocarsagrado', '_blank');
+                grid.appendChild(placeholder);
+            }
+        }
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', loadInstagramPosts);
+    } else {
+        loadInstagramPosts();
+    }
+})();
   </script>
 </body>
 </html>
