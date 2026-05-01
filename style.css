@@ -937,10 +937,35 @@ body.overlay-active .footer {
 .cat-footer {
   display: flex;
   align-items: center;
-  justify-content: flex-end;
+  justify-content: space-between;
   padding: 14px 20px;
   border-top: 1px solid rgba(1, 55, 24, 0.12);
   background: transparent;
+}
+
+.cat-footer-price {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--color-gold-deep);
+}
+
+.cat-footer-tiers {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.cat-footer-tiers span {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 11px;
+  color: var(--color-text-muted);
+}
+
+.cat-footer-tiers strong {
+  font-weight: 700;
+  color: var(--color-gold-deep);
 }
 
 /* Botão Agendar — dourado cerimonial */
@@ -970,6 +995,7 @@ body.overlay-active .footer {
 .cat-btn:active {
   transform: scale(0.97);
 }
+
 
 
 /* ============================================================
