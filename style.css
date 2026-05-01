@@ -2157,3 +2157,104 @@ body.overlay-active .footer {
     bottom: 200px;
   }
 }
+
+
+/* ============================================================
+   SISTEMA DE DESCONTOS
+   ============================================================ */
+
+/* Badge de desconto */
+.cat-badge {
+  display: inline-block;
+  font-family: var(--fonte-corpo);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 3px 7px;
+  border-radius: var(--raio-sm);
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.cat-badge--10off {
+  background: var(--color-primary);
+  color: var(--color-gold-light);
+  border: 1px solid rgba(226, 201, 126, 0.4);
+}
+
+.cat-badge--promo {
+  background: #7A2E10;
+  color: #fff;
+  border: 1px solid rgba(255,255,255,0.15);
+}
+
+/* Wrapper de preço com desconto (cards simples) */
+.cat-price-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.cat-price-group {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+/* Preço original riscado */
+.cat-price-original {
+  font-size: 11px;
+  color: var(--color-text-muted);
+  text-decoration: line-through;
+  line-height: 1.2;
+}
+
+/* Preço com desconto destacado */
+.cat-price-desconto {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--color-primary-light);
+  line-height: 1.2;
+}
+
+/* Badge dentro de tiers — deve ser block para não herdar flex dos spans */
+.cat-footer-tiers .cat-badge-tier {
+  display: block;
+  margin-bottom: 6px;
+  width: fit-content;
+}
+
+/* Container de preços dentro de cada tier row */
+.cat-footer-tiers .cat-tier-prices {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 1px;
+  justify-content: flex-end;
+}
+
+/* Preço original para tiers */
+.cat-price-original-small {
+  font-size: 9px;
+  color: var(--color-text-muted);
+  text-decoration: line-through;
+  line-height: 1;
+}
+
+/* Preço com desconto para tiers */
+.cat-price-desconto-small {
+  font-weight: 700;
+  color: var(--color-primary-light);
+}
+
+/* Modo escuro */
+[data-theme="dark"] .cat-badge--10off {
+  background: #013718;
+  border-color: rgba(226, 201, 126, 0.3);
+}
+
+[data-theme="dark"] .cat-price-desconto,
+[data-theme="dark"] .cat-price-desconto-small {
+  color: var(--color-gold-light);
+}

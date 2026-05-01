@@ -1,0 +1,152 @@
+{
+  "promocoes": [
+    {
+      "id": "buzios-avulso",
+      "nome": "Búzios Avulso",
+      "tipo": "tiers",
+      "tiers": [
+        { "label": "1 pergunta",   "preco": 30 },
+        { "label": "2 perguntas",  "preco": 50 },
+        { "label": "3 perguntas",  "preco": 70 }
+      ],
+      "descontoAtivo": false,
+      "percentualDesconto": 0,
+      "badge": "",
+      "mensagemPromocional": ""
+    },
+    {
+      "id": "buzios-completo",
+      "nome": "Búzios Completo",
+      "tipo": "simples",
+      "preco": 150,
+      "descontoAtivo": false,
+      "percentualDesconto": 0,
+      "badge": "",
+      "mensagemPromocional": ""
+    },
+    {
+      "id": "confirmacao-orixas",
+      "nome": "Confirmação de Orixás",
+      "tipo": "simples",
+      "preco": 50,
+      "descontoAtivo": false,
+      "percentualDesconto": 0,
+      "badge": "",
+      "mensagemPromocional": ""
+    },
+    {
+      "id": "cabala-odu",
+      "nome": "Cabala de Odu",
+      "tipo": "simples",
+      "preco": 50,
+      "descontoAtivo": true,
+      "percentualDesconto": 5,
+      "badge": "promoção por tempo limitado",
+      "mensagemPromocional": "cooorreee!!!"
+    },
+    {
+      "id": "confirmacao-exu",
+      "nome": "Confirmação de Exu",
+      "tipo": "simples",
+      "preco": 70,
+      "descontoAtivo": false,
+      "percentualDesconto": 0,
+      "badge": "",
+      "mensagemPromocional": ""
+    },
+    {
+      "id": "mesa-cigana-avulsa",
+      "nome": "Mesa Cigana Avulsa",
+      "tipo": "tiers",
+      "tiers": [
+        { "label": "1 pergunta",   "preco": 30 },
+        { "label": "2 perguntas",  "preco": 50 },
+        { "label": "3 perguntas",  "preco": 70 }
+      ],
+      "descontoAtivo": false,
+      "percentualDesconto": 0,
+      "badge": "",
+      "mensagemPromocional": ""
+    },
+    {
+      "id": "mesa-cigana-completa",
+      "nome": "Mesa Cigana Completa",
+      "tipo": "simples",
+      "preco": 150,
+      "descontoAtivo": false,
+      "percentualDesconto": 0,
+      "badge": "",
+      "mensagemPromocional": ""
+    },
+    {
+      "id": "aguas-oxum",
+      "nome": "Águas de Oxum",
+      "tipo": "simples",
+      "preco": 50,
+      "descontoAtivo": false,
+      "percentualDesconto": 0,
+      "badge": "",
+      "mensagemPromocional": ""
+    },
+    {
+      "id": "rosa-venus",
+      "nome": "Rosa de Vênus",
+      "tipo": "simples",
+      "preco": 55,
+      "descontoAtivo": false,
+      "percentualDesconto": 0,
+      "badge": "",
+      "mensagemPromocional": ""
+    },
+    {
+      "id": "leitura-mentores",
+      "nome": "Leitura dos Mentores",
+      "tipo": "simples",
+      "preco": 50,
+      "descontoAtivo": false,
+      "percentualDesconto": 0,
+      "badge": "",
+      "mensagemPromocional": ""
+    },
+    {
+      "id": "mesa-mediunica",
+      "nome": "Mesa Mediúnica",
+      "tipo": "simples",
+      "preco": 70,
+      "descontoAtivo": false,
+      "percentualDesconto": 0,
+      "badge": "",
+      "mensagemPromocional": ""
+    },
+    {
+      "id": "mesa-radionica",
+      "nome": "Mesa Radiônica",
+      "tipo": "simples",
+      "preco": 222,
+      "descontoAtivo": false,
+      "percentualDesconto": 0,
+      "badge": "",
+      "mensagemPromocional": ""
+    },
+    {
+      "id": "registros-akashicos",
+      "nome": "Registros Akáshicos",
+      "tipo": "simples",
+      "preco": 188,
+      "descontoAtivo": false,
+      "percentualDesconto": 0,
+      "badge": "",
+      "mensagemPromocional": ""
+    },
+    {
+      "id": "theta-healing",
+      "nome": "Theta Healing",
+      "tipo": "simples",
+      "preco": 150,
+      "descontoAtivo": false,
+      "percentualDesconto": 0,
+      "badge": "",
+      "mensagemPromocional": ""
+    }
+  ]
+}

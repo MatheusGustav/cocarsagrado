@@ -125,10 +125,11 @@ function inicializarOverlay() {
   // Primeira visita — mostra o overlay e aplica blur na página
   document.body.classList.add('overlay-active');
 
-  // Botão principal: "Conhecer os atendimentos"
+  // Botão principal: "Garantir meu desconto"
   const btnEntrar = document.getElementById('overlayEnter');
   if (btnEntrar) {
     btnEntrar.addEventListener('click', () => {
+      localStorage.setItem('aceitouDesconto10', 'true');
       fecharOverlay();
       // Rola suavemente até o catálogo
       setTimeout(() => {
@@ -138,26 +139,38 @@ function inicializarOverlay() {
     });
   }
 
-  // Botão secundário: "Explorar o site primeiro"
+  // Botão secundário: "Recusar o desconto"
   const btnPular = document.getElementById('overlaySkip');
   if (btnPular) {
-    btnPular.addEventListener('click', fecharOverlay);
+    btnPular.addEventListener('click', () => {
+      localStorage.setItem('aceitouDesconto10', 'false');
+      fecharOverlay();
+    });
   }
 
-  // Botão X de fechar
+  // Botão X de fechar (tratado como recusa)
   const btnFechar = document.getElementById('overlayClose');
   if (btnFechar) {
-    btnFechar.addEventListener('click', fecharOverlay);
+    btnFechar.addEventListener('click', () => {
+      localStorage.setItem('aceitouDesconto10', 'false');
+      fecharOverlay();
+    });
   }
 
-  // Fecha ao clicar fora do card (no backdrop escuro)
+  // Fecha ao clicar fora do card (tratado como recusa)
   overlayBackdrop.addEventListener('click', (e) => {
-    if (e.target === overlayBackdrop) fecharOverlay();
+    if (e.target === overlayBackdrop) {
+      localStorage.setItem('aceitouDesconto10', 'false');
+      fecharOverlay();
+    }
   });
 
-  // Fecha ao pressionar ESC
+  // Fecha ao pressionar ESC (tratado como recusa)
   document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') fecharOverlay();
+    if (e.key === 'Escape') {
+      localStorage.setItem('aceitouDesconto10', 'false');
+      fecharOverlay();
+    }
   });
 }
 
@@ -179,6 +192,11 @@ function fecharOverlay() {
 
   // Salva no localStorage que o usuário já visitou
   localStorage.setItem(CHAVE_LOCALSTORAGE, 'true');
+
+  // Atualiza preços do catálogo com base na escolha do usuário
+  if (typeof renderizarDescontos === 'function') {
+    renderizarDescontos();
+  }
 }
 
 
@@ -448,5 +466,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // 8. Decorações hand-drawn
   inicializarDecoracoes();
+
+  // 9. Sistema de descontos (usuários que retornam já com escolha feita)
+  if (typeof renderizarDescontos === 'function') {
+    renderizarDescontos();
+  }
 
 });
