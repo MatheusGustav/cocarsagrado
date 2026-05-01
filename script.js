@@ -114,7 +114,7 @@ function inicializarOverlay() {
   if (!overlayBackdrop) return;
 
   // Verifica se o usuário já visitou antes
-  const jaVisitou = localStorage.getItem(CHAVE_LOCALSTORAGE);
+  const jaVisitou = false; // localStorage.getItem(CHAVE_LOCALSTORAGE);
 
   if (jaVisitou) {
     // Já visitou antes — esconde o overlay imediatamente
