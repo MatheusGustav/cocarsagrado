@@ -114,7 +114,7 @@ function inicializarOverlay() {
   if (!overlayBackdrop) return;
 
   // Verifica se o usuário já visitou antes
-  const jaVisitou = false; // localStorage.getItem(CHAVE_LOCALSTORAGE);
+  const jaVisitou = localStorage.getItem(CHAVE_LOCALSTORAGE);
 
   if (jaVisitou) {
     // Já visitou antes — esconde o overlay imediatamente
@@ -365,6 +365,9 @@ const CHAVE_TEMA = 'cocarsagrado-theme';
 function inicializarToggleTema() {
   const btn = document.getElementById('theme-toggle');
   if (!btn) return;
+
+  const temaSalvo = localStorage.getItem(CHAVE_TEMA);
+  if (temaSalvo) document.documentElement.setAttribute('data-theme', temaSalvo);
 
   btn.addEventListener('click', () => {
     const temaAtual = document.documentElement.getAttribute('data-theme') || 'light';
