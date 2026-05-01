@@ -899,15 +899,16 @@ body.overlay-active .footer {
   display: none;
 }
 
-/* Topo do card — espaço respirado para o ícone, sem faixa de cor extra.
-   O fundo herda do próprio card (creme uniforme), eliminando o conflito
-   de tons sobre o lado verde do layout dividido. */
 .cat-card-img {
-  padding: 24px 0 10px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: transparent;
+  display: block;
+  width: 100%;
+  line-height: 0;
+}
+
+.cat-img {
+  width: 100%;
+  height: auto;
+  display: block;
 }
 
 .cat-body {
