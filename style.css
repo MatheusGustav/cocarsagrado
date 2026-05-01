@@ -1,6 +1,6 @@
 
 /* ============================================================
-   COCAR SAGRADO — STYLESHEET
+  COCAR SAGRADO — STYLESHEET
    Identidade visual: minimalista, premium, espiritual.
    Paleta: Verde floresta sagrado + Dourado cerimonial sobre ivory.
    Tipografia: Cormorant Garamond (títulos serif) + DM Sans (corpo).
@@ -268,17 +268,11 @@ button:focus-visible,
    Bolinha verde escuro com anel dourado fino — uniforme em todos os cards,
    sem diferenciar categoria ou profissional. */
 .cat-icon {
-  width: 44px;
-  height: 44px;
+  width: 36px;
+  height: 36px;
   border-radius: 50%;
   background: var(--color-primary);
   box-shadow: 0 0 0 2px var(--color-gold-light);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 22px;
-  line-height: 1;
-  flex-shrink: 0;
 }
 
 
@@ -361,21 +355,15 @@ body.overlay-active .footer {
 }
 
 .overlay-ornament {
-  width: 48px;
-  height: 48px;
-  border-radius: 50%;
-  background: rgba(245, 232, 192, 0.08);
-  border: 1px solid var(--color-gold-light);
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
-.overlay-ornament-inner {
-  width: 22px;
-  height: 22px;
-  border-radius: 50%;
-  background: var(--color-gold);
+.overlay-ornament-logo {
+  width: 80px;
+  height: 80px;
+  object-fit: contain;
 }
 
 .overlay-eyebrow {
@@ -609,7 +597,6 @@ body.overlay-active .footer {
    Fundo ivory cremoso, com tipografia serif elegante.
    ============================================================ */
 .hero {
-  position: relative;
   background: var(--color-bg-page);
   border-bottom: 1px solid var(--color-neutral-stone);
   overflow: hidden;
@@ -619,18 +606,12 @@ body.overlay-active .footer {
   .hero-right {
     background: var(--color-bg-dark);
     margin: 0 calc(-1 * clamp(24px, 5vw, 56px)) calc(-1 * clamp(2.5rem, 7vw, 7rem));
-    padding: clamp(24px, 5vw, 56px);
-    padding-top: calc(clamp(24px, 5vw, 56px) + clamp(2.5rem, 7vw, 7rem) / 2);
+    padding: 4rem clamp(24px, 5vw, 56px) calc(4rem + clamp(2.5rem, 7vw, 7rem));
     border-radius: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
   }
 }
 
 .hero-inner {
-  position: relative;
-  z-index: 1;
   display: grid;
   grid-template-columns: 1fr;
   gap: clamp(2rem, 5vw, 5rem);
@@ -918,25 +899,6 @@ body.overlay-active .footer {
   display: none;
 }
 
-@keyframes catalogoEntrar {
-  from { opacity: 0; transform: translateY(10px) scale(0.97); }
-  to   { opacity: 1; transform: translateY(0) scale(1); }
-}
-
-@keyframes catalogoSair {
-  from { opacity: 1; transform: scale(1); }
-  to   { opacity: 0; transform: scale(0.97); }
-}
-
-.cat-card.entrando {
-  animation: catalogoEntrar 0.3s ease forwards;
-}
-
-.cat-card.saindo {
-  animation: catalogoSair 0.2s ease forwards;
-  pointer-events: none;
-}
-
 /* Topo do card — espaço respirado para o ícone, sem faixa de cor extra.
    O fundo herda do próprio card (creme uniforme), eliminando o conflito
    de tons sobre o lado verde do layout dividido. */
@@ -996,6 +958,7 @@ body.overlay-active .footer {
   border: 1px solid var(--color-gold);
   cursor: pointer;
   transition: background var(--transicao), border-color var(--transicao), transform 0.1s ease;
+  display: inline-block;
 }
 
 .cat-btn:hover {
@@ -1058,44 +1021,61 @@ body.overlay-active .footer {
   line-height: 1.8;
 }
 
-/* Widget EmbedSocial */
-.ig-widget-wrap {
-  width: 100%;
+/* Preview dos posts */
+.ig-posts-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.ig-post {
+  aspect-ratio: 1;
   border-radius: var(--raio-md);
-  overflow: hidden;
-  box-shadow: inset 0 0 0 6px var(--color-bg-dark);
+  background: rgba(245, 232, 192, 0.06);
+  border: 1px solid rgba(226, 201, 126, 0.3);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 12px;
 }
 
-.ig-widget-wrap .embedsocial-hashtag {
-  width: 100% !important;
+.ig-post--main {
+  background: rgba(201, 168, 76, 0.12);
+  border-color: var(--color-gold);
 }
 
-/* Grid 3 colunas no desktop */
-.ig-widget-wrap #embedsocial-hashtag-grid,
-.ig-widget-wrap .es-items-col {
-  grid-template-columns: repeat(3, 1fr) !important;
-  gap: 8px !important;
+.ig-post-lines {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  width: 100%;
 }
 
-/* 1 coluna no mobile */
-@media (max-width: 480px) {
-  .ig-widget-wrap #embedsocial-hashtag-grid,
-  .ig-widget-wrap .es-items-col {
-    grid-template-columns: 1fr !important;
-  }
+.ig-line {
+  height: 5px;
+  border-radius: 3px;
+  background: var(--color-gold-light);
+  width: 70%;
+  opacity: 0.5;
 }
 
-/* Bordas arredondadas nos posts */
-.ig-widget-wrap .es-item,
-.ig-widget-wrap .es-post-imagewrap {
-  border-radius: var(--raio-md) !important;
-  overflow: hidden !important;
+.ig-line--dark {
+  background: var(--color-gold);
+  opacity: 1;
 }
 
+.ig-line--short {
+  width: 50%;
+}
 
-/* Esconde o branding EmbedSocial */
-.ig-widget-wrap .feed-powered-by-es {
-  display: none !important;
+.ig-post-label {
+  font-size: 9px;
+  color: var(--color-gold-light);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
 }
 
 .ig-footer {
@@ -1537,9 +1517,13 @@ body.overlay-active .footer {
     border-bottom: none;
   }
 
-  /* Hero herda fundo do body (cream esq, verde dir) */
+  /* Hero — off-white quente à esquerda para destacar do cream do "sobre" */
   .hero {
-    background: transparent;
+    background: linear-gradient(
+      to right,
+      #FDF9F3 50%,
+      var(--color-bg-dark) 50%
+    );
     border-bottom: none;
   }
 
@@ -1570,17 +1554,32 @@ body.overlay-active .footer {
     border-bottom: none;
   }
 
-  /* === HEADER === */
+  /* === HEADER dividido === */
   .header {
-    background: var(--color-bg-dark);
+    background: linear-gradient(
+      to right,
+      var(--color-bg-dark) 50%
+    );
   }
 
   .header.scrolled {
     box-shadow: 0 1px 20px rgba(1, 55, 24, 0.12);
   }
 
+  .brand-logo { color: var(--color-gold-deep); }
+  .brand-sub  { color: var(--color-gold-deep); opacity: 0.85; }
+
+  .header .nav-link {
+    color: var(--color-gold-deep);
+    opacity: 1;
+  }
+
   .header .nav-link:hover {
-    color: var(--color-gold-light);
+    color: var(--color-primary-deep);
+  }
+
+  .header .nav-link::after {
+    background: var(--color-gold-deep);
   }
 
   /* === HERO === */
@@ -1615,6 +1614,23 @@ body.overlay-active .footer {
     color: var(--color-text-body);
     opacity: 1;
   }
+  .col-ig .ig-post {
+    background: var(--color-bg-page);
+    border-color: var(--color-neutral-stone);
+  }
+  .col-ig .ig-post--main {
+    background: var(--color-gold-mist);
+    border-color: var(--color-gold);
+  }
+  .col-ig .ig-line {
+    background: var(--color-gold-deep);
+    opacity: 0.45;
+  }
+  .col-ig .ig-line--dark {
+    background: var(--color-gold-deep);
+    opacity: 1;
+  }
+  .col-ig .ig-post-label { color: var(--color-gold-deep); }
   .col-ig .ig-handle     { color: var(--color-primary); }
   .col-ig .btn-outline-small {
     color: var(--color-primary);
@@ -1656,7 +1672,7 @@ body.overlay-active .footer {
   }
 
   .footer-brand {
-    color: var(--color-text-on-dark);
+    color: var(--color-text-primary);
     opacity: 0.85;
   }
 }
@@ -1670,8 +1686,9 @@ body.overlay-active .footer {
 
 
 /* ============================================================
-   TOGGLE DE TEMA (SOL / LUA)
+   BOTÃO DE TEMA (sol/lua)
    ============================================================ */
+
 .theme-toggle {
   display: flex;
   align-items: center;
@@ -1689,38 +1706,24 @@ body.overlay-active .footer {
   transition: background 0.2s ease;
 }
 
-.theme-toggle:hover {
-  background: rgba(255, 255, 255, 0.12);
-}
-
-.theme-toggle:active {
-  background: rgba(255, 255, 255, 0.2);
-}
-
-.theme-toggle:focus {
-  outline: none;
-}
-
-.theme-toggle:focus-visible {
-  box-shadow: 0 0 0 2px var(--color-focus-ring);
-}
+.theme-toggle:hover  { background: rgba(255, 255, 255, 0.12); }
+.theme-toggle:active { background: rgba(255, 255, 255, 0.2); }
+.theme-toggle:focus  { outline: none; }
+.theme-toggle:focus-visible { box-shadow: 0 0 0 2px var(--color-focus-ring); }
 
 @keyframes theme-spin {
   from { transform: rotate(0deg); }
   to   { transform: rotate(360deg); }
 }
 
-.theme-toggle.rotating {
-  animation: theme-spin 0.4s ease;
-}
+.theme-toggle.rotating { animation: theme-spin 0.4s ease; }
 
-.theme-toggle .icon-dark { display: none; }
+.theme-toggle .icon-dark  { display: none; }
 .theme-toggle .icon-light { display: inline; }
 
-[data-theme="dark"] .theme-toggle .icon-dark { display: inline; }
+[data-theme="dark"] .theme-toggle .icon-dark  { display: inline; }
 [data-theme="dark"] .theme-toggle .icon-light { display: none; }
 
-/* Wrapper do toggle dentro do nav — mobile: primeiro item + label */
 .nav-theme-wrapper {
   display: flex;
   flex-direction: column;
@@ -1742,7 +1745,6 @@ body.overlay-active .footer {
   user-select: none;
 }
 
-/* Desktop: inline após "Contato", sem label */
 @media (min-width: 769px) {
   .nav-theme-wrapper {
     flex-direction: row;
@@ -1752,46 +1754,34 @@ body.overlay-active .footer {
     border-bottom: none;
     gap: 0;
   }
-
-  .nav-theme-label {
-    display: none;
-  }
+  .nav-theme-label { display: none; }
 }
 
 
 /* ============================================================
    MODO ESCURO — [data-theme="dark"]
    ============================================================ */
+
 [data-theme="dark"] {
-  /* Fundos */
   --color-bg-page:          #0A0A0A;
   --color-bg-section-alt:   #111111;
   --color-bg-card:          #1A1A1A;
   --color-bg-dark:          #0D1F12;
   --color-bg-dark-deep:     #0D1F12;
   --color-primary-whisper:  #013718;
-
-  /* Textos */
   --color-text-primary:     #F5F1E8;
   --color-text-body:        #D4D4D4;
   --color-text-muted:       #A0A0A0;
   --color-text-on-dark:     #F5F1E8;
-
-  /* Neutros */
   --color-neutral-white:    #1A1A1A;
   --color-neutral-ivory:    #0A0A0A;
   --color-neutral-sand:     #111111;
   --color-neutral-stone:    #2A2A2A;
   --color-neutral-driftwood:#A0A0A0;
-
-  /* Gold mist */
   --color-gold-mist:        #1A1500;
-
-  /* Bordas */
   --borda-dourada-translucida: 1px solid rgba(201, 168, 76, 0.12);
 }
 
-/* Transição suave ao trocar de tema */
 .theme-switching *,
 .theme-switching *::before,
 .theme-switching *::after {
@@ -1800,107 +1790,68 @@ body.overlay-active .footer {
               box-shadow 0.3s ease !important;
 }
 
-/* Citação hero — verde → dourado para contraste em fundo escuro */
-[data-theme="dark"] .hero-quote {
-  color: var(--color-gold);
+@media (min-width: 769px) {
+  [data-theme="dark"] .hero {
+    background: linear-gradient(
+      to right,
+      #1C1C1C 50%,
+      var(--color-bg-dark) 50%
+    );
+  }
 }
 
-/* Citação do overlay */
-[data-theme="dark"] .overlay-quote {
-  color: var(--color-gold);
-}
+[data-theme="dark"] .hero-quote        { color: var(--color-gold); }
+[data-theme="dark"] .overlay-quote     { color: var(--color-gold); }
+[data-theme="dark"] .stat-num          { color: var(--color-gold-light); }
 
-/* Números das estatísticas */
-[data-theme="dark"] .stat-num {
-  color: var(--color-gold-light);
-}
-
-/* Cards do catálogo */
 [data-theme="dark"] .cat-card {
   border-color: #2A2A2A;
   box-shadow: 0 0 8px rgba(201, 169, 97, 0.06);
 }
-
 [data-theme="dark"] .cat-card:hover {
   border-color: var(--color-gold);
   box-shadow: 0 4px 16px rgba(201, 169, 97, 0.12);
 }
-
-[data-theme="dark"] .cat-footer {
-  border-top-color: #2A2A2A;
-}
-
-/* Filtros */
-[data-theme="dark"] .cat-filters {
-  border-color: rgba(201, 168, 76, 0.2);
-}
-
-[data-theme="dark"] .cat-filter {
-  color: var(--color-text-muted);
-}
-
-[data-theme="dark"] .cat-filter:hover {
+[data-theme="dark"] .cat-footer        { border-top-color: #2A2A2A; }
+[data-theme="dark"] .cat-filters       { border-color: rgba(201, 168, 76, 0.2); }
+[data-theme="dark"] .cat-filter        { color: var(--color-text-muted); }
+[data-theme="dark"] .cat-filter:hover  {
   background: rgba(245, 240, 232, 0.06);
   color: var(--color-text-primary);
   border-color: rgba(245, 240, 232, 0.15);
 }
+[data-theme="dark"] .cat-filter.active { color: var(--color-gold-light); }
 
-[data-theme="dark"] .cat-filter.active {
-  color: var(--color-gold-light);
-}
-
-/* Botão outline em fundo escuro */
 [data-theme="dark"] .btn-outline {
   color: var(--color-gold-light);
   border-color: rgba(226, 201, 126, 0.5);
 }
-
 [data-theme="dark"] .btn-outline:hover {
   background: var(--color-primary);
   color: var(--color-gold-light);
   border-color: var(--color-primary);
 }
 
-/* Botão ghost do overlay */
 [data-theme="dark"] .btn-ghost-overlay {
   border-color: #333333;
   color: var(--color-text-muted);
 }
-
 [data-theme="dark"] .btn-ghost-overlay:hover {
   background: rgba(255, 255, 255, 0.05);
   color: var(--color-text-body);
 }
 
-/* Backdrop do overlay */
-[data-theme="dark"] .overlay-backdrop {
-  background: rgba(0, 0, 0, 0.8);
-}
+[data-theme="dark"] .overlay-backdrop  { background: rgba(0, 0, 0, 0.8); }
+[data-theme="dark"] .btn-fill          { box-shadow: 0 0 16px rgba(1, 55, 24, 0.3); }
+[data-theme="dark"] .cta-bar-title     { color: var(--color-text-primary); }
+[data-theme="dark"] .depo-card         { border-color: rgba(201, 168, 76, 0.15); }
 
-/* Glow sutil nos botões principais */
-[data-theme="dark"] .btn-fill {
-  box-shadow: 0 0 16px rgba(1, 55, 24, 0.3);
-}
-
-/* CTA bar */
-[data-theme="dark"] .cta-bar-title {
-  color: var(--color-text-primary);
-}
-
-/* Cards de depoimentos */
-[data-theme="dark"] .depo-card {
-  border-color: rgba(201, 168, 76, 0.15);
-}
-
-/* Handle e btn do Instagram no desktop (fundo claro → escuro) */
 @media (min-width: 769px) {
   [data-theme="dark"] .col-ig .ig-handle { color: var(--color-gold); }
-
   [data-theme="dark"] .col-ig .btn-outline-small {
     color: var(--color-gold-light);
     border-color: var(--color-gold);
   }
-
   [data-theme="dark"] .col-ig .btn-outline-small:hover {
     background: var(--color-gold);
     color: var(--color-primary-deep);
@@ -1909,8 +1860,7 @@ body.overlay-active .footer {
 
 
 /* ============================================================
-   ANIMAÇÕES DECORATIVAS HAND-DRAWN
-   Camada fixa, pointer-events: none — sem interferir no site.
+   DECORAÇÕES DO HERO (fundo animado hero-left)
    ============================================================ */
 
 .deco-bg {
@@ -2062,7 +2012,6 @@ body.overlay-active .footer {
   width: 100%;
 }
 
-/* Twinkle individual por classe */
 .star-twinkle { animation: starTwinkle 3s ease-in-out infinite; }
 .s1 { animation-delay: 0s; }
 .s2 { animation-delay: 0.6s; }
@@ -2074,8 +2023,8 @@ body.overlay-active .footer {
 .s8 { animation-delay: 1.5s; }
 
 @keyframes starTwinkle {
-  0%, 100% { opacity: 0.2; r: attr(r); }
-  50%       { opacity: 1;   }
+  0%, 100% { opacity: 0.2; }
+  50%       { opacity: 1; }
 }
 
 /* === ESPIRAIS === */
@@ -2106,24 +2055,19 @@ body.overlay-active .footer {
 }
 
 /* === VISIBILIDADE POR TEMA === */
-
-/* Modo claro: sol, nuvens, estrelinhas, espirais visíveis */
 :root:not([data-theme="dark"]) .deco-sol        { opacity: 1; }
 :root:not([data-theme="dark"]) .deco-nuvem      { opacity: 0.75; }
 :root:not([data-theme="dark"]) .deco-estrela    { opacity: 1; }
 :root:not([data-theme="dark"]) .deco-espiral    { opacity: 0.35; }
 
-/* Modo escuro: lua, estrelas noite, espirais */
 [data-theme="dark"] .deco-lua          { opacity: 0.9; }
 [data-theme="dark"] .deco-stars-night  { opacity: 0.85; }
 [data-theme="dark"] .deco-espiral      { opacity: 0.25; }
 
-/* Espirais no escuro ficam douradas */
 [data-theme="dark"] .deco-espiral svg path {
   stroke: #E2C97E;
 }
 
-/* Reduz animações se usuário preferir movimento reduzido */
 @media (prefers-reduced-motion: reduce) {
   .deco-sol-svg,
   .deco-nuvem,
@@ -2135,7 +2079,6 @@ body.overlay-active .footer {
   }
 }
 
-/* Mobile: elementos menores, posicionados na área de conteúdo */
 @media (max-width: 768px) {
   .deco-sol        { width: 52px; height: 52px; top: 72px; right: 18px; }
   .deco-lua        { width: 54px; height: 54px; top: 72px; right: 18px; }
@@ -2146,15 +2089,11 @@ body.overlay-active .footer {
   .deco-espiral--2 { right: 14px; bottom: 150px; }
 }
 
-/* Desktop: clipa toda a camada ao lado claro (esquerdo).
-   Modo escuro: esquerdo vira preto (#0A0A0A) — mesmo clip.
-   As nuvens entram pela esquerda e somem no meio — efeito natural. */
 @media (min-width: 769px) {
   .deco-bg {
     clip-path: inset(0 50% 0 0);
   }
 
-  /* Sol e Lua: canto superior direito do painel esquerdo */
   .deco-sol {
     top: 90px;
     right: auto;
@@ -2167,7 +2106,6 @@ body.overlay-active .footer {
     left: calc(50% - 115px);
   }
 
-  /* Estrelas: espalhadas pelo painel esquerdo */
   .deco-estrela--a {
     top: 200px;
     right: auto;
@@ -2186,7 +2124,6 @@ body.overlay-active .footer {
     left: 80px;
   }
 
-  /* Segunda espiral move para o painel esquerdo */
   .deco-espiral--2 {
     right: auto;
     left: calc(50% - 90px);
