@@ -1,11 +1,13 @@
-const CACHE = 'cocar-admin-v1';
+const CACHE = 'cocar-admin-v3';
 const PRECACHE = [
   '/admin/dashboard.html',
   '/css/agendamento-styles.css',
   '/js/supabase-config.js',
-  '/admin/js/admin-system.js',
+  '/admin/js/admin-system.js?v=2',
+  '/admin/js/agenda-system.js?v=1',
   '/images/icon-192.png',
   '/images/icon-512.png',
+  'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js',
 ];
 
 self.addEventListener('install', e => {
