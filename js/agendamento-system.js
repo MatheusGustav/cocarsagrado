@@ -43,7 +43,6 @@ async function _garantirTipos() {
   if (_tiposCache) return _tiposCache;
   const { data, error } = await supabase.from('tipos_leitura').select('*');
   if (error) console.error('Erro ao carregar tipos:', error);
-  console.log('Tipos carregados:', data);
   _tiposCache = data || [];
   return _tiposCache;
 }

@@ -2,7 +2,7 @@
 // Painel → Settings → API
 
 const SUPABASE_CONFIG = {
-  url: 'https://demxedudbislzausvhwx.supabase.co/rest/v1/',  
+  url: 'https://demxedudbislzausvhwx.supabase.co',
   anonKey: 'sb_publishable_rfGhG8zjFnRgwzIBEN2Glw_vCWMBqeG'
 };
 
