@@ -39,10 +39,10 @@
       "nome": "Cabala de Odu",
       "tipo": "simples",
       "preco": 50,
-      "descontoAtivo": true,
-      "percentualDesconto": 5,
-      "badge": "promoção por tempo limitado",
-      "mensagemPromocional": "cooorreee!!!"
+      "descontoAtivo": false,
+      "percentualDesconto": 0,
+      "badge": "",
+      "mensagemPromocional": ""
     },
     {
       "id": "confirmacao-exu",

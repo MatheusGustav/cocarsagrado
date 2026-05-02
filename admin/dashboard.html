@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin — Cocar Sagrado</title>
+  <link rel="stylesheet" href="../css/agendamento-styles.css">
+  <style>
+    /* Ajuste de path para admin ficar em subpasta */
+    .adm-logo { font-size: 1.4rem; }
+  </style>
+</head>
+<body>
+
+<div class="adm-layout">
+
+  <!-- Sidebar -->
+  <aside class="adm-sidebar">
+    <div>
+      <div class="adm-logo">🌙</div>
+      <h2>Cocar Sagrado</h2>
+      <p>Painel de Administração</p>
+    </div>
+    <nav class="adm-nav" aria-label="Menu admin">
+      <a href="dashboard.html" class="active">📋 Agendamentos</a>
+      <a href="../agendar.html" target="_blank">🔗 Ver site</a>
+    </nav>
+    <div style="margin-top:auto; font-size:.75rem; opacity:.5;">
+      v1.0.0
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <main class="adm-main">
+    <header class="adm-main-header">
+      <h1>Agendamentos</h1>
+      <div style="display:flex; gap:10px; flex-wrap:wrap;">
+        <button class="ag-btn ag-btn-outline ag-btn-sm" id="btn-atualizar">🔄 Atualizar</button>
+        <button class="ag-btn ag-btn-copy ag-btn-sm" id="btn-exportar">⬇ Exportar CSV</button>
+      </div>
+    </header>
+
+    <!-- Estatísticas -->
+    <div class="adm-stats" role="region" aria-label="Estatísticas">
+      <div class="adm-stat-card hoje">
+        <div class="adm-stat-label">Agendamentos hoje</div>
+        <div class="adm-stat-value" id="stat-hoje">—</div>
+      </div>
+      <div class="adm-stat-card pendente">
+        <div class="adm-stat-label">Pendentes</div>
+        <div class="adm-stat-value" id="stat-pendente">—</div>
+      </div>
+      <div class="adm-stat-card pagos">
+        <div class="adm-stat-label">Pagos / Confirmados</div>
+        <div class="adm-stat-value" id="stat-pagos">—</div>
+      </div>
+      <div class="adm-stat-card total">
+        <div class="adm-stat-label">Faturado no mês</div>
+        <div class="adm-stat-value" id="stat-total">—</div>
+      </div>
+    </div>
+
+    <!-- Filtros -->
+    <div class="adm-filters" role="search" aria-label="Filtros">
+      <div class="ag-form-group" style="margin:0">
+        <label for="filtro-status" style="font-size:.75rem">Status</label>
+        <select id="filtro-status">
+          <option value="">Todos</option>
+          <option value="pendente">Pendente</option>
+          <option value="pago">Pago</option>
+          <option value="confirmado">Confirmado</option>
+          <option value="atendido">Atendido</option>
+          <option value="cancelado">Cancelado</option>
+        </select>
+      </div>
+      <div class="ag-form-group" style="margin:0">
+        <label for="filtro-data" style="font-size:.75rem">Data</label>
+        <input type="date" id="filtro-data">
+      </div>
+    </div>
+
+    <!-- Lista de agendamentos -->
+    <div id="lista-agendamentos" class="adm-list" role="list" aria-label="Lista de agendamentos">
+      <div class="ag-loading"><div class="ag-spinner"></div> Carregando...</div>
+    </div>
+
+  </main>
+</div>
+
+<!-- Scripts -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="../js/supabase-config.js"></script>
+<script src="js/admin-system.js"></script>
+
+</body>
+</html>

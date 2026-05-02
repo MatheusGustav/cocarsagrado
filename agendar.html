@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Agendar Leitura — Cocar Sagrado</title>
+  <meta name="description" content="Agende sua leitura espiritual com o Cocar Sagrado. Tarot, Mapa Astral, Búzios e Consulta Rápida.">
+  <link rel="stylesheet" href="css/agendamento-styles.css">
+</head>
+<body>
+
+  <header class="ag-header">
+    <h1>🌙 Cocar Sagrado</h1>
+    <p>Agende sua leitura espiritual</p>
+  </header>
+
+  <!-- Barra de progresso -->
+  <div class="ag-progress" role="navigation" aria-label="Etapas do agendamento">
+    <div class="ag-step active" id="step-1">1. Leitura</div>
+    <div class="ag-step"        id="step-2">2. Data</div>
+    <div class="ag-step"        id="step-3">3. Horário</div>
+    <div class="ag-step"        id="step-4">4. Dados</div>
+  </div>
+
+  <main class="ag-container">
+
+    <!-- ==================== PASSO 1: Tipo de leitura ==================== -->
+    <section class="ag-section active" id="secao-1" aria-label="Escolha a leitura">
+      <h2 class="ag-section-title">Qual leitura você deseja?</h2>
+      <div id="grid-tipos" class="ag-grid" role="list">
+        <div class="ag-loading"><div class="ag-spinner"></div> Carregando...</div>
+      </div>
+    </section>
+
+    <!-- ==================== PASSO 2: Data ==================== -->
+    <section class="ag-section" id="secao-2" aria-label="Escolha a data">
+      <div style="display:flex; align-items:center; gap:12px; margin-bottom:20px;">
+        <button class="ag-btn ag-btn-outline ag-btn-sm" onclick="irParaPasso(1)" aria-label="Voltar">← Voltar</button>
+        <h2 class="ag-section-title" style="margin:0">Escolha a data</h2>
+      </div>
+      <div id="calendario">
+        <div class="ag-loading"><div class="ag-spinner"></div> Carregando...</div>
+      </div>
+    </section>
+
+    <!-- ==================== PASSO 3: Horário ==================== -->
+    <section class="ag-section" id="secao-3" aria-label="Escolha o horário">
+      <div style="display:flex; align-items:center; gap:12px; margin-bottom:20px;">
+        <button class="ag-btn ag-btn-outline ag-btn-sm" onclick="irParaPasso(2)" aria-label="Voltar">← Voltar</button>
+        <h2 class="ag-section-title" id="titulo-horarios" style="margin:0">Escolha o horário</h2>
+      </div>
+      <div id="slots-horarios">
+        <div class="ag-loading"><div class="ag-spinner"></div> Verificando...</div>
+      </div>
+    </section>
+
+    <!-- ==================== PASSO 4: Dados pessoais ==================== -->
+    <section class="ag-section" id="secao-4" aria-label="Seus dados">
+      <div style="display:flex; align-items:center; gap:12px; margin-bottom:24px;">
+        <button class="ag-btn ag-btn-outline ag-btn-sm" onclick="irParaPasso(3)" aria-label="Voltar">← Voltar</button>
+        <h2 class="ag-section-title" style="margin:0">Finalize seu pedido</h2>
+      </div>
+
+      <!-- Resumo -->
+      <div class="ag-resumo" role="region" aria-label="Resumo do pedido">
+        <h3>📋 Resumo do pedido</h3>
+        <div class="ag-resumo-row">
+          <span>Leitura</span>
+          <span id="res-tipo">—</span>
+        </div>
+        <div class="ag-resumo-row">
+          <span>Data</span>
+          <span id="res-data">—</span>
+        </div>
+        <div class="ag-resumo-row">
+          <span>Horário</span>
+          <span id="res-hora">—</span>
+        </div>
+        <div class="ag-resumo-row">
+          <span>Duração</span>
+          <span id="res-duracao">—</span>
+        </div>
+        <div class="ag-resumo-row" id="res-desconto-linha" style="display:none; color:#065f46;">
+          <span>Desconto 10%</span>
+          <span id="res-desconto">—</span>
+        </div>
+        <div class="ag-resumo-total">
+          <span>Total</span>
+          <span id="res-valor">—</span>
+        </div>
+      </div>
+
+      <!-- Formulário -->
+      <form class="ag-form" id="form-dados" novalidate>
+        <div class="ag-form-row">
+          <div class="ag-form-group">
+            <label for="f-nome">Nome completo *</label>
+            <input type="text" id="f-nome" name="nome" placeholder="Seu nome completo" required autocomplete="name">
+          </div>
+          <div class="ag-form-group">
+            <label for="f-email">E-mail *</label>
+            <input type="email" id="f-email" name="email" placeholder="seu@email.com" required autocomplete="email">
+          </div>
+        </div>
+        <div class="ag-form-group">
+          <label for="f-fone">WhatsApp *</label>
+          <input type="tel" id="f-fone" name="fone" placeholder="(27) 99999-9999" required autocomplete="tel">
+        </div>
+        <div class="ag-form-group">
+          <label for="f-obs">Observações <span style="font-weight:400;color:var(--text-muted)">(opcional)</span></label>
+          <textarea id="f-obs" name="obs" placeholder="Alguma questão específica que deseja trazer na leitura?"></textarea>
+        </div>
+
+        <button type="submit" class="ag-btn ag-btn-primary" id="btn-pagar">
+          💳 Continuar para Pagamento
+        </button>
+      </form>
+    </section>
+
+  </main>
+
+  <!-- Scripts -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <script src="js/supabase-config.js"></script>
+  <script src="js/agendamento-system.js"></script>
+
+  <!-- Inicializa calendário ao entrar no passo 2 -->
+  <script>
+    (function() {
+      // Sobrepõe irParaPasso para carregar o calendário apenas uma vez
+      const _irPasso = irParaPasso;
+      let calendarioCarregado = false;
+      window.irParaPasso = function(num) {
+        if (num === 2 && !calendarioCarregado) {
+          calendarioCarregado = true;
+          carregarCalendario();
+        }
+        _irPasso(num);
+      };
+    })();
+  </script>
+
+</body>
+</html>
