@@ -53,7 +53,6 @@ function _resetarModal() {
 
   _mostrarTela(1, false);
   _irParaPassoBase && _irParaPassoBase(1);
-  _calendarioOk = false;
 }
 
 // ============================================================
