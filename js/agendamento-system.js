@@ -354,7 +354,9 @@ function validarFormulario() {
     const val = el.value.trim();
     const invalido = email
       ? !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val)
-      : val.replace(/\D/g,'').length < minLen;
+      : id === 'f-fone'
+        ? val.replace(/\D/g,'').length < minLen
+        : val.length < minLen;
     if (invalido) { el.classList.add('error'); mostrarErroField(el, msg); ok = false; }
   });
   return ok;
