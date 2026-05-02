@@ -1,0 +1,8 @@
+# Configurações locais do Claude Code
+.claude/
+
+# Setup do banco — só necessário na configuração inicial
+supabase-setup.sql
+
+# Grafo de análise de código
+.code-review-graph/
