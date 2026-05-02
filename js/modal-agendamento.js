@@ -4,9 +4,9 @@
    carregarTiposLeitura, carregarCalendario, MESES_PT)
    ============================================================ */
 
-const MODAL_WHATSAPP = '5527998528483'; // ⚠️ substituir se mudar
-const MODAL_PIX      = 'cocarsagrado@gmail.com';        // ⚠️ substituir
-const MODAL_WISE     = 'pagamentos@cocarsagrado.com';   // ⚠️ substituir
+const MODAL_WHATSAPP = '5527998528483'; 
+const MODAL_PIX      = 'cocarsagrado@gmail.com';        
+const MODAL_WISE     = 'cocarsagrado@gmail.com';   
 
 let _dadosPagamento = null;
 let _calendarioOk   = false;
@@ -14,12 +14,14 @@ let _calendarioOk   = false;
 // ============================================================
 // Abrir / Fechar
 // ============================================================
-function abrirModal() {
+function abrirModal(tipo) {
+  if (tipo) Estado.tipoSelecionado = tipo;
   const overlay = document.getElementById('modalAgendamento');
   if (!overlay) return;
   overlay.classList.add('open');
   document.body.classList.add('modal-aberto');
   overlay.querySelector('.modal-body')?.scrollTo({ top: 0 });
+  irParaPasso(1);
 }
 
 function fecharModal(forcar) {
@@ -51,6 +53,7 @@ function _resetarModal() {
 
   _mostrarTela(1, false);
   _irParaPassoBase && _irParaPassoBase(1);
+  _calendarioOk = false;
 }
 
 // ============================================================
@@ -105,7 +108,6 @@ window.redirecionarParaPagamento = function(chave) {
     whatsapp: document.getElementById('f-fone').value.trim(),
   };
 
-  // Mantém compat. com pagamento.html (caso o usuário abra diretamente)
   sessionStorage.setItem('agendamento', JSON.stringify(_dadosPagamento));
 
   _preencherTelaPagamento();
@@ -137,7 +139,7 @@ function _preencherTelaPagamento() {
 const _irParaPassoBase = window.irParaPasso;
 
 window.irParaPasso = function(num) {
-  if (num === 2 && !_calendarioOk) {
+  if (num === 1 && !_calendarioOk) {
     _calendarioOk = true;
     carregarCalendario();
   }

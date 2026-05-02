@@ -2,40 +2,48 @@
    COCAR SAGRADO — Sistema de Agendamento
    ============================================================ */
 
-// Estado global
 const Estado = {
-  tipoSelecionado: null,    // { id, nome, preco_original, duracao_minutos, ... }
-  dataSelecionada: null,    // 'YYYY-MM-DD'
-  horarioSelecionado: null, // 'HH:MM'
+  tipoSelecionado:   null,
+  dataSelecionada:   null,
+  horarioSelecionado:null,
   aceitou10: localStorage.getItem('aceitouDesconto10') === 'true',
 };
 
-// Nomes dos dias da semana (0=Dom ... 6=Sáb)
-const DIAS_PT = ['Domingo','Segunda','Terça','Quarta','Quinta','Sexta','Sábado'];
+const DIAS_PT    = ['Domingo','Segunda','Terça','Quarta','Quinta','Sexta','Sábado'];
 const DIAS_ABREV = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
-const MESES_PT = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+const MESES_PT   = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
 
 // ============================================================
-// STEP 1 — Tipos de leitura
+// SELETOR DE QUANTIDADE / TIER
 // ============================================================
-async function carregarTiposLeitura() {
-  const grid = document.getElementById('grid-tipos');
-  if (!grid) return;
-  grid.innerHTML = '<div class="ag-loading"><div class="ag-spinner"></div> Carregando...</div>';
 
-  const { data, error } = await supabase
-    .from('tipos_leitura')
-    .select('*')
-    .eq('ativo', true)
-    .order('preco_original');
+let _tiposCache          = null;
+let _seletorConfig       = null;
+let _seletorQty          = 1;
+let _seletorTierEscolhido= null;
 
-  if (error || !data?.length) {
-    grid.innerHTML = '<div class="ag-empty">Nenhuma leitura disponível no momento.</div>';
-    return;
-  }
+const SERVICO_CONFIG = {
+  'buzios-avulso':        { tipo: 'tier',      nome: 'Búzios Avulso',        prefixo: 'Búzios Avulso – ',       pergunta: 'Quantas perguntas?' },
+  'mesa-cigana-avulsa':   { tipo: 'tier',      nome: 'Mesa Cigana Avulsa',   prefixo: 'Mesa Cigana Avulsa – ',  pergunta: 'Quantas perguntas?' },
+  'buzios-completo':      { tipo: 'quantidade', nome: 'Búzios Completo',      pergunta: 'Quantas sessões?' },
+  'confirmacao-orixas':   { tipo: 'quantidade', nome: 'Confirmação de Orixás',pergunta: 'Quantas sessões?' },
+  'cabala-odu':           { tipo: 'quantidade', nome: 'Cabala de Odu',        pergunta: 'Quantas sessões?' },
+  'confirmacao-exu':      { tipo: 'quantidade', nome: 'Confirmação de Exu',   pergunta: 'Quantas sessões?' },
+  'mesa-cigana-completa': { tipo: 'quantidade', nome: 'Mesa Cigana Completa', pergunta: 'Quantas sessões?' },
+  'aguas-oxum':           { tipo: 'quantidade', nome: 'Águas de Oxum',        pergunta: 'Quantas sessões?' },
+  'rosa-venus':           { tipo: 'quantidade', nome: 'Rosa de Vênus',        pergunta: 'Quantas sessões?' },
+  'leitura-mentores':     { tipo: 'quantidade', nome: 'Leitura dos Mentores', pergunta: 'Quantas sessões?' },
+  'mesa-mediunica':       { tipo: 'quantidade', nome: 'Mesa Mediúnica',       pergunta: 'Quantas sessões?' },
+  'mesa-radionica':       { tipo: 'quantidade', nome: 'Mesa Radiônica',       pergunta: 'Quantas sessões?' },
+  'registros-akashicos':  { tipo: 'quantidade', nome: 'Registros Akáshicos',  pergunta: 'Quantas sessões?' },
+  'theta-healing':        { tipo: 'quantidade', nome: 'Theta Healing',        pergunta: 'Quantas sessões?' },
+};
 
-  grid.innerHTML = '';
-  data.forEach(tipo => grid.appendChild(criarCardTipo(tipo)));
+async function _garantirTipos() {
+  if (_tiposCache) return _tiposCache;
+  const { data } = await supabase.from('tipos_leitura').select('*').eq('ativo', true);
+  _tiposCache = data || [];
+  return _tiposCache;
 }
 
 function calcularPrecoFinal(precoOriginal) {
@@ -43,43 +51,123 @@ function calcularPrecoFinal(precoOriginal) {
   return { final: precoOriginal, desconto: 0 };
 }
 
-function criarCardTipo(tipo) {
-  const card = document.createElement('div');
-  card.className = 'ag-card';
-  card.dataset.id = tipo.id;
+async function abrirSeletor(serviceId) {
+  const config = SERVICO_CONFIG[serviceId];
+  if (!config) return;
 
-  const { final } = calcularPrecoFinal(tipo.preco_original);
-  const temDesconto = Estado.aceitou10;
+  const tipos = await _garantirTipos();
 
-  const precoHTML = temDesconto
-    ? `<div class="ag-price-block">
-        <span class="ag-price-old">R$ ${tipo.preco_original.toFixed(2).replace('.', ',')}</span>
-        <span class="ag-price-desc">R$ ${final.toFixed(2).replace('.', ',')}</span>
-       </div>`
-    : `<span class="ag-price">R$ ${tipo.preco_original.toFixed(2).replace('.', ',')}</span>`;
+  _seletorConfig        = config;
+  _seletorQty           = 1;
+  _seletorTierEscolhido = null;
 
-  card.innerHTML = `
-    ${temDesconto ? '<div class="ag-badge">10% OFF</div>' : ''}
-    <h3>${tipo.nome}</h3>
-    <p>${tipo.descricao || ''}</p>
-    <div class="ag-card-meta">
-      <span class="ag-card-duration">⏱ ${tipo.duracao_minutos} min</span>
-      ${precoHTML}
-    </div>`;
+  const tiersEl    = document.getElementById('seletor-tiers');
+  const qtyEl      = document.getElementById('seletor-qty-wrap');
+  const resumoEl   = document.getElementById('seletor-resumo');
+  const btnConfirm = document.getElementById('seletor-btn-confirm');
 
-  card.addEventListener('click', () => selecionarTipoLeitura(tipo, card));
-  return card;
+  document.getElementById('seletor-nome').textContent     = config.nome;
+  document.getElementById('seletor-pergunta').textContent = config.pergunta;
+
+  if (config.tipo === 'tier') {
+    const tiers = tipos
+      .filter(t => t.nome.startsWith(config.prefixo))
+      .sort((a, b) => a.preco_original - b.preco_original);
+
+    tiersEl.innerHTML = '';
+    tiers.forEach(tier => {
+      const { final } = calcularPrecoFinal(tier.preco_original);
+      const label = tier.nome.replace(config.prefixo, '');
+      const opt = document.createElement('div');
+      opt.className = 'seletor-tier-opt';
+      opt.innerHTML = `
+        <span class="tier-label">${label}</span>
+        <div class="tier-info">
+          <span class="tier-duracao">⏱ ${tier.duracao_minutos} min</span>
+          <span class="tier-preco">R$ ${final.toFixed(0)}</span>
+        </div>`;
+      opt.addEventListener('click', () => {
+        tiersEl.querySelectorAll('.seletor-tier-opt').forEach(o => o.classList.remove('selected'));
+        opt.classList.add('selected');
+        _seletorTierEscolhido = tier;
+        btnConfirm.removeAttribute('disabled');
+      });
+      tiersEl.appendChild(opt);
+    });
+
+    tiersEl.style.display  = 'flex';
+    qtyEl.style.display    = 'none';
+    resumoEl.style.display = 'none';
+    btnConfirm.setAttribute('disabled', '');
+
+  } else {
+    const tipo = tipos.find(t => t.nome === config.nome);
+    if (!tipo) { console.warn('Tipo não encontrado:', config.nome); return; }
+
+    _seletorTierEscolhido = tipo;
+    tiersEl.style.display  = 'none';
+    qtyEl.style.display    = 'flex';
+    resumoEl.style.display = 'flex';
+    _atualizarResumoSeletor();
+    btnConfirm.removeAttribute('disabled');
+  }
+
+  document.getElementById('seletor-overlay').classList.add('open');
+  document.body.classList.add('seletor-aberto');
 }
 
-function selecionarTipoLeitura(tipo, cardEl) {
-  document.querySelectorAll('#grid-tipos .ag-card').forEach(c => c.classList.remove('selected'));
-  cardEl.classList.add('selected');
-  Estado.tipoSelecionado = tipo;
-  setTimeout(() => irParaPasso(2), 250);
+function _atualizarResumoSeletor() {
+  const tipo = _seletorTierEscolhido;
+  if (!tipo) return;
+  const total    = tipo.preco_original  * _seletorQty;
+  const durTotal = tipo.duracao_minutos * _seletorQty;
+  const { final } = calcularPrecoFinal(total);
+
+  document.getElementById('seletor-qty').textContent     = _seletorQty;
+  document.getElementById('seletor-preco').textContent   = `R$ ${final.toFixed(0)}`;
+  document.getElementById('seletor-duracao').textContent = _formatarDuracao(durTotal);
+}
+
+function _formatarDuracao(min) {
+  if (min < 60) return `${min} min`;
+  const h = Math.floor(min / 60);
+  const m = min % 60;
+  return m ? `${h}h${m}min` : `${h}h`;
+}
+
+function alterarQty(delta) {
+  _seletorQty = Math.max(1, Math.min(5, _seletorQty + delta));
+  _atualizarResumoSeletor();
+}
+
+function fecharSeletor() {
+  document.getElementById('seletor-overlay')?.classList.remove('open');
+  document.body.classList.remove('seletor-aberto');
+}
+
+function confirmarSeletor() {
+  if (!_seletorConfig || !_seletorTierEscolhido) return;
+
+  let tipoFinal;
+  if (_seletorConfig.tipo === 'tier') {
+    tipoFinal = { ..._seletorTierEscolhido };
+  } else {
+    tipoFinal = {
+      ..._seletorTierEscolhido,
+      preco_original:  _seletorTierEscolhido.preco_original  * _seletorQty,
+      duracao_minutos: _seletorTierEscolhido.duracao_minutos * _seletorQty,
+      nome: _seletorQty > 1
+        ? `${_seletorTierEscolhido.nome} (×${_seletorQty})`
+        : _seletorTierEscolhido.nome,
+    };
+  }
+
+  fecharSeletor();
+  abrirModal(tipoFinal);
 }
 
 // ============================================================
-// STEP 2 — Calendário
+// STEP 1 — Calendário
 // ============================================================
 async function carregarCalendario() {
   const cal = document.getElementById('calendario');
@@ -115,7 +203,7 @@ async function carregarCalendario() {
   cal.innerHTML = '';
   cal.className = 'ag-calendar';
   dias.forEach(d => {
-    const str = dataParaISO(d);
+    const str  = dataParaISO(d);
     const card = document.createElement('div');
     card.className = 'ag-day-card';
     card.innerHTML = `
@@ -131,11 +219,11 @@ function selecionarData(dataStr, cardEl) {
   document.querySelectorAll('#calendario .ag-day-card').forEach(c => c.classList.remove('selected'));
   cardEl.classList.add('selected');
   Estado.dataSelecionada = dataStr;
-  setTimeout(() => irParaPasso(3), 250);
+  setTimeout(() => irParaPasso(2), 250);
 }
 
 // ============================================================
-// STEP 3 — Horários
+// STEP 2 — Horários
 // ============================================================
 async function carregarHorariosData(dataStr) {
   const container = document.getElementById('slots-horarios');
@@ -143,18 +231,19 @@ async function carregarHorariosData(dataStr) {
   if (!container) return;
 
   const d = new Date(dataStr + 'T00:00:00');
-  if (titulo) titulo.textContent = `Horários disponíveis — ${d.getDate()} de ${MESES_PT[d.getMonth()]} (${DIAS_PT[d.getDay()]})`;
+  if (titulo) titulo.textContent =
+    `Horários disponíveis — ${d.getDate()} de ${MESES_PT[d.getMonth()]} (${DIAS_PT[d.getDay()]})`;
 
   container.innerHTML = '<div class="ag-loading"><div class="ag-spinner"></div> Verificando...</div>';
 
   const diaSemana = d.getDay();
   const duracao   = Estado.tipoSelecionado?.duracao_minutos || 60;
 
-  const [{ data: horarios, error: e1 }, { data: ocupados, error: e2 }] = await Promise.all([
-    supabase.from('horarios_disponiveis').select('hora_inicio,hora_fim').eq('dia_semana', diaSemana).eq('ativo', true),
+  const [{ data: horarios, error: e1 }, { data: ocupados }] = await Promise.all([
+    supabase.from('horarios_disponiveis').select('hora_inicio,hora_fim')
+      .eq('dia_semana', diaSemana).eq('ativo', true),
     supabase.from('agendamentos').select('hora_agendamento,duracao_minutos')
-      .eq('data_agendamento', dataStr)
-      .not('status', 'eq', 'cancelado'),
+      .eq('data_agendamento', dataStr).not('status', 'eq', 'cancelado'),
   ]);
 
   if (e1 || !horarios?.length) {
@@ -208,27 +297,27 @@ function selecionarHorario(hora, el) {
   el.classList.add('selected');
   Estado.horarioSelecionado = hora;
   atualizarResumo();
-  setTimeout(() => irParaPasso(4), 250);
+  setTimeout(() => irParaPasso(3), 250);
 }
 
 // ============================================================
-// STEP 4 — Formulário
+// STEP 3 — Formulário
 // ============================================================
 function atualizarResumo() {
-  const tipo  = Estado.tipoSelecionado;
-  const data  = Estado.dataSelecionada;
-  const hora  = Estado.horarioSelecionado;
+  const tipo = Estado.tipoSelecionado;
+  const data = Estado.dataSelecionada;
+  const hora = Estado.horarioSelecionado;
   if (!tipo || !data || !hora) return;
 
   const { final, desconto } = calcularPrecoFinal(tipo.preco_original);
   const d = new Date(data + 'T00:00:00');
 
   const set = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
-  set('res-tipo',   tipo.nome);
-  set('res-data',   `${d.getDate()} de ${MESES_PT[d.getMonth()]} de ${d.getFullYear()}`);
-  set('res-hora',   hora);
-  set('res-duracao',`${tipo.duracao_minutos} min`);
-  set('res-valor',  `R$ ${final.toFixed(2).replace('.', ',')}`);
+  set('res-tipo',    tipo.nome);
+  set('res-data',    `${d.getDate()} de ${MESES_PT[d.getMonth()]} de ${d.getFullYear()}`);
+  set('res-hora',    hora);
+  set('res-duracao', _formatarDuracao(tipo.duracao_minutos));
+  set('res-valor',   `R$ ${final.toFixed(2).replace('.', ',')}`);
 
   const linhaDesc = document.getElementById('res-desconto-linha');
   if (linhaDesc) linhaDesc.style.display = desconto > 0 ? 'flex' : 'none';
@@ -252,28 +341,21 @@ function processarFormulario(e) {
 
 function validarFormulario() {
   let ok = true;
-
   const campos = [
-    { id: 'f-nome',  minLen: 3,  msg: 'Nome deve ter pelo menos 3 caracteres.' },
+    { id: 'f-nome',  minLen: 3,   msg: 'Nome deve ter pelo menos 3 caracteres.' },
     { id: 'f-email', email: true, msg: 'E-mail inválido.' },
     { id: 'f-fone',  minLen: 10, msg: 'WhatsApp inválido.' },
   ];
-
   campos.forEach(({ id, minLen, email, msg }) => {
     const el = document.getElementById(id);
     if (!el) return;
     el.classList.remove('error');
     const val = el.value.trim();
-    let invalido = false;
-    if (email) invalido = !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val);
-    else invalido = val.replace(/\D/g,'').length < minLen;
-    if (invalido) {
-      el.classList.add('error');
-      mostrarErroField(el, msg);
-      ok = false;
-    }
+    const invalido = email
+      ? !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val)
+      : val.replace(/\D/g,'').length < minLen;
+    if (invalido) { el.classList.add('error'); mostrarErroField(el, msg); ok = false; }
   });
-
   return ok;
 }
 
@@ -289,9 +371,9 @@ function mostrarErroField(input, msg) {
 }
 
 async function salvarAgendamento() {
-  const tipo    = Estado.tipoSelecionado;
+  const tipo = Estado.tipoSelecionado;
   const { final, desconto } = calcularPrecoFinal(tipo.preco_original);
-  const chave   = await gerarChavePedido();
+  const chave = await gerarChavePedido();
 
   const payload = {
     chave_pedido:        chave,
@@ -330,30 +412,15 @@ function gerarChaveAleatoria() {
 }
 
 function redirecionarParaPagamento(chave) {
-  const tipo  = Estado.tipoSelecionado;
-  const { final } = calcularPrecoFinal(tipo.preco_original);
-  const d = new Date(Estado.dataSelecionada + 'T00:00:00');
-
-  sessionStorage.setItem('agendamento', JSON.stringify({
-    chave,
-    tipo:     tipo.nome,
-    data:     `${d.getDate()} de ${MESES_PT[d.getMonth()]} de ${d.getFullYear()}`,
-    hora:     Estado.horarioSelecionado,
-    duracao:  tipo.duracao_minutos,
-    valor:    final.toFixed(2).replace('.', ','),
-    nome:     document.getElementById('f-nome').value.trim(),
-    whatsapp: document.getElementById('f-fone').value.trim(),
-  }));
-
-  window.location.href = 'pagamento.html';
+  // substituído por modal-agendamento.js (window.redirecionarParaPagamento)
 }
 
 // ============================================================
-// Navegação entre passos
+// Navegação entre passos (1=Data, 2=Horário, 3=Dados)
 // ============================================================
 function irParaPasso(num) {
-  if (num === 3 && Estado.dataSelecionada) carregarHorariosData(Estado.dataSelecionada);
-  if (num === 4) atualizarResumo();
+  if (num === 2 && Estado.dataSelecionada) carregarHorariosData(Estado.dataSelecionada);
+  if (num === 3) atualizarResumo();
 
   document.querySelectorAll('.ag-section').forEach((s, i) => {
     s.classList.toggle('active', i + 1 === num);
@@ -391,7 +458,6 @@ function mostrarAlerta(msg, tipo = 'info') {
   setTimeout(() => div.remove(), 4000);
 }
 
-// Máscara WhatsApp
 function aplicarMascaraFone(input) {
   input.addEventListener('input', () => {
     let v = input.value.replace(/\D/g,'').slice(0,11);
@@ -406,11 +472,18 @@ function aplicarMascaraFone(input) {
 // Init
 // ============================================================
 document.addEventListener('DOMContentLoaded', () => {
-  carregarTiposLeitura();
+  _garantirTipos(); // pré-carrega para o seletor responder rápido
 
   const fone = document.getElementById('f-fone');
   if (fone) aplicarMascaraFone(fone);
 
   const form = document.getElementById('form-dados');
   if (form) form.addEventListener('submit', processarFormulario);
+
+  const seletorOverlay = document.getElementById('seletor-overlay');
+  if (seletorOverlay) {
+    seletorOverlay.addEventListener('click', e => {
+      if (e.target === seletorOverlay) fecharSeletor();
+    });
+  }
 });

@@ -584,3 +584,214 @@ textarea { resize: vertical; min-height: 90px; }
   .adm-stats { grid-template-columns: 1fr; }
   .pag-chave-valor { font-size: 1.2rem; }
 }
+
+/* ============================================================
+   SELETOR DE QUANTIDADE / TIER
+   ============================================================ */
+.seletor-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(1, 20, 10, 0.72);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  z-index: 1100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s ease;
+}
+.seletor-overlay.open {
+  opacity: 1;
+  pointer-events: all;
+}
+
+.seletor-card {
+  position: relative;
+  background: #F8F5EE;
+  border: 1.5px solid rgba(201, 168, 76, 0.4);
+  border-radius: 20px;
+  padding: 36px 28px 28px;
+  max-width: 390px;
+  width: 100%;
+  box-shadow: 0 24px 64px rgba(1, 55, 24, 0.35);
+  transform: translateY(24px) scale(0.96);
+  transition: transform 0.28s cubic-bezier(0.34, 1.56, 0.64, 1);
+  text-align: center;
+}
+.seletor-overlay.open .seletor-card {
+  transform: translateY(0) scale(1);
+}
+
+.seletor-close {
+  position: absolute;
+  top: 14px; right: 14px;
+  width: 32px; height: 32px;
+  border: none;
+  background: rgba(1, 55, 24, 0.08);
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 13px;
+  color: #013718;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s;
+  font-family: inherit;
+}
+.seletor-close:hover { background: rgba(1, 55, 24, 0.16); }
+
+.seletor-icone { font-size: 2rem; margin-bottom: 8px; }
+
+.seletor-nome {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: #013718;
+  margin-bottom: 4px;
+}
+
+.seletor-pergunta {
+  font-size: 0.78rem;
+  color: #6b7280;
+  margin-bottom: 22px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+}
+
+/* Tier options */
+.seletor-tiers {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+.seletor-tier-opt {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px;
+  border: 1.5px solid rgba(1, 55, 24, 0.15);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
+  background: transparent;
+  text-align: left;
+}
+.seletor-tier-opt:hover {
+  border-color: #C9A84C;
+  background: rgba(201, 168, 76, 0.06);
+}
+.seletor-tier-opt.selected {
+  border-color: #C9A84C;
+  background: rgba(201, 168, 76, 0.1);
+  box-shadow: 0 0 0 3px rgba(201, 168, 76, 0.2);
+}
+.tier-label {
+  font-weight: 600;
+  color: #013718;
+  font-size: 0.9rem;
+}
+.tier-info {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+}
+.tier-duracao { font-size: 0.72rem; color: #6b7280; }
+.tier-preco   { font-size: 1rem; font-weight: 700; color: #B8902A; }
+
+/* Quantity stepper */
+.seletor-qty-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+  margin-bottom: 16px;
+}
+.seletor-qty-btn {
+  width: 44px; height: 44px;
+  border-radius: 50%;
+  border: 1.5px solid #C9A84C;
+  background: transparent;
+  color: #013718;
+  font-size: 1.5rem;
+  font-weight: 300;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s, color 0.15s;
+  line-height: 1;
+  font-family: inherit;
+}
+.seletor-qty-btn:hover { background: #C9A84C; color: #022D13; }
+
+.seletor-qty-num {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 2.4rem;
+  font-weight: 700;
+  color: #013718;
+  min-width: 40px;
+  text-align: center;
+  line-height: 1;
+}
+
+/* Resumo */
+.seletor-resumo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 12px 20px;
+  background: rgba(1, 55, 24, 0.06);
+  border-radius: 10px;
+  margin-bottom: 22px;
+}
+.seletor-resumo-preco { font-size: 1.15rem; font-weight: 700; color: #B8902A; }
+.seletor-resumo-sep   { color: #9ca3af; }
+.seletor-resumo-dur   { font-size: 0.85rem; color: #6b7280; font-weight: 500; }
+
+/* Actions */
+.seletor-actions { display: flex; gap: 10px; }
+
+.seletor-btn-cancel {
+  flex: 1;
+  padding: 13px;
+  border: 1.5px solid rgba(1, 55, 24, 0.2);
+  border-radius: 10px;
+  background: transparent;
+  color: #6b7280;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 0.15s;
+  font-family: inherit;
+}
+.seletor-btn-cancel:hover { border-color: rgba(1, 55, 24, 0.4); color: #013718; }
+
+.seletor-btn-confirm {
+  flex: 2;
+  padding: 13px 20px;
+  border: none;
+  border-radius: 10px;
+  background: #C9A84C;
+  color: #022D13;
+  font-size: 0.875rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s, opacity 0.15s;
+  font-family: inherit;
+  letter-spacing: 0.03em;
+}
+.seletor-btn-confirm:hover    { background: #B8902A; }
+.seletor-btn-confirm:disabled { opacity: 0.35; cursor: not-allowed; }
+
+@media (max-width: 420px) {
+  .seletor-card    { padding: 28px 18px 22px; }
+  .seletor-nome    { font-size: 1.2rem; }
+  .seletor-qty-num { font-size: 2rem; }
+}
