@@ -22,21 +22,26 @@ let _seletorConfig       = null;
 let _seletorQty          = 1;
 let _seletorTierEscolhido= null;
 
+const WHATSAPP_TERAPEUTA = {
+  matheus: '5528999476620',
+  camila:  '5527998528483',
+};
+
 const SERVICO_CONFIG = {
-  'buzios-avulso':        { tipo: 'tier',      nome: 'Búzios Avulso',        prefixo: 'Búzios Avulso – ',       pergunta: 'Quantas perguntas?' },
-  'mesa-cigana-avulsa':   { tipo: 'tier',      nome: 'Mesa Cigana Avulsa',   prefixo: 'Mesa Cigana Avulsa – ',  pergunta: 'Quantas perguntas?' },
-  'buzios-completo':      { tipo: 'quantidade', nome: 'Búzios Completo',      pergunta: 'Quantas sessões?' },
-  'confirmacao-orixas':   { tipo: 'quantidade', nome: 'Confirmação de Orixás',pergunta: 'Quantas sessões?' },
-  'cabala-odu':           { tipo: 'quantidade', nome: 'Cabala de Odu',        pergunta: 'Quantas sessões?' },
-  'confirmacao-exu':      { tipo: 'quantidade', nome: 'Confirmação de Exu',   pergunta: 'Quantas sessões?' },
-  'mesa-cigana-completa': { tipo: 'quantidade', nome: 'Mesa Cigana Completa', pergunta: 'Quantas sessões?' },
-  'aguas-oxum':           { tipo: 'quantidade', nome: 'Águas de Oxum',        pergunta: 'Quantas sessões?' },
-  'rosa-venus':           { tipo: 'quantidade', nome: 'Rosa de Vênus',        pergunta: 'Quantas sessões?' },
-  'leitura-mentores':     { tipo: 'quantidade', nome: 'Leitura dos Mentores', pergunta: 'Quantas sessões?' },
-  'mesa-mediunica':       { tipo: 'quantidade', nome: 'Mesa Mediúnica',       pergunta: 'Quantas sessões?' },
-  'mesa-radionica':       { tipo: 'quantidade', nome: 'Mesa Radiônica',       pergunta: 'Quantas sessões?' },
-  'registros-akashicos':  { tipo: 'quantidade', nome: 'Registros Akáshicos',  pergunta: 'Quantas sessões?' },
-  'theta-healing':        { tipo: 'quantidade', nome: 'Theta Healing',        pergunta: 'Quantas sessões?' },
+  'buzios-avulso':        { tipo: 'tier',      terapeuta: 'matheus', nome: 'Búzios Avulso',        prefixo: 'Búzios Avulso – ',       pergunta: 'Quantas perguntas?' },
+  'mesa-cigana-avulsa':   { tipo: 'tier',      terapeuta: 'camila',  nome: 'Mesa Cigana Avulsa',   prefixo: 'Mesa Cigana Avulsa – ',  pergunta: 'Quantas perguntas?' },
+  'buzios-completo':      { tipo: 'quantidade', terapeuta: 'matheus', nome: 'Búzios Completo',      pergunta: 'Quantas sessões?' },
+  'confirmacao-orixas':   { tipo: 'quantidade', terapeuta: 'matheus', nome: 'Confirmação de Orixás',pergunta: 'Quantas sessões?' },
+  'cabala-odu':           { tipo: 'quantidade', terapeuta: 'matheus', nome: 'Cabala de Odu',        pergunta: 'Quantas sessões?' },
+  'confirmacao-exu':      { tipo: 'quantidade', terapeuta: 'matheus', nome: 'Confirmação de Exu',   pergunta: 'Quantas sessões?' },
+  'mesa-cigana-completa': { tipo: 'quantidade', terapeuta: 'camila',  nome: 'Mesa Cigana Completa', pergunta: 'Quantas sessões?' },
+  'aguas-oxum':           { tipo: 'quantidade', terapeuta: 'camila',  nome: 'Águas de Oxum',        pergunta: 'Quantas sessões?' },
+  'rosa-venus':           { tipo: 'quantidade', terapeuta: 'camila',  nome: 'Rosa de Vênus',        pergunta: 'Quantas sessões?' },
+  'leitura-mentores':     { tipo: 'quantidade', terapeuta: 'camila',  nome: 'Leitura dos Mentores', pergunta: 'Quantas sessões?' },
+  'mesa-mediunica':       { tipo: 'quantidade', terapeuta: 'camila',  nome: 'Mesa Mediúnica',       pergunta: 'Quantas sessões?' },
+  'mesa-radionica':       { tipo: 'quantidade', terapeuta: 'camila',  nome: 'Mesa Radiônica',       pergunta: 'Quantas sessões?' },
+  'registros-akashicos':  { tipo: 'quantidade', terapeuta: 'camila',  nome: 'Registros Akáshicos',  pergunta: 'Quantas sessões?' },
+  'theta-healing':        { tipo: 'quantidade', terapeuta: 'camila',  nome: 'Theta Healing',        pergunta: 'Quantas sessões?' },
 };
 
 async function _garantirTipos() {
@@ -151,10 +156,11 @@ function confirmarSeletor() {
 
   let tipoFinal;
   if (_seletorConfig.tipo === 'tier') {
-    tipoFinal = { ..._seletorTierEscolhido };
+    tipoFinal = { ..._seletorTierEscolhido, terapeuta: _seletorConfig.terapeuta };
   } else {
     tipoFinal = {
       ..._seletorTierEscolhido,
+      terapeuta:       _seletorConfig.terapeuta,
       preco_original:  _seletorTierEscolhido.preco_original  * _seletorQty,
       duracao_minutos: _seletorTierEscolhido.duracao_minutos * _seletorQty,
       nome: _seletorQty > 1
@@ -381,6 +387,7 @@ async function salvarAgendamento() {
   const payload = {
     chave_pedido:        chave,
     tipo_leitura_id:     tipo.id,
+    terapeuta:           tipo.terapeuta || null,
     cliente_nome:        document.getElementById('f-nome').value.trim(),
     cliente_email:       document.getElementById('f-email').value.trim(),
     cliente_whatsapp:    document.getElementById('f-fone').value.trim(),
