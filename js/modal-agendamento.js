@@ -4,9 +4,8 @@
    carregarTiposLeitura, carregarCalendario, MESES_PT)
    ============================================================ */
 
-const MODAL_WHATSAPP = '5527998528483'; 
-const MODAL_PIX      = 'cocarsagrado@gmail.com';        
-const MODAL_WISE     = 'cocarsagrado@gmail.com';   
+const MODAL_PIX      = 'cocarsagrado@gmail.com';
+const MODAL_WISE     = 'cocarsagrado@gmail.com';
 
 let _dadosPagamento = null;
 let _calendarioOk   = false;
@@ -98,13 +97,14 @@ window.redirecionarParaPagamento = function(chave) {
 
   _dadosPagamento = {
     chave,
-    tipo:     tipo.nome,
-    data:     `${d.getDate()} de ${MESES_PT[d.getMonth()]} de ${d.getFullYear()}`,
-    hora:     Estado.horarioSelecionado,
-    duracao:  tipo.duracao_minutos,
-    valor:    final.toFixed(2).replace('.', ','),
-    nome:     document.getElementById('f-nome').value.trim(),
-    whatsapp: document.getElementById('f-fone').value.trim(),
+    tipo:      tipo.nome,
+    terapeuta: tipo.terapeuta || 'camila',
+    data:      `${d.getDate()} de ${MESES_PT[d.getMonth()]} de ${d.getFullYear()}`,
+    hora:      Estado.horarioSelecionado,
+    duracao:   tipo.duracao_minutos,
+    valor:     final.toFixed(2).replace('.', ','),
+    nome:      document.getElementById('f-nome').value.trim(),
+    whatsapp:  document.getElementById('f-fone').value.trim(),
   };
 
   sessionStorage.setItem('agendamento', JSON.stringify(_dadosPagamento));
@@ -181,7 +181,8 @@ function avisarWhatsAppModal(metodo) {
     wise:   `Olá! 😊 Realizei a transferência via *Wise*.\n\n*Pedido:* ${ag.chave}\n*Leitura:* ${ag.tipo}\n*Data:* ${ag.data} às ${ag.hora}\n*Valor:* R$ ${ag.valor}\n\nPode confirmar o recebimento? 🙏`,
   };
 
-  window.open(`https://wa.me/${MODAL_WHATSAPP}?text=${encodeURIComponent(msgs[metodo])}`, '_blank');
+  const numero = WHATSAPP_TERAPEUTA[ag.terapeuta] || WHATSAPP_TERAPEUTA.camila;
+  window.open(`https://wa.me/${numero}?text=${encodeURIComponent(msgs[metodo])}`, '_blank');
 }
 
 // ============================================================

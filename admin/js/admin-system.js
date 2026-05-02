@@ -2,7 +2,7 @@
    COCAR SAGRADO — Painel Admin
    ============================================================ */
 
-const WHATSAPP_ADMIN = '5527999999999'; // ⚠️ SUBSTITUIR
+const WHATSAPP_TERAPEUTA = { matheus: '5528999476620', camila: '5527998528483' };
 
 const STATUS_LABELS = {
   pendente:   'Pendente',
@@ -18,8 +18,9 @@ const MESES = ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov'
 // Carregamento principal
 // ============================================================
 async function carregarAgendamentos() {
-  const filtroStatus = document.getElementById('filtro-status')?.value || '';
-  const filtroData   = document.getElementById('filtro-data')?.value   || '';
+  const filtroStatus    = document.getElementById('filtro-status')?.value    || '';
+  const filtroData      = document.getElementById('filtro-data')?.value      || '';
+  const filtroTerapeuta = document.getElementById('filtro-terapeuta')?.value || '';
   const lista = document.getElementById('lista-agendamentos');
   if (!lista) return;
 
@@ -31,8 +32,9 @@ async function carregarAgendamentos() {
     .order('data_agendamento', { ascending: false })
     .order('hora_agendamento', { ascending: false });
 
-  if (filtroStatus) query = query.eq('status', filtroStatus);
-  if (filtroData)   query = query.eq('data_agendamento', filtroData);
+  if (filtroStatus)    query = query.eq('status', filtroStatus);
+  if (filtroData)      query = query.eq('data_agendamento', filtroData);
+  if (filtroTerapeuta) query = query.eq('terapeuta', filtroTerapeuta);
 
   const { data, error } = await query;
 
@@ -86,11 +88,13 @@ function criarItemAgendamento(ag) {
   item.className = 'adm-item';
   item.dataset.id = ag.id;
 
-  const nomeTipo = ag.tipos_leitura?.nome || '—';
-  const data     = formatarData(ag.data_agendamento);
-  const hora     = ag.hora_agendamento?.slice(0,5) || '—';
-  const valor    = `R$ ${Number(ag.valor_final || 0).toFixed(2).replace('.', ',')}`;
-  const badge    = `<span class="adm-badge adm-badge-${ag.status}">${STATUS_LABELS[ag.status] || ag.status}</span>`;
+  const nomeTipo        = ag.tipos_leitura?.nome || '—';
+  const data            = formatarData(ag.data_agendamento);
+  const hora            = ag.hora_agendamento?.slice(0,5) || '—';
+  const valor           = `R$ ${Number(ag.valor_final || 0).toFixed(2).replace('.', ',')}`;
+  const badge           = `<span class="adm-badge adm-badge-${ag.status}">${STATUS_LABELS[ag.status] || ag.status}</span>`;
+  const terapeutaNome   = ag.terapeuta === 'matheus' ? 'Matheus' : ag.terapeuta === 'camila' ? 'Camila' : '';
+  const badgeTerapeuta  = terapeutaNome ? `<span class="adm-badge" style="background:var(--secondary);color:#fff;">${terapeutaNome}</span>` : '';
 
   const acoes = montarAcoes(ag);
 
@@ -102,6 +106,7 @@ function criarItemAgendamento(ag) {
       </div>
       <div class="adm-item-right">
         <span style="font-weight:700; color:var(--primary)">${valor}</span>
+        ${badgeTerapeuta}
         ${badge}
         <span style="font-size:1.1rem; color:var(--text-muted)">▾</span>
       </div>
@@ -259,4 +264,5 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('btn-exportar')?.addEventListener('click', exportarRelatorio);
   document.getElementById('filtro-status')?.addEventListener('change', carregarAgendamentos);
   document.getElementById('filtro-data')?.addEventListener('change', carregarAgendamentos);
+  document.getElementById('filtro-terapeuta')?.addEventListener('change', carregarAgendamentos);
 });

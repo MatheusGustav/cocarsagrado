@@ -77,6 +77,14 @@
         <label for="filtro-data" style="font-size:.75rem">Data</label>
         <input type="date" id="filtro-data">
       </div>
+      <div class="ag-form-group" style="margin:0">
+        <label for="filtro-terapeuta" style="font-size:.75rem">Terapeuta</label>
+        <select id="filtro-terapeuta">
+          <option value="">Todos</option>
+          <option value="matheus">Matheus</option>
+          <option value="camila">Camila</option>
+        </select>
+      </div>
     </div>
 
     <!-- Lista de agendamentos -->
@@ -90,7 +98,7 @@
 <!-- Scripts -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="../js/supabase-config.js"></script>
-<script src="js/admin-system.js"></script>
+<script src="js/admin-system.js?v=2"></script>
 
 </body>
 </html>
