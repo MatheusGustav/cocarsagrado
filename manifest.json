@@ -4,8 +4,8 @@
   "description": "Agenda de atendimentos — Camila & Matheus",
   "start_url": "/admin/dashboard.html",
   "display": "standalone",
-  "background_color": "#1a1a0e",
-  "theme_color": "#2d4a1e",
+  "background_color": "#013718",
+  "theme_color": "#013718",
   "lang": "pt-BR",
   "icons": [
     {
