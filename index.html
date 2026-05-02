@@ -17,8 +17,8 @@
     })();
   </script>
   <link rel="stylesheet" href="style.css?v=6" />
-  <link rel="stylesheet" href="css/agendamento-styles.css?v=6">
-  <link rel="stylesheet" href="css/modal-agendamento.css?v=6">
+  <link rel="stylesheet" href="css/agendamento-styles.css?v=7">
+  <link rel="stylesheet" href="css/modal-agendamento.css?v=7">
 </head>
 <body>
 
@@ -270,7 +270,7 @@
                 <span><span>2 perguntas</span><strong>R$ 50</strong></span>
                 <span><span>3 perguntas</span><strong>R$ 70</strong></span>
               </div>
-<button class="cat-btn" onclick="abrirModal()">Agendar</button>
+<button class="cat-btn" onclick="abrirSeletor('buzios-avulso')">Agendar</button>
             </div>
           </article>
 
@@ -284,7 +284,7 @@
             </div>
             <div class="cat-footer">
               <span class="cat-footer-price">R$ 150</span>
-<button class="cat-btn" onclick="abrirModal()">Agendar</button>
+<button class="cat-btn" onclick="abrirSeletor('buzios-completo')">Agendar</button>
             </div>
           </article>
 
@@ -298,7 +298,7 @@
             </div>
             <div class="cat-footer">
               <span class="cat-footer-price">R$ 50</span>
-<button class="cat-btn" onclick="abrirModal()">Agendar</button>
+<button class="cat-btn" onclick="abrirSeletor('confirmacao-orixas')">Agendar</button>
             </div>
           </article>
 
@@ -312,7 +312,7 @@
             </div>
             <div class="cat-footer">
               <span class="cat-footer-price">R$ 50</span>
-<button class="cat-btn" onclick="abrirModal()">Agendar</button>
+<button class="cat-btn" onclick="abrirSeletor('cabala-odu')">Agendar</button>
             </div>
           </article>
 
@@ -326,7 +326,7 @@
             </div>
             <div class="cat-footer">
               <span class="cat-footer-price">R$ 70</span>
-<button class="cat-btn" onclick="abrirModal()">Agendar</button>
+<button class="cat-btn" onclick="abrirSeletor('confirmacao-exu')">Agendar</button>
             </div>
           </article>
 
@@ -345,7 +345,7 @@
                 <span><span>2 perguntas</span><strong>R$ 50</strong></span>
                 <span><span>3 perguntas</span><strong>R$ 70</strong></span>
               </div>
-<button class="cat-btn" onclick="abrirModal()">Agendar</button>
+<button class="cat-btn" onclick="abrirSeletor('mesa-cigana-avulsa')">Agendar</button>
             </div>
           </article>
 
@@ -359,7 +359,7 @@
             </div>
             <div class="cat-footer">
               <span class="cat-footer-price">R$ 150</span>
-<button class="cat-btn" onclick="abrirModal()">Agendar</button>
+<button class="cat-btn" onclick="abrirSeletor('mesa-cigana-completa')">Agendar</button>
             </div>
           </article>
 
@@ -373,7 +373,7 @@
             </div>
             <div class="cat-footer">
               <span class="cat-footer-price">R$ 50</span>
-<button class="cat-btn" onclick="abrirModal()">Agendar</button>
+<button class="cat-btn" onclick="abrirSeletor('aguas-oxum')">Agendar</button>
             </div>
           </article>
 
@@ -387,7 +387,7 @@
             </div>
             <div class="cat-footer">
               <span class="cat-footer-price">R$ 55</span>
-<button class="cat-btn" onclick="abrirModal()">Agendar</button>
+<button class="cat-btn" onclick="abrirSeletor('rosa-venus')">Agendar</button>
             </div>
           </article>
 
@@ -401,7 +401,7 @@
             </div>
             <div class="cat-footer">
               <span class="cat-footer-price">R$ 50</span>
-<button class="cat-btn" onclick="abrirModal()">Agendar</button>
+<button class="cat-btn" onclick="abrirSeletor('leitura-mentores')">Agendar</button>
             </div>
           </article>
 
@@ -415,7 +415,7 @@
             </div>
             <div class="cat-footer">
               <span class="cat-footer-price">R$ 70</span>
-<button class="cat-btn" onclick="abrirModal()">Agendar</button>
+<button class="cat-btn" onclick="abrirSeletor('mesa-mediunica')">Agendar</button>
             </div>
           </article>
 
@@ -430,7 +430,7 @@
             </div>
             <div class="cat-footer">
               <span class="cat-footer-price">R$ 222</span>
-<button class="cat-btn" onclick="abrirModal()">Agendar</button>
+<button class="cat-btn" onclick="abrirSeletor('mesa-radionica')">Agendar</button>
             </div>
           </article>
 
@@ -444,7 +444,7 @@
             </div>
             <div class="cat-footer">
               <span class="cat-footer-price">R$ 188</span>
-<button class="cat-btn" onclick="abrirModal()">Agendar</button>
+<button class="cat-btn" onclick="abrirSeletor('registros-akashicos')">Agendar</button>
             </div>
           </article>
 
@@ -458,7 +458,7 @@
             </div>
             <div class="cat-footer">
               <span class="cat-footer-price">R$ 150</span>
-<button class="cat-btn" onclick="abrirModal()">Agendar</button>
+<button class="cat-btn" onclick="abrirSeletor('theta-healing')">Agendar</button>
             </div>
           </article>
 
@@ -620,6 +620,37 @@
   </footer>
 
   <!-- ============================
+       SELETOR DE QUANTIDADE / TIER
+       ============================ -->
+  <div id="seletor-overlay" class="seletor-overlay" role="dialog" aria-modal="true" aria-labelledby="seletor-nome">
+    <div class="seletor-card">
+      <button class="seletor-close" onclick="fecharSeletor()" aria-label="Fechar">✕</button>
+      <div class="seletor-icone">🌿</div>
+      <h3 class="seletor-nome" id="seletor-nome">—</h3>
+      <p class="seletor-pergunta" id="seletor-pergunta">—</p>
+
+      <div class="seletor-tiers" id="seletor-tiers"></div>
+
+      <div class="seletor-qty-wrap" id="seletor-qty-wrap" style="display:none">
+        <button class="seletor-qty-btn" onclick="alterarQty(-1)" aria-label="Diminuir">−</button>
+        <span class="seletor-qty-num" id="seletor-qty">1</span>
+        <button class="seletor-qty-btn" onclick="alterarQty(1)" aria-label="Aumentar">+</button>
+      </div>
+
+      <div class="seletor-resumo" id="seletor-resumo" style="display:none">
+        <span class="seletor-resumo-preco" id="seletor-preco">—</span>
+        <span class="seletor-resumo-sep">·</span>
+        <span class="seletor-resumo-dur" id="seletor-duracao">—</span>
+      </div>
+
+      <div class="seletor-actions">
+        <button class="seletor-btn-cancel" onclick="fecharSeletor()">Cancelar</button>
+        <button class="seletor-btn-confirm" id="seletor-btn-confirm" onclick="confirmarSeletor()">Agendar →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================
        MODAL DE AGENDAMENTO
        ============================ -->
   <div id="modalAgendamento" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="modal-title">
@@ -648,34 +679,23 @@
         <div id="telaAgendamento" class="modal-screen active">
 
           <div class="ag-progress" style="margin-top:20px;" role="navigation" aria-label="Passos do agendamento">
-            <div class="ag-step active" id="step-1">1. Leitura</div>
-            <div class="ag-step"        id="step-2">2. Data</div>
-            <div class="ag-step"        id="step-3">3. Horário</div>
-            <div class="ag-step"        id="step-4">4. Dados</div>
+            <div class="ag-step active" id="step-1">Data</div>
+            <div class="ag-step"        id="step-2">Horário</div>
+            <div class="ag-step"        id="step-3">Dados</div>
           </div>
 
           <div class="ag-container">
 
-            <section class="ag-section active" id="secao-1" aria-label="Escolha a leitura">
-              <h2 class="ag-section-title">Qual leitura você deseja?</h2>
-              <div id="grid-tipos" class="ag-grid" role="list">
-                <div class="ag-loading"><div class="ag-spinner"></div> Carregando...</div>
-              </div>
-            </section>
-
-            <section class="ag-section" id="secao-2" aria-label="Escolha a data">
-              <div style="display:flex; align-items:center; gap:12px; margin-bottom:20px;">
-                <button class="ag-btn ag-btn-outline ag-btn-sm" onclick="irParaPasso(1)" aria-label="Voltar">← Voltar</button>
-                <h2 class="ag-section-title" style="margin:0">Escolha a data</h2>
-              </div>
+            <section class="ag-section active" id="secao-1" aria-label="Escolha a data">
+              <h2 class="ag-section-title">Escolha a data</h2>
               <div id="calendario">
                 <div class="ag-loading"><div class="ag-spinner"></div> Carregando...</div>
               </div>
             </section>
 
-            <section class="ag-section" id="secao-3" aria-label="Escolha o horário">
+            <section class="ag-section" id="secao-2" aria-label="Escolha o horário">
               <div style="display:flex; align-items:center; gap:12px; margin-bottom:20px;">
-                <button class="ag-btn ag-btn-outline ag-btn-sm" onclick="irParaPasso(2)" aria-label="Voltar">← Voltar</button>
+                <button class="ag-btn ag-btn-outline ag-btn-sm" onclick="irParaPasso(1)" aria-label="Voltar">← Voltar</button>
                 <h2 class="ag-section-title" id="titulo-horarios" style="margin:0">Escolha o horário</h2>
               </div>
               <div id="slots-horarios">
@@ -683,9 +703,9 @@
               </div>
             </section>
 
-            <section class="ag-section" id="secao-4" aria-label="Seus dados">
+            <section class="ag-section" id="secao-3" aria-label="Seus dados">
               <div style="display:flex; align-items:center; gap:12px; margin-bottom:24px;">
-                <button class="ag-btn ag-btn-outline ag-btn-sm" onclick="irParaPasso(3)" aria-label="Voltar">← Voltar</button>
+                <button class="ag-btn ag-btn-outline ag-btn-sm" onclick="irParaPasso(2)" aria-label="Voltar">← Voltar</button>
                 <h2 class="ag-section-title" style="margin:0">Finalize seu pedido</h2>
               </div>
 
@@ -817,12 +837,12 @@
   </div><!-- /modalAgendamento -->
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-  <script src="js/supabase-config.js?v=6"></script>
-  <script src="js/agendamento-system.js?v=6"></script>
-  <script src="js/modal-agendamento.js?v=6"></script>
+  <script src="js/supabase-config.js?v=7"></script>
+  <script src="js/agendamento-system.js?v=7"></script>
+  <script src="js/modal-agendamento.js?v=7"></script>
 
-  <script src="js/discount-system.js?v=6"></script>
-  <script src="script.js?v=6"></script>
+  <script src="js/discount-system.js?v=7"></script>
+  <script src="script.js?v=7"></script>
   <script>
 (function() {
     const USERNAME = 'cocarsagrado';
