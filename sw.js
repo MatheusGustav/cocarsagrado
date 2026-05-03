@@ -1,12 +1,13 @@
-const CACHE = 'cocar-admin-v3';
+const CACHE = 'cocar-admin-v5';
 const PRECACHE = [
   '/admin/dashboard.html',
   '/css/agendamento-styles.css',
+  '/admin/css/dashboard.css?v=2',
   '/js/supabase-config.js',
   '/admin/js/admin-system.js?v=2',
-  '/admin/js/agenda-system.js?v=1',
-  '/images/icon-192.png',
-  '/images/icon-512.png',
+  '/admin/js/agenda-system.js?v=2',
+  '/images/logo3.png',
+  '/images/logo3-192.png',
   'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js',
 ];
 
@@ -27,7 +28,7 @@ self.addEventListener('activate', e => {
 self.addEventListener('fetch', e => {
   if (e.request.method !== 'GET') return;
   const url = new URL(e.request.url);
-  // Não intercepta chamadas ao Supabase — dados sempre frescos
+  // Supabase sempre direto da rede — dados sempre frescos
   if (url.hostname.includes('supabase')) return;
 
   e.respondWith(
