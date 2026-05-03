@@ -917,3 +917,270 @@ body {
   .agenda-faixa-inputs { flex-wrap: wrap; }
   .agenda-time-modal   { width: 85px; }
 }
+
+/* ============================================================
+   RESPONSIVIDADE — TABLET  641px – 1024px
+   ============================================================ */
+@media (min-width: 641px) and (max-width: 1024px) {
+  .adm-sidebar {
+    width: 190px;
+  }
+  .adm-main {
+    padding: 22px;
+  }
+  .adm-stats {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .adm-stat-value {
+    font-size: 2.1rem !important;
+  }
+  .agenda-grade {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* ============================================================
+   RESPONSIVIDADE — MOBILE  ≤ 640px
+   ============================================================ */
+@media (max-width: 640px) {
+
+  /* Layout geral */
+  .adm-layout {
+    flex-direction: column;
+    min-height: 100dvh;
+  }
+
+  /* ── Sidebar → topbar sticky ──────────────────────────── */
+  .adm-sidebar {
+    width: 100%;
+    position: sticky;
+    top: 0;
+    z-index: 200;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    padding: 10px 16px 0;
+    gap: 0;
+    border-right: none;
+    border-bottom: 1px solid rgba(201,168,76,0.2);
+  }
+
+  /* Brand: logo + título na mesma linha */
+  .adm-sidebar > div:first-child {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border-bottom: none;
+    padding-bottom: 0;
+    margin-bottom: 0;
+    flex: 1;
+    min-width: 0;
+  }
+
+  .adm-logo {
+    font-size: 1.5rem !important;
+    margin-bottom: 0 !important;
+    display: inline !important;
+    filter: none;
+  }
+
+  .adm-sidebar h2 {
+    font-size: .95rem !important;
+    text-align: left;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* Oculta subtítulo e versão */
+  .adm-sidebar p,
+  .adm-sidebar > div:last-child {
+    display: none;
+  }
+
+  /* Nav: abas horizontais em linha cheia */
+  .adm-nav {
+    display: flex;
+    flex-direction: row;
+    width: 100%;
+    margin-top: 6px;
+    gap: 0;
+  }
+
+  .adm-nav a {
+    flex: 1;
+    text-align: center;
+    padding: 8px 4px !important;
+    font-size: .72rem !important;
+    border-left: none !important;
+    border-bottom: 2px solid transparent;
+    border-radius: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .adm-nav a:hover {
+    background: rgba(201,168,76,0.10) !important;
+    border-left-color: transparent !important;
+    border-bottom-color: rgba(201,168,76,0.4) !important;
+  }
+
+  .adm-nav a.active {
+    background: transparent !important;
+    border-left-color: transparent !important;
+    border-bottom-color: #C9A84C !important;
+    color: #E2C97E !important;
+  }
+
+  /* ── Main ─────────────────────────────────────────────── */
+  .adm-main {
+    padding: 16px;
+    overflow-y: visible;
+    height: auto;
+  }
+
+  .adm-main-header {
+    margin-bottom: 18px;
+    padding-bottom: 14px;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .adm-main-header h1 {
+    font-size: 1.65rem !important;
+  }
+
+  .adm-main-header > div {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  /* ── Stat cards: 2 colunas ────────────────────────────── */
+  .adm-stats {
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 18px;
+  }
+
+  .adm-stat-value {
+    font-size: 2rem !important;
+  }
+
+  /* ── Filtros: empilhados verticalmente ────────────────── */
+  .adm-filters {
+    flex-direction: column;
+    gap: 10px;
+    padding: 14px;
+  }
+
+  .adm-filters .ag-form-group {
+    width: 100%;
+    flex: none;
+  }
+
+  .adm-filters select,
+  .adm-filters input[type="date"] {
+    max-width: 100% !important;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  /* ── Cards de agendamento ─────────────────────────────── */
+  .adm-item-header {
+    padding: 12px 14px;
+  }
+
+  .adm-item-right {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .adm-details-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .adm-item-actions {
+    flex-wrap: wrap;
+  }
+
+  /* ── Agenda ───────────────────────────────────────────── */
+  .agenda-grade {
+    grid-template-columns: 1fr;
+  }
+
+  .adm-agenda-desc {
+    font-size: .8rem;
+    margin-bottom: 16px;
+  }
+}
+
+/* ============================================================
+   RESPONSIVIDADE — EXTRA PEQUENO  ≤ 400px
+   ============================================================ */
+@media (max-width: 400px) {
+  .adm-sidebar h2 {
+    display: none;
+  }
+
+  .adm-logo {
+    font-size: 1.6rem !important;
+  }
+
+  .adm-stat-value {
+    font-size: 1.75rem !important;
+  }
+
+  .adm-details-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .adm-nav a {
+    font-size: .65rem !important;
+    padding: 8px 2px !important;
+  }
+}
+
+/* ============================================================
+   iOS SAFE AREA — notch / Dynamic Island
+   viewport-fit=cover + env(safe-area-inset-*)
+   ============================================================ */
+@supports (padding: env(safe-area-inset-top)) {
+
+  /* Topbar: empurra para baixo do notch */
+  @media (max-width: 640px) {
+    .adm-sidebar {
+      padding-top: max(10px, env(safe-area-inset-top));
+      padding-left: max(16px, env(safe-area-inset-left));
+      padding-right: max(16px, env(safe-area-inset-right));
+    }
+  }
+
+  /* Desktop: sidebar lateral respeita safe-area esquerda */
+  @media (min-width: 641px) {
+    .adm-sidebar {
+      padding-left: max(16px, env(safe-area-inset-left));
+    }
+  }
+
+  /* Conteúdo principal: respeita borda direita e inferior (home indicator) */
+  .adm-main {
+    padding-right: max(28px, env(safe-area-inset-right));
+    padding-bottom: max(28px, env(safe-area-inset-bottom));
+  }
+
+  @media (max-width: 640px) {
+    .adm-main {
+      padding-right: max(16px, env(safe-area-inset-right));
+      padding-bottom: max(16px, env(safe-area-inset-bottom));
+    }
+  }
+
+  /* Modal: respeita safe-area na bottom sheet (iOS) */
+  @media (max-width: 500px) {
+    .agenda-modal-footer {
+      padding-bottom: max(16px, env(safe-area-inset-bottom));
+    }
+  }
+}
