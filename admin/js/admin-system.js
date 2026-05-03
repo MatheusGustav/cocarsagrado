@@ -115,7 +115,7 @@ function criarItemAgendamento(ag) {
       <div class="adm-details-grid">
         <div class="adm-detail-item"><label>Chave do pedido</label><span style="font-family:monospace">${ag.chave_pedido}</span></div>
         <div class="adm-detail-item"><label>WhatsApp</label><span>${ag.cliente_whatsapp || '—'}</span></div>
-        <div class="adm-detail-item"><label>E-mail</label><span>${ag.cliente_email || '—'}</span></div>
+        <div class="adm-detail-item"><label>Nascimento</label><span>${ag.cliente_nascimento || '—'}</span></div>
         <div class="adm-detail-item"><label>Valor original</label><span>R$ ${Number(ag.valor_original||0).toFixed(2).replace('.', ',')}</span></div>
         <div class="adm-detail-item"><label>Desconto</label><span>R$ ${Number(ag.desconto_aplicado||0).toFixed(2).replace('.', ',')}</span></div>
         <div class="adm-detail-item"><label>Duração</label><span>${ag.duracao_minutos} min</span></div>
@@ -207,11 +207,11 @@ async function exportarRelatorio() {
 
   if (error || !data) { alert('Erro ao exportar.'); return; }
 
-  const cols = ['Chave', 'Cliente', 'E-mail', 'WhatsApp', 'Tipo', 'Data', 'Hora', 'Duração', 'Valor Original', 'Desconto', 'Valor Final', 'Status', 'Método Pag.', 'Pago em', 'Atendido em', 'Criado em'];
+  const cols = ['Chave', 'Cliente', 'Nascimento', 'WhatsApp', 'Tipo', 'Data', 'Hora', 'Duração', 'Valor Original', 'Desconto', 'Valor Final', 'Status', 'Método Pag.', 'Pago em', 'Atendido em', 'Criado em'];
   const rows = data.map(a => [
     a.chave_pedido,
     a.cliente_nome,
-    a.cliente_email,
+    a.cliente_nascimento,
     a.cliente_whatsapp,
     a.tipos_leitura?.nome || '',
     a.data_agendamento,
