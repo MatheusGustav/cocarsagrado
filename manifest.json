@@ -1,21 +1,23 @@
 {
-  "name": "Cocar Sagrado Admin",
-  "short_name": "CS Admin",
-  "description": "Agenda de atendimentos — Camila & Matheus",
+  "name": "Agenda",
+  "short_name": "Agenda",
+  "description": "Agenda de atendimentos — Cocar Sagrado",
   "start_url": "/admin/dashboard.html",
+  "scope": "/admin/",
   "display": "standalone",
+  "orientation": "portrait",
   "background_color": "#013718",
   "theme_color": "#013718",
   "lang": "pt-BR",
   "icons": [
     {
-      "src": "/images/icon-192.png",
+      "src": "/images/logo3-192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "/images/icon-512.png",
+      "src": "/images/logo3.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
