@@ -42,8 +42,8 @@ Deno.serve(async (req) => {
 
     await supabase
       .from('agendamentos')
-      .update({ status: 'pago' })
-      .eq('chave', chave)
+      .update({ status: 'pago', pago_em: new Date().toISOString() })
+      .eq('chave_pedido', chave)
       .eq('status', 'pendente')
 
     return new Response(JSON.stringify({ success: true }), {

@@ -19,8 +19,8 @@
 /sw.js
   Cache-Control: no-cache, must-revalidate
 
-/images/icon-192.png
+/images/logo3-192.png
   Cache-Control: public, max-age=31536000, immutable
 
-/images/icon-512.png
+/images/logo3.png
   Cache-Control: public, max-age=31536000, immutable

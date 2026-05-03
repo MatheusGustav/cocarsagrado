@@ -88,7 +88,7 @@ function abrirModal(tipo) {
 }
 
 function fecharModal(forcar) {
-  const temDados = (window.Estado && Estado.tipoSelecionado) ||
+  const temDados = Estado.tipoSelecionado ||
                    document.getElementById('f-nome')?.value?.trim();
 
   if (!forcar && temDados) {
@@ -102,7 +102,7 @@ function fecharModal(forcar) {
 }
 
 function _resetarModal() {
-  if (window.Estado) {
+  if (typeof Estado !== 'undefined') {
     Estado.tipoSelecionado    = null;
     Estado.dataSelecionada    = null;
     Estado.horarioSelecionado = null;
