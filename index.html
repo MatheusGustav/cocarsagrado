@@ -782,15 +782,14 @@
             </div>
             <div class="pag-panel pag-metodo-box" id="modal-painel-cartao" role="tabpanel" aria-labelledby="modal-tab-cartao">
               <h3>💳 Pagamento via Cartão</h3>
-              <div class="ag-alert ag-alert-info" style="margin-bottom:20px;">O pagamento via cartão é realizado por link de pagamento enviado via WhatsApp.</div>
-              <ol class="pag-instrucoes">
-                <li><span class="step-num">1</span><span>Clique no botão abaixo para abrir o WhatsApp</span></li>
-                <li><span class="step-num">2</span><span>Envie a mensagem com sua chave do pedido</span></li>
-                <li><span class="step-num">3</span><span>Enviarei link de pagamento seguro: <strong id="modal-valor-cartao">—</strong></span></li>
-                <li><span class="step-num">4</span><span>Pague pelo link e seu agendamento será confirmado 🎉</span></li>
-              </ol>
+              <p style="color:var(--cor-texto-suave);margin-bottom:16px;font-size:.9rem;">Gere um link seguro e pague com crédito ou débito diretamente no checkout.</p>
+              <p style="text-align:center;font-size:1.05rem;margin-bottom:20px;">Valor: <strong id="modal-valor-cartao">—</strong></p>
+              <div id="cartao-link-box" style="display:none;text-align:center;margin-bottom:16px;">
+                <a id="cartao-link-btn" href="#" target="_blank" rel="noopener noreferrer" class="ag-btn ag-btn-primary" style="display:inline-flex;align-items:center;gap:8px;text-decoration:none;">💳 Abrir checkout para pagar</a>
+              </div>
+              <div id="cartao-erro-box" class="ag-alert ag-alert-error" style="display:none;margin-bottom:16px;"></div>
               <div class="pag-btns">
-                <button class="ag-btn ag-btn-whatsapp" onclick="avisarWhatsAppModal('cartao')">📱 Solicitar link de pagamento</button>
+                <button id="cartao-gerar-btn" class="ag-btn ag-btn-primary" onclick="gerarLinkCartao()">🔗 Gerar link de pagamento</button>
               </div>
             </div>
             <div class="pag-panel pag-metodo-box" id="modal-painel-wise" role="tabpanel" aria-labelledby="modal-tab-wise">
@@ -820,7 +819,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
   <script src="js/supabase-config.js?v=8"></script>
   <script src="js/agendamento-system.js?v=12"></script>
-  <script src="js/modal-agendamento.js?v=9"></script>
+  <script src="js/modal-agendamento.js?v=10"></script>
   <script src="js/discount-system.js?v=7"></script>
   <script src="script.js?v=3"></script>
   <script>

@@ -5,6 +5,7 @@
    ============================================================ */
 
 const MODAL_PIX      = 'cocarsagrado@gmail.com';
+const _CHECKOUT_URL  = 'https://demxedudbislzausvhwx.supabase.co/functions/v1/infinitypay-checkout';
 const MODAL_WISE     = 'cocarsagrado@gmail.com';
 const MODAL_NOME     = 'Cocar Sagrado';   // máx 25 chars — nome na conta PIX
 const MODAL_CIDADE   = 'Guarapari';       // máx 15 chars
@@ -180,6 +181,12 @@ function _preencherTelaPagamento() {
   set('modal-r-valor',      `R$ ${ag.valor}`);
 
   ['pix', 'cartao', 'wise'].forEach(m => set(`modal-valor-${m}`, `R$ ${ag.valor}`));
+  const _lb = document.getElementById('cartao-link-box');
+  const _eb = document.getElementById('cartao-erro-box');
+  const _gb = document.getElementById('cartao-gerar-btn');
+  if (_lb) _lb.style.display = 'none';
+  if (_eb) _eb.style.display = 'none';
+  if (_gb) { _gb.disabled = false; _gb.textContent = '🔗 Gerar link de pagamento'; }
   set('modal-chave-pix',  ag.chave);
   set('modal-email-wise', MODAL_WISE);
 
@@ -263,3 +270,37 @@ document.addEventListener('DOMContentLoaded', () => {
     if (e.target === overlay) fecharModal();
   });
 });
+
+// ============================================================
+// InfinityPay — geração de link de pagamento por cartão
+// ============================================================
+async function gerarLinkCartao() {
+  const ag = _dadosPagamento;
+  if (!ag) return;
+  const btn     = document.getElementById('cartao-gerar-btn');
+  const linkBox = document.getElementById('cartao-link-box');
+  const erroBox = document.getElementById('cartao-erro-box');
+  btn.disabled = true;
+  btn.textContent = '⏳ Gerando...';
+  linkBox.style.display = 'none';
+  erroBox.style.display = 'none';
+  try {
+    const res = await fetch(_CHECKOUT_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ chave: ag.chave, tipo: ag.tipo, valor: ag.valor, nome: ag.nome, whatsapp: ag.whatsapp }),
+    });
+    const data = await res.json();
+    if (!res.ok || data.error) throw new Error();
+    document.getElementById('cartao-link-btn').href = data.url;
+    linkBox.style.display = 'block';
+    btn.textContent = '🔄 Gerar novo link';
+    btn.disabled = false;
+  } catch {
+    erroBox.textContent = 'Não foi possível gerar o link. Tente novamente.';
+    erroBox.style.display = 'block';
+    btn.textContent = '🔗 Gerar link de pagamento';
+    btn.disabled = false;
+  }
+}
+window.gerarLinkCartao = gerarLinkCartao;
