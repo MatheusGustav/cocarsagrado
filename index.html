@@ -16,9 +16,7 @@
       } catch(e) {}
     })();
   </script>
-  <link rel="stylesheet" href="style.css?v=7" />
-  <link rel="stylesheet" href="css/agendamento-styles.css?v=7">
-  <link rel="stylesheet" href="css/modal-agendamento.css?v=7">
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
 
@@ -32,7 +30,7 @@
 
       <div class="overlay-top">
         <div class="overlay-ornament">
-          <img src="images/logo2.png" alt="Cocar Sagrado" class="overlay-ornament-logo">
+          <div class="overlay-ornament-inner"></div>
         </div>
         <p class="overlay-eyebrow">Primeira vez por aqui?</p>
         <h2 class="overlay-title" id="overlayTitle">temos um desconto especial<br>para você!</h2>
@@ -52,6 +50,7 @@
         <button class="btn-fill" id="overlayEnter">Garantir meu desconto!</button>
         <button class="btn-ghost-overlay" id="overlaySkip">recusar o desconto</button>
       </div>
+
     </div>
   </div>
 
@@ -183,9 +182,10 @@
 
         <div class="hero-left fade-in">
           <p class="eyebrow">Atendimento holístico desde 2019</p>
-          <h1 class="hero-title">Clareza, calma<br>e conexão<br>espiritual</h1>
+          <h1 class="hero-title">Direcionamento, clareza<br>e conexão<br>espiritual</h1>
           <blockquote class="hero-quote">
             "Tragam luz e clareza a quem procurar prontas respostas e prontas palavras, pois a clareza e calma são a chave da alma."
+            - Caboclo Pena Branca
           </blockquote>
           <div class="hero-btns">
             <a href="#catalogo" class="btn-fill">Ver catálogo</a>
@@ -242,7 +242,7 @@
         <div class="section-header fade-in-scroll">
           <p class="eyebrow">Nosso catálogo</p>
           <h2 class="section-title">Encontre o atendimento<br>que ressoa com você</h2>
-          <p class="section-sub">Cada modalidade é um caminho diferente para clareza, equilíbrio e conexão. Explore e agende diretamente pelo WhatsApp.</p>
+          <p class="section-sub">Temos diversas modalidades para diversas demandas</p>
         </div>
 
         <!-- Filtros de categoria -->
@@ -256,199 +256,171 @@
         <div class="cat-grid" id="catGrid">
 
           <!-- BÚZIOS -->
-          <article class="cat-card" data-category="buzios matheus" data-service-id="buzios-avulso">
+          <article class="cat-card" data-category="buzios matheus">
             <div class="cat-card-img">
-              <span class="cat-badge-atendimento cat-badge-atendimento--mensagem">Por mensagem</span>
               <img src="images/1.png" alt="Búzios Avulso" class="cat-img">
             </div>
             <div class="cat-body">
               <h3 class="cat-name">Búzios Avulso</h3>
-              <p class="cat-desc">Jogo de búzios focado em uma questão específica, com orientação direta e precisa dos orixás.</p>
+              <p class="cat-desc">Jogo de búzios focado em uma questão específica para cada pergunta, com orientação direta e precisa dos orixás.</p>
             </div>
             <div class="cat-footer">
-              <div class="cat-footer-tiers">
-                <span><span>1 pergunta</span><strong>R$ 30</strong></span>
-                <span><span>2 perguntas</span><strong>R$ 50</strong></span>
-                <span><span>3 perguntas</span><strong>R$ 70</strong></span>
-              </div>
-              <button class="cat-btn" onclick="abrirSeletor('buzios-avulso')">Agendar</button>
+<a href="https://wa.me/5528999476620?text=Olá,%20gostaria%20de%20agendar%20o%20jogo%20de%20buzios%20avulso" target="_blank" rel="noopener" class="cat-btn">Agendar</a>
             </div>
           </article>
 
-          <article class="cat-card" data-category="buzios matheus" data-service-id="buzios-completo">
+          <article class="cat-card" data-category="buzios matheus">
             <div class="cat-card-img">
-              <span class="cat-badge-atendimento cat-badge-atendimento--video">Vídeo chamada</span>
               <img src="images/2.png" alt="Búzios Completo" class="cat-img">
             </div>
             <div class="cat-body">
               <h3 class="cat-name">Búzios Completo</h3>
-              <p class="cat-desc">Jogo completo com leitura aprofundada dos orixás e orientação detalhada para todas as áreas da vida.</p>
+              <p class="cat-desc">Aborda todas as areas da vida, incluindo amor, saúde, carreira e espiritualidade.
+                Atenção: essa leitura não engloba confirmação de Exu.
+              </p>
             </div>
             <div class="cat-footer">
-              <span class="cat-footer-price">R$ 150</span>
-              <button class="cat-btn" onclick="abrirSeletor('buzios-completo')">Agendar</button>
+<a href="https://wa.me/5528999476620?text=Olá,%20gostaria%20de%20agendar%20o%20jogo%20de%20buzios%20completo" target="_blank" rel="noopener" class="cat-btn">Agendar</a>
             </div>
           </article>
 
-          <article class="cat-card" data-category="buzios matheus" data-service-id="confirmacao-orixas">
+          <article class="cat-card" data-category="buzios matheus">
             <div class="cat-card-img">
-              <span class="cat-badge-atendimento cat-badge-atendimento--mensagem">Por mensagem</span>
               <img src="images/3.png" alt="Confirmação de Orixás" class="cat-img">
             </div>
             <div class="cat-body">
               <h3 class="cat-name">Confirmação de Orixás</h3>
-              <p class="cat-desc">Identificação do seu orixá de cabeça e frente através do jogo de búzios sagrado.</p>
+              <p class="cat-desc">Identificação de seus orixás + explicação detalhada sobre os conceitos e como cada orixá age em sua vida.</p>
             </div>
             <div class="cat-footer">
-              <span class="cat-footer-price">R$ 50</span>
-              <button class="cat-btn" onclick="abrirSeletor('confirmacao-orixas')">Agendar</button>
+<a href="https://wa.me/5528999476620?text=Olá,%20gostaria%20de%20agendar%20a%20confirmação%20de%20orixás" target="_blank" rel="noopener" class="cat-btn">Agendar</a>
             </div>
           </article>
 
-          <article class="cat-card" data-category="buzios matheus" data-service-id="cabala-odu">
+          <article class="cat-card" data-category="buzios matheus">
             <div class="cat-card-img">
-              <span class="cat-badge-atendimento cat-badge-atendimento--mensagem">Por mensagem</span>
               <img src="images/4.png" alt="Cabala de Odu" class="cat-img">
             </div>
             <div class="cat-body">
               <h3 class="cat-name">Cabala de Odu</h3>
-              <p class="cat-desc">Leitura cabalística dos odus do jogo de búzios para orientação espiritual profunda e direcionada.</p>
+              <p class="cat-desc">Leitura cabalística dos odus vão falar sobre sua personalidade, pontos de atenção na area da saude, por onde ganha na vida, por onde perde, quais condutas evitar, quizilias e assim por diante.</p>
             </div>
             <div class="cat-footer">
-              <span class="cat-footer-price">R$ 50</span>
-              <button class="cat-btn" onclick="abrirSeletor('cabala-odu')">Agendar</button>
+<a href="https://wa.me/5528999476620?text=Olá,%20gostaria%20de%20agendar%20a%20cabala%20de%20odu" target="_blank" rel="noopener" class="cat-btn">Agendar</a>
             </div>
           </article>
 
-          <article class="cat-card" data-category="buzios matheus" data-service-id="confirmacao-exu">
+          <article class="cat-card" data-category="buzios matheus">
             <div class="cat-card-img">
-              <span class="cat-badge-atendimento cat-badge-atendimento--mensagem">Por mensagem</span>
               <img src="images/5.png" alt="Confirmação de Exu" class="cat-img">
             </div>
             <div class="cat-body">
               <h3 class="cat-name">Confirmação de Exu</h3>
-              <p class="cat-desc">Jogo de confirmação voltado à identificação e orientação do Exu guardião pessoal.</p>
+              <p class="cat-desc">Confirmação de Exu ou pombagira, com orientação detalhada por escrito atraves de documento + audio explicativo
+                Atenção: caso a entidade não queira responder o valor é extronado.
+              </p>
             </div>
             <div class="cat-footer">
-              <span class="cat-footer-price">R$ 70</span>
-              <button class="cat-btn" onclick="abrirSeletor('confirmacao-exu')">Agendar</button>
+<a href="https://wa.me/5528999476620?text=Olá,%20gostaria%20de%20agendar%20o%20jogo%20de%20confirmação%20de%20exu" target="_blank" rel="noopener" class="cat-btn">Agendar</a>
             </div>
           </article>
 
           <!-- CARTAS -->
-          <article class="cat-card" data-category="cartas camila" data-service-id="mesa-cigana-avulsa">
+          <article class="cat-card" data-category="cartas camila">
             <div class="cat-card-img">
-              <span class="cat-badge-atendimento cat-badge-atendimento--mensagem">Por mensagem</span>
               <img src="images/6.png" alt="Mesa Cigana Avulsa" class="cat-img">
             </div>
             <div class="cat-body">
               <h3 class="cat-name">Mesa Cigana Avulsa</h3>
-              <p class="cat-desc">Leitura focada com as cartas ciganas, trazendo clareza objetiva para uma área específica da vida.</p>
+              <p class="cat-desc">Consulta pelo baralho cigano, com respostas e orientação para determinadas questões de sua vida</p>
             </div>
             <div class="cat-footer">
-              <div class="cat-footer-tiers">
-                <span><span>1 pergunta</span><strong>R$ 30</strong></span>
-                <span><span>2 perguntas</span><strong>R$ 50</strong></span>
-                <span><span>3 perguntas</span><strong>R$ 70</strong></span>
-              </div>
-              <button class="cat-btn" onclick="abrirSeletor('mesa-cigana-avulsa')">Agendar</button>
+<a href="https://wa.me/5527998528483?text=Olá,%20gostaria%20de%20agendar%20a%20tenda%20cigana%20avulsa" target="_blank" rel="noopener" class="cat-btn">Agendar</a>
             </div>
           </article>
 
-          <article class="cat-card" data-category="cartas camila" data-service-id="mesa-cigana-completa">
+          <article class="cat-card" data-category="cartas camila">
             <div class="cat-card-img">
-              <span class="cat-badge-atendimento cat-badge-atendimento--video">Vídeo chamada</span>
               <img src="images/7.png" alt="Mesa Cigana Completa" class="cat-img">
             </div>
             <div class="cat-body">
               <h3 class="cat-name">Mesa Cigana Completa</h3>
-              <p class="cat-desc">Leitura aprofundada com as cartas ciganas, cobrindo amor, trabalho, saúde e espiritualidade.</p>
+              <p class="cat-desc">Consulta feita através do baralho cigano te orientando em todos as áreas da sua vida.</p>
             </div>
             <div class="cat-footer">
-              <span class="cat-footer-price">R$ 150</span>
-              <button class="cat-btn" onclick="abrirSeletor('mesa-cigana-completa')">Agendar</button>
+<a href="https://wa.me/5527998528483?text=Olá,%20gostaria%20de%20agendar%20a%20tenda%20cigana%20completa" target="_blank" rel="noopener" class="cat-btn">Agendar</a>
             </div>
           </article>
 
-          <article class="cat-card" data-category="cartas camila" data-service-id="aguas-oxum">
+          <article class="cat-card" data-category="cartas camila">
             <div class="cat-card-img">
-              <span class="cat-badge-atendimento cat-badge-atendimento--mensagem">Por mensagem</span>
               <img src="images/8.png" alt="Águas de Oxum" class="cat-img">
             </div>
             <div class="cat-body">
               <h3 class="cat-name">Águas de Oxum</h3>
-              <p class="cat-desc">Ritual de limpeza e conexão com a energia de Oxum, para harmonização emocional e espiritual.</p>
+              <p class="cat-desc">Leitura com enfoque completo no amoroso. São vistos: pensamentos, sentimentos, intenções e caminhos.</p>
             </div>
             <div class="cat-footer">
-              <span class="cat-footer-price">R$ 50</span>
-              <button class="cat-btn" onclick="abrirSeletor('aguas-oxum')">Agendar</button>
+<a href="https://wa.me/5527998528483?text=Olá,%20gostaria%20de%20agendar%20as%20águas%20de%20oxum" target="_blank" rel="noopener" class="cat-btn">Agendar</a>
             </div>
           </article>
 
-          <article class="cat-card" data-category="cartas camila" data-service-id="rosa-venus">
+          <article class="cat-card" data-category="cartas camila">
             <div class="cat-card-img">
-              <span class="cat-badge-atendimento cat-badge-atendimento--mensagem">Por mensagem</span>
               <img src="images/9.png" alt="Rosa de Vênus" class="cat-img">
             </div>
             <div class="cat-body">
               <h3 class="cat-name">Rosa de Vênus</h3>
-              <p class="cat-desc">Leitura especial voltada para amor, relacionamentos e conexões afetivas sob a influência de Vênus.</p>
+              <p class="cat-desc">Leitura com enfoque no autoconhecimento. São vistos: caminhos de forma ampla e como melhora-los</p>
             </div>
             <div class="cat-footer">
-              <span class="cat-footer-price">R$ 55</span>
-              <button class="cat-btn" onclick="abrirSeletor('rosa-venus')">Agendar</button>
+<a href="https://wa.me/5527998528483?text=Olá,%20gostaria%20de%20agendar%20a%20rosa%20de%20vênus" target="_blank" rel="noopener" class="cat-btn">Agendar</a>
             </div>
           </article>
 
-          <article class="cat-card" data-category="cartas camila" data-service-id="leitura-mentores">
+          <article class="cat-card" data-category="cartas camila">
             <div class="cat-card-img">
-              <span class="cat-badge-atendimento cat-badge-atendimento--mensagem">Por mensagem</span>
               <img src="images/10.png" alt="Leitura dos Mentores" class="cat-img">
             </div>
             <div class="cat-body">
               <h3 class="cat-name">Leitura dos Mentores</h3>
-              <p class="cat-desc">Conexão e leitura com os guias e mentores espirituais que acompanham sua jornada de vida.</p>
+              <p class="cat-desc">Descrição do guia mais próximo de você e dos seus caminhos com mensagens dele(a).</p>
             </div>
             <div class="cat-footer">
-              <span class="cat-footer-price">R$ 50</span>
-              <button class="cat-btn" onclick="abrirSeletor('leitura-mentores')">Agendar</button>
+<a href="https://wa.me/5527998528483?text=Olá,%20gostaria%20de%20agendar%20a%20leitura%20dos%20mentores" target="_blank" rel="noopener" class="cat-btn">Agendar</a>
             </div>
           </article>
 
-          <article class="cat-card" data-category="cartas camila" data-service-id="mesa-mediunica">
+          <article class="cat-card" data-category="cartas camila">
             <div class="cat-card-img">
-              <span class="cat-badge-atendimento cat-badge-atendimento--mensagem">Por mensagem</span>
               <img src="images/11.png" alt="Mesa Mediúnica" class="cat-img">
             </div>
             <div class="cat-body">
               <h3 class="cat-name">Mesa Mediúnica</h3>
-              <p class="cat-desc">Atendimento mediúnico com conexão espiritual profunda para orientação e clareza da alma.</p>
+              <p class="cat-desc">Leitura do seu campo espiritual, apontando suas mediunidade e parapsiquismos.</p>
             </div>
             <div class="cat-footer">
-              <span class="cat-footer-price">R$ 70</span>
-              <button class="cat-btn" onclick="abrirSeletor('mesa-mediunica')">Agendar</button>
+<a href="https://wa.me/5527998528483?text=Olá,%20gostaria%20de%20agendar%20a%20mesa%20mediúnica" target="_blank" rel="noopener" class="cat-btn">Agendar</a>
             </div>
           </article>
 
           <!-- RADIESTESIA -->
-          <article class="cat-card" data-category="radiestesia camila" data-service-id="mesa-radionica">
+          <article class="cat-card" data-category="radiestesia camila">
             <div class="cat-card-img">
-              <span class="cat-badge-atendimento cat-badge-atendimento--mensagem">Por mensagem</span>
               <img src="images/12.png" alt="Mesa Radiônica" class="cat-img">
             </div>
             <div class="cat-body">
               <h3 class="cat-name">Mesa Radiônica</h3>
-              <p class="cat-desc">Trabalho radiestésico para harmonização energética, limpeza e equilíbrio dos campos sutis.</p>
+              <p class="cat-desc">Leitura do seu campo espiritual completa. Utilização de ressonâncias para fins de equilibrio dos campos sutis.
+                Esta leitura conta com documento com orientações por escrito + audio explicativo.</p>
             </div>
             <div class="cat-footer">
-              <span class="cat-footer-price">R$ 222</span>
-              <button class="cat-btn" onclick="abrirSeletor('mesa-radionica')">Agendar</button>
+<a href="https://wa.me/5527998528483?text=Olá,%20gostaria%20de%20agendar%20a%20mesa%20radiônica" target="_blank" rel="noopener" class="cat-btn">Agendar</a>
             </div>
           </article>
 
-          <article class="cat-card" data-category="radiestesia camila" data-service-id="registros-akashicos">
+          <article class="cat-card" data-category="radiestesia camila">
             <div class="cat-card-img">
-              <span class="cat-badge-atendimento cat-badge-atendimento--mensagem">Por mensagem</span>
               <img src="images/13.png" alt="Registros Akáshicos" class="cat-img">
             </div>
             <div class="cat-body">
@@ -456,23 +428,20 @@
               <p class="cat-desc">Acesso aos registros da alma para compreender padrões, missão de vida e bloqueios energéticos profundos.</p>
             </div>
             <div class="cat-footer">
-              <span class="cat-footer-price">R$ 188</span>
-              <button class="cat-btn" onclick="abrirSeletor('registros-akashicos')">Agendar</button>
+<a href="https://wa.me/5527998528483?text=Olá,%20gostaria%20de%20agendar%20os%20registros%20akashicos" target="_blank" rel="noopener" class="cat-btn">Agendar</a>
             </div>
           </article>
 
-          <article class="cat-card" data-category="radiestesia camila" data-service-id="theta-healing">
+          <article class="cat-card" data-category="radiestesia camila">
             <div class="cat-card-img">
-              <span class="cat-badge-atendimento cat-badge-atendimento--mensagem">Por mensagem</span>
               <img src="images/14.png" alt="Theta Healing" class="cat-img">
             </div>
             <div class="cat-body">
               <h3 class="cat-name">Theta Healing</h3>
-              <p class="cat-desc">Técnica de meditação profunda para reprogramar crenças limitantes e acessar o estado teta de cura.</p>
+              <p class="cat-desc">Técnica de meditação profunda para reprogramar crenças limitantes e acessar o estado theta de cura.</p>
             </div>
             <div class="cat-footer">
-              <span class="cat-footer-price">R$ 150</span>
-              <button class="cat-btn" onclick="abrirSeletor('theta-healing')">Agendar</button>
+<a href="https://wa.me/5527998528483?text=Olá,%20gostaria%20de%20agendar%20o%20theta%20healing" target="_blank" rel="noopener" class="cat-btn">Agendar</a>
             </div>
           </article>
 
@@ -633,230 +602,7 @@
     </div>
   </footer>
 
-  <!-- ============================
-       SELETOR DE QUANTIDADE / TIER
-       ============================ -->
-  <div id="seletor-overlay" class="seletor-overlay" role="dialog" aria-modal="true" aria-labelledby="seletor-nome">
-    <div class="seletor-card">
-      <button class="seletor-close" onclick="fecharSeletor()" aria-label="Fechar">✕</button>
-      <div class="seletor-icone">🌿</div>
-      <h3 class="seletor-nome" id="seletor-nome">—</h3>
-      <p class="seletor-pergunta" id="seletor-pergunta">—</p>
-
-      <div class="seletor-tiers" id="seletor-tiers"></div>
-
-      <div class="seletor-qty-wrap" id="seletor-qty-wrap" style="display:none">
-        <button class="seletor-qty-btn" onclick="alterarQty(-1)" aria-label="Diminuir">−</button>
-        <span class="seletor-qty-num" id="seletor-qty">1</span>
-        <button class="seletor-qty-btn" onclick="alterarQty(1)" aria-label="Aumentar">+</button>
-      </div>
-
-      <div class="seletor-resumo" id="seletor-resumo" style="display:none">
-        <span class="seletor-resumo-preco" id="seletor-preco">—</span>
-        <span class="seletor-resumo-sep">·</span>
-        <span class="seletor-resumo-dur" id="seletor-duracao">—</span>
-      </div>
-
-      <div class="seletor-actions">
-        <button class="seletor-btn-cancel" onclick="fecharSeletor()">Cancelar</button>
-        <button class="seletor-btn-confirm" id="seletor-btn-confirm" onclick="confirmarSeletor()">Agendar →</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- ============================
-       MODAL DE AGENDAMENTO
-       ============================ -->
-  <div id="modalAgendamento" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="modal-title">
-    <div class="modal-container">
-
-      <div class="modal-drag-handle" aria-hidden="true"></div>
-
-      <div class="modal-header">
-        <div class="modal-progress" role="navigation" aria-label="Etapas">
-          <div class="modal-tela-step active" id="modal-step-1">
-            <span class="t-num">1</span>
-            <span id="modal-title">Agendamento</span>
-          </div>
-          <span class="modal-progress-sep" aria-hidden="true">›</span>
-          <div class="modal-tela-step" id="modal-step-2">
-            <span class="t-num">2</span>
-            <span>Pagamento</span>
-          </div>
-        </div>
-        <button class="modal-close-btn" onclick="fecharModal()" aria-label="Fechar modal">&#10005;</button>
-      </div>
-
-      <div class="modal-body">
-
-        <!-- ===== TELA 1: AGENDAMENTO ===== -->
-        <div id="telaAgendamento" class="modal-screen active">
-
-          <div class="ag-progress" style="margin-top:20px;" role="navigation" aria-label="Passos do agendamento">
-            <div class="ag-step active" id="step-1">Data</div>
-            <div class="ag-step"        id="step-2">Horário</div>
-            <div class="ag-step"        id="step-3">Dados</div>
-          </div>
-
-          <div class="ag-container">
-
-            <section class="ag-section active" id="secao-1" aria-label="Escolha a data">
-              <h2 class="ag-section-title">Escolha a data</h2>
-              <div id="calendario">
-                <div class="ag-loading"><div class="ag-spinner"></div> Carregando...</div>
-              </div>
-            </section>
-
-            <section class="ag-section" id="secao-2" aria-label="Escolha o horário">
-              <div style="display:flex; align-items:center; gap:12px; margin-bottom:20px;">
-                <button class="ag-btn ag-btn-outline ag-btn-sm" onclick="irParaPasso(1)" aria-label="Voltar">← Voltar</button>
-                <h2 class="ag-section-title" id="titulo-horarios" style="margin:0">Escolha o horário</h2>
-              </div>
-              <div id="slots-horarios">
-                <div class="ag-loading"><div class="ag-spinner"></div> Verificando...</div>
-              </div>
-            </section>
-
-            <section class="ag-section" id="secao-3" aria-label="Seus dados">
-              <div style="display:flex; align-items:center; gap:12px; margin-bottom:24px;">
-                <button class="ag-btn ag-btn-outline ag-btn-sm" onclick="irParaPasso(2)" aria-label="Voltar">← Voltar</button>
-                <h2 class="ag-section-title" style="margin:0">Finalize seu pedido</h2>
-              </div>
-
-              <div class="ag-resumo" role="region" aria-label="Resumo do pedido">
-                <h3>📋 Resumo do pedido</h3>
-                <div class="ag-resumo-row"><span>Leitura</span><span id="res-tipo">—</span></div>
-                <div class="ag-resumo-row"><span>Data</span><span id="res-data">—</span></div>
-                <div class="ag-resumo-row"><span>Horário</span><span id="res-hora">—</span></div>
-                <div class="ag-resumo-row"><span>Duração</span><span id="res-duracao">—</span></div>
-                <div class="ag-resumo-row" id="res-desconto-linha" style="display:none; color:#065f46;">
-                  <span>Desconto 10%</span><span id="res-desconto">—</span>
-                </div>
-                <div class="ag-resumo-total"><span>Total</span><span id="res-valor">—</span></div>
-              </div>
-
-              <form class="ag-form" id="form-dados" novalidate>
-                <div class="ag-form-row">
-                  <div class="ag-form-group">
-                    <label for="f-nome">Nome completo *</label>
-                    <input type="text" id="f-nome" name="nome" placeholder="Seu nome completo" required autocomplete="name">
-                  </div>
-                  <div class="ag-form-group">
-                    <label for="f-email">E-mail *</label>
-                    <input type="email" id="f-email" name="email" placeholder="seu@email.com" required autocomplete="email">
-                  </div>
-                </div>
-                <div class="ag-form-group">
-                  <label for="f-fone">WhatsApp *</label>
-                  <input type="tel" id="f-fone" name="fone" placeholder="(27) 99999-9999" required autocomplete="tel">
-                </div>
-                <div class="ag-form-group">
-                  <label for="f-obs">Observações <span style="font-weight:400;color:var(--text-muted)">(opcional)</span></label>
-                  <textarea id="f-obs" name="obs" placeholder="Alguma questão específica que deseja trazer na leitura?"></textarea>
-                </div>
-                <button type="submit" class="ag-btn ag-btn-primary" id="btn-pagar">
-                  💳 Continuar para Pagamento
-                </button>
-              </form>
-            </section>
-
-          </div><!-- /ag-container -->
-        </div><!-- /telaAgendamento -->
-
-        <!-- ===== TELA 2: PAGAMENTO ===== -->
-        <div id="telaPagamento" class="modal-screen">
-          <div class="pag-container">
-
-            <button class="pag-voltar-btn" onclick="_mostrarTela(1)">← Voltar ao agendamento</button>
-
-            <div class="pag-chave-box" role="region" aria-label="Chave do pedido">
-              <div class="pag-chave-label">🔑 Chave do Pedido</div>
-              <div class="pag-chave-valor" id="modal-chave-pedido">CS-XXXX-XXXX-XXXX</div>
-              <button class="ag-btn ag-btn-copy ag-btn-sm" onclick="copiarChavePedido()" aria-label="Copiar chave">📋 Copiar chave</button>
-              <p class="pag-chave-copia">Guarde esta chave — você vai precisar dela no pagamento</p>
-            </div>
-
-            <div class="pag-resumo-box" role="region" aria-label="Resumo do agendamento">
-              <h3>📋 Resumo do agendamento</h3>
-              <div class="pag-resumo-linha"><span>Leitura</span>  <strong id="modal-r-tipo">—</strong></div>
-              <div class="pag-resumo-linha"><span>Data</span>     <strong id="modal-r-data">—</strong></div>
-              <div class="pag-resumo-linha"><span>Horário</span>  <strong id="modal-r-hora">—</strong></div>
-              <div class="pag-resumo-linha"><span>Duração</span>  <strong id="modal-r-duracao">—</strong></div>
-              <div class="pag-resumo-linha" style="border-top:2px solid var(--border); padding-top:10px; margin-top:6px;">
-                <span><strong>Total a pagar</strong></span>
-                <strong id="modal-r-valor" style="color:var(--primary); font-size:1.1rem;">—</strong>
-              </div>
-            </div>
-
-            <div class="pag-tabs" role="tablist" aria-label="Métodos de pagamento">
-              <button class="pag-tab active" id="modal-tab-pix"    onclick="trocarAbaPagamento('pix')"    role="tab" aria-selected="true"  aria-controls="modal-painel-pix">💰 PIX</button>
-              <button class="pag-tab"        id="modal-tab-cartao" onclick="trocarAbaPagamento('cartao')" role="tab" aria-selected="false" aria-controls="modal-painel-cartao">💳 Cartão</button>
-              <button class="pag-tab"        id="modal-tab-wise"   onclick="trocarAbaPagamento('wise')"   role="tab" aria-selected="false" aria-controls="modal-painel-wise">🌍 Wise</button>
-            </div>
-
-            <div class="pag-panel active pag-metodo-box" id="modal-painel-pix" role="tabpanel" aria-labelledby="modal-tab-pix">
-              <h3>💰 Pagamento via PIX</h3>
-              <div class="pag-qr-placeholder">📷 QR Code<br><small>(Insira a imagem do QR Code após configurar)</small></div>
-              <p style="font-size:.85rem; color:var(--text-muted); margin-bottom:8px; font-weight:600;">Chave PIX:</p>
-              <div class="pag-pix-chave" id="modal-chave-pix">—</div>
-              <button class="ag-btn ag-btn-copy ag-btn-sm" onclick="copiarPixModal()" style="margin-bottom:20px;">📋 Copiar chave PIX</button>
-              <ol class="pag-instrucoes">
-                <li><span class="step-num">1</span><span>Abra seu banco → <strong>Pix → Fazer transferência</strong></span></li>
-                <li><span class="step-num">2</span><span>Cole a chave PIX acima ou use o QR Code</span></li>
-                <li><span class="step-num">3</span><span>Informe o valor: <strong id="modal-valor-pix">—</strong></span></li>
-                <li><span class="step-num">4</span><span>No campo mensagem, coloque sua <strong>chave do pedido</strong></span></li>
-                <li><span class="step-num">5</span><span>Confirme o pagamento e clique abaixo ✅</span></li>
-              </ol>
-              <div class="pag-btns">
-                <button class="ag-btn ag-btn-whatsapp" onclick="avisarWhatsAppModal('pix')">📱 Avisar que paguei via PIX</button>
-              </div>
-            </div>
-
-            <div class="pag-panel pag-metodo-box" id="modal-painel-cartao" role="tabpanel" aria-labelledby="modal-tab-cartao">
-              <h3>💳 Pagamento via Cartão</h3>
-              <div class="ag-alert ag-alert-info" style="margin-bottom:20px;">O pagamento via cartão é realizado por link de pagamento enviado via WhatsApp.</div>
-              <ol class="pag-instrucoes">
-                <li><span class="step-num">1</span><span>Clique no botão abaixo para abrir o WhatsApp</span></li>
-                <li><span class="step-num">2</span><span>Envie a mensagem com sua chave do pedido</span></li>
-                <li><span class="step-num">3</span><span>Enviarei link de pagamento seguro: <strong id="modal-valor-cartao">—</strong></span></li>
-                <li><span class="step-num">4</span><span>Pague pelo link e seu agendamento será confirmado 🎉</span></li>
-              </ol>
-              <div class="pag-btns">
-                <button class="ag-btn ag-btn-whatsapp" onclick="avisarWhatsAppModal('cartao')">📱 Solicitar link de pagamento</button>
-              </div>
-            </div>
-
-            <div class="pag-panel pag-metodo-box" id="modal-painel-wise" role="tabpanel" aria-labelledby="modal-tab-wise">
-              <h3>🌍 Pagamento via Wise (Internacional)</h3>
-              <div class="ag-alert ag-alert-info" style="margin-bottom:20px;">Para pagamentos internacionais aceitamos transferência via Wise.</div>
-              <p style="font-size:.875rem; margin-bottom:8px; font-weight:600;">E-mail para transferência:</p>
-              <div class="pag-pix-chave" id="modal-email-wise">—</div>
-              <button class="ag-btn ag-btn-copy ag-btn-sm" onclick="copiarWiseModal()" style="margin-bottom:20px;">📋 Copiar e-mail Wise</button>
-              <ol class="pag-instrucoes">
-                <li><span class="step-num">1</span><span>Acesse sua conta Wise e transfira para o e-mail acima</span></li>
-                <li><span class="step-num">2</span><span>Valor: <strong id="modal-valor-wise">—</strong></span></li>
-                <li><span class="step-num">3</span><span>Na referência, coloque sua <strong>chave do pedido</strong></span></li>
-                <li><span class="step-num">4</span><span>Após transferir, clique abaixo ✅</span></li>
-              </ol>
-              <div class="pag-btns">
-                <button class="ag-btn ag-btn-whatsapp" onclick="avisarWhatsAppModal('wise')">📱 Avisar sobre pagamento Wise</button>
-              </div>
-            </div>
-
-          </div><!-- /pag-container -->
-        </div><!-- /telaPagamento -->
-
-      </div><!-- /modal-body -->
-    </div><!-- /modal-container -->
-  </div><!-- /modalAgendamento -->
-
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-  <script src="js/supabase-config.js?v=8"></script>
-  <script src="js/agendamento-system.js?v=11"></script>
-  <script src="js/modal-agendamento.js?v=9"></script>
-
-  <script src="js/discount-system.js?v=7"></script>
-  <script src="script.js?v=7"></script>
+  <script src="script.js"></script>
   <script>
 (function() {
     const USERNAME = 'cocarsagrado';
