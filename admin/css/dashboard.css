@@ -593,6 +593,37 @@ body {
 }
 .agenda-card-overview:hover .agenda-card-arrow { transform: translateX(3px); }
 
+/* Switcher de terapeuta na agenda */
+.agenda-terapeuta-switcher {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+.agenda-terapeuta-btn {
+  padding: 8px 22px;
+  border-radius: 999px;
+  border: 1.5px solid var(--border);
+  background: var(--surface);
+  color: var(--text-muted);
+  font-family: 'DM Sans', system-ui, sans-serif;
+  font-size: .875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all .18s;
+}
+
+.agenda-terapeuta-btn.active {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: #fff;
+}
+
+.agenda-terapeuta-btn:not(.active):hover {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
 /* Descrição da seção agenda */
 .adm-agenda-desc {
   color: #8C8478;

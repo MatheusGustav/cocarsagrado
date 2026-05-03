@@ -6,7 +6,23 @@
 const DIAS_SEMANA_AGENDA   = ['Domingo','Segunda','Terça','Quarta','Quinta','Sexta','Sábado'];
 const DIAS_SEMANA_COMPLETO = ['Domingo','Segunda-feira','Terça-feira','Quarta-feira','Quinta-feira','Sexta-feira','Sábado'];
 
-let _diaEditando = null;
+let _diaEditando      = null;
+let _terapeutaAgenda  = localStorage.getItem('agenda_terapeuta') || 'matheus';
+
+// ============================================================
+// Seletor de terapeuta
+// ============================================================
+function trocarTerapeutaAgenda(t) {
+  _terapeutaAgenda = t;
+  localStorage.setItem('agenda_terapeuta', t);
+  _atualizarBotoesTerapeuta();
+  carregarAgenda();
+}
+
+function _atualizarBotoesTerapeuta() {
+  document.getElementById('btn-ag-matheus')?.classList.toggle('active', _terapeutaAgenda === 'matheus');
+  document.getElementById('btn-ag-camila')?.classList.toggle('active',  _terapeutaAgenda === 'camila');
+}
 
 // ============================================================
 // Carregar e renderizar overview
@@ -19,6 +35,7 @@ async function carregarAgenda() {
   const { data, error } = await supabase
     .from('horarios_disponiveis')
     .select('*')
+    .eq('terapeuta', _terapeutaAgenda)
     .order('dia_semana')
     .order('hora_inicio');
 
@@ -97,6 +114,7 @@ async function _carregarDiaNoModal(dia) {
     .from('horarios_disponiveis')
     .select('*')
     .eq('dia_semana', dia)
+    .eq('terapeuta', _terapeutaAgenda)
     .order('hora_inicio');
 
   const faixas   = data || [];
@@ -143,6 +161,8 @@ function adicionarFaixaModal() {
 
 // Sincroniza label do toggle
 document.addEventListener('DOMContentLoaded', () => {
+  _atualizarBotoesTerapeuta();
+
   const toggle = document.getElementById('agenda-modal-toggle');
   const label  = document.getElementById('agenda-toggle-label');
   if (toggle && label) {
@@ -182,15 +202,16 @@ async function salvarDia() {
     const inicio = row.querySelector('.hora-inicio')?.value;
     const fim    = row.querySelector('.hora-fim')?.value;
     if (inicio && fim && inicio !== fim) {
-      novaConfig.push({ dia_semana: dia, hora_inicio: inicio, hora_fim: fim, ativo });
+      novaConfig.push({ dia_semana: dia, hora_inicio: inicio, hora_fim: fim, ativo, terapeuta: _terapeutaAgenda });
     }
   });
 
-  // Apaga registros do dia e reinserere
+  // Apaga registros do dia/terapeuta e reinsere
   const { error: delErr } = await supabase
     .from('horarios_disponiveis')
     .delete()
-    .eq('dia_semana', dia);
+    .eq('dia_semana', dia)
+    .eq('terapeuta', _terapeutaAgenda);
 
   if (delErr) {
     alert('Erro ao salvar: ' + delErr.message);
