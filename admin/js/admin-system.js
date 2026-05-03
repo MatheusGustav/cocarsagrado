@@ -141,6 +141,7 @@ function montarAcoes(ag) {
 
   if (ag.status === 'pendente') {
     html += `<button class="ag-btn ag-btn-primary ag-btn-sm" onclick="marcarComoPago('${id}')">✅ Marcar como Pago</button>`;
+    html += `<button class="ag-btn ag-btn-danger ag-btn-sm" onclick="apagarAgendamento('${id}')">🗑 Apagar</button>`;
   }
   if (['pago','confirmado'].includes(ag.status)) {
     html += `<button class="ag-btn ag-btn-secondary ag-btn-sm" style="background:var(--secondary);color:#fff;" onclick="marcarComoAtendido('${id}')">🌙 Marcar como Atendido</button>`;
@@ -174,6 +175,13 @@ async function marcarComoAtendido(id) {
 async function cancelarAgendamento(id) {
   if (!confirm('Cancelar este agendamento? Esta ação não pode ser desfeita.')) return;
   const { error } = await supabase.from('agendamentos').update({ status: 'cancelado' }).eq('id', id);
+  if (error) { alert('Erro: ' + error.message); return; }
+  carregarAgendamentos();
+}
+
+async function apagarAgendamento(id) {
+  if (!confirm('Apagar este agendamento permanentemente? Esta ação não pode ser desfeita.')) return;
+  const { error } = await supabase.from('agendamentos').delete().eq('id', id);
   if (error) { alert('Erro: ' + error.message); return; }
   carregarAgendamentos();
 }
