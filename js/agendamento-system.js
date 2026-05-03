@@ -183,10 +183,12 @@ async function carregarCalendario() {
   if (!cal) return;
   cal.innerHTML = '<div class="ag-loading"><div class="ag-spinner"></div> Carregando...</div>';
 
+  const terapeuta = Estado.tipoSelecionado?.terapeuta;
   const { data: horarios, error } = await supabase
     .from('horarios_disponiveis')
     .select('dia_semana')
-    .eq('ativo', true);
+    .eq('ativo', true)
+    .eq('terapeuta', terapeuta);
 
   if (error) {
     cal.innerHTML = '<div class="ag-empty">Erro ao carregar calendário.</div>';
@@ -247,12 +249,13 @@ async function carregarHorariosData(dataStr) {
 
   const diaSemana = d.getDay();
   const duracao   = Estado.tipoSelecionado?.duracao_minutos || 60;
+  const terapeuta = Estado.tipoSelecionado?.terapeuta;
 
   const [{ data: horarios, error: e1 }, { data: ocupados }] = await Promise.all([
     supabase.from('horarios_disponiveis').select('hora_inicio,hora_fim')
-      .eq('dia_semana', diaSemana).eq('ativo', true),
+      .eq('dia_semana', diaSemana).eq('ativo', true).eq('terapeuta', terapeuta),
     supabase.from('agendamentos').select('hora_agendamento,duracao_minutos')
-      .eq('data_agendamento', dataStr).in('status', ['pago', 'confirmado', 'atendido']),
+      .eq('data_agendamento', dataStr).eq('terapeuta', terapeuta).in('status', ['pago', 'confirmado', 'atendido']),
   ]);
 
   if (e1 || !horarios?.length) {
