@@ -250,7 +250,7 @@ async function carregarHorariosData(dataStr) {
     supabase.from('horarios_disponiveis').select('hora_inicio,hora_fim')
       .eq('dia_semana', diaSemana).eq('ativo', true),
     supabase.from('agendamentos').select('hora_agendamento,duracao_minutos')
-      .eq('data_agendamento', dataStr).not('status', 'eq', 'cancelado'),
+      .eq('data_agendamento', dataStr).in('status', ['pago', 'confirmado', 'atendido']),
   ]);
 
   if (e1 || !horarios?.length) {
