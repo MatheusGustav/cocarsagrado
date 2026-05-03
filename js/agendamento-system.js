@@ -258,7 +258,13 @@ async function carregarHorariosData(dataStr) {
     return;
   }
 
-  const slots = gerarSlots(horarios, duracao, ocupados || []);
+  const agora = new Date();
+  const isHoje = dataStr === dataParaISO(agora);
+  const minutosAgora = isHoje ? agora.getHours() * 60 + agora.getMinutes() : -1;
+
+  const slots = gerarSlots(horarios, duracao, ocupados || [])
+    .filter(({ hora }) => horaParaMinutos(hora) > minutosAgora);
+
   if (!slots.length) {
     container.innerHTML = '<div class="ag-empty">Sem slots disponíveis neste dia.</div>';
     return;
