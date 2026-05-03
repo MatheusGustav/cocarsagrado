@@ -353,6 +353,14 @@ function processarFormulario(e) {
 }
 
 function validarFormulario() {
+  // Garante que o horário selecionado ainda é futuro no momento do envio
+  const dataHora = new Date(`${Estado.dataSelecionada}T${Estado.horarioSelecionado}:00`);
+  if (dataHora <= new Date()) {
+    mostrarAlerta('Este horário já passou. Selecione uma nova data e horário.', 'error');
+    setTimeout(() => irParaPasso(1), 2000);
+    return false;
+  }
+
   let ok = true;
   const campos = [
     { id: 'f-nome',  minLen: 3,   msg: 'Nome deve ter pelo menos 3 caracteres.' },
