@@ -83,6 +83,10 @@ function renderizarAgendamentos(lista, container) {
   lista.forEach(ag => container.appendChild(criarItemAgendamento(ag)));
 }
 
+function _esc(str) {
+  return String(str ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
 function criarItemAgendamento(ag) {
   const item = document.createElement('div');
   item.className = 'adm-item';
@@ -92,7 +96,7 @@ function criarItemAgendamento(ag) {
   const data            = formatarData(ag.data_agendamento);
   const hora            = ag.hora_agendamento?.slice(0,5) || '—';
   const valor           = `R$ ${Number(ag.valor_final || 0).toFixed(2).replace('.', ',')}`;
-  const badge           = `<span class="adm-badge adm-badge-${ag.status}">${STATUS_LABELS[ag.status] || ag.status}</span>`;
+  const badge           = `<span class="adm-badge adm-badge-${_esc(ag.status)}">${_esc(STATUS_LABELS[ag.status] || ag.status)}</span>`;
   const terapeutaNome   = ag.terapeuta === 'matheus' ? 'Matheus' : ag.terapeuta === 'camila' ? 'Camila' : '';
   const badgeTerapeuta  = terapeutaNome ? `<span class="adm-badge" style="background:var(--secondary);color:#fff;">${terapeutaNome}</span>` : '';
 
@@ -101,11 +105,11 @@ function criarItemAgendamento(ag) {
   item.innerHTML = `
     <div class="adm-item-header" onclick="toggleDetalhes(this)">
       <div class="adm-item-info">
-        <h4>${ag.cliente_nome}</h4>
-        <p>${nomeTipo} — ${data} às ${hora}</p>
+        <h4>${_esc(ag.cliente_nome)}</h4>
+        <p>${_esc(nomeTipo)} — ${_esc(data)} às ${_esc(hora)}</p>
       </div>
       <div class="adm-item-right">
-        <span style="font-weight:700; color:var(--primary)">${valor}</span>
+        <span style="font-weight:700; color:var(--primary)">${_esc(valor)}</span>
         ${badgeTerapeuta}
         ${badge}
         <span style="font-size:1.1rem; color:var(--text-muted)">▾</span>
@@ -113,15 +117,15 @@ function criarItemAgendamento(ag) {
     </div>
     <div class="adm-item-details">
       <div class="adm-details-grid">
-        <div class="adm-detail-item"><label>Chave do pedido</label><span style="font-family:monospace">${ag.chave_pedido}</span></div>
-        <div class="adm-detail-item"><label>WhatsApp</label><span>${ag.cliente_whatsapp || '—'}</span></div>
-        <div class="adm-detail-item"><label>Nascimento</label><span>${ag.cliente_nascimento || '—'}</span></div>
+        <div class="adm-detail-item"><label>Chave do pedido</label><span style="font-family:monospace">${_esc(ag.chave_pedido)}</span></div>
+        <div class="adm-detail-item"><label>WhatsApp</label><span>${_esc(ag.cliente_whatsapp || '—')}</span></div>
+        <div class="adm-detail-item"><label>Nascimento</label><span>${_esc(ag.cliente_nascimento || '—')}</span></div>
         <div class="adm-detail-item"><label>Valor original</label><span>R$ ${Number(ag.valor_original||0).toFixed(2).replace('.', ',')}</span></div>
         <div class="adm-detail-item"><label>Desconto</label><span>R$ ${Number(ag.desconto_aplicado||0).toFixed(2).replace('.', ',')}</span></div>
-        <div class="adm-detail-item"><label>Duração</label><span>${ag.duracao_minutos} min</span></div>
-        <div class="adm-detail-item"><label>Método pag.</label><span>${ag.metodo_pagamento || '—'}</span></div>
-        <div class="adm-detail-item"><label>Pago em</label><span>${ag.pago_em ? formatarDatetime(ag.pago_em) : '—'}</span></div>
-        ${ag.cliente_observacoes ? `<div class="adm-detail-item" style="grid-column:1/-1"><label>Observações</label><span>${ag.cliente_observacoes}</span></div>` : ''}
+        <div class="adm-detail-item"><label>Duração</label><span>${_esc(String(ag.duracao_minutos))} min</span></div>
+        <div class="adm-detail-item"><label>Método pag.</label><span>${_esc(ag.metodo_pagamento || '—')}</span></div>
+        <div class="adm-detail-item"><label>Pago em</label><span>${ag.pago_em ? _esc(formatarDatetime(ag.pago_em)) : '—'}</span></div>
+        ${ag.cliente_observacoes ? `<div class="adm-detail-item" style="grid-column:1/-1"><label>Observações</label><span>${_esc(ag.cliente_observacoes)}</span></div>` : ''}
       </div>
       <div class="adm-item-actions">${acoes}</div>
     </div>`;

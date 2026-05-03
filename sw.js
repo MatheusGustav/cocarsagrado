@@ -1,10 +1,10 @@
-const CACHE = 'cocar-admin-v6';
+const CACHE = 'cocar-admin-v7';
 const PRECACHE = [
   '/admin/dashboard.html',
   '/css/agendamento-styles.css',
   '/admin/css/dashboard.css?v=3',
   '/js/supabase-config.js',
-  '/admin/js/admin-system.js?v=2',
+  '/admin/js/admin-system.js?v=3',
   '/admin/js/agenda-system.js?v=2',
   '/images/logo3.png',
   '/images/logo3-192.png',

@@ -246,6 +246,7 @@ function inicializarHeader() {
       if (!header.contains(e.target)) {
         navLinks.classList.remove('open');
         hamburger.classList.remove('open');
+        hamburger.setAttribute('aria-expanded', 'false');
       }
     });
   }
@@ -461,7 +462,36 @@ function inicializarDecoracoes() {
 
 
 /* ============================================================
-   9. INICIALIZAÇÃO GERAL
+   9. MODAL NAVEGADOR IN-APP (Instagram / TikTok)
+   ============================================================ */
+
+function detectarNavegadorInApp() {
+  const ua = navigator.userAgent || '';
+  return /Instagram|BytedanceWebview|TikTok|musical_ly/i.test(ua);
+}
+
+function inicializarModalInApp() {
+  if (!detectarNavegadorInApp()) return false;
+
+  const backdrop = document.getElementById('inappBackdrop');
+  if (!backdrop) return false;
+
+  backdrop.removeAttribute('aria-hidden');
+  backdrop.classList.add('inapp--visible');
+  document.body.style.overflow = 'hidden';
+
+  document.getElementById('inappOk').addEventListener('click', () => {
+    backdrop.classList.remove('inapp--visible');
+    backdrop.setAttribute('aria-hidden', 'true');
+    document.body.style.overflow = '';
+    inicializarOverlay();
+  });
+
+  return true;
+}
+
+/* ============================================================
+   10. INICIALIZAÇÃO GERAL
    ============================================================
    DOMContentLoaded garante que o HTML está totalmente carregado
    antes de qualquer manipulação do DOM.
@@ -472,8 +502,9 @@ document.addEventListener('DOMContentLoaded', () => {
   // 1. Banner de desconto (só aparece se DESCONTO_CONFIG.ATIVO = true)
   aplicarDescontoAutomatico();
 
-  // 2. Overlay de primeira visita
-  inicializarOverlay();
+  // 2. Overlay de primeira visita (sequencial ao modal in-app)
+  const inAppAtivo = inicializarModalInApp();
+  if (!inAppAtivo) inicializarOverlay();
 
   // 3. Header com shadow e menu mobile
   inicializarHeader();

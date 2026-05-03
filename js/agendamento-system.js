@@ -6,7 +6,6 @@ const Estado = {
   tipoSelecionado:   null,
   dataSelecionada:   null,
   horarioSelecionado:null,
-  aceitou10: localStorage.getItem('aceitouDesconto10') === 'true',
 };
 
 const DIAS_PT    = ['Domingo','Segunda','Terça','Quarta','Quinta','Sexta','Sábado'];
@@ -53,7 +52,10 @@ async function _garantirTipos() {
 }
 
 function calcularPrecoFinal(precoOriginal) {
-  if (Estado.aceitou10) return { final: precoOriginal * 0.9, desconto: precoOriginal * 0.1 };
+  if (localStorage.getItem('aceitouDesconto10') === 'true') {
+    const desconto = Math.round(precoOriginal * 10) / 100;
+    return { final: precoOriginal - desconto, desconto };
+  }
   return { final: precoOriginal, desconto: 0 };
 }
 
@@ -413,7 +415,7 @@ async function salvarAgendamento() {
     valor_original:      tipo.preco_original,
     desconto_aplicado:   desconto,
     valor_final:         final,
-    aceitou_desconto_10: Estado.aceitou10,
+    aceitou_desconto_10: localStorage.getItem('aceitouDesconto10') === 'true',
     status:              'pendente',
   };
 
