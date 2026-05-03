@@ -2261,41 +2261,46 @@ body.overlay-active .footer {
 }
 
 /* Badge de modalidade de atendimento */
+.cat-name-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
 .cat-badge-atendimento {
-  position: absolute;
-  top: 10px;
-  right: 10px;
+  display: inline-block;
+  flex-shrink: 0;
   font-family: var(--fonte-corpo);
   font-size: 9px;
   font-weight: 700;
-  letter-spacing: 0.09em;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
-  padding: 4px 8px;
+  padding: 3px 8px;
   border-radius: var(--raio-sm);
   line-height: 1;
   white-space: nowrap;
-  backdrop-filter: blur(3px);
-  -webkit-backdrop-filter: blur(3px);
 }
 
 .cat-badge-atendimento--video {
-  background: rgba(20, 50, 100, 0.82);
-  color: #c0d8ff;
-  border: 1px solid rgba(150, 190, 255, 0.3);
+  background: #C9960C;
+  color: #1A1200;
+  border: 1px solid rgba(180, 130, 0, 0.35);
 }
 
 .cat-badge-atendimento--mensagem {
-  background: rgba(1, 55, 24, 0.80);
-  color: var(--color-gold-light);
+  background: #013718;
+  color: #E2C97E;
   border: 1px solid rgba(226, 201, 126, 0.3);
 }
 
 [data-theme="dark"] .cat-badge-atendimento--video {
-  background: rgba(10, 30, 70, 0.88);
-  border-color: rgba(150, 190, 255, 0.25);
+  background: #A07808;
+  color: #FFF8DC;
+  border-color: rgba(200, 160, 20, 0.4);
 }
 
 [data-theme="dark"] .cat-badge-atendimento--mensagem {
-  background: rgba(0, 40, 15, 0.88);
+  background: rgba(0, 40, 15, 0.90);
   border-color: rgba(226, 201, 126, 0.25);
 }

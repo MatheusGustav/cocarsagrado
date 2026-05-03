@@ -287,6 +287,32 @@ function inicializarAnimacoesScroll() {
 
 
 /* ============================================================
+   BADGES DE MODALIDADE DE ATENDIMENTO
+   ============================================================ */
+
+function aplicarBadgesModalidade() {
+  document.querySelectorAll('.cat-card[data-modalidade]').forEach(card => {
+    const modalidade = card.dataset.modalidade;
+    const body = card.querySelector('.cat-body');
+    const titulo = body && body.querySelector('.cat-name');
+    if (!titulo) return;
+
+    const badge = document.createElement('span');
+    badge.className = modalidade === 'video'
+      ? 'cat-badge-atendimento cat-badge-atendimento--video'
+      : 'cat-badge-atendimento cat-badge-atendimento--mensagem';
+    badge.textContent = modalidade === 'video' ? 'Video-chamada' : 'mensagem';
+
+    const row = document.createElement('div');
+    row.className = 'cat-name-row';
+    titulo.parentNode.insertBefore(row, titulo);
+    row.appendChild(titulo);
+    row.appendChild(badge);
+  });
+}
+
+
+/* ============================================================
    5. FILTROS DO CATÁLOGO
    ============================================================
    Filtra os cards do catálogo pelo data-category de cada card.
@@ -471,5 +497,8 @@ document.addEventListener('DOMContentLoaded', () => {
   if (typeof renderizarDescontos === 'function') {
     renderizarDescontos();
   }
+
+  // 10. Badges de modalidade (videochamada / por mensagem)
+  aplicarBadgesModalidade();
 
 });
