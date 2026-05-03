@@ -6,6 +6,60 @@
 
 const MODAL_PIX      = 'cocarsagrado@gmail.com';
 const MODAL_WISE     = 'cocarsagrado@gmail.com';
+const MODAL_NOME     = 'Cocar Sagrado';   // máx 25 chars — nome na conta PIX
+const MODAL_CIDADE   = 'Guarapari';       // máx 15 chars
+
+// ============================================================
+// PIX BR Code (EMV) — geração de payload e QR Code dinâmico
+// ============================================================
+function _pixCrc16(str) {
+  let crc = 0xFFFF;
+  for (let i = 0; i < str.length; i++) {
+    crc ^= str.charCodeAt(i) << 8;
+    for (let j = 0; j < 8; j++) {
+      crc = (crc & 0x8000) ? ((crc << 1) ^ 0x1021) : (crc << 1);
+      crc &= 0xFFFF;
+    }
+  }
+  return crc;
+}
+
+function gerarPayloadPix(chave, nome, cidade, valor, txid) {
+  const f = (id, v) => `${id}${String(v.length).padStart(2,'0')}${v}`;
+  const mai = f('00','BR.GOV.BCB.PIX') + f('01', chave);
+  const txidSanitized = (txid || '***').replace(/[^A-Za-z0-9]/g,'').substring(0,25) || '***';
+  const add = f('05', txidSanitized);
+  let payload =
+    f('00','01') +
+    f('26', mai) +
+    f('52','0000') +
+    f('53','986') +
+    f('54', valor.toFixed(2)) +
+    f('58','BR') +
+    f('59', nome.substring(0,25)) +
+    f('60', cidade.substring(0,15)) +
+    f('62', add) +
+    '6304';
+  return payload + _pixCrc16(payload).toString(16).toUpperCase().padStart(4,'0');
+}
+
+function _renderizarQrCode(payload) {
+  const el = document.getElementById('pag-qrcode');
+  if (!el) return;
+  el.innerHTML = '';
+  if (typeof QRCode === 'undefined') {
+    el.textContent = 'QR Code indisponível';
+    return;
+  }
+  new QRCode(el, {
+    text: payload,
+    width: 200,
+    height: 200,
+    colorDark: '#013718',
+    colorLight: '#ffffff',
+    correctLevel: QRCode.CorrectLevel.M,
+  });
+}
 
 let _dadosPagamento = null;
 let _calendarioOk   = false;
@@ -126,8 +180,15 @@ function _preencherTelaPagamento() {
   set('modal-r-valor',      `R$ ${ag.valor}`);
 
   ['pix', 'cartao', 'wise'].forEach(m => set(`modal-valor-${m}`, `R$ ${ag.valor}`));
-  set('modal-chave-pix',  MODAL_PIX);
+  set('modal-chave-pix',  ag.chave);
   set('modal-email-wise', MODAL_WISE);
+
+  const valorNum = parseFloat(ag.valor.replace(',', '.'));
+  const txid = ag.chave.replace(/[^A-Za-z0-9]/g, '').substring(0, 25);
+  const payload = gerarPayloadPix(MODAL_PIX, MODAL_NOME, MODAL_CIDADE, valorNum, txid);
+  _dadosPagamento.pixPayload = payload;
+  set('modal-chave-pix', payload.substring(0, 40) + '…');
+  _renderizarQrCode(payload);
 
   trocarAbaPagamento('pix');
 }
@@ -168,7 +229,7 @@ function _copiarTexto(texto, msg) {
 }
 
 function copiarChavePedido() { _copiarTexto(_dadosPagamento?.chave || '', '✅ Chave copiada!'); }
-function copiarPixModal()    { _copiarTexto(MODAL_PIX,  '✅ Chave PIX copiada!'); }
+function copiarPixModal()    { _copiarTexto(_dadosPagamento?.pixPayload || '', '✅ Código PIX copiado!'); }
 function copiarWiseModal()   { _copiarTexto(MODAL_WISE, '✅ E-mail Wise copiado!'); }
 
 function avisarWhatsAppModal(metodo) {

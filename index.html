@@ -743,7 +743,7 @@
             </div>
             <div class="pag-panel active pag-metodo-box" id="modal-painel-pix" role="tabpanel" aria-labelledby="modal-tab-pix">
               <h3>💰 Pagamento via PIX</h3>
-              <div class="pag-qr-placeholder">📷 QR Code<br><small>(Insira a imagem do QR Code após configurar)</small></div>
+              <div id="pag-qrcode" class="pag-qrcode"></div>
               <p style="font-size:.85rem; color:var(--text-muted); margin-bottom:8px; font-weight:600;">Chave PIX:</p>
               <div class="pag-pix-chave" id="modal-chave-pix">—</div>
               <button class="ag-btn ag-btn-copy ag-btn-sm" onclick="copiarPixModal()" style="margin-bottom:20px;">📋 Copiar chave PIX</button>
@@ -794,6 +794,7 @@
     </div>
   </div>
 
+  <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
   <script src="js/supabase-config.js?v=8"></script>
   <script src="js/agendamento-system.js?v=11"></script>
