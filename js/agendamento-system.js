@@ -28,8 +28,8 @@ const WHATSAPP_TERAPEUTA = {
 };
 
 const SERVICO_CONFIG = {
-  'buzios-avulso':        { tipo: 'tier',      terapeuta: 'matheus', nome: 'Búzios Avulso',        prefixo: 'Búzios Avulso – ',       pergunta: 'Quantas perguntas?' },
-  'mesa-cigana-avulsa':   { tipo: 'tier',      terapeuta: 'camila',  nome: 'Mesa Cigana Avulsa',   prefixo: 'Mesa Cigana Avulsa – ',  pergunta: 'Quantas perguntas?' },
+  'buzios-avulso':        { tipo: 'tier',      terapeuta: 'matheus', nome: 'Búzios Avulso',        prefixo: 'Búzios Avulso – ',       pergunta: 'Quantas perguntas?', requerPergunta: true },
+  'mesa-cigana-avulsa':   { tipo: 'tier',      terapeuta: 'camila',  nome: 'Mesa Cigana Avulsa',   prefixo: 'Mesa Cigana Avulsa – ',  pergunta: 'Quantas perguntas?', requerPergunta: true },
   'buzios-completo':      { tipo: 'quantidade', terapeuta: 'matheus', nome: 'Búzios Completo',      pergunta: 'Quantas sessões?' },
   'confirmacao-orixas':   { tipo: 'quantidade', terapeuta: 'matheus', nome: 'Confirmação de Orixás',pergunta: 'Quantas sessões?' },
   'cabala-odu':           { tipo: 'quantidade', terapeuta: 'matheus', nome: 'Cabala de Odu',        pergunta: 'Quantas sessões?' },
@@ -156,7 +156,7 @@ function confirmarSeletor() {
 
   let tipoFinal;
   if (_seletorConfig.tipo === 'tier') {
-    tipoFinal = { ..._seletorTierEscolhido, terapeuta: _seletorConfig.terapeuta };
+    tipoFinal = { ..._seletorTierEscolhido, terapeuta: _seletorConfig.terapeuta, requerPergunta: !!_seletorConfig.requerPergunta };
   } else {
     tipoFinal = {
       ..._seletorTierEscolhido,
@@ -346,7 +346,8 @@ function processarFormulario(e) {
 
   salvarAgendamento()
     .then(chave => { if (chave) redirecionarParaPagamento(chave); })
-    .catch(() => {
+    .catch(err => {
+      console.error('salvarAgendamento:', err);
       mostrarAlerta('Erro ao salvar agendamento. Tente novamente.', 'error');
       if (btn) { btn.disabled = false; btn.textContent = 'Continuar para Pagamento'; }
     });
@@ -363,17 +364,17 @@ function validarFormulario() {
 
   let ok = true;
   const campos = [
-    { id: 'f-nome',  minLen: 3,   msg: 'Nome deve ter pelo menos 3 caracteres.' },
-    { id: 'f-email', email: true, msg: 'E-mail inválido.' },
+    { id: 'f-nome',  minLen: 3,  msg: 'Nome deve ter pelo menos 3 caracteres.' },
+    { id: 'f-nasc',  date: true, msg: 'Data de nascimento inválida.' },
     { id: 'f-fone',  minLen: 10, msg: 'WhatsApp inválido.' },
   ];
-  campos.forEach(({ id, minLen, email, msg }) => {
+  campos.forEach(({ id, minLen, date, msg }) => {
     const el = document.getElementById(id);
     if (!el) return;
     el.classList.remove('error');
     const val = el.value.trim();
-    const invalido = email
-      ? !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val)
+    const invalido = date
+      ? !val
       : id === 'f-fone'
         ? val.replace(/\D/g,'').length < minLen
         : val.length < minLen;
@@ -403,9 +404,9 @@ async function salvarAgendamento() {
     tipo_leitura_id:     tipo.id,
     terapeuta:           tipo.terapeuta || null,
     cliente_nome:        document.getElementById('f-nome').value.trim(),
-    cliente_email:       document.getElementById('f-email').value.trim(),
+    cliente_nascimento:  document.getElementById('f-nasc')?.value || null,
     cliente_whatsapp:    document.getElementById('f-fone').value.trim(),
-    cliente_observacoes: document.getElementById('f-obs')?.value.trim() || null,
+    cliente_observacoes: document.getElementById('f-obs')?.value?.trim() || null,
     data_agendamento:    Estado.dataSelecionada,
     hora_agendamento:    Estado.horarioSelecionado,
     duracao_minutos:     tipo.duracao_minutos,

@@ -72,6 +72,15 @@ function abrirModal(tipo) {
   if (tipo) Estado.tipoSelecionado = tipo;
   const overlay = document.getElementById('modalAgendamento');
   if (!overlay) return;
+
+  const obsGroup = document.getElementById('f-obs')?.closest('.ag-form-group');
+  const obsField = document.getElementById('f-obs');
+  if (obsGroup && obsField) {
+    const mostrar = !!(tipo && tipo.requerPergunta);
+    obsGroup.style.display = mostrar ? '' : 'none';
+    obsField.required = mostrar;
+  }
+
   overlay.classList.add('open');
   document.body.classList.add('modal-aberto');
   overlay.querySelector('.modal-body')?.scrollTo({ top: 0 });
@@ -158,8 +167,10 @@ window.redirecionarParaPagamento = function(chave) {
     hora:      Estado.horarioSelecionado,
     duracao:   tipo.duracao_minutos,
     valor:     final.toFixed(2).replace('.', ','),
-    nome:      document.getElementById('f-nome').value.trim(),
-    whatsapp:  document.getElementById('f-fone').value.trim(),
+    nome:       document.getElementById('f-nome').value.trim(),
+    nascimento: document.getElementById('f-nasc')?.value || '',
+    obs:        document.getElementById('f-obs')?.value?.trim() || '',
+    whatsapp:   document.getElementById('f-fone').value.trim(),
   };
 
   sessionStorage.setItem('agendamento', JSON.stringify(_dadosPagamento));
@@ -243,10 +254,11 @@ function avisarWhatsAppModal(metodo) {
   const ag = _dadosPagamento;
   if (!ag) return;
 
+  const infoCliente = `*Nome:* ${ag.nome}\n*Nascimento:* ${ag.nascimento}${ag.obs ? `\n*Pergunta/Questão:* ${ag.obs}` : ''}`;
   const msgs = {
-    pix:    `Olá! 😊 Fiz o pagamento via *PIX*.\n\n*Pedido:* ${ag.chave}\n*Leitura:* ${ag.tipo}\n*Data:* ${ag.data} às ${ag.hora}\n*Valor:* R$ ${ag.valor}\n\nPode confirmar o recebimento? 🙏`,
-    cartao: `Olá! 😊 Gostaria de pagar via *cartão* meu agendamento.\n\n*Pedido:* ${ag.chave}\n*Leitura:* ${ag.tipo}\n*Data:* ${ag.data} às ${ag.hora}\n*Valor:* R$ ${ag.valor}\n\nPode me enviar o link de pagamento? 🙏`,
-    wise:   `Olá! 😊 Realizei a transferência via *Wise*.\n\n*Pedido:* ${ag.chave}\n*Leitura:* ${ag.tipo}\n*Data:* ${ag.data} às ${ag.hora}\n*Valor:* R$ ${ag.valor}\n\nPode confirmar o recebimento? 🙏`,
+    pix:    `Olá! 😊 Fiz o pagamento via *PIX*.\n\n*Pedido:* ${ag.chave}\n*Leitura:* ${ag.tipo}\n*Data:* ${ag.data} às ${ag.hora}\n*Valor:* R$ ${ag.valor}\n\n${infoCliente}\n\nPode confirmar o recebimento? 🙏`,
+    cartao: `Olá! 😊 Gostaria de pagar via *cartão* meu agendamento.\n\n*Pedido:* ${ag.chave}\n*Leitura:* ${ag.tipo}\n*Data:* ${ag.data} às ${ag.hora}\n*Valor:* R$ ${ag.valor}\n\n${infoCliente}\n\nPode me enviar o link de pagamento? 🙏`,
+    wise:   `Olá! 😊 Realizei a transferência via *Wise*.\n\n*Pedido:* ${ag.chave}\n*Leitura:* ${ag.tipo}\n*Data:* ${ag.data} às ${ag.hora}\n*Valor:* R$ ${ag.valor}\n\n${infoCliente}\n\nPode confirmar o recebimento? 🙏`,
   };
 
   const numero = WHATSAPP_TERAPEUTA[ag.terapeuta] || WHATSAPP_TERAPEUTA.camila;
