@@ -9,9 +9,9 @@
         { "label": "2 perguntas",  "preco": 50 },
         { "label": "3 perguntas",  "preco": 70 }
       ],
-      "descontoAtivo": true,
-      "percentualDesconto": 30,
-      "badge": "APROVEITAAAAA",
+      "descontoAtivo": false,
+      "percentualDesconto": 0,
+      "badge": "",
       "mensagemPromocional": ""
     },
     {
