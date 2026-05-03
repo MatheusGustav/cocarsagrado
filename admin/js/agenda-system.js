@@ -115,7 +115,7 @@ async function salvarAgenda() {
       const inicio = row.querySelector('.hora-inicio')?.value;
       const fim    = row.querySelector('.hora-fim')?.value;
       const ativo  = row.querySelector('.faixa-ativo')?.checked ?? true;
-      if (inicio && fim && inicio < fim) {
+      if (inicio && fim && inicio !== fim) {
         novaConfig.push({ dia_semana: dia, hora_inicio: inicio, hora_fim: fim, ativo });
       }
     });
