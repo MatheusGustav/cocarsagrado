@@ -116,13 +116,10 @@ function inicializarOverlay() {
   // Verifica se o usuário já visitou antes
   const jaVisitou = localStorage.getItem(CHAVE_LOCALSTORAGE);
 
-  if (jaVisitou) {
-    // Já visitou antes — esconde o overlay imediatamente
-    overlayBackdrop.classList.add('overlay--hidden');
-    return;
-  }
+  if (jaVisitou) return;
 
   // Primeira visita — mostra o overlay e aplica blur na página
+  overlayBackdrop.classList.remove('overlay--hidden');
   document.body.classList.add('overlay-active');
 
   // Botão principal: "Garantir meu desconto"
@@ -483,11 +480,10 @@ function inicializarModalInApp() {
   backdrop.classList.add('inapp--visible');
   document.body.style.overflow = 'hidden';
 
-  document.getElementById('inappOk').addEventListener('click', () => {
+  document.getElementById('inappClose').addEventListener('click', () => {
     backdrop.classList.remove('inapp--visible');
     backdrop.setAttribute('aria-hidden', 'true');
     document.body.style.overflow = '';
-    inicializarOverlay();
   });
 
   return true;

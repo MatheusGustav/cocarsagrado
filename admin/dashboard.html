@@ -157,6 +157,10 @@
 <script src="js/admin-system.js?v=5"></script>
 <script src="js/agenda-system.js?v=4"></script>
 <script>
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/admin/sw.js', { scope: '/admin/' });
+  }
+
   // Navegação entre seções
   const navAgendamentos = document.getElementById('nav-agendamentos');
   const navAgenda       = document.getElementById('nav-agenda');

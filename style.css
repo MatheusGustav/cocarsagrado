@@ -2329,54 +2329,56 @@ body.overlay-active .footer {
 }
 
 .inapp-card {
+  position: relative;
   background: var(--bg-primary, #FDFAF4);
   border-radius: 16px;
-  padding: 2rem 1.75rem 1.75rem;
-  max-width: 320px;
+  padding: 2rem 1.75rem 1.5rem;
+  max-width: 300px;
   width: 100%;
   text-align: center;
   box-shadow: 0 8px 40px rgba(0,0,0,0.25);
 }
 
-.inapp-icon {
-  font-size: 2.4rem;
-  font-weight: 700;
-  color: var(--accent, #6B4F1A);
-  margin-bottom: 0.75rem;
-  letter-spacing: 0.1em;
+.inapp-close {
+  position: absolute;
+  top: 0.65rem;
+  right: 0.75rem;
+  background: none;
+  border: none;
+  font-size: 1.1rem;
+  color: var(--text-secondary, #4A3B1A);
+  cursor: pointer;
+  line-height: 1;
+  padding: 0.2rem 0.35rem;
+  opacity: 0.6;
+  transition: opacity 0.2s;
 }
 
-.inapp-title {
-  font-family: 'Cormorant Garamond', serif;
-  font-size: 1.45rem;
-  font-weight: 600;
-  color: var(--text-primary, #1A1200);
-  margin: 0 0 0.75rem;
+.inapp-close:hover {
+  opacity: 1;
 }
 
 .inapp-text {
   font-family: 'DM Sans', sans-serif;
-  font-size: 0.95rem;
-  color: var(--text-secondary, #4A3B1A);
-  line-height: 1.55;
-  margin: 0 0 1.5rem;
+  font-size: 1rem;
+  color: var(--text-primary, #1A1200);
+  line-height: 1.6;
+  margin: 0;
 }
 
-.inapp-btn {
-  background: var(--accent, #6B4F1A);
-  color: #fff;
-  border: none;
-  border-radius: 8px;
-  padding: 0.7rem 2rem;
-  font-family: 'DM Sans', sans-serif;
-  font-size: 0.95rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: opacity 0.2s;
-}
-
-.inapp-btn:hover {
-  opacity: 0.85;
+.inapp-dots-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #e0e0e0;
+  color: #222;
+  border-radius: 6px;
+  padding: 0.05rem 0.5rem;
+  font-size: 1.2rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  vertical-align: middle;
+  line-height: 1.4;
 }
 
 [data-theme="dark"] .inapp-card {
@@ -2384,12 +2386,17 @@ body.overlay-active .footer {
   box-shadow: 0 8px 40px rgba(0,0,0,0.5);
 }
 
-[data-theme="dark"] .inapp-title {
+[data-theme="dark"] .inapp-text {
   color: #F5E6C8;
 }
 
-[data-theme="dark"] .inapp-text {
+[data-theme="dark"] .inapp-close {
   color: #C4A882;
+}
+
+[data-theme="dark"] .inapp-dots-badge {
+  background: #3a3020;
+  color: #F5E6C8;
 }
 
 /* ============================================================
