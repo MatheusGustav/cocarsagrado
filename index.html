@@ -26,7 +26,7 @@
        OVERLAY DE PRIMEIRA VISITA
        Controlado via localStorage
        ============================ -->
-  <div class="overlay-backdrop" id="overlayBackdrop" aria-modal="true" role="dialog" aria-labelledby="overlayTitle">
+  <div class="overlay-backdrop overlay--hidden" id="overlayBackdrop" aria-modal="true" role="dialog" aria-labelledby="overlayTitle">
     <div class="overlay-card">
       <button class="overlay-close" id="overlayClose" aria-label="Fechar">&#10005;</button>
 
@@ -62,10 +62,10 @@
        ============================ -->
   <div class="inapp-backdrop" id="inappBackdrop" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="inappTitle">
     <div class="inapp-card">
-      <div class="inapp-icon">⋯</div>
-      <h2 class="inapp-title" id="inappTitle">Abra no seu navegador</h2>
-      <p class="inapp-text">Clique nos <strong>pontinhos</strong> no canto da tela e selecione <strong>"Abrir no navegador"</strong> para a melhor experiência.</p>
-      <button class="inapp-btn" id="inappOk">Entendi</button>
+      <button class="inapp-close" id="inappClose" aria-label="Fechar">✕</button>
+      <p class="inapp-text" id="inappTitle">
+        Toque em <span class="inapp-dots-badge">⋯</span> e abra o site no navegador para a melhor experiência
+      </p>
     </div>
   </div>
 
