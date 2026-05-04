@@ -46,7 +46,10 @@ const SERVICO_CONFIG = {
 async function _garantirTipos() {
   if (_tiposCache) return _tiposCache;
   const { data, error } = await supabase.from('tipos_leitura').select('*');
-  if (error) console.error('Erro ao carregar tipos:', error);
+  if (error) {
+    console.error('Erro ao carregar tipos:', error);
+    return [];
+  }
   _tiposCache = data || [];
   return _tiposCache;
 }
@@ -111,7 +114,11 @@ async function abrirSeletor(serviceId) {
 
   } else {
     const tipo = tipos.find(t => t.nome === config.nome);
-    if (!tipo) { console.warn('Tipo não encontrado:', config.nome); return; }
+    if (!tipo) {
+      console.warn('Tipo não encontrado:', config.nome);
+      mostrarAlerta('Serviço temporariamente indisponível. Tente novamente.', 'error');
+      return;
+    }
 
     _seletorTierEscolhido = tipo;
     tiersEl.style.display  = 'none';

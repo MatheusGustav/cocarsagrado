@@ -982,13 +982,13 @@ body.overlay-active .footer {
   min-height: 44px;
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   border-radius: var(--raio-md);
   background: var(--color-gold);
   color: var(--color-primary-deep);
   border: 1px solid var(--color-gold);
   cursor: pointer;
   transition: background var(--transicao), border-color var(--transicao), transform 0.1s ease;
-  display: inline-block;
 }
 
 .cat-btn:hover {
