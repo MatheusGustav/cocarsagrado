@@ -118,7 +118,8 @@ async function _carregarDiaNoModal(dia) {
     .order('hora_inicio');
 
   const faixas   = data || [];
-  const diaAtivo = faixas.length ? faixas.some(f => f.ativo) : true;
+  // Sem faixas = inativo (mesmo critério do card no overview).
+  const diaAtivo = faixas.some(f => f.ativo);
 
   const toggle = document.getElementById('agenda-modal-toggle');
   const label  = document.getElementById('agenda-toggle-label');
@@ -171,9 +172,10 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // ESC fecha modal
+  // ESC fecha modal (só se estiver aberto)
   document.addEventListener('keydown', e => {
-    if (e.key === 'Escape') fecharModalDia();
+    const m = document.getElementById('agenda-modal');
+    if (e.key === 'Escape' && m?.classList.contains('open')) fecharModalDia();
   });
 
   // Backdrop fecha modal
@@ -185,6 +187,22 @@ document.addEventListener('DOMContentLoaded', () => {
 // ============================================================
 // Salvar dia individualmente
 // ============================================================
+function _validarFaixas(faixas) {
+  for (const f of faixas) {
+    if (!f.hora_inicio || !f.hora_fim) return 'Preencha início e fim de todas as faixas.';
+    if (f.hora_inicio >= f.hora_fim) {
+      return `Faixa inválida: ${f.hora_inicio} → ${f.hora_fim} (início deve ser menor que fim).`;
+    }
+  }
+  const sorted = [...faixas].sort((a, b) => a.hora_inicio.localeCompare(b.hora_inicio));
+  for (let i = 1; i < sorted.length; i++) {
+    if (sorted[i].hora_inicio < sorted[i - 1].hora_fim) {
+      return `Faixas se sobrepõem: ${sorted[i - 1].hora_inicio}–${sorted[i - 1].hora_fim} e ${sorted[i].hora_inicio}–${sorted[i].hora_fim}.`;
+    }
+  }
+  return null;
+}
+
 async function salvarDia() {
   const dia = _diaEditando;
   if (dia === null) return;
@@ -201,12 +219,22 @@ async function salvarDia() {
   rows.forEach(row => {
     const inicio = row.querySelector('.hora-inicio')?.value;
     const fim    = row.querySelector('.hora-fim')?.value;
-    if (inicio && fim && inicio !== fim) {
+    if (inicio && fim) {
       novaConfig.push({ dia_semana: dia, hora_inicio: inicio, hora_fim: fim, ativo, terapeuta: _terapeutaAgenda });
     }
   });
 
-  // Apaga registros do dia/terapeuta e reinsere
+  const erroValidacao = _validarFaixas(novaConfig);
+  if (erroValidacao) {
+    alert(erroValidacao);
+    btn.disabled = false;
+    btn.textContent = orig;
+    return;
+  }
+
+  // Apaga registros do dia/terapeuta e reinsere.
+  // Não é atômico: a validação acima reduz drasticamente a chance do INSERT falhar
+  // depois de um DELETE bem-sucedido.
   const { error: delErr } = await supabase
     .from('horarios_disponiveis')
     .delete()
