@@ -53,8 +53,9 @@ async function _garantirTipos() {
 
 function calcularPrecoFinal(precoOriginal) {
   if (localStorage.getItem('aceitouDesconto10') === 'true') {
-    const desconto = Math.round(precoOriginal * 10) / 100;
-    return { final: precoOriginal - desconto, desconto };
+    // Mesma fórmula de aplicarDesconto() em discount-system.js — bate com o catálogo.
+    const final = Math.round(precoOriginal * 90) / 100;
+    return { final, desconto: precoOriginal - final };
   }
   return { final: precoOriginal, desconto: 0 };
 }
@@ -373,6 +374,10 @@ function validarFormulario() {
     { id: 'f-nasc',  date: true, msg: 'Data de nascimento inválida.' },
     { id: 'f-fone',  minLen: 10, msg: 'WhatsApp inválido.' },
   ];
+  // f-obs só é obrigatório para serviços que pedem a pergunta (tier).
+  if (Estado.tipoSelecionado?.requerPergunta) {
+    campos.push({ id: 'f-obs', minLen: 3, msg: 'Descreva sua pergunta/questão.' });
+  }
   campos.forEach(({ id, minLen, date, msg }) => {
     const el = document.getElementById(id);
     if (!el) return;
@@ -430,7 +435,9 @@ async function salvarAgendamento() {
 async function gerarChavePedido(tentativas = 0) {
   if (tentativas > 5) throw new Error('Falha ao gerar chave única');
   const chave = gerarChaveAleatoria();
-  const { data } = await supabase.from('agendamentos').select('id').eq('chave_pedido', chave).maybeSingle();
+  const { data, error } = await supabase
+    .from('agendamentos').select('id').eq('chave_pedido', chave).maybeSingle();
+  if (error) throw error;
   if (data) return gerarChavePedido(tentativas + 1);
   return chave;
 }

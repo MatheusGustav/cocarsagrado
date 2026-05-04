@@ -157,17 +157,20 @@ function inicializarOverlay() {
     });
   }
 
+  // Helper: só age enquanto o overlay estiver realmente visível.
+  const overlayVisivel = () => !overlayBackdrop.classList.contains('overlay--hidden');
+
   // Fecha ao clicar fora do card (tratado como recusa)
   overlayBackdrop.addEventListener('click', (e) => {
-    if (e.target === overlayBackdrop) {
+    if (overlayVisivel() && e.target === overlayBackdrop) {
       localStorage.setItem('aceitouDesconto10', 'false');
       fecharOverlay();
     }
   });
 
-  // Fecha ao pressionar ESC (tratado como recusa)
+  // Fecha ao pressionar ESC (tratado como recusa) — só se o overlay estiver aberto
   document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') {
+    if (e.key === 'Escape' && overlayVisivel()) {
       localStorage.setItem('aceitouDesconto10', 'false');
       fecharOverlay();
     }

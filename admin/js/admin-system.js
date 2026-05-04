@@ -119,7 +119,7 @@ function criarItemAgendamento(ag) {
       <div class="adm-details-grid">
         <div class="adm-detail-item"><label>Chave do pedido</label><span style="font-family:monospace">${_esc(ag.chave_pedido)}</span></div>
         <div class="adm-detail-item"><label>WhatsApp</label><span>${_esc(ag.cliente_whatsapp || '—')}</span></div>
-        <div class="adm-detail-item"><label>Nascimento</label><span>${_esc(ag.cliente_nascimento || '—')}</span></div>
+        <div class="adm-detail-item"><label>Nascimento</label><span>${_esc(formatarData(ag.cliente_nascimento))}</span></div>
         <div class="adm-detail-item"><label>Valor original</label><span>R$ ${Number(ag.valor_original||0).toFixed(2).replace('.', ',')}</span></div>
         <div class="adm-detail-item"><label>Desconto</label><span>R$ ${Number(ag.desconto_aplicado||0).toFixed(2).replace('.', ',')}</span></div>
         <div class="adm-detail-item"><label>Duração</label><span>${_esc(String(ag.duracao_minutos))} min</span></div>
@@ -135,11 +135,11 @@ function criarItemAgendamento(ag) {
 
 function montarAcoes(ag) {
   const id      = ag.id;
-  const fone    = ag.cliente_whatsapp;
-  const nome    = ag.cliente_nome;
+  const fone    = ag.cliente_whatsapp || '';
+  const nome    = ag.cliente_nome     || '';
   const tipo    = ag.tipos_leitura?.nome || 'Leitura';
   const data    = formatarData(ag.data_agendamento);
-  const hora    = ag.hora_agendamento?.slice(0,5);
+  const hora    = ag.hora_agendamento?.slice(0,5) || '';
 
   let html = '';
 
@@ -154,7 +154,9 @@ function montarAcoes(ag) {
     html += `<button class="ag-btn ag-btn-danger ag-btn-sm" onclick="cancelarAgendamento('${id}')">✖ Cancelar</button>`;
   }
 
-  html += `<button class="ag-btn ag-btn-whatsapp ag-btn-sm" onclick="abrirWhatsApp('${fone}','${escapeAttr(nome)}','${escapeAttr(tipo)}','${data}','${hora}')">📱 WhatsApp</button>`;
+  if (fone.replace(/\D/g,'').length >= 10) {
+    html += `<button class="ag-btn ag-btn-whatsapp ag-btn-sm" onclick="abrirWhatsApp('${escapeAttr(fone)}','${escapeAttr(nome)}','${escapeAttr(tipo)}','${data}','${hora}')">📱 WhatsApp</button>`;
+  }
 
   return html;
 }
@@ -194,8 +196,10 @@ async function apagarAgendamento(id) {
 // WhatsApp
 // ============================================================
 function abrirWhatsApp(fone, nome, tipo, data, hora) {
-  const numero = fone.replace(/\D/g,'');
-  const dest   = numero.startsWith('55') ? numero : `55${numero}`;
+  const numero = String(fone || '').replace(/\D/g,'');
+  if (numero.length < 10) { alert('WhatsApp do cliente não cadastrado.'); return; }
+  // Considera 55 como DDI somente se o número tiver 12-13 dígitos (DDI + DDD + número).
+  const dest = (numero.startsWith('55') && numero.length >= 12) ? numero : `55${numero}`;
   const msg = `Olá ${nome}! 😊\nRecebi seu pedido de ${tipo} para o dia ${data} às ${hora}.\nEstá tudo confirmado! Te aguardo no horário combinado.\nQualquer dúvida, estou à disposição! 🌙✨\nCocar Sagrado`;
   window.open(`https://wa.me/${dest}?text=${encodeURIComponent(msg)}`, '_blank');
 }
@@ -263,7 +267,12 @@ function formatarDatetime(str) {
 }
 
 function escapeAttr(s) {
-  return String(s || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+  return String(s ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, "\\'")
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
 }
 
 // ============================================================

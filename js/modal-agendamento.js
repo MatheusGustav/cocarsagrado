@@ -159,6 +159,11 @@ window.redirecionarParaPagamento = function(chave) {
   const { final } = calcularPrecoFinal(tipo.preco_original);
   const d = new Date(Estado.dataSelecionada + 'T00:00:00');
 
+  const nascRaw = document.getElementById('f-nasc')?.value || '';
+  const nascFmt = nascRaw
+    ? (() => { const [y, m, dd] = nascRaw.split('-'); return `${dd}/${m}/${y}`; })()
+    : '';
+
   _dadosPagamento = {
     chave,
     tipo:      tipo.nome,
@@ -168,7 +173,7 @@ window.redirecionarParaPagamento = function(chave) {
     duracao:   tipo.duracao_minutos,
     valor:     final.toFixed(2).replace('.', ','),
     nome:       document.getElementById('f-nome').value.trim(),
-    nascimento: document.getElementById('f-nasc')?.value || '',
+    nascimento: nascFmt,
     obs:        document.getElementById('f-obs')?.value?.trim() || '',
     whatsapp:   document.getElementById('f-fone').value.trim(),
   };

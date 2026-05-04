@@ -45,8 +45,18 @@ function calcularResultado(servico, aceitou10) {
   return { tipo: 'normal' };
 }
 
+// Arredonda para o centavo. Mesma fórmula usada em agendamento-system.js
+// para que o preço exibido no catálogo bata com o cobrado no checkout.
 function aplicarDesconto(valor, percentual) {
-  return Math.round(valor * (1 - percentual / 100));
+  return Math.round(valor * (100 - percentual)) / 100;
+}
+
+// "R$ 199,80" — sem casas decimais quando o valor é inteiro.
+function formatarMoeda(v) {
+  const n = Number(v) || 0;
+  return Number.isInteger(n)
+    ? `R$&nbsp;${n}`
+    : `R$&nbsp;${n.toFixed(2).replace('.', ',')}`;
 }
 
 function renderizarPrecoSimples(footer, preco, resultado) {
@@ -58,7 +68,7 @@ function renderizarPrecoSimples(footer, preco, resultado) {
     footer.querySelector('.cat-price-wrapper').remove();
     const span = document.createElement('span');
     span.className = 'cat-footer-price';
-    span.textContent = `R$ ${preco}`;
+    span.innerHTML = formatarMoeda(preco);
     footer.insertBefore(span, btn);
     return;
   }
@@ -75,10 +85,10 @@ function renderizarPrecoSimples(footer, preco, resultado) {
     ? `<span class="cat-badge ${badgeClass}">${resultado.badge}</span>`
     : ''}
     <div class="cat-price-group">
-      <span class="cat-price-original" aria-hidden="true">R$&nbsp;${preco}</span>
+      <span class="cat-price-original" aria-hidden="true">${formatarMoeda(preco)}</span>
       <span class="cat-price-desconto"
         aria-label="Preço original R$ ${preco}, com desconto de ${resultado.percentual}% por R$ ${precoDesc}">
-        R$&nbsp;${precoDesc}
+        ${formatarMoeda(precoDesc)}
       </span>
     </div>`;
   footer.insertBefore(wrapper, btn);
@@ -93,7 +103,7 @@ function renderizarPrecoTiers(footer, tiers, resultado) {
   if (resultado.tipo === 'normal') {
     if (!jaTemDesconto) return; // DOM já está correto
     tiersEl.innerHTML = tiers
-      .map(t => `<span><span>${t.label}</span><strong>R$&nbsp;${t.preco}</strong></span>`)
+      .map(t => `<span><span>${t.label}</span><strong>${formatarMoeda(t.preco)}</strong></span>`)
       .join('');
     return;
   }
@@ -113,8 +123,8 @@ function renderizarPrecoTiers(footer, tiers, resultado) {
     const row = document.createElement('span');
     row.innerHTML = `<span>${t.label}</span>
       <span class="cat-tier-prices">
-        <span class="cat-price-original-small" aria-hidden="true">R$&nbsp;${t.preco}</span>
-        <strong class="cat-price-desconto-small">R$&nbsp;${precoDesc}</strong>
+        <span class="cat-price-original-small" aria-hidden="true">${formatarMoeda(t.preco)}</span>
+        <strong class="cat-price-desconto-small">${formatarMoeda(precoDesc)}</strong>
       </span>`;
     tiersEl.appendChild(row);
   });
