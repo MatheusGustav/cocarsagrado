@@ -905,8 +905,8 @@ body.overlay-active .footer {
 /* Grade de cards */
 .cat-grid {
   display: grid;
-  grid-template-columns: 1fr;
-  gap: 24px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
 }
 
 .cat-card {
@@ -931,29 +931,32 @@ body.overlay-active .footer {
 }
 
 .cat-card-img {
-  display: block;
-  width: 100%;
-  line-height: 0;
-  position: relative;
+  display: flex;
+  justify-content: center;
+  padding: 24px 16px 12px;
 }
 
 .cat-img {
-  width: 100%;
-  height: auto;
+  width: 68px;
+  height: 68px;
+  object-fit: contain;
+  border-radius: 10px;
   display: block;
 }
 
 .cat-body {
-  padding: 20px 20px 16px;
+  padding: 4px 12px 14px;
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
+  align-items: center;
+  text-align: center;
 }
 
 .cat-name {
   font-family: var(--fonte-titulo);
-  font-size: 18px;
+  font-size: 15px;
   font-weight: 600;
   letter-spacing: 0.01em;
   color: var(--color-text-primary);
@@ -961,17 +964,29 @@ body.overlay-active .footer {
 }
 
 .cat-desc {
-  font-size: 12px;
+  font-size: 11px;
   color: var(--color-text-body);
-  line-height: 1.65;
+  line-height: 1.55;
   flex: 1;
+}
+
+.cat-modalidade {
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--color-text-muted);
+  background: rgba(1, 55, 24, 0.07);
+  border-radius: 20px;
+  padding: 3px 10px;
+  letter-spacing: 0.03em;
+  margin-top: 2px;
 }
 
 .cat-footer {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 14px 20px;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 10px;
+  padding: 12px 12px;
   border-top: 1px solid rgba(1, 55, 24, 0.12);
   background: transparent;
 }
@@ -980,6 +995,7 @@ body.overlay-active .footer {
   font-size: 18px;
   font-weight: 700;
   color: var(--color-gold-deep);
+  text-align: center;
 }
 
 .cat-footer-tiers {
@@ -1001,10 +1017,6 @@ body.overlay-active .footer {
   color: var(--color-gold-deep);
 }
 
-.cat-footer-tiers ~ .cat-btn {
-  align-self: flex-end;
-}
-
 /* Botão Agendar — dourado cerimonial */
 .cat-btn {
   font-size: 12px;
@@ -1013,6 +1025,7 @@ body.overlay-active .footer {
   letter-spacing: 0.04em;
   padding: 10px 18px;
   min-height: 44px;
+  width: 100%;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -1483,7 +1496,8 @@ body.overlay-active .footer {
   }
 
   .cat-grid {
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
   }
 
   .depos-grid {
@@ -1545,7 +1559,8 @@ body.overlay-active .footer {
   }
 
   .cat-grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 16px;
   }
 
   .conectar-grid {
