@@ -59,12 +59,27 @@ function formatarMoeda(v) {
     : `R$&nbsp;${n.toFixed(2).replace('.', ',')}`;
 }
 
+function inserirBadgeNoIcone(card, resultado) {
+  const imgEl = card && card.querySelector('.cat-card-img');
+  if (!imgEl) return;
+  imgEl.querySelector('.cat-badge-img')?.remove();
+  if (!resultado.badge) return;
+  const badgeClass = resultado.tipo === '10off' ? 'cat-badge--10off' : 'cat-badge--promo';
+  const badgeEl = document.createElement('span');
+  badgeEl.className = `cat-badge cat-badge-img ${badgeClass}`;
+  badgeEl.textContent = resultado.badge;
+  imgEl.appendChild(badgeEl);
+}
+
 function renderizarPrecoSimples(footer, preco, resultado) {
   const btn = footer.querySelector('.cat-btn');
+  const card = footer.closest('.cat-card');
   const jaTemDesconto = !!footer.querySelector('.cat-price-wrapper');
 
+  inserirBadgeNoIcone(card, resultado);
+
   if (resultado.tipo === 'normal') {
-    if (!jaTemDesconto) return; // DOM já está correto, sem desconto
+    if (!jaTemDesconto) return;
     footer.querySelector('.cat-price-wrapper').remove();
     const span = document.createElement('span');
     span.className = 'cat-footer-price';
@@ -73,18 +88,13 @@ function renderizarPrecoSimples(footer, preco, resultado) {
     return;
   }
 
-  // Remove markup anterior (seja preço original ou desconto anterior)
   footer.querySelectorAll('.cat-footer-price, .cat-price-wrapper').forEach(el => el.remove());
 
   const precoDesc = aplicarDesconto(preco, resultado.percentual);
-  const badgeClass = resultado.tipo === '10off' ? 'cat-badge--10off' : 'cat-badge--promo';
 
   const wrapper = document.createElement('div');
   wrapper.className = 'cat-price-wrapper';
-  wrapper.innerHTML = `${resultado.badge
-    ? `<span class="cat-badge ${badgeClass}">${resultado.badge}</span>`
-    : ''}
-    <div class="cat-price-group">
+  wrapper.innerHTML = `<div class="cat-price-group">
       <span class="cat-price-original" aria-hidden="true">${formatarMoeda(preco)}</span>
       <span class="cat-price-desconto"
         aria-label="Preço original R$ ${preco}, com desconto de ${resultado.percentual}% por R$ ${precoDesc}">
@@ -97,26 +107,21 @@ function renderizarPrecoSimples(footer, preco, resultado) {
 function renderizarPrecoTiers(footer, tiers, resultado) {
   const tiersEl = footer.querySelector('.cat-footer-tiers');
   if (!tiersEl) return;
+  const card = footer.closest('.cat-card');
 
   const jaTemDesconto = !!tiersEl.querySelector('.cat-badge-tier');
 
+  inserirBadgeNoIcone(card, resultado);
+
   if (resultado.tipo === 'normal') {
-    if (!jaTemDesconto) return; // DOM já está correto
+    if (!jaTemDesconto) return;
     tiersEl.innerHTML = tiers
       .map(t => `<span><span>${t.label}</span><strong>${formatarMoeda(t.preco)}</strong></span>`)
       .join('');
     return;
   }
 
-  // Reconstrói do zero com desconto
   tiersEl.innerHTML = '';
-
-  if (resultado.badge) {
-    const badgeEl = document.createElement('div');
-    badgeEl.className = `cat-badge-tier cat-badge ${resultado.tipo === '10off' ? 'cat-badge--10off' : 'cat-badge--promo'}`;
-    badgeEl.textContent = resultado.badge;
-    tiersEl.appendChild(badgeEl);
-  }
 
   tiers.forEach(t => {
     const precoDesc = aplicarDesconto(t.preco, resultado.percentual);
