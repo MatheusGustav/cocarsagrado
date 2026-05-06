@@ -79,7 +79,7 @@ CREATE POLICY "select_disp_padrao"
 
 CREATE POLICY "all_disp_padrao"
   ON public.disponibilidade_padrao FOR ALL
-  TO authenticated
+  TO anon
   USING (true) WITH CHECK (true);
 
 CREATE POLICY "select_disp_override"
@@ -89,7 +89,7 @@ CREATE POLICY "select_disp_override"
 
 CREATE POLICY "all_disp_override"
   ON public.disponibilidade_override FOR ALL
-  TO authenticated
+  TO anon
   USING (true) WITH CHECK (true);
 
 -- ============================================================

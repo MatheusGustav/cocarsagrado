@@ -1214,4 +1214,271 @@ body {
       padding-bottom: max(16px, env(safe-area-inset-bottom));
     }
   }
+
+/* ============================================================
+   VAGAS ADMIN
+   ============================================================ */
+.vagas-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 24px;
+  border-bottom: 2px solid var(--border);
+  padding-bottom: 0;
+}
+
+.vagas-tab {
+  background: none;
+  border: none;
+  border-bottom: 3px solid transparent;
+  padding: 10px 20px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: .9rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  cursor: pointer;
+  margin-bottom: -2px;
+  transition: color .2s, border-color .2s;
+}
+
+.vagas-tab.active {
+  color: var(--primary);
+  border-bottom-color: var(--secondary);
+}
+
+.vagas-padrao-footer {
+  display: flex;
+  justify-content: flex-end;
+  padding: 20px 0 8px;
+}
+
+.vagas-override-header {
+  margin-bottom: 20px;
+}
+
+.vagas-override-footer {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  padding: 20px 0 8px;
+}
+
+.vagas-dia-secao {
+  margin-bottom: 28px;
+}
+
+.vagas-dia-titulo {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--primary);
+  margin: 0 0 12px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--border);
+}
+
+.vagas-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 14px;
+}
+
+.vagas-config-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+  box-shadow: var(--shadow);
+}
+
+.vagas-prof-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.vagas-prof-nome {
+  font-weight: 600;
+  color: var(--primary);
+  font-size: .95rem;
+}
+
+.vagas-toggle-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.vagas-chk { display: none; }
+
+.vagas-toggle-track {
+  width: 40px;
+  height: 22px;
+  background: var(--border);
+  border-radius: 11px;
+  position: relative;
+  transition: background .2s;
+  flex-shrink: 0;
+}
+
+.vagas-chk:checked + .vagas-toggle-track { background: var(--secondary); }
+
+.vagas-toggle-thumb {
+  position: absolute;
+  top: 3px; left: 3px;
+  width: 16px; height: 16px;
+  background: #fff;
+  border-radius: 50%;
+  transition: left .2s;
+  box-shadow: 0 1px 4px rgba(0,0,0,.2);
+}
+
+.vagas-chk:checked + .vagas-toggle-track .vagas-toggle-thumb { left: 21px; }
+
+.vagas-toggle-txt {
+  font-size: .8rem;
+  color: var(--text-muted);
+  min-width: 34px;
+}
+
+.vagas-fields {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  transition: opacity .2s;
+}
+
+.vagas-fields--off {
+  opacity: .35;
+  pointer-events: none;
+}
+
+.vagas-field-grp {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+  min-width: 80px;
+}
+
+.vagas-field-grp label {
+  font-size: .72rem;
+  color: var(--text-muted);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+}
+
+.vagas-field-grp--toggle {
+  justify-content: flex-end;
+  flex-direction: row;
+  align-items: flex-end;
+}
+
+.vagas-sel {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 6px 10px;
+  font-size: .9rem;
+  font-family: inherit;
+  background: var(--bg);
+  color: var(--text);
+}
+
+/* Override cards */
+.vagas-override-titulo {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 1.15rem;
+  font-weight: 600;
+  color: var(--primary);
+  margin: 0 0 16px;
+}
+
+.vagas-override-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+  margin-bottom: 14px;
+  box-shadow: var(--shadow);
+}
+
+.vagas-override-card--ativo {
+  border-color: var(--secondary);
+  background: linear-gradient(135deg, #fff 85%, rgba(201,168,76,.06) 100%);
+}
+
+.vagas-ov-badge {
+  font-size: .72rem;
+  font-weight: 600;
+  background: rgba(201,168,76,.15);
+  color: #7a5c0a;
+  border-radius: 20px;
+  padding: 3px 10px;
+}
+
+.vagas-radio-grupo {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.vagas-radio-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: .9rem;
+  cursor: pointer;
+  color: var(--text);
+}
+
+.vagas-radio-label em {
+  color: var(--text-muted);
+  font-style: normal;
+  font-size: .82rem;
+}
+
+.vagas-override-fields {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding-top: 4px;
+}
+
+.vagas-override-fields--hidden { display: none; }
+
+.vagas-ov-aviso {
+  font-size: .75rem;
+  color: #7a5c0a;
+  margin: 8px 0 0;
+  width: 100%;
+}
+
+/* Toast */
+.vagas-toast {
+  position: fixed;
+  bottom: 32px;
+  left: 50%;
+  transform: translateX(-50%) translateY(80px);
+  background: var(--primary);
+  color: #fff;
+  padding: 12px 24px;
+  border-radius: 24px;
+  font-size: .9rem;
+  font-weight: 500;
+  box-shadow: 0 4px 20px rgba(1,55,24,.25);
+  z-index: 9999;
+  opacity: 0;
+  transition: transform .3s, opacity .3s;
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+.vagas-toast--show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
 }

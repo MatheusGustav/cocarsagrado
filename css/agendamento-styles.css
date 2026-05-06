@@ -797,3 +797,121 @@ textarea { resize: vertical; min-height: 90px; }
   .seletor-nome    { font-size: 1.2rem; }
   .seletor-qty-num { font-size: 2rem; }
 }
+
+/* ============================================================
+   VAGAS — Calendário lado cliente
+   ============================================================ */
+.ag-vagas-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 4px 0;
+}
+
+.ag-vagas-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background: #fff;
+  border: 2px solid var(--border, #DDD5C8);
+  border-radius: 14px;
+  padding: 14px 16px;
+  cursor: pointer;
+  transition: border-color .2s, box-shadow .2s, transform .15s;
+  text-align: left;
+  width: 100%;
+  font-family: inherit;
+}
+
+.ag-vagas-card:hover {
+  border-color: var(--secondary, #C9A84C);
+  box-shadow: 0 4px 16px rgba(1,55,24,.10);
+  transform: translateY(-1px);
+}
+
+.ag-vagas-card.selected {
+  border-color: var(--primary, #013718);
+  background: linear-gradient(135deg, #fff 80%, rgba(1,55,24,.04) 100%);
+  box-shadow: 0 4px 18px rgba(1,55,24,.14);
+}
+
+.ag-vagas-data {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 52px;
+}
+
+.ag-vagas-dia-num {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 2rem;
+  font-weight: 600;
+  line-height: 1;
+  color: var(--primary, #013718);
+}
+
+.ag-vagas-dia-nome {
+  font-size: .7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  color: var(--text-muted, #8C8478);
+}
+
+.ag-vagas-mes {
+  font-size: .72rem;
+  color: var(--text-muted, #8C8478);
+  margin-top: 1px;
+}
+
+.ag-vagas-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.ag-vagas-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: .78rem;
+  font-weight: 500;
+  border-radius: 20px;
+  padding: 3px 10px;
+  align-self: flex-start;
+}
+
+.ag-vagas-info.vagas-ok .ag-vagas-badge {
+  background: rgba(1,55,24,.08);
+  color: var(--primary, #013718);
+}
+
+.ag-vagas-info.vagas-poucas .ag-vagas-badge {
+  background: rgba(201,168,76,.15);
+  color: #7a5c0a;
+}
+
+.ag-vagas-action {
+  font-size: .8rem;
+  color: var(--text-muted, #8C8478);
+  white-space: nowrap;
+}
+
+.ag-vagas-card.selected .ag-vagas-action {
+  color: var(--primary, #013718);
+  font-weight: 600;
+}
+
+.ag-empty-vagas {
+  text-align: center;
+  padding: 40px 20px;
+  color: var(--text-muted, #8C8478);
+  font-size: .9rem;
+  line-height: 1.6;
+}
+
+@media (max-width: 420px) {
+  .ag-vagas-card { gap: 12px; padding: 12px 14px; }
+  .ag-vagas-dia-num { font-size: 1.7rem; }
+}
