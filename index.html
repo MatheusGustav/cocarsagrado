@@ -352,7 +352,7 @@
             </div>
             <div class="cat-body">
               <h3 class="cat-name">Confirmação de Exu</h3>
-              <p class="cat-desc">Confirmação de Exu ou pombagira, com orientação detalhada por escrito atraves de documento + audio explicativo
+              <p class="cat-desc">Confirmação de Exu ou pombagira, com orientação detalhada por escrito atraves de documento + audio explicativo.
                 Atenção: caso a entidade não queira responder o valor é extronado.
               </p>
             </div>
@@ -671,8 +671,7 @@
         <div id="telaAgendamento" class="modal-screen active">
           <div class="ag-progress" style="margin-top:20px;" role="navigation" aria-label="Passos do agendamento">
             <div class="ag-step active" id="step-1">Data</div>
-            <div class="ag-step"        id="step-2">Horário</div>
-            <div class="ag-step"        id="step-3">Dados</div>
+            <div class="ag-step"        id="step-2">Dados</div>
           </div>
           <div class="ag-container">
             <section class="ag-section active" id="secao-1" aria-label="Escolha a data">
@@ -681,18 +680,9 @@
                 <div class="ag-loading"><div class="ag-spinner"></div> Carregando...</div>
               </div>
             </section>
-            <section class="ag-section" id="secao-2" aria-label="Escolha o horário">
-              <div style="display:flex; align-items:center; gap:12px; margin-bottom:20px;">
-                <button class="ag-btn ag-btn-outline ag-btn-sm" onclick="irParaPasso(1)" aria-label="Voltar">← Voltar</button>
-                <h2 class="ag-section-title" id="titulo-horarios" style="margin:0">Escolha o horário</h2>
-              </div>
-              <div id="slots-horarios">
-                <div class="ag-loading"><div class="ag-spinner"></div> Verificando...</div>
-              </div>
-            </section>
-            <section class="ag-section" id="secao-3" aria-label="Seus dados">
+            <section class="ag-section" id="secao-2" aria-label="Seus dados">
               <div style="display:flex; align-items:center; gap:12px; margin-bottom:24px;">
-                <button class="ag-btn ag-btn-outline ag-btn-sm" onclick="irParaPasso(2)" aria-label="Voltar">← Voltar</button>
+                <button class="ag-btn ag-btn-outline ag-btn-sm" onclick="irParaPasso(1)" aria-label="Voltar">← Voltar</button>
                 <h2 class="ag-section-title" style="margin:0">Finalize seu pedido</h2>
               </div>
               <div class="ag-resumo" role="region" aria-label="Resumo do pedido">
