@@ -941,7 +941,7 @@ body.overlay-active .footer {
   width: 68px;
   height: 68px;
   object-fit: contain;
-  border-radius: 10px;
+  border-radius: 50%;
   display: block;
 }
 
