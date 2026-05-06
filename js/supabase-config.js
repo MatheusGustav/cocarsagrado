@@ -6,7 +6,11 @@ const SUPABASE_CONFIG = {
   anonKey: 'sb_publishable_rfGhG8zjFnRgwzIBEN2Glw_vCWMBqeG'
 };
 
-window.supabase = window.supabase.createClient(SUPABASE_CONFIG.url, SUPABASE_CONFIG.anonKey);
+if (window.supabase && typeof window.supabase.createClient === 'function') {
+  window.supabase = window.supabase.createClient(SUPABASE_CONFIG.url, SUPABASE_CONFIG.anonKey);
+} else {
+  console.error('Supabase SDK não carregado. Verifique a conexão com a CDN.');
+}
 
 async function testarConexao() {
   try {
