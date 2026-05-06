@@ -19,9 +19,9 @@
       "nome": "Búzios Completo",
       "tipo": "simples",
       "preco": 150,
-      "descontoAtivo": false,
-      "percentualDesconto": 0,
-      "badge": "",
+      "descontoAtivo": true,
+      "percentualDesconto": 55,
+      "badge": "oiiiiiii",
       "mensagemPromocional": ""
     },
     {
