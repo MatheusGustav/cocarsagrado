@@ -138,7 +138,7 @@ async function salvarPadraoSemanal() {
 
   if (btn) { btn.disabled = false; btn.textContent = '💾 Salvar Padrão Semanal'; }
 
-  if (error) { alert('Erro ao salvar: ' + error.message); return; }
+  if (error) { _toastVagas('❌ Erro ao salvar: ' + error.message); return; }
   await carregarPadraoSemanal();
   _toastVagas('✅ Padrão semanal salvo!');
 }
@@ -158,8 +158,8 @@ async function carregarOverrideData() {
   const diaSemana = new Date(_dataOverride + 'T00:00:00').getDay();
 
   const [{ data: padroes }, { data: overrides }] = await Promise.all([
-    supabase.from('disponibilidade_padrao').select('*').in('profissional', ['camila','matheus']).eq('dia_semana', diaSemana),
-    supabase.from('disponibilidade_override').select('*').in('profissional', ['camila','matheus']).eq('data', _dataOverride),
+    supabase.from('disponibilidade_padrao').select('*').in('profissional', PROFISSIONAIS_VAGAS).eq('dia_semana', diaSemana),
+    supabase.from('disponibilidade_override').select('*').in('profissional', PROFISSIONAIS_VAGAS).eq('data', _dataOverride),
   ]);
 
   const padraoMap   = {};
@@ -167,15 +167,14 @@ async function carregarOverrideData() {
   const overrideMap = {};
   (overrides || []).forEach(o => { overrideMap[o.profissional] = o; });
 
-  const d    = new Date(_dataOverride + 'T00:00:00');
-  const DIAS2 = ['Domingo','Segunda','Terça','Quarta','Quinta','Sexta','Sábado'];
-  const MES2  = ['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
+  const d = new Date(_dataOverride + 'T00:00:00');
+  const MESES_OVERRIDE = ['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
 
   container.innerHTML = '';
 
   const tit = document.createElement('h3');
   tit.className = 'vagas-override-titulo';
-  tit.textContent = `${DIAS2[d.getDay()]}, ${d.getDate()} de ${MES2[d.getMonth()]} de ${d.getFullYear()}`;
+  tit.textContent = `${DIAS_SEMANA_VAGAS[d.getDay()]}, ${d.getDate()} de ${MESES_OVERRIDE[d.getMonth()]} de ${d.getFullYear()}`;
   container.appendChild(tit);
 
   PROFISSIONAIS_VAGAS.forEach(prof => {
@@ -278,7 +277,7 @@ async function salvarOverride() {
       .from('disponibilidade_override')
       .upsert(inserir, { onConflict: 'profissional,data' });
     if (error) {
-      alert('Erro ao salvar override: ' + error.message);
+      _toastVagas('❌ Erro ao salvar override: ' + error.message);
       if (btn) { btn.disabled = false; btn.textContent = '💾 Aplicar Override'; }
       return;
     }
@@ -295,9 +294,9 @@ async function limparOverride() {
   const { error } = await supabase
     .from('disponibilidade_override')
     .delete()
-    .in('profissional', ['camila','matheus'])
+    .in('profissional', PROFISSIONAIS_VAGAS)
     .eq('data', _dataOverride);
-  if (error) { alert('Erro: ' + error.message); return; }
+  if (error) { _toastVagas('❌ Erro: ' + error.message); return; }
   await carregarOverrideData();
   _toastVagas('✅ Override removido — usando padrão semanal.');
 }

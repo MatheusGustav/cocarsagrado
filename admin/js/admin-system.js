@@ -12,7 +12,17 @@ const STATUS_LABELS = {
   cancelado:  'Cancelado',
 };
 
-const MESES = ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
+function _toastAdmin(msg, tipo) {
+  const t = document.createElement('div');
+  t.className = 'adm-toast adm-toast--' + (tipo || 'info');
+  t.textContent = msg;
+  document.body.appendChild(t);
+  requestAnimationFrame(() => t.classList.add('adm-toast--show'));
+  setTimeout(() => {
+    t.classList.remove('adm-toast--show');
+    setTimeout(() => t.remove(), 300);
+  }, 3500);
+}
 
 // ============================================================
 // Carregamento principal
@@ -99,7 +109,7 @@ function criarItemAgendamento(ag) {
   const valor           = `R$ ${Number(ag.valor_final || 0).toFixed(2).replace('.', ',')}`;
   const badge           = `<span class="adm-badge adm-badge-${_esc(ag.status)}">${_esc(STATUS_LABELS[ag.status] || ag.status)}</span>`;
   const terapeutaNome   = ag.terapeuta === 'matheus' ? 'Matheus' : ag.terapeuta === 'camila' ? 'Camila' : '';
-  const badgeTerapeuta  = terapeutaNome ? `<span class="adm-badge" style="background:var(--secondary);color:#fff;">${terapeutaNome}</span>` : '';
+  const badgeTerapeuta  = terapeutaNome ? `<span class="adm-badge adm-badge-terapeuta">${terapeutaNome}</span>` : '';
 
   const acoes = montarAcoes(ag);
 
@@ -149,7 +159,7 @@ function montarAcoes(ag) {
     html += `<button class="ag-btn ag-btn-danger ag-btn-sm" onclick="apagarAgendamento('${id}')">🗑 Apagar</button>`;
   }
   if (['pago','confirmado'].includes(ag.status)) {
-    html += `<button class="ag-btn ag-btn-secondary ag-btn-sm" style="background:var(--secondary);color:#fff;" onclick="marcarComoAtendido('${id}')">🌙 Marcar como Atendido</button>`;
+    html += `<button class="ag-btn ag-btn-secondary ag-btn-sm" onclick="marcarComoAtendido('${id}')">🌙 Marcar como Atendido</button>`;
   }
   if (ag.status !== 'cancelado' && ag.status !== 'atendido') {
     html += `<button class="ag-btn ag-btn-danger ag-btn-sm" onclick="cancelarAgendamento('${id}')">✖ Cancelar</button>`;
@@ -168,28 +178,32 @@ function montarAcoes(ag) {
 async function marcarComoPago(id) {
   if (!confirm('Marcar agendamento como pago?')) return;
   const { error } = await supabase.from('agendamentos').update({ status: 'pago', pago_em: new Date().toISOString() }).eq('id', id);
-  if (error) { alert('Erro: ' + error.message); return; }
+  if (error) { _toastAdmin('Erro: ' + error.message, 'erro'); return; }
+  _toastAdmin('✅ Marcado como pago!', 'ok');
   carregarAgendamentos();
 }
 
 async function marcarComoAtendido(id) {
   if (!confirm('Marcar agendamento como atendido?')) return;
   const { error } = await supabase.from('agendamentos').update({ status: 'atendido', atendido_em: new Date().toISOString() }).eq('id', id);
-  if (error) { alert('Erro: ' + error.message); return; }
+  if (error) { _toastAdmin('Erro: ' + error.message, 'erro'); return; }
+  _toastAdmin('✅ Marcado como atendido!', 'ok');
   carregarAgendamentos();
 }
 
 async function cancelarAgendamento(id) {
   if (!confirm('Cancelar este agendamento? Esta ação não pode ser desfeita.')) return;
   const { error } = await supabase.from('agendamentos').update({ status: 'cancelado' }).eq('id', id);
-  if (error) { alert('Erro: ' + error.message); return; }
+  if (error) { _toastAdmin('Erro: ' + error.message, 'erro'); return; }
+  _toastAdmin('✅ Agendamento cancelado.', 'ok');
   carregarAgendamentos();
 }
 
 async function apagarAgendamento(id) {
   if (!confirm('Apagar este agendamento permanentemente? Esta ação não pode ser desfeita.')) return;
   const { error } = await supabase.from('agendamentos').delete().eq('id', id);
-  if (error) { alert('Erro: ' + error.message); return; }
+  if (error) { _toastAdmin('Erro: ' + error.message, 'erro'); return; }
+  _toastAdmin('✅ Agendamento apagado.', 'ok');
   carregarAgendamentos();
 }
 
@@ -198,7 +212,7 @@ async function apagarAgendamento(id) {
 // ============================================================
 function abrirWhatsApp(fone, nome, tipo, data, hora) {
   const numero = String(fone || '').replace(/\D/g,'');
-  if (numero.length < 10) { alert('WhatsApp do cliente não cadastrado.'); return; }
+  if (numero.length < 10) { _toastAdmin('WhatsApp do cliente não cadastrado.', 'aviso'); return; }
   // Considera 55 como DDI somente se o número tiver 12-13 dígitos (DDI + DDD + número).
   const dest = (numero.startsWith('55') && numero.length >= 12) ? numero : `55${numero}`;
   const horaTexto = (!hora || hora === 'A combinar') ? '' : ` às ${hora}`;
@@ -215,7 +229,7 @@ async function exportarRelatorio() {
     .select('*, tipos_leitura(nome)')
     .order('data_agendamento', { ascending: false });
 
-  if (error || !data) { alert('Erro ao exportar.'); return; }
+  if (error || !data) { _toastAdmin('Erro ao exportar relatório.', 'erro'); return; }
 
   const cols = ['Chave', 'Cliente', 'Nascimento', 'WhatsApp', 'Tipo', 'Data', 'Hora', 'Duração', 'Valor Original', 'Desconto', 'Valor Final', 'Status', 'Método Pag.', 'Pago em', 'Atendido em', 'Criado em'];
   const rows = data.map(a => [

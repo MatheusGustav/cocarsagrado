@@ -3,14 +3,12 @@
    ============================================================ */
 
 const Estado = {
-  tipoSelecionado:    null,
-  dataSelecionada:    null,
-  horarioSelecionado: null,
+  tipoSelecionado: null,
+  dataSelecionada: null,
 };
 
-const DIAS_PT    = ['Domingo','Segunda','Terça','Quarta','Quinta','Sexta','Sábado'];
-const DIAS_ABREV = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
-const MESES_PT   = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+const DIAS_PT  = ['Domingo','Segunda','Terça','Quarta','Quinta','Sexta','Sábado'];
+const MESES_PT = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
 
 // ============================================================
 // SELETOR DE QUANTIDADE / TIER
@@ -304,8 +302,7 @@ async function _buscarDiasComVagas(profissional, diasParaFrente) {
 function selecionarData(dataStr, cardEl) {
   document.querySelectorAll('#calendario .ag-vagas-card').forEach(c => c.classList.remove('selected'));
   cardEl.classList.add('selected');
-  Estado.dataSelecionada    = dataStr;
-  Estado.horarioSelecionado = '00:00';
+  Estado.dataSelecionada = dataStr;
   setTimeout(() => irParaPasso(2), 250);
 }
 
@@ -442,7 +439,8 @@ function gerarChaveAleatoria() {
 }
 
 function redirecionarParaPagamento(chave) {
-  // substituído por modal-agendamento.js (window.redirecionarParaPagamento)
+  console.warn('redirecionarParaPagamento não foi substituído — verifique se modal-agendamento.js carregou corretamente.');
+  mostrarAlerta('Erro interno ao redirecionar para pagamento. Recarregue a página.', 'error');
 }
 
 // ============================================================
@@ -466,15 +464,6 @@ function irParaPasso(num) {
 // ============================================================
 // Helpers
 // ============================================================
-function horaParaMinutos(str) {
-  const [h, m] = str.split(':').map(Number);
-  return h * 60 + m;
-}
-function minutosParaHora(min) {
-  const h = Math.floor(min / 60).toString().padStart(2,'0');
-  const m = (min % 60).toString().padStart(2,'0');
-  return `${h}:${m}`;
-}
 function dataParaISO(d) {
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 }

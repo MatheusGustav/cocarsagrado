@@ -87,14 +87,7 @@ function abrirModal(tipo) {
   irParaPasso(1);
 }
 
-function fecharModal(forcar) {
-  const temDados = Estado.tipoSelecionado ||
-                   document.getElementById('f-nome')?.value?.trim();
-
-  if (!forcar && temDados) {
-    if (!confirm('Fechar? Os dados do agendamento serão perdidos.')) return;
-  }
-
+function fecharModal() {
   const overlay = document.getElementById('modalAgendamento');
   overlay?.classList.remove('open');
   document.body.classList.remove('modal-aberto');
@@ -103,9 +96,8 @@ function fecharModal(forcar) {
 
 function _resetarModal() {
   if (typeof Estado !== 'undefined') {
-    Estado.tipoSelecionado    = null;
-    Estado.dataSelecionada    = null;
-    Estado.horarioSelecionado = null;
+    Estado.tipoSelecionado = null;
+    Estado.dataSelecionada = null;
   }
   _dadosPagamento = null;
   _calendarioOk   = false;
@@ -247,8 +239,8 @@ function trocarAbaPagamento(metodo) {
 
 function _copiarTexto(texto, msg) {
   navigator.clipboard.writeText(texto)
-    .then(() => alert(msg))
-    .catch(() => alert('Copie manualmente: ' + texto));
+    .then(() => mostrarAlerta(msg, 'success'))
+    .catch(() => mostrarAlerta('Copie manualmente: ' + texto, 'info'));
 }
 
 function copiarChavePedido() { _copiarTexto(_dadosPagamento?.chave || '', '✅ Chave copiada!'); }
