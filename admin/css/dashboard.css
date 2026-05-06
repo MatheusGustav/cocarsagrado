@@ -1215,6 +1215,8 @@ body {
     }
   }
 
+}
+
 /* ============================================================
    VAGAS ADMIN
    ============================================================ */
@@ -1481,4 +1483,35 @@ body {
   opacity: 1;
   transform: translateX(-50%) translateY(0);
 }
+
+/* Toast admin genérico */
+.adm-toast {
+  position: fixed;
+  bottom: 32px;
+  left: 50%;
+  transform: translateX(-50%) translateY(80px);
+  padding: 12px 24px;
+  border-radius: 24px;
+  font-size: .9rem;
+  font-weight: 500;
+  z-index: 9999;
+  opacity: 0;
+  transition: transform .3s, opacity .3s;
+  pointer-events: none;
+  white-space: nowrap;
+  box-shadow: 0 4px 20px rgba(0,0,0,.2);
+}
+.adm-toast--show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+.adm-toast--ok    { background: #013718; color: #E2C97E; }
+.adm-toast--erro  { background: #B91C1C; color: #fff; }
+.adm-toast--aviso { background: #C9A84C; color: #022D13; }
+.adm-toast--info  { background: #1A1410; color: #F5F0E8; }
+
+/* Badge terapeuta */
+.adm-badge-terapeuta {
+  background: var(--secondary);
+  color: #fff;
 }

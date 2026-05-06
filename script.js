@@ -38,9 +38,8 @@ const DESCONTO_CONFIG = {
  * O banner aparece acima do header com mensagem e código.
  */
 function aplicarDescontoAutomatico() {
-  if (!DESCONTO_CONFIG.ATIVO) return; // Sai da função se desconto estiver desativado
+  if (!DESCONTO_CONFIG.ATIVO) return;
 
-  // Cria o elemento do banner
   const banner = document.createElement('div');
   banner.id = 'banner-desconto';
   banner.innerHTML = `
@@ -54,41 +53,12 @@ function aplicarDescontoAutomatico() {
     </div>
   `;
 
-  // Estilo inline do banner (paleta Cocar Sagrado: verde floresta + dourado)
-  banner.style.cssText = `
-    background: #013718;
-    color: #F5E8C0;
-    font-size: 12px;
-    letter-spacing: 0.04em;
-    text-align: center;
-    padding: 10px 16px;
-    position: relative;
-    z-index: 200;
-    font-family: 'DM Sans', sans-serif;
-    border-bottom: 1px solid rgba(201, 168, 76, 0.25);
-  `;
-
-  // Insere o banner antes do header
   const header = document.getElementById('header');
   document.body.insertBefore(banner, header);
 
-  // Botão de fechar o banner
   document.getElementById('fecharBannerDesconto').addEventListener('click', () => {
     banner.style.display = 'none';
   });
-
-  // Estilo do botão fechar
-  const btnFechar = document.getElementById('fecharBannerDesconto');
-  btnFechar.style.cssText = `
-    background: none;
-    border: none;
-    color: #F5E8C0;
-    cursor: pointer;
-    font-size: 14px;
-    margin-left: 16px;
-    opacity: 0.7;
-    vertical-align: middle;
-  `;
 }
 
 

@@ -226,15 +226,12 @@ async function salvarDia() {
 
   const erroValidacao = _validarFaixas(novaConfig);
   if (erroValidacao) {
-    alert(erroValidacao);
+    _toastAdmin(erroValidacao, 'aviso');
     btn.disabled = false;
     btn.textContent = orig;
     return;
   }
 
-  // Apaga registros do dia/terapeuta e reinsere.
-  // Não é atômico: a validação acima reduz drasticamente a chance do INSERT falhar
-  // depois de um DELETE bem-sucedido.
   const { error: delErr } = await supabase
     .from('horarios_disponiveis')
     .delete()
@@ -242,7 +239,7 @@ async function salvarDia() {
     .eq('terapeuta', _terapeutaAgenda);
 
   if (delErr) {
-    alert('Erro ao salvar: ' + delErr.message);
+    _toastAdmin('Erro ao salvar: ' + delErr.message, 'erro');
     btn.disabled = false;
     btn.textContent = orig;
     return;
@@ -254,7 +251,7 @@ async function salvarDia() {
       .insert(novaConfig);
 
     if (insErr) {
-      alert('Erro ao salvar: ' + insErr.message);
+      _toastAdmin('Erro ao salvar: ' + insErr.message, 'erro');
       btn.disabled = false;
       btn.textContent = orig;
       return;
@@ -263,6 +260,7 @@ async function salvarDia() {
 
   fecharModalDia();
   await carregarAgenda();
+  _toastAdmin('✅ Agenda salva!', 'ok');
   btn.disabled = false;
   btn.textContent = orig;
 }
