@@ -1001,6 +1001,10 @@ body.overlay-active .footer {
   color: var(--color-gold-deep);
 }
 
+.cat-footer-tiers ~ .cat-btn {
+  align-self: flex-end;
+}
+
 /* Botão Agendar — dourado cerimonial */
 .cat-btn {
   font-size: 12px;
