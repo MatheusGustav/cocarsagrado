@@ -265,8 +265,8 @@ function aplicarBadgesModalidade() {
   document.querySelectorAll('.cat-card[data-modalidade]').forEach(card => {
     const modalidade = card.dataset.modalidade;
     const body = card.querySelector('.cat-body');
-    const titulo = body && body.querySelector('.cat-name');
-    if (!titulo) return;
+    const desc = body && body.querySelector('.cat-desc');
+    if (!desc) return;
 
     const badge = document.createElement('span');
     badge.className = modalidade === 'video'
@@ -274,11 +274,7 @@ function aplicarBadgesModalidade() {
       : 'cat-badge-atendimento cat-badge-atendimento--mensagem';
     badge.textContent = modalidade === 'video' ? 'Video-chamada' : 'mensagem';
 
-    const row = document.createElement('div');
-    row.className = 'cat-name-row';
-    titulo.parentNode.insertBefore(row, titulo);
-    row.appendChild(titulo);
-    row.appendChild(badge);
+    desc.insertAdjacentElement('afterend', badge);
   });
 }
 
