@@ -1,11 +1,11 @@
 /* ============================================================
-   COCAR SAGRADO — Sistema de Agendamento
+   COCAR SAGRADO — Sistema de Agendamento (Sistema de Vagas)
    ============================================================ */
 
 const Estado = {
-  tipoSelecionado:   null,
-  dataSelecionada:   null,
-  horarioSelecionado:null,
+  tipoSelecionado:    null,
+  dataSelecionada:    null,
+  horarioSelecionado: null,
 };
 
 const DIAS_PT    = ['Domingo','Segunda','Terça','Quarta','Quinta','Sexta','Sábado'];
@@ -56,7 +56,6 @@ async function _garantirTipos() {
 
 function calcularPrecoFinal(precoOriginal) {
   if (localStorage.getItem('aceitouDesconto10') === 'true') {
-    // Mesma fórmula de aplicarDesconto() em discount-system.js — bate com o catálogo.
     const final = Math.round(precoOriginal * 90) / 100;
     return { final, desconto: precoOriginal - final };
   }
@@ -184,156 +183,139 @@ function confirmarSeletor() {
 }
 
 // ============================================================
-// STEP 1 — Calendário
+// STEP 1 — Calendário de Vagas
 // ============================================================
 async function carregarCalendario() {
   const cal = document.getElementById('calendario');
   if (!cal) return;
-  cal.innerHTML = '<div class="ag-loading"><div class="ag-spinner"></div> Carregando...</div>';
+  cal.innerHTML = '<div class="ag-loading"><div class="ag-spinner"></div> Carregando disponibilidade...</div>';
 
-  const terapeuta = Estado.tipoSelecionado?.terapeuta;
-  const { data: horarios, error } = await supabase
-    .from('horarios_disponiveis')
-    .select('dia_semana')
-    .eq('ativo', true)
-    .eq('terapeuta', terapeuta);
-
-  if (error) {
-    cal.innerHTML = '<div class="ag-empty">Erro ao carregar calendário.</div>';
+  const profissional = Estado.tipoSelecionado?.terapeuta;
+  if (!profissional) {
+    cal.innerHTML = '<div class="ag-empty">Selecione um serviço primeiro.</div>';
     return;
   }
 
-  const diasComAtendimento = new Set(horarios.map(h => h.dia_semana));
-  const hoje = new Date();
-  hoje.setHours(0,0,0,0);
-  const dias = [];
+  try {
+    const dias = await _buscarDiasComVagas(profissional, 45);
 
-  for (let i = 1; i <= 30; i++) {
+    if (!dias.length) {
+      const numero = WHATSAPP_TERAPEUTA[profissional] || '';
+      cal.innerHTML = `
+        <div class="ag-empty ag-empty-vagas">
+          <p>Nenhuma data disponível nos próximos 45 dias.</p>
+          <p style="font-size:.85rem; margin-top:4px;">Entre em contato para verificar disponibilidade especial.</p>
+          ${numero ? `<a href="https://wa.me/${numero}" target="_blank" rel="noopener" class="ag-btn ag-btn-whatsapp" style="margin-top:14px; display:inline-flex;">💬 Falar no WhatsApp</a>` : ''}
+        </div>`;
+      return;
+    }
+
+    cal.innerHTML = '';
+    cal.className = 'ag-vagas-lista';
+
+    dias.forEach(({ data, vagas, ate_horario }) => {
+      const d = new Date(data + 'T00:00:00');
+      const card = document.createElement('div');
+      card.className = 'ag-vagas-card';
+
+      const h = ate_horario ? parseInt(ate_horario.slice(0, 2)) : null;
+      const horarioLabel = h !== null ? `até ${h}h` : '';
+      const vagasText    = vagas === 1 ? '1 vaga disponível' : `${vagas} vagas disponíveis`;
+      const cls          = vagas <= 2 ? 'vagas-poucas' : 'vagas-ok';
+
+      card.innerHTML = `
+        <div class="ag-vagas-data">
+          <span class="ag-vagas-dia-num">${d.getDate()}</span>
+          <div class="ag-vagas-dia-info">
+            <span class="ag-vagas-dia-nome">${DIAS_PT[d.getDay()]}</span>
+            <span class="ag-vagas-mes">${MESES_PT[d.getMonth()]}</span>
+          </div>
+        </div>
+        <div class="ag-vagas-info ${cls}">
+          <span class="ag-vagas-badge">✨ ${vagasText}${horarioLabel ? ' (' + horarioLabel + ')' : ''}</span>
+        </div>
+        <span class="ag-vagas-action" aria-hidden="true">→</span>`;
+
+      card.setAttribute('role', 'button');
+      card.setAttribute('tabindex', '0');
+      card.setAttribute('aria-label', `Agendar em ${DIAS_PT[d.getDay()]}, ${d.getDate()} de ${MESES_PT[d.getMonth()]} — ${vagasText}`);
+      card.addEventListener('click', () => selecionarData(data, card));
+      card.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); selecionarData(data, card); } });
+      cal.appendChild(card);
+    });
+  } catch (err) {
+    console.error('carregarCalendario:', err);
+    cal.innerHTML = '<div class="ag-empty">Erro ao carregar disponibilidade. Tente novamente.</div>';
+  }
+}
+
+async function _buscarDiasComVagas(profissional, diasParaFrente) {
+  const hoje = new Date();
+  hoje.setHours(0, 0, 0, 0);
+  const dataInicio = dataParaISO(new Date(hoje.getTime() + 86400000));
+  const dataFim    = dataParaISO(new Date(hoje.getTime() + diasParaFrente * 86400000));
+
+  const [
+    { data: padroes },
+    { data: overrides },
+    { data: agendados },
+  ] = await Promise.all([
+    supabase.from('disponibilidade_padrao').select('*').eq('profissional', profissional).eq('ativo', true),
+    supabase.from('disponibilidade_override').select('*').eq('profissional', profissional).gte('data', dataInicio).lte('data', dataFim),
+    supabase.from('agendamentos').select('data_agendamento').eq('terapeuta', profissional).gte('data_agendamento', dataInicio).lte('data_agendamento', dataFim).in('status', ['pago','confirmado','atendido','pendente']),
+  ]);
+
+  const padraoMap = {};
+  (padroes || []).forEach(p => { padraoMap[p.dia_semana] = p; });
+
+  const overrideMap = {};
+  (overrides || []).forEach(o => { overrideMap[o.data] = o; });
+
+  const contagemMap = {};
+  (agendados || []).forEach(a => {
+    contagemMap[a.data_agendamento] = (contagemMap[a.data_agendamento] || 0) + 1;
+  });
+
+  const dias = [];
+  for (let i = 1; i <= diasParaFrente; i++) {
     const d = new Date(hoje);
     d.setDate(hoje.getDate() + i);
-    if (diasComAtendimento.has(d.getDay())) dias.push(d);
+    const str    = dataParaISO(d);
+    const usadas = contagemMap[str] || 0;
+
+    const ov = overrideMap[str];
+    if (ov) {
+      if (ov.ativo) {
+        const restantes = Math.max(0, ov.vagas_total - usadas);
+        if (restantes > 0) dias.push({ data: str, vagas: restantes, ate_horario: ov.ate_horario });
+      }
+    } else {
+      const padrao = padraoMap[d.getDay()];
+      if (padrao && padrao.vagas_total > 0) {
+        const restantes = Math.max(0, padrao.vagas_total - usadas);
+        if (restantes > 0) dias.push({ data: str, vagas: restantes, ate_horario: padrao.ate_horario });
+      }
+    }
   }
 
-  if (!dias.length) {
-    cal.innerHTML = '<div class="ag-empty">Nenhuma data disponível nos próximos 30 dias.</div>';
-    return;
-  }
-
-  cal.innerHTML = '';
-  cal.className = 'ag-calendar';
-  dias.forEach(d => {
-    const str  = dataParaISO(d);
-    const card = document.createElement('div');
-    card.className = 'ag-day-card';
-    card.innerHTML = `
-      <div class="day-num">${d.getDate()}</div>
-      <div class="day-name">${DIAS_ABREV[d.getDay()]}</div>
-      <div class="day-month">${MESES_PT[d.getMonth()]}</div>`;
-    card.addEventListener('click', () => selecionarData(str, card));
-    cal.appendChild(card);
-  });
+  return dias;
 }
 
 function selecionarData(dataStr, cardEl) {
-  document.querySelectorAll('#calendario .ag-day-card').forEach(c => c.classList.remove('selected'));
+  document.querySelectorAll('#calendario .ag-vagas-card').forEach(c => c.classList.remove('selected'));
   cardEl.classList.add('selected');
-  Estado.dataSelecionada = dataStr;
+  Estado.dataSelecionada    = dataStr;
+  Estado.horarioSelecionado = '00:00';
   setTimeout(() => irParaPasso(2), 250);
 }
 
 // ============================================================
-// STEP 2 — Horários
-// ============================================================
-async function carregarHorariosData(dataStr) {
-  const container = document.getElementById('slots-horarios');
-  const titulo    = document.getElementById('titulo-horarios');
-  if (!container) return;
-
-  const d = new Date(dataStr + 'T00:00:00');
-  if (titulo) titulo.textContent =
-    `Horários disponíveis — ${d.getDate()} de ${MESES_PT[d.getMonth()]} (${DIAS_PT[d.getDay()]})`;
-
-  container.innerHTML = '<div class="ag-loading"><div class="ag-spinner"></div> Verificando...</div>';
-
-  const diaSemana = d.getDay();
-  const duracao   = Estado.tipoSelecionado?.duracao_minutos || 60;
-  const terapeuta = Estado.tipoSelecionado?.terapeuta;
-
-  const [{ data: horarios, error: e1 }, { data: ocupados }] = await Promise.all([
-    supabase.from('horarios_disponiveis').select('hora_inicio,hora_fim')
-      .eq('dia_semana', diaSemana).eq('ativo', true).eq('terapeuta', terapeuta),
-    supabase.from('agendamentos').select('hora_agendamento,duracao_minutos')
-      .eq('data_agendamento', dataStr).eq('terapeuta', terapeuta).in('status', ['pago', 'confirmado', 'atendido']),
-  ]);
-
-  if (e1 || !horarios?.length) {
-    container.innerHTML = '<div class="ag-empty">Sem horários para este dia.</div>';
-    return;
-  }
-
-  const agora = new Date();
-  const isHoje = dataStr === dataParaISO(agora);
-  const minutosAgora = isHoje ? agora.getHours() * 60 + agora.getMinutes() : -1;
-
-  const slots = gerarSlots(horarios, duracao, ocupados || [])
-    .filter(({ hora }) => horaParaMinutos(hora) > minutosAgora);
-
-  if (!slots.length) {
-    container.innerHTML = '<div class="ag-empty">Sem slots disponíveis neste dia.</div>';
-    return;
-  }
-
-  container.innerHTML = '';
-  container.className = 'ag-slots';
-  slots.forEach(({ hora, ocupado }) => {
-    const el = document.createElement('div');
-    el.className = 'ag-slot' + (ocupado ? ' occupied' : '');
-    el.textContent = hora;
-    el.title = ocupado ? 'Horário indisponível' : hora;
-    if (!ocupado) el.addEventListener('click', () => selecionarHorario(hora, el));
-    container.appendChild(el);
-  });
-}
-
-function gerarSlots(horarios, duracao, ocupados) {
-  const slots = [];
-  horarios.forEach(({ hora_inicio, hora_fim }) => {
-    let atual = horaParaMinutos(hora_inicio);
-    const fim = horaParaMinutos(hora_fim);
-    while (atual + duracao <= fim) {
-      const horaStr = minutosParaHora(atual);
-      const ocupado = ocupados.some(o =>
-        horariosSeSobrepoe(atual, atual + duracao,
-          horaParaMinutos(o.hora_agendamento),
-          horaParaMinutos(o.hora_agendamento) + (o.duracao_minutos || 60))
-      );
-      slots.push({ hora: horaStr, ocupado });
-      atual += 30;
-    }
-  });
-  return slots;
-}
-
-function horariosSeSobrepoe(ini1, fim1, ini2, fim2) {
-  return ini1 < fim2 && fim1 > ini2;
-}
-
-function selecionarHorario(hora, el) {
-  document.querySelectorAll('#slots-horarios .ag-slot').forEach(s => s.classList.remove('selected'));
-  el.classList.add('selected');
-  Estado.horarioSelecionado = hora;
-  atualizarResumo();
-  setTimeout(() => irParaPasso(3), 250);
-}
-
-// ============================================================
-// STEP 3 — Formulário
+// STEP 2 — Formulário
 // ============================================================
 function atualizarResumo() {
   const tipo = Estado.tipoSelecionado;
   const data = Estado.dataSelecionada;
-  const hora = Estado.horarioSelecionado;
-  if (!tipo || !data || !hora) return;
+  if (!tipo || !data) return;
 
   const { final, desconto } = calcularPrecoFinal(tipo.preco_original);
   const d = new Date(data + 'T00:00:00');
@@ -341,7 +323,7 @@ function atualizarResumo() {
   const set = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
   set('res-tipo',    tipo.nome);
   set('res-data',    `${d.getDate()} de ${MESES_PT[d.getMonth()]} de ${d.getFullYear()}`);
-  set('res-hora',    hora);
+  set('res-hora',    'A combinar via WhatsApp 💬');
   set('res-duracao', _formatarDuracao(tipo.duracao_minutos));
   set('res-valor',   `R$ ${final.toFixed(2).replace('.', ',')}`);
 
@@ -367,21 +349,25 @@ function processarFormulario(e) {
 }
 
 function validarFormulario() {
-  // Garante que o horário selecionado ainda é futuro no momento do envio
-  const dataHora = new Date(`${Estado.dataSelecionada}T${Estado.horarioSelecionado}:00`);
-  if (dataHora <= new Date()) {
-    mostrarAlerta('Este horário já passou. Selecione uma nova data e horário.', 'error');
+  if (!Estado.dataSelecionada) {
+    mostrarAlerta('Selecione uma data antes de continuar.', 'error');
+    setTimeout(() => irParaPasso(1), 2000);
+    return false;
+  }
+
+  const dataAgendamento = new Date(Estado.dataSelecionada + 'T23:59:00');
+  if (dataAgendamento <= new Date()) {
+    mostrarAlerta('Esta data já passou. Selecione uma nova data.', 'error');
     setTimeout(() => irParaPasso(1), 2000);
     return false;
   }
 
   let ok = true;
   const campos = [
-    { id: 'f-nome',  minLen: 3,  msg: 'Nome deve ter pelo menos 3 caracteres.' },
-    { id: 'f-nasc',  date: true, msg: 'Data de nascimento inválida.' },
-    { id: 'f-fone',  minLen: 10, msg: 'WhatsApp inválido.' },
+    { id: 'f-nome', minLen: 3,  msg: 'Nome deve ter pelo menos 3 caracteres.' },
+    { id: 'f-nasc', date: true, msg: 'Data de nascimento inválida.' },
+    { id: 'f-fone', minLen: 10, msg: 'WhatsApp inválido.' },
   ];
-  // f-obs só é obrigatório para serviços que pedem a pergunta (tier).
   if (Estado.tipoSelecionado?.requerPergunta) {
     campos.push({ id: 'f-obs', minLen: 3, msg: 'Descreva sua pergunta/questão.' });
   }
@@ -425,7 +411,7 @@ async function salvarAgendamento() {
     cliente_whatsapp:    document.getElementById('f-fone').value.trim(),
     cliente_observacoes: document.getElementById('f-obs')?.value?.trim() || null,
     data_agendamento:    Estado.dataSelecionada,
-    hora_agendamento:    Estado.horarioSelecionado,
+    hora_agendamento:    '00:00',
     duracao_minutos:     tipo.duracao_minutos,
     valor_original:      tipo.preco_original,
     desconto_aplicado:   desconto,
@@ -460,11 +446,10 @@ function redirecionarParaPagamento(chave) {
 }
 
 // ============================================================
-// Navegação entre passos (1=Data, 2=Horário, 3=Dados)
+// Navegação entre passos (1=Data, 2=Dados)
 // ============================================================
 function irParaPasso(num) {
-  if (num === 2 && Estado.dataSelecionada) carregarHorariosData(Estado.dataSelecionada);
-  if (num === 3) atualizarResumo();
+  if (num === 2) atualizarResumo();
 
   document.querySelectorAll('.ag-section').forEach((s, i) => {
     s.classList.toggle('active', i + 1 === num);
@@ -516,7 +501,7 @@ function aplicarMascaraFone(input) {
 // Init
 // ============================================================
 document.addEventListener('DOMContentLoaded', () => {
-  _garantirTipos(); // pré-carrega para o seletor responder rápido
+  _garantirTipos();
 
   const fone = document.getElementById('f-fone');
   if (fone) aplicarMascaraFone(fone);

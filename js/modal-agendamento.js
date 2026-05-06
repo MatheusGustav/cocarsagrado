@@ -111,7 +111,7 @@ function _resetarModal() {
   _calendarioOk   = false;
 
   document.getElementById('form-dados')?.reset();
-  document.querySelectorAll('.ag-card.selected, .ag-day-card.selected, .ag-slot.selected')
+  document.querySelectorAll('.ag-card.selected, .ag-day-card.selected, .ag-slot.selected, .ag-vagas-card.selected')
     .forEach(el => el.classList.remove('selected'));
 
   _mostrarTela(1, false);
@@ -169,7 +169,7 @@ window.redirecionarParaPagamento = function(chave) {
     tipo:      tipo.nome,
     terapeuta: tipo.terapeuta || 'camila',
     data:      `${d.getDate()} de ${MESES_PT[d.getMonth()]} de ${d.getFullYear()}`,
-    hora:      Estado.horarioSelecionado,
+    hora:      'A combinar via WhatsApp',
     duracao:   tipo.duracao_minutos,
     valor:     final.toFixed(2).replace('.', ','),
     nome:       document.getElementById('f-nome').value.trim(),
@@ -261,9 +261,9 @@ function avisarWhatsAppModal(metodo) {
 
   const infoCliente = `*Nome:* ${ag.nome}\n*Nascimento:* ${ag.nascimento}${ag.obs ? `\n*Pergunta/Questão:* ${ag.obs}` : ''}`;
   const msgs = {
-    pix:    `Olá! 😊 Fiz o pagamento via *PIX*.\n\n*Pedido:* ${ag.chave}\n*Leitura:* ${ag.tipo}\n*Data:* ${ag.data} às ${ag.hora}\n*Valor:* R$ ${ag.valor}\n\n${infoCliente}\n\nPode confirmar o recebimento? 🙏`,
-    cartao: `Olá! 😊 Gostaria de pagar via *cartão* meu agendamento.\n\n*Pedido:* ${ag.chave}\n*Leitura:* ${ag.tipo}\n*Data:* ${ag.data} às ${ag.hora}\n*Valor:* R$ ${ag.valor}\n\n${infoCliente}\n\nPode me enviar o link de pagamento? 🙏`,
-    wise:   `Olá! 😊 Realizei a transferência via *Wise*.\n\n*Pedido:* ${ag.chave}\n*Leitura:* ${ag.tipo}\n*Data:* ${ag.data} às ${ag.hora}\n*Valor:* R$ ${ag.valor}\n\n${infoCliente}\n\nPode confirmar o recebimento? 🙏`,
+    pix:    `Olá! 😊 Fiz o pagamento via *PIX*.\n\n*Pedido:* ${ag.chave}\n*Leitura:* ${ag.tipo}\n*Data:* ${ag.data}\n*Valor:* R$ ${ag.valor}\n\n${infoCliente}\n\nPode confirmar o recebimento? Combinaremos o horário por aqui! 🙏`,
+    cartao: `Olá! 😊 Gostaria de pagar via *cartão* meu agendamento.\n\n*Pedido:* ${ag.chave}\n*Leitura:* ${ag.tipo}\n*Data:* ${ag.data}\n*Valor:* R$ ${ag.valor}\n\n${infoCliente}\n\nPode me enviar o link de pagamento? Combinaremos o horário por aqui! 🙏`,
+    wise:   `Olá! 😊 Realizei a transferência via *Wise*.\n\n*Pedido:* ${ag.chave}\n*Leitura:* ${ag.tipo}\n*Data:* ${ag.data}\n*Valor:* R$ ${ag.valor}\n\n${infoCliente}\n\nPode confirmar o recebimento? Combinaremos o horário por aqui! 🙏`,
   };
 
   const numero = WHATSAPP_TERAPEUTA[ag.terapeuta] || WHATSAPP_TERAPEUTA.camila;
@@ -289,7 +289,7 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // ============================================================
-// InfinityPay — geração de link de pagamento por cartão
+// Mercado Pago — geração de link de pagamento por cartão
 // ============================================================
 async function gerarLinkCartao() {
   const ag = _dadosPagamento;
