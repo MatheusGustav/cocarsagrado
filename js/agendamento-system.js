@@ -43,6 +43,10 @@ const SERVICO_CONFIG = {
 
 async function _garantirTipos() {
   if (_tiposCache) return _tiposCache;
+  if (typeof supabase === 'undefined' || !supabase) {
+    console.error('Supabase não carregado — verifique a conexão com a CDN.');
+    return [];
+  }
   const { data, error } = await supabase.from('tipos_leitura').select('*');
   if (error) {
     console.error('Erro ao carregar tipos:', error);
@@ -64,7 +68,14 @@ async function abrirSeletor(serviceId) {
   const config = SERVICO_CONFIG[serviceId];
   if (!config) return;
 
-  const tipos = await _garantirTipos();
+  let tipos;
+  try {
+    tipos = await _garantirTipos();
+  } catch (err) {
+    console.error('abrirSeletor: falha ao carregar tipos', err);
+    mostrarAlerta('Erro de conexão. Verifique sua internet e tente novamente.', 'error');
+    return;
+  }
 
   _seletorConfig        = config;
   _seletorQty           = 1;
