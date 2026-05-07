@@ -57,11 +57,12 @@ async function _garantirTipos() {
 }
 
 function calcularPrecoFinal(precoOriginal) {
+  const preco = parseFloat(precoOriginal) || 0;
   if (localStorage.getItem('aceitouDesconto10') === 'true') {
-    const final = Math.round(precoOriginal * 90) / 100;
-    return { final, desconto: precoOriginal - final };
+    const final = Math.round(preco * 90) / 100;
+    return { final, desconto: preco - final };
   }
-  return { final: precoOriginal, desconto: 0 };
+  return { final: preco, desconto: 0 };
 }
 
 async function abrirSeletor(serviceId) {
@@ -242,7 +243,7 @@ async function carregarCalendario() {
           </div>
         </div>
         <div class="ag-vagas-info ${cls}">
-          <span class="ag-vagas-badge">✨ ${vagasText}${horarioLabel ? ' (' + horarioLabel + ')' : ''}</span>
+          <span class="ag-vagas-badge">${vagasText}${horarioLabel ? ' (' + horarioLabel + ')' : ''}</span>
         </div>
         <span class="ag-vagas-action" aria-hidden="true">→</span>`;
 
@@ -459,8 +460,6 @@ function redirecionarParaPagamento(chave) {
 // Navegação entre passos (1=Data, 2=Dados)
 // ============================================================
 function irParaPasso(num) {
-  if (num === 2) atualizarResumo();
-
   document.querySelectorAll('.ag-section').forEach((s, i) => {
     s.classList.toggle('active', i + 1 === num);
   });
@@ -469,6 +468,8 @@ function irParaPasso(num) {
     if (i + 1 === num) s.classList.add('active');
     if (i + 1 < num)   s.classList.add('done');
   });
+
+  if (num === 2) atualizarResumo();
 
   document.querySelector('.ag-container')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }

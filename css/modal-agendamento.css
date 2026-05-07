@@ -149,6 +149,20 @@
   flex-shrink: 0;
 }
 
+@media (max-width: 420px) {
+  .modal-tela-step {
+    padding: 4px 8px;
+    font-size: .68rem;
+    gap: 4px;
+  }
+  .modal-tela-step .t-num {
+    width: 16px;
+    height: 16px;
+    font-size: .6rem;
+  }
+  .modal-progress-sep { font-size: .7rem; }
+}
+
 /* Botão fechar */
 .modal-close-btn {
   width: 44px;
