@@ -267,17 +267,12 @@ async function _buscarDiasComVagas(profissional, diasParaFrente) {
   const dataFim    = dataParaISO(new Date(hoje.getTime() + diasParaFrente * 86400000));
 
   const [
-    { data: padroes },
     { data: overrides },
     { data: agendados },
   ] = await Promise.all([
-    supabase.from('disponibilidade_padrao').select('*').eq('profissional', profissional).eq('ativo', true),
     supabase.from('disponibilidade_override').select('*').eq('profissional', profissional).gte('data', dataInicio).lte('data', dataFim),
     supabase.from('agendamentos').select('data_agendamento').eq('terapeuta', profissional).gte('data_agendamento', dataInicio).lte('data_agendamento', dataFim).in('status', ['pago','confirmado','atendido','pendente']),
   ]);
-
-  const padraoMap = {};
-  (padroes || []).forEach(p => { padraoMap[p.dia_semana] = p; });
 
   const overrideMap = {};
   (overrides || []).forEach(o => { overrideMap[o.data] = o; });
@@ -295,17 +290,9 @@ async function _buscarDiasComVagas(profissional, diasParaFrente) {
     const usadas = contagemMap[str] || 0;
 
     const ov = overrideMap[str];
-    if (ov) {
-      if (ov.ativo) {
-        const restantes = Math.max(0, ov.vagas_total - usadas);
-        if (restantes > 0) dias.push({ data: str, vagas: restantes, ate_horario: ov.ate_horario });
-      }
-    } else {
-      const padrao = padraoMap[d.getDay()];
-      if (padrao && padrao.vagas_total > 0) {
-        const restantes = Math.max(0, padrao.vagas_total - usadas);
-        if (restantes > 0) dias.push({ data: str, vagas: restantes, ate_horario: padrao.ate_horario });
-      }
+    if (ov && ov.ativo) {
+      const restantes = Math.max(0, ov.vagas_total - usadas);
+      if (restantes > 0) dias.push({ data: str, vagas: restantes, ate_horario: ov.ate_horario });
     }
   }
 
