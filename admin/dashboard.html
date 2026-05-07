@@ -109,34 +109,8 @@
         <h1>Vagas</h1>
       </header>
 
-      <div class="vagas-tabs">
-        <button class="vagas-tab active" id="vagas-tab-padrao" onclick="mudarAbaVagas('padrao')">Configuração Padrão</button>
-        <button class="vagas-tab" id="vagas-tab-ajuste" onclick="mudarAbaVagas('ajuste')">Ajuste Pontual</button>
-      </div>
-
-      <div id="vagas-painel-padrao">
-        <div id="vagas-padrao-container">
-          <div class="ag-loading"><div class="ag-spinner"></div> Carregando...</div>
-        </div>
-      </div>
-
-      <div id="vagas-painel-ajuste" style="display:none">
-        <div class="vagas-ajuste-layout">
-          <div class="vagas-ajuste-sidebar">
-            <div id="vagas-mini-cal" class="vagas-mini-cal"></div>
-            <div class="vagas-excecoes-titulo">Ajustes futuros</div>
-            <div id="vagas-lista-excecoes"></div>
-          </div>
-          <div class="vagas-ajuste-main">
-            <div id="vagas-ajuste-container">
-              <p class="vagas-ajuste-hint">Selecione um dia no calendário.</p>
-            </div>
-            <div id="vagas-ajuste-footer" class="vagas-override-footer" style="display:none">
-              <button class="ag-btn ag-btn-outline" onclick="limparAjuste()">🗑 Remover Ajuste</button>
-              <button class="ag-btn ag-btn-primary" id="vagas-btn-salvar-ajuste" onclick="salvarAjuste()">💾 Salvar Ajuste</button>
-            </div>
-          </div>
-        </div>
+      <div id="vagas-padrao-container">
+        <div class="ag-loading"><div class="ag-spinner"></div> Carregando...</div>
       </div>
     </div>
 
@@ -147,7 +121,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="../js/supabase-config.js"></script>
 <script src="js/admin-system.js?v=5"></script>
-<script src="js/vagas-admin.js?v=3"></script>
+<script src="js/vagas-admin.js?v=4"></script>
 <script>
   const navAgendamentos = document.getElementById('nav-agendamentos');
   const navVagas        = document.getElementById('nav-vagas');
