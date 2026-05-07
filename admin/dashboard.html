@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="../css/agendamento-styles.css">
-  <link rel="stylesheet" href="css/dashboard.css?v=4">
+  <link rel="stylesheet" href="css/dashboard.css?v=5">
 </head>
 <body>
 
@@ -128,30 +128,32 @@
       </header>
 
       <div class="vagas-tabs">
-        <button class="vagas-tab active" id="vagas-tab-padrao" onclick="mudarAbaVagas('padrao')">Padrão Semanal</button>
-        <button class="vagas-tab" id="vagas-tab-override" onclick="mudarAbaVagas('override')">Ajuste por Dia</button>
+        <button class="vagas-tab active" id="vagas-tab-padrao" onclick="mudarAbaVagas('padrao')">Configuração Padrão</button>
+        <button class="vagas-tab" id="vagas-tab-ajuste" onclick="mudarAbaVagas('ajuste')">Ajuste Pontual</button>
       </div>
 
       <div id="vagas-painel-padrao">
         <div id="vagas-padrao-container">
           <div class="ag-loading"><div class="ag-spinner"></div> Carregando...</div>
         </div>
-        <div class="vagas-padrao-footer">
-          <button class="ag-btn ag-btn-primary" id="vagas-btn-salvar-padrao" onclick="salvarPadraoSemanal()">💾 Salvar Padrão Semanal</button>
-        </div>
       </div>
 
-      <div id="vagas-painel-override" style="display:none">
-        <div class="vagas-override-header">
-          <div class="ag-form-group" style="margin:0">
-            <label for="override-data">Data</label>
-            <input type="date" id="override-data" onchange="carregarOverrideData()">
+      <div id="vagas-painel-ajuste" style="display:none">
+        <div class="vagas-ajuste-layout">
+          <div class="vagas-ajuste-sidebar">
+            <div id="vagas-mini-cal" class="vagas-mini-cal"></div>
+            <div class="vagas-excecoes-titulo">Ajustes futuros</div>
+            <div id="vagas-lista-excecoes"></div>
           </div>
-        </div>
-        <div id="vagas-override-container"></div>
-        <div id="vagas-override-footer" class="vagas-override-footer" style="display:none">
-          <button class="ag-btn ag-btn-outline" onclick="limparOverride()">🗑 Usar Padrão</button>
-          <button class="ag-btn ag-btn-primary" id="vagas-btn-salvar-ov" onclick="salvarOverride()">💾 Aplicar Override</button>
+          <div class="vagas-ajuste-main">
+            <div id="vagas-ajuste-container">
+              <p class="vagas-ajuste-hint">Selecione um dia no calendário.</p>
+            </div>
+            <div id="vagas-ajuste-footer" class="vagas-override-footer" style="display:none">
+              <button class="ag-btn ag-btn-outline" onclick="limparAjuste()">🗑 Remover Ajuste</button>
+              <button class="ag-btn ag-btn-primary" id="vagas-btn-salvar-ajuste" onclick="salvarAjuste()">💾 Salvar Ajuste</button>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -202,7 +204,7 @@
 <script src="../js/supabase-config.js"></script>
 <script src="js/admin-system.js?v=5"></script>
 <script src="js/agenda-system.js?v=4"></script>
-<script src="js/vagas-admin.js?v=1"></script>
+<script src="js/vagas-admin.js?v=2"></script>
 <script>
   // Navegação entre seções
   const navAgendamentos = document.getElementById('nav-agendamentos');
