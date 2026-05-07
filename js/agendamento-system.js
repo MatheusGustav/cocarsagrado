@@ -27,11 +27,11 @@ const WHATSAPP_TERAPEUTA = {
 const SERVICO_CONFIG = {
   'buzios-avulso':        { tipo: 'tier',      terapeuta: 'matheus', nome: 'Búzios Avulso',        prefixo: 'Búzios Avulso – ',       pergunta: 'Quantas perguntas?', requerPergunta: true },
   'mesa-cigana-avulsa':   { tipo: 'tier',      terapeuta: 'camila',  nome: 'Mesa Cigana Avulsa',   prefixo: 'Mesa Cigana Avulsa – ',  pergunta: 'Quantas perguntas?', requerPergunta: true },
-  'buzios-completo':      { tipo: 'quantidade', terapeuta: 'matheus', nome: 'Búzios Completo',      pergunta: 'Quantas sessões?' },
+  'buzios-completo':      { tipo: 'quantidade', terapeuta: 'matheus', nome: 'Búzios Completo',      pergunta: 'Quantas sessões?', maxQty: 1 },
   'confirmacao-orixas':   { tipo: 'quantidade', terapeuta: 'matheus', nome: 'Confirmação de Orixás',pergunta: 'Quantas sessões?' },
   'cabala-odu':           { tipo: 'quantidade', terapeuta: 'matheus', nome: 'Cabala de Odu',        pergunta: 'Quantas sessões?' },
   'confirmacao-exu':      { tipo: 'quantidade', terapeuta: 'matheus', nome: 'Confirmação de Exu',   pergunta: 'Quantas sessões?' },
-  'mesa-cigana-completa': { tipo: 'quantidade', terapeuta: 'camila',  nome: 'Mesa Cigana Completa', pergunta: 'Quantas sessões?' },
+  'mesa-cigana-completa': { tipo: 'quantidade', terapeuta: 'camila',  nome: 'Mesa Cigana Completa', pergunta: 'Quantas sessões?', maxQty: 1 },
   'aguas-oxum':           { tipo: 'quantidade', terapeuta: 'camila',  nome: 'Águas de Oxum',        pergunta: 'Quantas sessões?' },
   'rosa-venus':           { tipo: 'quantidade', terapeuta: 'camila',  nome: 'Rosa de Vênus',        pergunta: 'Quantas sessões?' },
   'leitura-mentores':     { tipo: 'quantidade', terapeuta: 'camila',  nome: 'Leitura dos Mentores', pergunta: 'Quantas sessões?' },
@@ -130,7 +130,7 @@ async function abrirSeletor(serviceId) {
 
     _seletorTierEscolhido = tipo;
     tiersEl.style.display  = 'none';
-    qtyEl.style.display    = 'flex';
+    qtyEl.style.display    = config.maxQty === 1 ? 'none' : 'flex';
     resumoEl.style.display = 'flex';
     _atualizarResumoSeletor();
     btnConfirm.removeAttribute('disabled');
@@ -160,7 +160,8 @@ function _formatarDuracao(min) {
 }
 
 function alterarQty(delta) {
-  _seletorQty = Math.max(1, Math.min(5, _seletorQty + delta));
+  const max = _seletorConfig?.maxQty ?? 5;
+  _seletorQty = Math.max(1, Math.min(max, _seletorQty + delta));
   _atualizarResumoSeletor();
 }
 
