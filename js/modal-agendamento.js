@@ -113,13 +113,21 @@ function _resetarModal() {
 // ============================================================
 // Navegação entre as 2 telas
 // ============================================================
+function _syncOuterSteps(num) {
+  ['modal-step-1', 'modal-step-2', 'modal-step-3'].forEach((id, i) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.classList.remove('active', 'done');
+    if (i + 1 === num)  el.classList.add('active');
+    if (i + 1 < num)    el.classList.add('done');
+  });
+}
+
 function _mostrarTela(num, animacao) {
   if (animacao === undefined) animacao = true;
 
   const t1 = document.getElementById('telaAgendamento');
   const t2 = document.getElementById('telaPagamento');
-  const s1 = document.getElementById('modal-step-1');
-  const s2 = document.getElementById('modal-step-2');
   if (!t1 || !t2) return;
 
   t1.classList.remove('active', 'slide-esquerda');
@@ -128,15 +136,13 @@ function _mostrarTela(num, animacao) {
   if (num === 1) {
     if (animacao) t1.classList.add('slide-esquerda');
     t1.classList.add('active');
-    s1?.classList.remove('done');
-    s1?.classList.add('active');
-    s2?.classList.remove('active', 'done');
+    // Sync outer step to whichever inner section is currently active
+    const innerIdx = Array.from(document.querySelectorAll('.ag-section'))
+      .findIndex(s => s.classList.contains('active'));
+    _syncOuterSteps(innerIdx >= 0 ? innerIdx + 1 : 1);
   } else {
     t2.classList.add('active');
-    s1?.classList.remove('active');
-    s1?.classList.add('done');
-    s2?.classList.remove('done');
-    s2?.classList.add('active');
+    _syncOuterSteps(3);
   }
 
   document.querySelector('#modalAgendamento .modal-body')
@@ -219,6 +225,7 @@ window.irParaPasso = function(num) {
     carregarCalendario();
   }
   _irParaPassoBase(num);
+  _syncOuterSteps(num);
   document.querySelector('#modalAgendamento .modal-body')
     ?.scrollTo({ top: 0, behavior: 'smooth' });
 };

@@ -31,7 +31,7 @@
   </script>
   <link rel="stylesheet" href="style.css?v=8" />
   <link rel="stylesheet" href="css/agendamento-styles.css?v=8">
-  <link rel="stylesheet" href="css/modal-agendamento.css?v=8">
+  <link rel="stylesheet" href="css/modal-agendamento.css?v=9">
 </head>
 <body>
 
@@ -655,11 +655,16 @@
         <div class="modal-progress" role="navigation" aria-label="Etapas">
           <div class="modal-tela-step active" id="modal-step-1">
             <span class="t-num">1</span>
-            <span id="modal-title">Agendamento</span>
+            <span id="modal-title">Data</span>
           </div>
           <span class="modal-progress-sep" aria-hidden="true">›</span>
           <div class="modal-tela-step" id="modal-step-2">
             <span class="t-num">2</span>
+            <span>Dados</span>
+          </div>
+          <span class="modal-progress-sep" aria-hidden="true">›</span>
+          <div class="modal-tela-step" id="modal-step-3">
+            <span class="t-num">3</span>
             <span>Pagamento</span>
           </div>
         </div>
@@ -669,11 +674,7 @@
 
         <!-- TELA 1: AGENDAMENTO -->
         <div id="telaAgendamento" class="modal-screen active">
-          <div class="ag-progress" style="margin-top:20px;" role="navigation" aria-label="Passos do agendamento">
-            <div class="ag-step active" id="step-1">Data</div>
-            <div class="ag-step"        id="step-2">Dados</div>
-          </div>
-          <div class="ag-container">
+          <div class="ag-container" style="margin-top:20px;">
             <section class="ag-section active" id="secao-1" aria-label="Escolha a data">
               <h2 class="ag-section-title">Escolha a data</h2>
               <div id="calendario">
@@ -802,8 +803,8 @@
   <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js" integrity="sha384-3zSEDfvllQohrq0PHL1fOXJuC/jSOO34H46t6UQfobFOmxE5BpjjaIJY5F2/bMnU" crossorigin="anonymous"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js" crossorigin="anonymous"></script>
   <script src="js/supabase-config.js?v=9"></script>
-  <script src="js/agendamento-system.js?v=19"></script>
-  <script src="js/modal-agendamento.js?v=14"></script>
+  <script src="js/agendamento-system.js?v=20"></script>
+  <script src="js/modal-agendamento.js?v=15"></script>
   <script src="js/discount-system.js?v=8"></script>
   <script src="script.js?v=7"></script>
   <script>
