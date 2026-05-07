@@ -1137,6 +1137,10 @@ body {
   }
 
   /* ── Vagas ────────────────────────────────────────────── */
+  .vps-semana-grid {
+    grid-template-columns: 1fr;
+  }
+
   .vagas-ajuste-sidebar {
     position: static;
   }
@@ -1522,6 +1526,7 @@ body {
 
 .vagas-override-header {
   margin-bottom: 20px;
+}
 
 .vagas-override-footer {
   display: flex;
@@ -1530,41 +1535,107 @@ body {
   padding: 20px 0 8px;
 }
 
-.vagas-dia-secao {
-  margin-bottom: 28px;
-}
-
-.vagas-dia-titulo {
-  font-family: 'Cormorant Garamond', serif;
-  font-size: 1.1rem;
-  font-weight: 600;
-  color: var(--primary);
-  margin: 0 0 12px;
-  padding-bottom: 6px;
-  border-bottom: 1px solid var(--border);
-}
-
-.vagas-cards-grid {
+/* ============================================================
+   CONFIGURAÇÃO PADRÃO — Grid de dias
+   ============================================================ */
+.vps-semana-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-  gap: 14px;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 16px;
+  padding-bottom: 8px;
 }
 
-.vagas-config-card {
+.vps-dia-card {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  padding: 16px;
   box-shadow: var(--shadow);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
-.vagas-prof-header {
+.vps-dia-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 12px;
+  padding: 14px 16px 12px;
+  border-bottom: 1px solid var(--border);
+  background: linear-gradient(135deg, rgba(1,55,24,.03) 0%, transparent 100%);
 }
 
+.vps-dia-nome {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--primary);
+}
+
+.vps-chip {
+  font-size: .68rem;
+  font-weight: 600;
+  border-radius: 20px;
+  padding: 3px 10px;
+  letter-spacing: .02em;
+}
+
+.vps-chip--ok      { background: rgba(1,55,24,.1);   color: #013718; }
+.vps-chip--parcial { background: rgba(201,168,76,.2); color: #7a5c0a; }
+.vps-chip--folga   { background: rgba(185,28,28,.1);  color: #B91C1C; }
+
+.vps-dia-body {
+  padding: 14px 16px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.vps-prof-divider {
+  height: 1px;
+  background: var(--border);
+  margin: 12px 0;
+}
+
+.vps-prof-row {}
+
+.vps-prof-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.vps-prof-nome {
+  font-size: .88rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.vps-prof-fields {
+  display: flex;
+  gap: 10px;
+  transition: opacity .2s;
+}
+
+.vps-prof-fields--off {
+  opacity: .3;
+  pointer-events: none;
+}
+
+.vps-dia-footer {
+  padding: 12px 16px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  justify-content: flex-end;
+  background: rgba(1,55,24,.02);
+}
+
+.vps-btn-salvar {
+  min-width: 90px;
+}
+
+/* Mantém compatibilidade com toggle e selects usados em ambas as abas */
 .vagas-prof-nome {
   font-weight: 600;
   color: var(--primary);
