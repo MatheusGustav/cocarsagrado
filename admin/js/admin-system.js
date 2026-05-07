@@ -31,6 +31,7 @@ async function carregarAgendamentos() {
   const filtroStatus    = document.getElementById('filtro-status')?.value    || '';
   const filtroData      = document.getElementById('filtro-data')?.value      || '';
   const filtroTerapeuta = document.getElementById('filtro-terapeuta')?.value || '';
+  const filtroMetodo    = document.getElementById('filtro-metodo')?.value    || '';
   const lista = document.getElementById('lista-agendamentos');
   if (!lista) return;
 
@@ -45,6 +46,8 @@ async function carregarAgendamentos() {
   if (filtroStatus)    query = query.eq('status', filtroStatus);
   if (filtroData)      query = query.eq('data_agendamento', filtroData);
   if (filtroTerapeuta) query = query.eq('terapeuta', filtroTerapeuta);
+  if (filtroMetodo === '__null') query = query.is('metodo_pagamento', null);
+  else if (filtroMetodo)        query = query.eq('metodo_pagamento', filtroMetodo);
 
   const { data, error } = await query;
 
@@ -132,7 +135,7 @@ function criarItemAgendamento(ag) {
         <div class="adm-detail-item"><label>WhatsApp</label><span>${_esc(ag.cliente_whatsapp || '—')}</span></div>
         <div class="adm-detail-item"><label>Nascimento</label><span>${_esc(formatarData(ag.cliente_nascimento))}</span></div>
         <div class="adm-detail-item"><label>Valor original</label><span>R$ ${Number(ag.valor_original||0).toFixed(2).replace('.', ',')}</span></div>
-        <div class="adm-detail-item"><label>Desconto</label><span>R$ ${Number(ag.desconto_aplicado||0).toFixed(2).replace('.', ',')}</span></div>
+        <div class="adm-detail-item"><label>Desconto</label><span>R$ ${Number(ag.desconto_aplicado||0).toFixed(2).replace('.', ',')}${ag.aceitou_desconto_10 ? ' <span title="Desconto novo cliente" style="color:var(--primary);font-size:.75rem;">(10% novo cliente)</span>' : ''}</span></div>
         <div class="adm-detail-item"><label>Duração</label><span>${_esc(String(ag.duracao_minutos))} min</span></div>
         <div class="adm-detail-item"><label>Método pag.</label><span>${_esc(ag.metodo_pagamento || '—')}</span></div>
         <div class="adm-detail-item"><label>Pago em</label><span>${ag.pago_em ? _esc(formatarDatetime(ag.pago_em)) : '—'}</span></div>
@@ -302,4 +305,5 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('filtro-status')?.addEventListener('change', carregarAgendamentos);
   document.getElementById('filtro-data')?.addEventListener('change', carregarAgendamentos);
   document.getElementById('filtro-terapeuta')?.addEventListener('change', carregarAgendamentos);
+  document.getElementById('filtro-metodo')?.addEventListener('change', carregarAgendamentos);
 });
