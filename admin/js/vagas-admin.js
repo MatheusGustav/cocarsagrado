@@ -172,13 +172,15 @@ async function salvarDiaData(str, btn) {
     const selQty = document.querySelector(`.vagas-sel-qty[data-prof="${prof}"][data-data="${str}"]`);
     const selHor = document.querySelector(`.vagas-sel-hora[data-prof="${prof}"][data-data="${str}"]`);
     if (!chk) continue;
+    const qty = parseInt(selQty?.value || '0');
     registros.push({
-      profissional: prof,
-      data:         str,
-      vagas_total:  parseInt(selQty?.value || '0'),
-      ate_horario:  selHor?.value || '18:00',
-      ativo:        chk.checked,
-      updated_at:   new Date().toISOString(),
+      profissional:    prof,
+      data:            str,
+      vagas_total:     qty,
+      vagas_restantes: _overrideCache[`${prof}_${str}`]?.vagas_restantes ?? qty,
+      ate_horario:     selHor?.value || '18:00',
+      ativo:           chk.checked,
+      updated_at:      new Date().toISOString(),
     });
   }
 
