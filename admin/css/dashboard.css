@@ -1247,15 +1247,251 @@ body {
   border-bottom-color: var(--secondary);
 }
 
-.vagas-padrao-footer {
+/* Cabeçalho de dia com botão salvar individual */
+.vagas-dia-cabecalho {
   display: flex;
-  justify-content: flex-end;
-  padding: 20px 0 8px;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--border);
+}
+
+.vagas-dia-cabecalho .vagas-dia-titulo {
+  margin: 0;
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+/* Layout Ajuste Pontual */
+.vagas-ajuste-layout {
+  display: grid;
+  grid-template-columns: 290px 1fr;
+  gap: 24px;
+  align-items: start;
+}
+
+@media (max-width: 820px) {
+  .vagas-ajuste-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+.vagas-ajuste-sidebar {
+  position: sticky;
+  top: 20px;
+}
+
+.vagas-ajuste-main {
+  min-width: 0;
+}
+
+.vagas-ajuste-hint {
+  color: var(--text-muted);
+  font-size: .9rem;
+  padding: 40px 0;
+  text-align: center;
+}
+
+/* Mini Calendário */
+.vagas-mini-cal {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+  margin-bottom: 20px;
+  box-shadow: var(--shadow);
+}
+
+.vcal-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.vcal-nav-btn {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  width: 28px;
+  height: 28px;
+  cursor: pointer;
+  font-size: 1.1rem;
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background .15s;
+  line-height: 1;
+}
+.vcal-nav-btn:hover { background: var(--border); }
+
+.vcal-mes-ano {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--primary);
+}
+
+.vcal-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+}
+
+.vcal-head {
+  text-align: center;
+  font-size: .62rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  padding: 4px 0 6px;
+  letter-spacing: .03em;
+}
+
+.vcal-cell {
+  position: relative;
+  aspect-ratio: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: .82rem;
+  transition: background .15s;
+}
+
+.vcal-cell:hover:not(.vcal-cell--past):not(.vcal-cell--vazio) {
+  background: var(--border);
+}
+
+.vcal-cell--vazio { cursor: default; }
+
+.vcal-cell--past {
+  opacity: .3;
+  cursor: default;
+}
+
+.vcal-cell--hoje .vcal-num {
+  font-weight: 700;
+  color: var(--secondary);
+}
+
+.vcal-cell--sel {
+  background: var(--primary) !important;
+}
+.vcal-cell--sel .vcal-num { color: #fff; }
+.vcal-cell--sel .vcal-dot { background: rgba(255,255,255,.7); }
+
+.vcal-cell--ajuste:not(.vcal-cell--sel) .vcal-num {
+  color: var(--secondary);
+  font-weight: 600;
+}
+
+.vcal-dot {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--secondary);
+  position: absolute;
+  bottom: 3px;
+}
+
+/* Lista de exceções futuras */
+.vagas-excecoes-titulo {
+  font-size: .72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  color: var(--text-muted);
+  margin-bottom: 10px;
+}
+
+.vagas-excecoes-vazio {
+  font-size: .82rem;
+  color: var(--text-muted);
+  font-style: italic;
+  margin: 0;
+}
+
+.vagas-excecoes-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+.vagas-excecao-item {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 12px;
+  cursor: pointer;
+  transition: border-color .15s, background .15s;
+}
+
+.vagas-excecao-item:hover {
+  border-color: var(--secondary);
+  background: rgba(201,168,76,.04);
+}
+
+.vagas-exc-data {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 26px;
+}
+
+.vagas-exc-dia {
+  font-size: 1rem;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--primary);
+}
+
+.vagas-exc-mes {
+  font-size: .62rem;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.vagas-exc-detalhes {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.vagas-exc-diaSem {
+  font-size: .78rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.vagas-exc-profs {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.vagas-exc-info {
+  font-size: .74rem;
+  color: var(--text-muted);
+}
+
+.vagas-exc-folga {
+  font-size: .74rem;
+  color: #B91C1C;
 }
 
 .vagas-override-header {
   margin-bottom: 20px;
-}
 
 .vagas-override-footer {
   display: flex;

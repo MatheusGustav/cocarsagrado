@@ -1,13 +1,18 @@
 /* ============================================================
-   COCAR SAGRADO — Admin: Sistema de Vagas Flexível
+   COCAR SAGRADO — Admin: Sistema de Vagas
    ============================================================ */
 
-const DIAS_SEMANA_VAGAS = ['Domingo','Segunda','Terça','Quarta','Quinta','Sexta','Sábado'];
+const DIAS_SEMANA_VAGAS      = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
+const DIAS_SEMANA_VAGAS_FULL = ['Domingo','Segunda','Terça','Quarta','Quinta','Sexta','Sábado'];
+const MESES_VAGAS            = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+const MESES_VAGAS_ABREV      = ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
 const PROFISSIONAIS_VAGAS     = ['camila', 'matheus'];
 const PROFISSIONAL_NOME_VAGAS = { camila: 'Camila', matheus: 'Matheus' };
 
-let _padraoCache  = {};
-let _dataOverride = null;
+let _padraoCache = {};
+let _dataAjuste  = null;
+let _ajustesMap  = {};
+let _calMes, _calAno;
 
 // ============================================================
 // Navegação de abas
@@ -15,13 +20,14 @@ let _dataOverride = null;
 function mudarAbaVagas(aba) {
   document.querySelectorAll('.vagas-tab').forEach(t => t.classList.remove('active'));
   document.getElementById('vagas-tab-' + aba)?.classList.add('active');
-  document.getElementById('vagas-painel-padrao').style.display   = aba === 'padrao'   ? '' : 'none';
-  document.getElementById('vagas-painel-override').style.display = aba === 'override' ? '' : 'none';
+  document.getElementById('vagas-painel-padrao').style.display = aba === 'padrao' ? '' : 'none';
+  document.getElementById('vagas-painel-ajuste').style.display = aba === 'ajuste' ? '' : 'none';
   if (aba === 'padrao') carregarPadraoSemanal();
+  if (aba === 'ajuste') inicializarAjustePontual();
 }
 
 // ============================================================
-// Padrão Semanal
+// Configuração Padrão
 // ============================================================
 async function carregarPadraoSemanal() {
   const container = document.getElementById('vagas-padrao-container');
@@ -34,13 +40,12 @@ async function carregarPadraoSemanal() {
     .order('dia_semana');
 
   if (error) {
-    container.innerHTML = '<div class="ag-empty">Erro ao carregar padrão.</div>';
+    container.innerHTML = '<div class="ag-empty">Erro ao carregar configuração.</div>';
     return;
   }
 
   _padraoCache = {};
   (data || []).forEach(r => { _padraoCache[`${r.profissional}_${r.dia_semana}`] = r; });
-
   renderizarPadraoSemanal();
 }
 
@@ -53,20 +58,31 @@ function renderizarPadraoSemanal() {
     const secao = document.createElement('div');
     secao.className = 'vagas-dia-secao';
 
+    const cabecalho = document.createElement('div');
+    cabecalho.className = 'vagas-dia-cabecalho';
+
     const titulo = document.createElement('h3');
     titulo.className = 'vagas-dia-titulo';
-    titulo.textContent = DIAS_SEMANA_VAGAS[dia];
-    secao.appendChild(titulo);
+    titulo.textContent = DIAS_SEMANA_VAGAS_FULL[dia];
+
+    const btnSalvar = document.createElement('button');
+    btnSalvar.className = 'ag-btn ag-btn-outline ag-btn-sm';
+    btnSalvar.textContent = 'Salvar';
+    btnSalvar.onclick = () => salvarDiaPadrao(dia, btnSalvar);
+
+    cabecalho.appendChild(titulo);
+    cabecalho.appendChild(btnSalvar);
+    secao.appendChild(cabecalho);
 
     const grid = document.createElement('div');
     grid.className = 'vagas-cards-grid';
 
     PROFISSIONAIS_VAGAS.forEach(prof => {
-      const key   = `${prof}_${dia}`;
-      const rec   = _padraoCache[key];
-      const ativo  = rec ? rec.ativo  : false;
-      const vagas  = rec ? rec.vagas_total : 0;
-      const ate    = rec ? (rec.ate_horario?.slice(0,5) || '18:00') : '18:00';
+      const key  = `${prof}_${dia}`;
+      const rec  = _padraoCache[key];
+      const ativo = rec ? rec.ativo : false;
+      const vagas = rec ? rec.vagas_total : 0;
+      const ate   = rec ? (rec.ate_horario?.slice(0, 5) || '18:00') : '18:00';
 
       const card = document.createElement('div');
       card.className = 'vagas-config-card';
@@ -110,80 +126,205 @@ function renderizarPadraoSemanal() {
   }
 }
 
-async function salvarPadraoSemanal() {
-  const btn = document.getElementById('vagas-btn-salvar-padrao');
+async function salvarDiaPadrao(dia, btn) {
   if (btn) { btn.disabled = true; btn.textContent = 'Salvando...'; }
 
   const registros = [];
-  for (let dia = 0; dia < 7; dia++) {
-    for (const prof of PROFISSIONAIS_VAGAS) {
-      const chk    = document.querySelector(`.vagas-chk[data-prof="${prof}"][data-dia="${dia}"]`);
-      const selQty = document.querySelector(`.vagas-sel-qty[data-prof="${prof}"][data-dia="${dia}"]`);
-      const selHor = document.querySelector(`.vagas-sel-hora[data-prof="${prof}"][data-dia="${dia}"]`);
-      if (!chk) continue;
-      registros.push({
-        profissional: prof,
-        dia_semana:   dia,
-        vagas_total:  parseInt(selQty?.value || '0'),
-        ate_horario:  selHor?.value || '18:00',
-        ativo:        chk.checked,
-        updated_at:   new Date().toISOString(),
-      });
-    }
+  for (const prof of PROFISSIONAIS_VAGAS) {
+    const chk    = document.querySelector(`.vagas-chk[data-prof="${prof}"][data-dia="${dia}"]`);
+    const selQty = document.querySelector(`.vagas-sel-qty[data-prof="${prof}"][data-dia="${dia}"]`);
+    const selHor = document.querySelector(`.vagas-sel-hora[data-prof="${prof}"][data-dia="${dia}"]`);
+    if (!chk) continue;
+    registros.push({
+      profissional: prof,
+      dia_semana:   dia,
+      vagas_total:  parseInt(selQty?.value || '0'),
+      ate_horario:  selHor?.value || '18:00',
+      ativo:        chk.checked,
+      updated_at:   new Date().toISOString(),
+    });
   }
 
   const { error } = await supabase
     .from('disponibilidade_padrao')
     .upsert(registros, { onConflict: 'profissional,dia_semana' });
 
-  if (btn) { btn.disabled = false; btn.textContent = '💾 Salvar Padrão Semanal'; }
+  if (btn) {
+    btn.disabled = false;
+    if (error) {
+      btn.textContent = '✗ Erro';
+      setTimeout(() => { btn.textContent = 'Salvar'; }, 2000);
+    } else {
+      btn.textContent = '✓ Salvo';
+      setTimeout(() => { btn.textContent = 'Salvar'; }, 2000);
+    }
+  }
 
   if (error) { _toastVagas('❌ Erro ao salvar: ' + error.message); return; }
-  await carregarPadraoSemanal();
-  _toastVagas('✅ Padrão semanal salvo!');
+
+  registros.forEach(r => { _padraoCache[`${r.profissional}_${r.dia_semana}`] = r; });
 }
 
 // ============================================================
-// Override por Dia
+// Ajuste Pontual
 // ============================================================
-async function carregarOverrideData() {
-  const inp      = document.getElementById('override-data');
-  _dataOverride  = inp?.value;
-  if (!_dataOverride) return;
+async function inicializarAjustePontual() {
+  const hoje = _hojeStr();
+  const d = new Date(hoje + 'T00:00:00');
+  _calMes  = d.getMonth();
+  _calAno  = d.getFullYear();
+  _dataAjuste = hoje;
 
-  const container = document.getElementById('vagas-override-container');
-  const footer    = document.getElementById('vagas-override-footer');
+  await carregarTodosAjustes();
+  renderizarMiniCalendario();
+  renderizarListaExcecoes();
+  await carregarAjusteData();
+}
+
+async function carregarTodosAjustes() {
+  const { data } = await supabase
+    .from('disponibilidade_override')
+    .select('*')
+    .gte('data', _hojeStr())
+    .order('data');
+
+  _ajustesMap = {};
+  (data || []).forEach(r => {
+    if (!_ajustesMap[r.data]) _ajustesMap[r.data] = [];
+    _ajustesMap[r.data].push(r);
+  });
+}
+
+function renderizarMiniCalendario() {
+  const container = document.getElementById('vagas-mini-cal');
+  if (!container) return;
+
+  const primeiroDia = new Date(_calAno, _calMes, 1);
+  const ultimoDia   = new Date(_calAno, _calMes + 1, 0);
+  const hoje        = _hojeStr();
+
+  let html = `
+    <div class="vcal-nav">
+      <button class="vcal-nav-btn" onclick="navegarCalendario(-1)">‹</button>
+      <span class="vcal-mes-ano">${MESES_VAGAS[_calMes]} ${_calAno}</span>
+      <button class="vcal-nav-btn" onclick="navegarCalendario(1)">›</button>
+    </div>
+    <div class="vcal-grid">
+      ${DIAS_SEMANA_VAGAS.map(d => `<div class="vcal-head">${d}</div>`).join('')}
+  `;
+
+  for (let i = 0; i < primeiroDia.getDay(); i++) {
+    html += `<div class="vcal-cell vcal-cell--vazio"></div>`;
+  }
+
+  for (let d = 1; d <= ultimoDia.getDate(); d++) {
+    const dataStr   = `${_calAno}-${String(_calMes + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+    const isHoje    = dataStr === hoje;
+    const isSel     = dataStr === _dataAjuste;
+    const temAjuste = !!_ajustesMap[dataStr];
+    const isPast    = dataStr < hoje;
+
+    const classes = [
+      'vcal-cell',
+      isPast    ? 'vcal-cell--past'   : '',
+      isHoje    ? 'vcal-cell--hoje'   : '',
+      isSel     ? 'vcal-cell--sel'    : '',
+      temAjuste ? 'vcal-cell--ajuste' : '',
+    ].filter(Boolean).join(' ');
+
+    html += `<div class="${classes}" ${!isPast ? `onclick="selecionarDiaAjuste('${dataStr}')"` : ''}>
+      <span class="vcal-num">${d}</span>
+      ${temAjuste ? '<span class="vcal-dot"></span>' : ''}
+    </div>`;
+  }
+
+  html += `</div>`;
+  container.innerHTML = html;
+}
+
+function navegarCalendario(delta) {
+  _calMes += delta;
+  if (_calMes > 11) { _calMes = 0;  _calAno++; }
+  if (_calMes < 0)  { _calMes = 11; _calAno--; }
+  renderizarMiniCalendario();
+}
+
+async function selecionarDiaAjuste(dataStr) {
+  _dataAjuste = dataStr;
+  renderizarMiniCalendario();
+  await carregarAjusteData();
+}
+
+function renderizarListaExcecoes() {
+  const container = document.getElementById('vagas-lista-excecoes');
+  if (!container) return;
+
+  const datas = Object.keys(_ajustesMap).sort();
+  if (!datas.length) {
+    container.innerHTML = '<p class="vagas-excecoes-vazio">Nenhum ajuste futuro cadastrado.</p>';
+    return;
+  }
+
+  let html = '<div class="vagas-excecoes-lista">';
+  for (const data of datas) {
+    const d = new Date(data + 'T00:00:00');
+    const infos = _ajustesMap[data].map(o => {
+      if (!o.ativo) return `<span class="vagas-exc-folga">${PROFISSIONAL_NOME_VAGAS[o.profissional]}: folga</span>`;
+      return `<span class="vagas-exc-info">${PROFISSIONAL_NOME_VAGAS[o.profissional]}: ${o.vagas_total}v até ${o.ate_horario?.slice(0, 5)}</span>`;
+    }).join('');
+
+    html += `<div class="vagas-excecao-item" onclick="selecionarDiaAjuste('${data}')">
+      <div class="vagas-exc-data">
+        <span class="vagas-exc-dia">${d.getDate()}</span>
+        <span class="vagas-exc-mes">${MESES_VAGAS_ABREV[d.getMonth()]}</span>
+      </div>
+      <div class="vagas-exc-detalhes">
+        <span class="vagas-exc-diaSem">${DIAS_SEMANA_VAGAS_FULL[d.getDay()]}</span>
+        <div class="vagas-exc-profs">${infos}</div>
+      </div>
+    </div>`;
+  }
+  html += '</div>';
+  container.innerHTML = html;
+}
+
+async function carregarAjusteData() {
+  if (!_dataAjuste) return;
+
+  const container = document.getElementById('vagas-ajuste-container');
+  const footer    = document.getElementById('vagas-ajuste-footer');
+  if (!container) return;
   container.innerHTML = '<div class="ag-loading"><div class="ag-spinner"></div> Carregando...</div>';
 
-  const diaSemana = new Date(_dataOverride + 'T00:00:00').getDay();
+  const diaSemana = new Date(_dataAjuste + 'T00:00:00').getDay();
 
   const [{ data: padroes }, { data: overrides }] = await Promise.all([
     supabase.from('disponibilidade_padrao').select('*').in('profissional', PROFISSIONAIS_VAGAS).eq('dia_semana', diaSemana),
-    supabase.from('disponibilidade_override').select('*').in('profissional', PROFISSIONAIS_VAGAS).eq('data', _dataOverride),
+    supabase.from('disponibilidade_override').select('*').in('profissional', PROFISSIONAIS_VAGAS).eq('data', _dataAjuste),
   ]);
 
-  const padraoMap   = {};
-  (padroes  || []).forEach(p => { padraoMap[p.profissional]   = p; });
+  const padraoMap = {};
+  (padroes || []).forEach(p => { padraoMap[p.profissional] = p; });
   const overrideMap = {};
   (overrides || []).forEach(o => { overrideMap[o.profissional] = o; });
 
-  const d = new Date(_dataOverride + 'T00:00:00');
-  const MESES_OVERRIDE = ['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
+  const d = new Date(_dataAjuste + 'T00:00:00');
+  const MESES_FULL = ['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
 
   container.innerHTML = '';
 
   const tit = document.createElement('h3');
   tit.className = 'vagas-override-titulo';
-  tit.textContent = `${DIAS_SEMANA_VAGAS[d.getDay()]}, ${d.getDate()} de ${MESES_OVERRIDE[d.getMonth()]} de ${d.getFullYear()}`;
+  tit.textContent = `${DIAS_SEMANA_VAGAS_FULL[d.getDay()]}, ${d.getDate()} de ${MESES_FULL[d.getMonth()]} de ${d.getFullYear()}`;
   container.appendChild(tit);
 
   PROFISSIONAIS_VAGAS.forEach(prof => {
-    const padrao    = padraoMap[prof];
-    const override  = overrideMap[prof];
-    const temOv     = !!override;
+    const padrao   = padraoMap[prof];
+    const override = overrideMap[prof];
+    const temOv    = !!override;
 
     const padraoDesc = padrao && padrao.ativo && padrao.vagas_total > 0
-      ? `${padrao.vagas_total} vagas até ${padrao.ate_horario?.slice(0,5)}`
+      ? `${padrao.vagas_total} vagas até ${padrao.ate_horario?.slice(0, 5)}`
       : 'Folga (padrão)';
 
     const card = document.createElement('div');
@@ -191,16 +332,16 @@ async function carregarOverrideData() {
     card.innerHTML = `
       <div class="vagas-prof-header">
         <span class="vagas-prof-nome">${PROFISSIONAL_NOME_VAGAS[prof]}</span>
-        ${temOv ? '<span class="vagas-ov-badge">⚠ Override ativo</span>' : ''}
+        ${temOv ? '<span class="vagas-ov-badge">⚠ Ajuste ativo</span>' : ''}
       </div>
       <div class="vagas-radio-grupo">
         <label class="vagas-radio-label">
           <input type="radio" name="ov_${prof}" value="padrao" ${!temOv ? 'checked' : ''}>
-          <span>Usar padrão <em>(${padraoDesc})</em></span>
+          <span>Usar configuração padrão <em>(${padraoDesc})</em></span>
         </label>
         <label class="vagas-radio-label">
           <input type="radio" name="ov_${prof}" value="custom" ${temOv ? 'checked' : ''}>
-          <span>Customizar para este dia</span>
+          <span>Ajustar para este dia</span>
         </label>
       </div>
       <div class="vagas-override-fields ${!temOv ? 'vagas-override-fields--hidden' : ''}">
@@ -213,7 +354,7 @@ async function carregarOverrideData() {
         <div class="vagas-field-grp">
           <label>Até</label>
           <select class="vagas-sel vagas-ov-hora" data-prof="${prof}">
-            ${_opcoesHorario(temOv ? override.ate_horario?.slice(0,5) : (padrao?.ate_horario?.slice(0,5) || '18:00'))}
+            ${_opcoesHorario(temOv ? override.ate_horario?.slice(0, 5) : (padrao?.ate_horario?.slice(0, 5) || '18:00'))}
           </select>
         </div>
         <div class="vagas-field-grp vagas-field-grp--toggle">
@@ -223,7 +364,7 @@ async function carregarOverrideData() {
             <span class="vagas-toggle-txt">Ativo</span>
           </label>
         </div>
-        <p class="vagas-ov-aviso">⚠ Sobrescreve o padrão semanal</p>
+        <p class="vagas-ov-aviso">⚠ Sobrescreve a configuração padrão</p>
       </div>`;
 
     const radios = card.querySelectorAll(`input[name="ov_${prof}"]`);
@@ -240,23 +381,23 @@ async function carregarOverrideData() {
   if (footer) footer.style.display = 'flex';
 }
 
-async function salvarOverride() {
-  if (!_dataOverride) return;
-  const btn = document.getElementById('vagas-btn-salvar-ov');
+async function salvarAjuste() {
+  if (!_dataAjuste) return;
+  const btn = document.getElementById('vagas-btn-salvar-ajuste');
   if (btn) { btn.disabled = true; btn.textContent = 'Salvando...'; }
 
-  const inserir  = [];
-  const deletar  = [];
+  const inserir = [];
+  const deletar = [];
 
   for (const prof of PROFISSIONAIS_VAGAS) {
     const radioCustom = document.querySelector(`input[name="ov_${prof}"][value="custom"]`);
     if (radioCustom?.checked) {
-      const vagas  = parseInt(document.querySelector(`.vagas-ov-qty[data-prof="${prof}"]`)?.value  || '0');
+      const vagas   = parseInt(document.querySelector(`.vagas-ov-qty[data-prof="${prof}"]`)?.value || '0');
       const horario = document.querySelector(`.vagas-ov-hora[data-prof="${prof}"]`)?.value || '18:00';
       const ativo   = document.querySelector(`.vagas-ov-ativo[data-prof="${prof}"]`)?.checked ?? true;
       inserir.push({
         profissional:    prof,
-        data:            _dataOverride,
+        data:            _dataAjuste,
         vagas_total:     vagas,
         vagas_restantes: vagas,
         ate_horario:     horario,
@@ -269,7 +410,7 @@ async function salvarOverride() {
   }
 
   for (const prof of deletar) {
-    await supabase.from('disponibilidade_override').delete().eq('profissional', prof).eq('data', _dataOverride);
+    await supabase.from('disponibilidade_override').delete().eq('profissional', prof).eq('data', _dataAjuste);
   }
 
   if (inserir.length) {
@@ -277,33 +418,48 @@ async function salvarOverride() {
       .from('disponibilidade_override')
       .upsert(inserir, { onConflict: 'profissional,data' });
     if (error) {
-      _toastVagas('❌ Erro ao salvar override: ' + error.message);
-      if (btn) { btn.disabled = false; btn.textContent = '💾 Aplicar Override'; }
+      _toastVagas('❌ Erro ao salvar: ' + error.message);
+      if (btn) { btn.disabled = false; btn.textContent = '💾 Salvar Ajuste'; }
       return;
     }
   }
 
-  if (btn) { btn.disabled = false; btn.textContent = '💾 Aplicar Override'; }
-  await carregarOverrideData();
-  _toastVagas('✅ Override aplicado!');
+  if (btn) { btn.disabled = false; btn.textContent = '💾 Salvar Ajuste'; }
+
+  await carregarTodosAjustes();
+  renderizarMiniCalendario();
+  renderizarListaExcecoes();
+  await carregarAjusteData();
+  _toastVagas('✅ Ajuste salvo!');
 }
 
-async function limparOverride() {
-  if (!_dataOverride) return;
-  if (!confirm('Remover todos os overrides desta data? A disponibilidade voltará ao padrão semanal.')) return;
+async function limparAjuste() {
+  if (!_dataAjuste) return;
+  if (!confirm('Remover o ajuste desta data? A configuração voltará ao padrão.')) return;
+
   const { error } = await supabase
     .from('disponibilidade_override')
     .delete()
     .in('profissional', PROFISSIONAIS_VAGAS)
-    .eq('data', _dataOverride);
+    .eq('data', _dataAjuste);
+
   if (error) { _toastVagas('❌ Erro: ' + error.message); return; }
-  await carregarOverrideData();
-  _toastVagas('✅ Override removido — usando padrão semanal.');
+
+  await carregarTodosAjustes();
+  renderizarMiniCalendario();
+  renderizarListaExcecoes();
+  await carregarAjusteData();
+  _toastVagas('✅ Ajuste removido — usando configuração padrão.');
 }
 
 // ============================================================
 // Helpers
 // ============================================================
+function _hojeStr() {
+  const h = new Date();
+  return `${h.getFullYear()}-${String(h.getMonth() + 1).padStart(2, '0')}-${String(h.getDate()).padStart(2, '0')}`;
+}
+
 function _opcoesVagas(sel) {
   let html = '';
   for (let i = 0; i <= 20; i++) {
@@ -316,7 +472,7 @@ function _opcoesHorario(sel) {
   let html = '';
   for (let h = 0; h < 24; h++) {
     for (let m = 0; m < 60; m += 30) {
-      const v = `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
+      const v = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
       html += `<option value="${v}"${v === sel ? ' selected' : ''}>${v}</option>`;
     }
   }
@@ -339,10 +495,5 @@ function _toastVagas(msg) {
 // Init
 // ============================================================
 function inicializarVagas() {
-  const inp = document.getElementById('override-data');
-  if (inp && !inp.value) {
-    const h = new Date();
-    inp.value = `${h.getFullYear()}-${String(h.getMonth()+1).padStart(2,'0')}-${String(h.getDate()).padStart(2,'0')}`;
-  }
   carregarPadraoSemanal();
 }
