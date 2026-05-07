@@ -1136,14 +1136,40 @@ body {
     flex-wrap: wrap;
   }
 
-  /* ── Agenda ───────────────────────────────────────────── */
-  .agenda-grade {
-    grid-template-columns: 1fr;
+  /* ── Vagas ────────────────────────────────────────────── */
+  .vagas-ajuste-sidebar {
+    position: static;
   }
 
-  .adm-agenda-desc {
-    font-size: .8rem;
-    margin-bottom: 16px;
+  .vagas-tabs {
+    gap: 0;
+  }
+
+  .vagas-tab {
+    font-size: .78rem;
+    padding: 10px 10px;
+    flex: 1;
+    text-align: center;
+  }
+
+  .vagas-dia-cabecalho {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .vagas-override-footer {
+    flex-wrap: wrap;
+    justify-content: stretch;
+  }
+
+  .vagas-override-footer .ag-btn {
+    flex: 1;
+    text-align: center;
+    justify-content: center;
+  }
+
+  .vagas-mini-cal {
+    margin-bottom: 12px;
   }
 }
 
@@ -1274,6 +1300,10 @@ body {
 @media (max-width: 820px) {
   .vagas-ajuste-layout {
     grid-template-columns: 1fr;
+  }
+
+  .vagas-ajuste-sidebar {
+    position: static;
   }
 }
 
