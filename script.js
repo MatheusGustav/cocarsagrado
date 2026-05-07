@@ -83,10 +83,11 @@ function inicializarOverlay() {
   const overlayBackdrop = document.getElementById('overlayBackdrop');
   if (!overlayBackdrop) return;
 
-  // Verifica se o usuário já visitou antes
-  const jaVisitou = localStorage.getItem(CHAVE_LOCALSTORAGE);
+  // Verifica se o usuário já visitou ou já fez uma compra
+  const jaVisitou  = localStorage.getItem(CHAVE_LOCALSTORAGE);
+  const jaComprou  = localStorage.getItem('cocarsagrado_comprou');
 
-  if (jaVisitou) return;
+  if (jaVisitou || jaComprou) return;
 
   // Primeira visita — mostra o overlay e aplica blur na página
   overlayBackdrop.classList.remove('overlay--hidden');

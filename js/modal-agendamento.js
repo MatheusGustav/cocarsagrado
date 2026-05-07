@@ -178,6 +178,9 @@ window.redirecionarParaPagamento = function(chave) {
 
   sessionStorage.setItem('agendamento', JSON.stringify(_dadosPagamento));
 
+  localStorage.setItem('aceitouDesconto10', 'false');
+  localStorage.setItem('cocarsagrado_comprou', 'true');
+
   _preencherTelaPagamento();
   _mostrarTela(2);
 };
