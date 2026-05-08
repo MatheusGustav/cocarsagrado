@@ -1290,6 +1290,16 @@ body.overlay-active .footer {
 .avatar-m {
   background: var(--color-gold);
   color: var(--color-primary-deep);
+  overflow: hidden;
+  padding: 0;
+}
+
+.avatar-c img,
+.avatar-m img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
 }
 
 .person-info {
