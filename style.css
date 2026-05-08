@@ -1302,6 +1302,10 @@ body.overlay-active .footer {
   display: block;
 }
 
+.avatar-m img {
+  object-position: center top;
+}
+
 .person-info {
   display: flex;
   flex-direction: column;
