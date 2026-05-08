@@ -1250,6 +1250,26 @@ body.overlay-active .footer {
 }
 
 /* Avatar uniforme para ambas as pessoas — sem diferenciação cromática */
+.person-avatar-wrap {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.person-status-dot {
+  position: absolute;
+  bottom: 1px;
+  right: 1px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 2px solid var(--color-primary-deep);
+  background: #555;
+}
+
+.person-status-dot.online {
+  background: #4caf50;
+}
+
 .person-avatar {
   width: 42px;
   height: 42px;
