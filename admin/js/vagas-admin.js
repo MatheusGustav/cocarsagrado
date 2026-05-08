@@ -6,7 +6,7 @@ const DIAS_SEMANA_VAGAS_FULL = ['Domingo','Segunda','Terça','Quarta','Quinta','
 const MESES_VAGAS_ABREV      = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
 const PROFISSIONAIS_VAGAS     = ['camila', 'matheus'];
 const PROFISSIONAL_NOME_VAGAS = { camila: 'Camila', matheus: 'Matheus' };
-const DIAS_A_FRENTE           = 6;
+const DIAS_A_FRENTE           = 1;
 
 let _overrideCache = {};
 
