@@ -291,7 +291,7 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // ============================================================
-// Mercado Pago — geração de link de pagamento por cartão
+// InfinityPay — geração de link de pagamento por cartão
 // ============================================================
 async function gerarLinkCartao() {
   const ag = _dadosPagamento;
