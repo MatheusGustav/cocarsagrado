@@ -263,7 +263,7 @@ async function carregarCalendario() {
 async function _buscarDiasComVagas(profissional, diasParaFrente) {
   const hoje = new Date();
   hoje.setHours(0, 0, 0, 0);
-  const dataInicio = dataParaISO(new Date(hoje.getTime() + 86400000));
+  const dataInicio = dataParaISO(hoje);
   const dataFim    = dataParaISO(new Date(hoje.getTime() + diasParaFrente * 86400000));
 
   const [
@@ -283,7 +283,7 @@ async function _buscarDiasComVagas(profissional, diasParaFrente) {
   });
 
   const dias = [];
-  for (let i = 1; i <= diasParaFrente; i++) {
+  for (let i = 0; i <= diasParaFrente; i++) {
     const d = new Date(hoje);
     d.setDate(hoje.getDate() + i);
     const str    = dataParaISO(d);
