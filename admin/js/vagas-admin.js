@@ -6,7 +6,7 @@ const DIAS_SEMANA_VAGAS_FULL = ['Domingo','Segunda','Terça','Quarta','Quinta','
 const MESES_VAGAS_ABREV      = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
 const PROFISSIONAIS_VAGAS     = ['camila', 'matheus'];
 const PROFISSIONAL_NOME_VAGAS = { camila: 'Camila', matheus: 'Matheus' };
-const DIAS_A_FRENTE           = 7;
+const DIAS_A_FRENTE           = 1;
 
 let _overrideCache = {};
 
@@ -18,7 +18,7 @@ function _proximasDatas() {
   const datas = [];
   const hoje  = new Date();
   hoje.setHours(0, 0, 0, 0);
-  for (let i = 1; i <= DIAS_A_FRENTE; i++) {
+  for (let i = 0; i <= DIAS_A_FRENTE; i++) {
     const d = new Date(hoje);
     d.setDate(hoje.getDate() + i);
     datas.push(d);
