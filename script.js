@@ -470,4 +470,26 @@ document.addEventListener('DOMContentLoaded', () => {
   // 9. Badges de modalidade (videochamada / por mensagem)
   aplicarBadgesModalidade();
 
+  // 10. Status online dos terapeutas
+  atualizarStatusOnline();
+
 });
+
+async function atualizarStatusOnline() {
+  if (typeof supabase === 'undefined') return;
+  const hoje = new Date();
+  const str  = `${hoje.getFullYear()}-${String(hoje.getMonth()+1).padStart(2,'0')}-${String(hoje.getDate()).padStart(2,'0')}`;
+
+  const { data } = await supabase
+    .from('disponibilidade_override')
+    .select('profissional, ativo')
+    .eq('data', str)
+    .eq('ativo', true);
+
+  const ativos = new Set((data || []).map(r => r.profissional));
+
+  ['camila', 'matheus'].forEach(prof => {
+    const dot = document.getElementById(`status-${prof}`);
+    if (dot) dot.classList.toggle('online', ativos.has(prof));
+  });
+}
