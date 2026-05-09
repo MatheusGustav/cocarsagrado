@@ -27,18 +27,18 @@ const WHATSAPP_TERAPEUTA = {
 const SERVICO_CONFIG = {
   'buzios-avulso':        { tipo: 'tier',      terapeuta: 'matheus', nome: 'Búzios Avulso',        prefixo: 'Búzios Avulso – ',       pergunta: 'Quantas perguntas?', requerPergunta: true },
   'mesa-cigana-avulsa':   { tipo: 'tier',      terapeuta: 'camila',  nome: 'Mesa Cigana Avulsa',   prefixo: 'Mesa Cigana Avulsa – ',  pergunta: 'Quantas perguntas?', requerPergunta: true },
-  'buzios-completo':      { tipo: 'quantidade', terapeuta: 'matheus', nome: 'Búzios Completo',      pergunta: 'Quantas sessões?', maxQty: 1 },
+  'buzios-completo':      { tipo: 'quantidade', terapeuta: 'matheus', nome: 'Búzios Completo',      pergunta: 'Quantas sessões?', maxQty: 1, especial: true },
   'confirmacao-orixas':   { tipo: 'quantidade', terapeuta: 'matheus', nome: 'Confirmação de Orixás',pergunta: 'Quantas sessões?' },
   'cabala-odu':           { tipo: 'quantidade', terapeuta: 'matheus', nome: 'Cabala de Odu',        pergunta: 'Quantas sessões?' },
   'confirmacao-exu':      { tipo: 'quantidade', terapeuta: 'matheus', nome: 'Confirmação de Exu',   pergunta: 'Quantas sessões?' },
-  'mesa-cigana-completa': { tipo: 'quantidade', terapeuta: 'camila',  nome: 'Mesa Cigana Completa', pergunta: 'Quantas sessões?', maxQty: 1 },
+  'mesa-cigana-completa': { tipo: 'quantidade', terapeuta: 'camila',  nome: 'Mesa Cigana Completa', pergunta: 'Quantas sessões?', maxQty: 1, especial: true },
   'aguas-oxum':           { tipo: 'quantidade', terapeuta: 'camila',  nome: 'Águas de Oxum',        pergunta: 'Quantas sessões?' },
   'rosa-venus':           { tipo: 'quantidade', terapeuta: 'camila',  nome: 'Rosa de Vênus',        pergunta: 'Quantas sessões?' },
   'leitura-mentores':     { tipo: 'quantidade', terapeuta: 'camila',  nome: 'Leitura dos Mentores', pergunta: 'Quantas sessões?' },
   'mesa-mediunica':       { tipo: 'quantidade', terapeuta: 'camila',  nome: 'Mesa Mediúnica',       pergunta: 'Quantas sessões?' },
-  'mesa-radionica':       { tipo: 'quantidade', terapeuta: 'camila',  nome: 'Mesa Radiônica',       pergunta: 'Quantas sessões?' },
-  'registros-akashicos':  { tipo: 'quantidade', terapeuta: 'camila',  nome: 'Registros Akáshicos',  pergunta: 'Quantas sessões?' },
-  'theta-healing':        { tipo: 'quantidade', terapeuta: 'camila',  nome: 'Theta Healing',        pergunta: 'Quantas sessões?' },
+  'mesa-radionica':       { tipo: 'quantidade', terapeuta: 'camila',  nome: 'Mesa Radiônica',       pergunta: 'Quantas sessões?', especial: true },
+  'registros-akashicos':  { tipo: 'quantidade', terapeuta: 'camila',  nome: 'Registros Akáshicos',  pergunta: 'Quantas sessões?', especial: true },
+  'theta-healing':        { tipo: 'quantidade', terapeuta: 'camila',  nome: 'Theta Healing',        pergunta: 'Quantas sessões?', especial: true },
 };
 
 async function _garantirTipos() {
@@ -176,11 +176,12 @@ function confirmarSeletor() {
 
   let tipoFinal;
   if (_seletorConfig.tipo === 'tier') {
-    tipoFinal = { ..._seletorTierEscolhido, terapeuta: _seletorConfig.terapeuta, requerPergunta: !!_seletorConfig.requerPergunta };
+    tipoFinal = { ..._seletorTierEscolhido, terapeuta: _seletorConfig.terapeuta, requerPergunta: !!_seletorConfig.requerPergunta, especial: !!_seletorConfig.especial };
   } else {
     tipoFinal = {
       ..._seletorTierEscolhido,
       terapeuta:       _seletorConfig.terapeuta,
+      especial:        !!_seletorConfig.especial,
       preco_original:  _seletorTierEscolhido.preco_original  * _seletorQty,
       duracao_minutos: _seletorTierEscolhido.duracao_minutos * _seletorQty,
       nome: _seletorQty > 1
@@ -208,7 +209,10 @@ async function carregarCalendario() {
   }
 
   try {
-    const dias = await _buscarDiasComVagas(profissional, 45);
+    const isEspecial = !!Estado.tipoSelecionado?.especial;
+    const dias = isEspecial
+      ? await _buscarDiasEspeciais(profissional, 90)
+      : await _buscarDiasComVagas(profissional, 45);
 
     if (!dias.length) {
       const numero = WHATSAPP_TERAPEUTA[profissional] || '';
@@ -297,6 +301,36 @@ async function _buscarDiasComVagas(profissional, diasParaFrente) {
   }
 
   return dias;
+}
+
+async function _buscarDiasEspeciais(profissional, diasParaFrente) {
+  const hoje = new Date();
+  hoje.setHours(0, 0, 0, 0);
+  const dataInicio = dataParaISO(hoje);
+  const dataFim    = dataParaISO(new Date(hoje.getTime() + diasParaFrente * 86400000));
+
+  const [
+    { data: especiais },
+    { data: agendados },
+  ] = await Promise.all([
+    supabase.from('disponibilidade_especial').select('*').eq('profissional', profissional).gte('data', dataInicio).lte('data', dataFim),
+    supabase.from('agendamentos').select('data_agendamento').eq('terapeuta', profissional).eq('agendamento_especial', true).gte('data_agendamento', dataInicio).lte('data_agendamento', dataFim).in('status', ['pago','confirmado','atendido','pendente']),
+  ]);
+
+  const contagemMap = {};
+  (agendados || []).forEach(a => {
+    contagemMap[a.data_agendamento] = (contagemMap[a.data_agendamento] || 0) + 1;
+  });
+
+  const dias = [];
+  (especiais || []).forEach(e => {
+    if (!e.ativo) return;
+    const usadas    = contagemMap[e.data] || 0;
+    const restantes = Math.max(0, e.vagas_total - usadas);
+    if (restantes > 0) dias.push({ data: e.data, vagas: restantes, ate_horario: e.ate_horario });
+  });
+
+  return dias.sort((a, b) => a.data.localeCompare(b.data));
 }
 
 function selecionarData(dataStr, cardEl) {
@@ -413,8 +447,9 @@ async function salvarAgendamento() {
     valor_original:      tipo.preco_original,
     desconto_aplicado:   desconto,
     valor_final:         final,
-    aceitou_desconto_10: localStorage.getItem('aceitouDesconto10') === 'true',
-    status:              'pendente',
+    aceitou_desconto_10:  localStorage.getItem('aceitouDesconto10') === 'true',
+    agendamento_especial: !!(Estado.tipoSelecionado?.especial),
+    status:               'pendente',
   };
 
   const { error } = await supabase.from('agendamentos').insert(payload);
