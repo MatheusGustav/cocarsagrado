@@ -1314,7 +1314,7 @@ body.overlay-active .footer {
 }
 
 .avatar-m img {
-  object-position: center top;
+  object-position: center 55%;
 }
 
 .person-info {
