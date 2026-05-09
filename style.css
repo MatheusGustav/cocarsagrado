@@ -633,10 +633,6 @@ body.overlay-active .footer {
 
 @media (max-width: 768px) {
   body { background-attachment: scroll; }
-
-  .hero-right {
-    display: none;
-  }
 }
 
 .hero-inner {
@@ -754,6 +750,9 @@ body.overlay-active .footer {
   border: 1px solid var(--color-gold);
 }
 
+@media (max-width: 768px) {
+  .hero-right { display: none; }
+}
 
 /* ============================================================
    ANIMAÇÕES DE ENTRADA
