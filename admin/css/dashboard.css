@@ -1852,3 +1852,131 @@ body {
   background: var(--secondary);
   color: #fff;
 }
+
+/* ============================================================
+   AGENDA ESPECIAL
+   ============================================================ */
+.esp-add-form {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+  flex-wrap: wrap;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+  margin-bottom: 4px;
+}
+
+.esp-add-form .ag-form-group label { font-size: .75rem; }
+
+.esp-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  margin-bottom: 10px;
+  transition: opacity .2s;
+}
+
+.esp-card--off { opacity: .55; }
+
+.esp-card-data {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 64px;
+}
+
+.esp-card-dianum {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 2rem;
+  font-weight: 600;
+  color: var(--primary);
+  line-height: 1;
+}
+
+.esp-card-diainfo {
+  display: flex;
+  flex-direction: column;
+  font-size: .75rem;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+
+.esp-card-campos {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+  flex-wrap: wrap;
+}
+
+.esp-campo-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: .75rem;
+  color: var(--text-muted);
+}
+
+.esp-sel {
+  padding: 6px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: .82rem;
+  background: var(--bg);
+  color: var(--text);
+}
+
+.esp-toggle-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.esp-toggle-wrap input[type="checkbox"] { display: none; }
+
+.esp-toggle-track {
+  width: 36px;
+  height: 20px;
+  background: #ccc;
+  border-radius: 10px;
+  position: relative;
+  transition: background .2s;
+}
+
+.esp-chk-ativo:checked ~ .esp-toggle-track { background: var(--primary); }
+
+.esp-toggle-thumb {
+  position: absolute;
+  top: 2px; left: 2px;
+  width: 16px; height: 16px;
+  border-radius: 50%;
+  background: #fff;
+  transition: left .2s;
+}
+
+.esp-chk-ativo:checked ~ .esp-toggle-track .esp-toggle-thumb { left: 18px; }
+
+.esp-toggle-txt {
+  font-size: .78rem;
+  color: var(--text-muted);
+  min-width: 44px;
+}
+
+.esp-card-acoes {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+@media (max-width: 600px) {
+  .esp-card { flex-wrap: wrap; }
+  .esp-add-form { flex-direction: column; align-items: stretch; }
+}
