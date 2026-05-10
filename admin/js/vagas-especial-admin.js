@@ -4,7 +4,7 @@
 
 const SERVICOS_ESPECIAIS_INFO = {
   matheus: ['Búzios Completo'],
-  camila:  ['Registros Akáshicos', 'Mesa Radiônica', 'Mesa Cigana Completa', 'Theta Healing'],
+  camila:  ['Promo das Mães', 'Registros Akáshicos', 'Mesa Radiônica', 'Mesa Cigana Completa', 'Theta Healing'],
 };
 
 const DIAS_ESP  = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
