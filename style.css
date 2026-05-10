@@ -1461,9 +1461,16 @@ body.overlay-active .footer {
   background: transparent;
   border: 1px solid rgba(226, 201, 126, 0.35);
   border-radius: var(--raio-lg);
-  padding: 2rem;
   min-height: 300px;
+  overflow: hidden;
   transition: border-color var(--transicao);
+}
+
+.depo-card img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .depo-card:hover {
