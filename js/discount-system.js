@@ -32,7 +32,7 @@ function verificarStatusDesconto10() {
 }
 
 function calcularResultado(servico, aceitou10) {
-  if (aceitou10) {
+  if (aceitou10 && !(servico && servico.excluirDesconto10)) {
     return { tipo: '10off', percentual: 10, badge: '10% OFF' };
   }
   if (servico && servico.descontoAtivo && servico.percentualDesconto > 0) {

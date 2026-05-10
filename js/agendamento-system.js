@@ -5,6 +5,7 @@
 const Estado = {
   tipoSelecionado: null,
   dataSelecionada: null,
+  serviceId: null,
 };
 
 const DIAS_PT  = ['Domingo','Segunda','Terça','Quarta','Quinta','Sexta','Sábado'];
@@ -36,7 +37,7 @@ const SERVICO_CONFIG = {
   'rosa-venus':           { tipo: 'quantidade', terapeuta: 'camila',  nome: 'Rosa de Vênus',        pergunta: 'Quantas sessões?' },
   'leitura-mentores':     { tipo: 'quantidade', terapeuta: 'camila',  nome: 'Leitura dos Mentores', pergunta: 'Quantas sessões?' },
   'mesa-mediunica':       { tipo: 'quantidade', terapeuta: 'camila',  nome: 'Mesa Mediúnica',       pergunta: 'Quantas sessões?' },
-  'promo-das-maes':      { tipo: 'quantidade', terapeuta: 'camila',  nome: 'Promo das Mães',       pergunta: 'Quantas sessões?', maxQty: 1, especial: true },
+  'promo-das-maes':      { tipo: 'quantidade', terapeuta: 'camila',  nome: 'Promo das Mães',       pergunta: 'Quantas sessões?', maxQty: 1, especial: true, excluirDesconto10: true },
   'mesa-radionica':       { tipo: 'quantidade', terapeuta: 'camila',  nome: 'Mesa Radiônica',       pergunta: 'Quantas sessões?', especial: true },
   'registros-akashicos':  { tipo: 'quantidade', terapeuta: 'camila',  nome: 'Registros Akáshicos',  pergunta: 'Quantas sessões?', especial: true },
   'theta-healing':        { tipo: 'quantidade', terapeuta: 'camila',  nome: 'Theta Healing',        pergunta: 'Quantas sessões?', especial: true },
@@ -59,7 +60,8 @@ async function _garantirTipos() {
 
 function calcularPrecoFinal(precoOriginal) {
   const preco = parseFloat(precoOriginal) || 0;
-  if (localStorage.getItem('aceitouDesconto10') === 'true') {
+  const excluido = !!(Estado.serviceId && SERVICO_CONFIG[Estado.serviceId]?.excluirDesconto10);
+  if (!excluido && localStorage.getItem('aceitouDesconto10') === 'true') {
     const final = Math.round(preco * 90) / 100;
     return { final, desconto: preco - final };
   }
@@ -80,6 +82,7 @@ async function abrirSeletor(serviceId) {
   }
 
   _seletorConfig        = config;
+  Estado.serviceId      = serviceId;
   _seletorQty           = 1;
   _seletorTierEscolhido = null;
 

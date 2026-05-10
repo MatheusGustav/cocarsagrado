@@ -126,7 +126,8 @@
       "descontoAtivo": false,
       "percentualDesconto": 0,
       "badge": "Promoção",
-      "mensagemPromocional": "De R$50 por R$30"
+      "mensagemPromocional": "De R$50 por R$30",
+      "excluirDesconto10": true
     },
     {
       "id": "mesa-radionica",
