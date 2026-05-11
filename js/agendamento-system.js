@@ -401,7 +401,7 @@ function validarFormulario() {
   const campos = [
     { id: 'f-nome', minLen: 3,  msg: 'Nome deve ter pelo menos 3 caracteres.' },
     { id: 'f-nasc', date: true, msg: 'Data de nascimento inválida.' },
-    { id: 'f-fone', minLen: 10, msg: 'WhatsApp inválido.' },
+    { id: 'f-fone', minLen: 6,  msg: 'Número inválido.' },
   ];
   if (Estado.tipoSelecionado?.requerPergunta) {
     campos.push({ id: 'f-obs', minLen: 3, msg: 'Descreva sua pergunta/questão.' });
@@ -443,7 +443,7 @@ async function salvarAgendamento() {
     terapeuta:           tipo.terapeuta || null,
     cliente_nome:        document.getElementById('f-nome').value.trim(),
     cliente_nascimento:  document.getElementById('f-nasc')?.value || null,
-    cliente_whatsapp:    document.getElementById('f-fone').value.trim(),
+    cliente_whatsapp:    obterWhatsappCompleto(),
     cliente_observacoes: document.getElementById('f-obs')?.value?.trim() || null,
     data_agendamento:    Estado.dataSelecionada,
     hora_agendamento:    '00:00',
@@ -515,14 +515,39 @@ function mostrarAlerta(msg, tipo = 'info') {
   setTimeout(() => div.remove(), 4000);
 }
 
+function obterWhatsappCompleto() {
+  const ddi  = document.getElementById('f-ddi');
+  const fone = document.getElementById('f-fone');
+  const prefixo = ddi ? ddi.value : '+55';
+  const numero  = fone ? fone.value.trim() : '';
+  return `${prefixo} ${numero}`;
+}
+
 function aplicarMascaraFone(input) {
-  input.addEventListener('input', () => {
-    let v = input.value.replace(/\D/g,'').slice(0,11);
-    if (v.length > 6) v = `(${v.slice(0,2)}) ${v.slice(2,7)}-${v.slice(7)}`;
-    else if (v.length > 2) v = `(${v.slice(0,2)}) ${v.slice(2)}`;
-    else if (v.length) v = `(${v}`;
-    input.value = v;
-  });
+  const ddi = document.getElementById('f-ddi');
+
+  function atualizar() {
+    const isBR = !ddi || ddi.value === '+55';
+    if (isBR) {
+      let v = input.value.replace(/\D/g,'').slice(0,11);
+      if (v.length > 6) v = `(${v.slice(0,2)}) ${v.slice(2,7)}-${v.slice(7)}`;
+      else if (v.length > 2) v = `(${v.slice(0,2)}) ${v.slice(2)}`;
+      else if (v.length) v = `(${v}`;
+      input.value = v;
+      input.placeholder = '(27) 99999-9999';
+    } else {
+      input.value = input.value.replace(/[^\d\s\-().+]/g, '');
+      input.placeholder = 'Número local';
+    }
+  }
+
+  input.addEventListener('input', atualizar);
+  if (ddi) {
+    ddi.addEventListener('change', () => {
+      input.value = '';
+      atualizar();
+    });
+  }
 }
 
 // ============================================================
