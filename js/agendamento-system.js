@@ -215,13 +215,13 @@ async function carregarCalendario() {
     const isEspecial = !!Estado.tipoSelecionado?.especial;
     const dias = isEspecial
       ? await _buscarDiasEspeciais(profissional, 90)
-      : await _buscarDiasComVagas(profissional, 45);
+      : await _buscarDiasComVagas(profissional, 1);
 
     if (!dias.length) {
       const numero = WHATSAPP_TERAPEUTA[profissional] || '';
       cal.innerHTML = `
         <div class="ag-empty ag-empty-vagas">
-          <p>Nenhuma data disponível nos próximos 45 dias.</p>
+          <p>Nenhuma data disponível nos próximos 2 dias.</p>
           <p style="font-size:.85rem; margin-top:4px;">Entre em contato para verificar disponibilidade especial.</p>
           ${numero ? `<a href="https://wa.me/${numero}" target="_blank" rel="noopener" class="ag-btn ag-btn-whatsapp" style="margin-top:14px; display:inline-flex;">💬 Falar no WhatsApp</a>` : ''}
         </div>`;
