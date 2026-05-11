@@ -173,7 +173,7 @@ window.redirecionarParaPagamento = function(chave) {
     nome:       document.getElementById('f-nome').value.trim(),
     nascimento: nascFmt,
     obs:        document.getElementById('f-obs')?.value?.trim() || '',
-    whatsapp:   document.getElementById('f-fone').value.trim(),
+    whatsapp:   (typeof obterWhatsappCompleto === 'function' ? obterWhatsappCompleto() : document.getElementById('f-fone').value.trim()),
   };
 
   sessionStorage.setItem('agendamento', JSON.stringify(_dadosPagamento));
