@@ -293,16 +293,6 @@ button:focus-visible,
   color: var(--color-text-on-dark);
 }
 
-/* === ÍCONE DECORATIVO DO CATÁLOGO ===
-   Bolinha verde escuro com anel dourado fino — uniforme em todos os cards,
-   sem diferenciar categoria ou profissional. */
-.cat-icon {
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  background: var(--color-primary);
-  box-shadow: 0 0 0 2px var(--color-gold-light);
-}
 
 
 /* ============================================================
@@ -934,57 +924,50 @@ body.overlay-active .footer {
   display: none;
 }
 
+.cat-card::before {
+  content: '';
+  display: block;
+  height: 54px;
+  flex-shrink: 0;
+  background: repeating-linear-gradient(
+    90deg,
+    #C9A84C 0px, #C9A84C 16px,
+    #fffaf0 16px, #fffaf0 32px
+  );
+  -webkit-mask:
+    radial-gradient(circle at 50% 0%, black 11px, transparent 11px) 0 bottom / 22px 13px repeat-x,
+    linear-gradient(black, black) 0 0 / 100% calc(100% - 13px) no-repeat;
+  mask:
+    radial-gradient(circle at 50% 0%, black 11px, transparent 11px) 0 bottom / 22px 13px repeat-x,
+    linear-gradient(black, black) 0 0 / 100% calc(100% - 13px) no-repeat;
+}
+
 .cat-card-img {
   display: flex;
   justify-content: center;
-  padding: 24px 16px 12px;
+  align-items: center;
+  padding: 16px 16px 16px;
+  background: rgba(1, 55, 24, 0.04);
   position: relative;
+  min-height: 120px;
 }
 
 .cat-img {
-  width: 68px;
-  height: 68px;
+  width: 90px;
+  height: 90px;
   object-fit: contain;
-  border-radius: 50%;
+  border-radius: 6px;
   display: block;
+  transform: perspective(350px) rotateX(14deg);
+  filter: drop-shadow(0 10px 18px rgba(0,0,0,0.22));
+  transition: transform 0.3s ease, filter 0.3s ease;
 }
 
-.cat-body {
-  padding: 4px 12px 14px;
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  align-items: center;
-  text-align: center;
+.cat-card:hover .cat-img {
+  transform: perspective(350px) rotateX(8deg) scale(1.06);
+  filter: drop-shadow(0 14px 22px rgba(0,0,0,0.3));
 }
 
-.cat-name {
-  font-family: var(--fonte-titulo);
-  font-size: 15px;
-  font-weight: 600;
-  letter-spacing: 0.01em;
-  color: var(--color-text-primary);
-  min-width: 0;
-}
-
-.cat-desc {
-  font-size: 11px;
-  color: var(--color-text-body);
-  line-height: 1.55;
-  flex: 1;
-}
-
-.cat-modalidade {
-  font-size: 10px;
-  font-weight: 500;
-  color: var(--color-text-muted);
-  background: rgba(1, 55, 24, 0.07);
-  border-radius: 20px;
-  padding: 3px 10px;
-  letter-spacing: 0.03em;
-  margin-top: 2px;
-}
 
 .cat-footer {
   display: flex;
@@ -1903,6 +1886,16 @@ body.overlay-active .footer {
   border-color: var(--color-gold);
   box-shadow: 0 4px 16px rgba(201, 169, 97, 0.12);
 }
+[data-theme="dark"] .cat-card::before {
+  background: repeating-linear-gradient(
+    90deg,
+    #7a5c12 0px, #7a5c12 16px,
+    #1a1a1a 16px, #1a1a1a 32px
+  );
+}
+[data-theme="dark"] .cat-card-img {
+  background: rgba(255, 255, 255, 0.03);
+}
 [data-theme="dark"] .cat-footer        { border-top-color: #2A2A2A; }
 [data-theme="dark"] .cat-filters       { border-color: rgba(201, 168, 76, 0.2); }
 [data-theme="dark"] .cat-filter        { color: var(--color-text-muted); }
@@ -1952,158 +1945,6 @@ body.overlay-active .footer {
 
 
 
-/* ============================================================
-   SISTEMA DE DESCONTOS
-   ============================================================ */
-
-/* Badge overlay no ícone do card */
-.cat-badge-img {
-  position: absolute;
-  top: 10px;
-  right: 10px;
-}
-
-/* Badge de desconto */
-.cat-badge {
-  display: inline-block;
-  font-family: var(--fonte-corpo);
-  font-size: 9px;
-  font-weight: 700;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  padding: 3px 7px;
-  border-radius: var(--raio-sm);
-  line-height: 1;
-  white-space: nowrap;
-}
-
-.cat-badge--10off {
-  background: var(--color-primary);
-  color: var(--color-gold-light);
-  border: 1px solid rgba(226, 201, 126, 0.4);
-}
-
-.cat-badge--promo {
-  background: #7A2E10;
-  color: #fff;
-  border: 1px solid rgba(255,255,255,0.15);
-}
-
-/* Wrapper de preço com desconto (cards simples) */
-.cat-price-wrapper {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.cat-price-group {
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
-}
-
-/* Preço original riscado */
-.cat-price-original {
-  font-size: 11px;
-  color: var(--color-text-muted);
-  text-decoration: line-through;
-  line-height: 1.2;
-}
-
-/* Preço com desconto destacado */
-.cat-price-desconto {
-  font-size: 18px;
-  font-weight: 700;
-  color: var(--color-primary-light);
-  line-height: 1.2;
-}
-
-/* Badge dentro de tiers — deve ser block para não herdar flex dos spans */
-.cat-footer-tiers .cat-badge-tier {
-  display: block;
-  margin-bottom: 6px;
-  width: fit-content;
-}
-
-/* Container de preços dentro de cada tier row */
-.cat-footer-tiers .cat-tier-prices {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 1px;
-  justify-content: flex-end;
-}
-
-/* Preço original para tiers */
-.cat-price-original-small {
-  font-size: 9px;
-  color: var(--color-text-muted);
-  text-decoration: line-through;
-  line-height: 1;
-}
-
-/* Preço com desconto para tiers */
-.cat-price-desconto-small {
-  font-weight: 700;
-  color: var(--color-primary-light);
-}
-
-/* Modo escuro */
-[data-theme="dark"] .cat-badge--10off {
-  background: #013718;
-  border-color: rgba(226, 201, 126, 0.3);
-}
-
-[data-theme="dark"] .cat-price-desconto,
-[data-theme="dark"] .cat-price-desconto-small {
-  color: var(--color-gold-light);
-}
-
-/* Badge de modalidade de atendimento */
-.cat-name-row {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-
-.cat-badge-atendimento {
-  display: inline-block;
-  flex-shrink: 0;
-  font-family: var(--fonte-corpo);
-  font-size: 9px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  padding: 3px 8px;
-  border-radius: var(--raio-sm);
-  line-height: 1;
-  white-space: nowrap;
-}
-
-.cat-badge-atendimento--video {
-  background: #C9960C;
-  color: #1A1200;
-  border: 1px solid rgba(180, 130, 0, 0.35);
-}
-
-.cat-badge-atendimento--mensagem {
-  background: #013718;
-  color: #E2C97E;
-  border: 1px solid rgba(226, 201, 126, 0.3);
-}
-
-[data-theme="dark"] .cat-badge-atendimento--video {
-  background: #A07808;
-  color: #FFF8DC;
-  border-color: rgba(200, 160, 20, 0.4);
-}
-
-[data-theme="dark"] .cat-badge-atendimento--mensagem {
-  background: rgba(0, 40, 15, 0.90);
-  border-color: rgba(226, 201, 126, 0.25);
-}
 
 /* ============================================================
    MODAL NAVEGADOR IN-APP (Instagram / TikTok)
