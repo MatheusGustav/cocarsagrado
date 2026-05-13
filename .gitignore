@@ -6,3 +6,4 @@ supabase-setup.sql
 
 # Grafo de análise de código
 .code-review-graph/
+.aider*

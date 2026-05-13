@@ -4,6 +4,10 @@
 
 const WHATSAPP_TERAPEUTA = { matheus: '5528999476620', camila: '5527998528483' };
 
+let _agendamentosTodos = [];
+let _statusAtivo       = 'pendente';
+let _autoRefreshTimer  = null;
+
 const STATUS_LABELS = {
   pendente:   'Pendente',
   pago:       'Pago',
@@ -28,7 +32,6 @@ function _toastAdmin(msg, tipo) {
 // Carregamento principal
 // ============================================================
 async function carregarAgendamentos() {
-  const filtroStatus    = document.getElementById('filtro-status')?.value    || '';
   const filtroData      = document.getElementById('filtro-data')?.value      || '';
   const filtroTerapeuta = document.getElementById('filtro-terapeuta')?.value || '';
   const filtroMetodo    = document.getElementById('filtro-metodo')?.value    || '';
@@ -43,7 +46,6 @@ async function carregarAgendamentos() {
     .order('data_agendamento', { ascending: false })
     .order('hora_agendamento', { ascending: false });
 
-  if (filtroStatus)    query = query.eq('status', filtroStatus);
   if (filtroData)      query = query.eq('data_agendamento', filtroData);
   if (filtroTerapeuta) query = query.eq('terapeuta', filtroTerapeuta);
   if (filtroMetodo === '__null') query = query.is('metodo_pagamento', null);
@@ -57,8 +59,72 @@ async function carregarAgendamentos() {
     return;
   }
 
-  await calcularEstatisticas(data || []);
-  renderizarAgendamentos(data || [], lista);
+  _agendamentosTodos = data || [];
+  await calcularEstatisticas(_agendamentosTodos);
+  _atualizarContadoresPills(_agendamentosTodos);
+
+  const filtrados = _statusAtivo
+    ? _agendamentosTodos.filter(a => a.status === _statusAtivo)
+    : _agendamentosTodos;
+  renderizarAgendamentos(filtrados, lista);
+
+  _iniciarAutoRefresh();
+}
+
+function filtrarPorPill(status) {
+  _statusAtivo = status;
+  document.querySelectorAll('.adm-pill').forEach(p => {
+    p.classList.toggle('active', p.dataset.status === status);
+  });
+  const lista = document.getElementById('lista-agendamentos');
+  if (!lista) return;
+  const filtrados = status
+    ? _agendamentosTodos.filter(a => a.status === status)
+    : _agendamentosTodos;
+  renderizarAgendamentos(filtrados, lista);
+}
+
+function _atualizarContadoresPills(todos) {
+  const c = {};
+  todos.forEach(a => { c[a.status] = (c[a.status] || 0) + 1; });
+  const set = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val ?? 0; };
+  set('pill-count-pendente',  c.pendente || 0);
+  set('pill-count-pago',      (c.pago || 0) + (c.confirmado || 0));
+  set('pill-count-atendido',  c.atendido || 0);
+  set('pill-count-cancelado', c.cancelado || 0);
+}
+
+function _iniciarAutoRefresh() {
+  if (_autoRefreshTimer) return;
+  _autoRefreshTimer = setInterval(async () => {
+    const filtroData      = document.getElementById('filtro-data')?.value      || '';
+    const filtroTerapeuta = document.getElementById('filtro-terapeuta')?.value || '';
+    const filtroMetodo    = document.getElementById('filtro-metodo')?.value    || '';
+
+    let query = supabase
+      .from('agendamentos')
+      .select('*, tipos_leitura(nome)')
+      .order('data_agendamento', { ascending: false })
+      .order('hora_agendamento', { ascending: false });
+
+    if (filtroData)      query = query.eq('data_agendamento', filtroData);
+    if (filtroTerapeuta) query = query.eq('terapeuta', filtroTerapeuta);
+    if (filtroMetodo === '__null') query = query.is('metodo_pagamento', null);
+    else if (filtroMetodo)        query = query.eq('metodo_pagamento', filtroMetodo);
+
+    const { data, error } = await query;
+    if (error || !data) return;
+
+    _agendamentosTodos = data;
+    await calcularEstatisticas(_agendamentosTodos);
+    _atualizarContadoresPills(_agendamentosTodos);
+
+    const filtrados = _statusAtivo
+      ? _agendamentosTodos.filter(a => a.status === _statusAtivo)
+      : _agendamentosTodos;
+    const lista = document.getElementById('lista-agendamentos');
+    if (lista) renderizarAgendamentos(filtrados, lista);
+  }, 2 * 60 * 1000);
 }
 
 // ============================================================
@@ -300,9 +366,11 @@ function escapeAttr(s) {
 document.addEventListener('DOMContentLoaded', () => {
   carregarAgendamentos();
 
-  document.getElementById('btn-atualizar')?.addEventListener('click', carregarAgendamentos);
+  document.getElementById('btn-atualizar')?.addEventListener('click', () => {
+    _autoRefreshTimer = null; // força reset do timer
+    carregarAgendamentos();
+  });
   document.getElementById('btn-exportar')?.addEventListener('click', exportarRelatorio);
-  document.getElementById('filtro-status')?.addEventListener('change', carregarAgendamentos);
   document.getElementById('filtro-data')?.addEventListener('change', carregarAgendamentos);
   document.getElementById('filtro-terapeuta')?.addEventListener('change', carregarAgendamentos);
   document.getElementById('filtro-metodo')?.addEventListener('change', carregarAgendamentos);

@@ -63,18 +63,22 @@
         </div>
       </div>
 
+      <div class="adm-status-pills" role="group" aria-label="Filtro por status">
+        <button class="adm-pill adm-pill-pendente active" data-status="pendente" onclick="filtrarPorPill('pendente')">
+          Pendente <span class="adm-pill-count" id="pill-count-pendente">—</span>
+        </button>
+        <button class="adm-pill adm-pill-pago" data-status="pago" onclick="filtrarPorPill('pago')">
+          Pago <span class="adm-pill-count" id="pill-count-pago">—</span>
+        </button>
+        <button class="adm-pill adm-pill-atendido" data-status="atendido" onclick="filtrarPorPill('atendido')">
+          Atendido <span class="adm-pill-count" id="pill-count-atendido">—</span>
+        </button>
+        <button class="adm-pill adm-pill-cancelado" data-status="cancelado" onclick="filtrarPorPill('cancelado')">
+          Cancelado <span class="adm-pill-count" id="pill-count-cancelado">—</span>
+        </button>
+      </div>
+
       <div class="adm-filters" role="search" aria-label="Filtros">
-        <div class="ag-form-group" style="margin:0">
-          <label for="filtro-status" style="font-size:.75rem">Status</label>
-          <select id="filtro-status">
-            <option value="">Todos</option>
-            <option value="pendente">Pendente</option>
-            <option value="pago">Pago</option>
-            <option value="confirmado">Confirmado</option>
-            <option value="atendido">Atendido</option>
-            <option value="cancelado">Cancelado</option>
-          </select>
-        </div>
         <div class="ag-form-group" style="margin:0">
           <label for="filtro-data" style="font-size:.75rem">Data</label>
           <input type="date" id="filtro-data">
