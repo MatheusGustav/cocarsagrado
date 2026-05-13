@@ -175,6 +175,87 @@ body {
 .adm-stat-card.total .adm-stat-value   { color: #013718 !important; }
 
 /* ============================================================
+   STATUS PILLS
+   ============================================================ */
+.adm-status-pills {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+}
+
+.adm-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 16px;
+  border-radius: 999px;
+  border: 1.5px solid #DDD5C8;
+  background: #FFFFFF;
+  font-family: 'DM Sans', system-ui, sans-serif;
+  font-size: .82rem;
+  font-weight: 500;
+  color: #8C8478;
+  cursor: pointer;
+  transition: all .18s;
+  white-space: nowrap;
+}
+
+.adm-pill:hover {
+  border-color: #013718;
+  color: #013718;
+}
+
+.adm-pill-count {
+  font-size: .7rem;
+  font-weight: 700;
+  background: rgba(0,0,0,.07);
+  border-radius: 99px;
+  padding: 1px 7px;
+  min-width: 20px;
+  text-align: center;
+  line-height: 1.6;
+  transition: background .18s;
+}
+
+/* Active states por status */
+.adm-pill-pendente.active {
+  background: #FDF3DC;
+  color: #7A5618;
+  border-color: rgba(201,168,76,0.5);
+}
+.adm-pill-pendente.active .adm-pill-count {
+  background: rgba(201,168,76,0.25);
+}
+
+.adm-pill-pago.active {
+  background: #D4EBD9;
+  color: #013718;
+  border-color: rgba(1,55,24,0.25);
+}
+.adm-pill-pago.active .adm-pill-count {
+  background: rgba(1,55,24,0.15);
+}
+
+.adm-pill-atendido.active {
+  background: #013718;
+  color: #E2C97E;
+  border-color: transparent;
+}
+.adm-pill-atendido.active .adm-pill-count {
+  background: rgba(226,201,126,0.25);
+}
+
+.adm-pill-cancelado.active {
+  background: #FEECEC;
+  color: #991B1B;
+  border-color: rgba(185,28,28,0.2);
+}
+.adm-pill-cancelado.active .adm-pill-count {
+  background: rgba(185,28,28,0.12);
+}
+
+/* ============================================================
    FILTROS
    ============================================================ */
 .adm-filters {
@@ -1097,6 +1178,16 @@ body {
 
   .adm-stat-value {
     font-size: 2rem !important;
+  }
+
+  /* ── Pills de status ─────────────────────────────────── */
+  .adm-status-pills {
+    gap: 6px;
+  }
+
+  .adm-pill {
+    font-size: .76rem;
+    padding: 6px 12px;
   }
 
   /* ── Filtros: empilhados verticalmente ────────────────── */
