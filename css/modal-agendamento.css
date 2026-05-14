@@ -149,6 +149,12 @@
   flex-shrink: 0;
 }
 
+@media (max-width: 480px) {
+  .modal-header {
+    padding: 10px 12px 10px 14px;
+  }
+}
+
 @media (max-width: 420px) {
   .modal-tela-step {
     padding: 4px 8px;

@@ -89,7 +89,7 @@ a { color: var(--primary); text-decoration: none; }
 /* ---- Grid de cards ---- */
 .ag-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(200px, 100%), 1fr));
   gap: 16px;
 }
 
@@ -152,7 +152,7 @@ a { color: var(--primary); text-decoration: none; }
 /* ---- Calendário ---- */
 .ag-calendar {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(100px, 100%), 1fr));
   gap: 10px;
 }
 .ag-day-card {
@@ -176,7 +176,7 @@ a { color: var(--primary); text-decoration: none; }
 /* ---- Horários ---- */
 .ag-slots {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(90px, 100%), 1fr));
   gap: 10px;
 }
 .ag-slot {
@@ -341,7 +341,7 @@ textarea { resize: vertical; min-height: 90px; }
   margin-bottom: 24px;
 }
 .pag-chave-label { font-size: .85rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: .05em; margin-bottom: 8px; }
-.pag-chave-valor { font-size: 1.6rem; font-weight: 900; color: var(--text); letter-spacing: .08em; margin-bottom: 14px; font-family: monospace; }
+.pag-chave-valor { font-size: clamp(1.1rem, 4vw, 1.6rem); font-weight: 900; color: var(--text); letter-spacing: .08em; margin-bottom: 14px; font-family: monospace; word-break: break-all; }
 .pag-chave-copia { font-size: .8rem; color: var(--text-muted); margin-top: 6px; }
 
 .pag-resumo-box {
@@ -586,9 +586,26 @@ textarea { resize: vertical; min-height: 90px; }
   .ag-step     { font-size: .7rem; padding: 8px 4px; }
 }
 
+@media (max-width: 480px) {
+  .ag-container   { padding: 16px 12px 48px; }
+  .ag-header      { padding: 24px 12px 18px; }
+  .ag-header h1   { font-size: 1.3rem; }
+  .pag-container  { padding: 16px 12px 48px; }
+  .pag-chave-box  { padding: 16px; }
+  .pag-resumo-box { padding: 14px; }
+  .pag-metodo-box { padding: 16px; }
+  .seletor-card   { padding: 24px 14px 18px; max-width: 100%; }
+  .seletor-nome   { font-size: 1.15rem; }
+  .seletor-tier-opt { padding: 10px 14px; }
+  .seletor-qty-wrap { gap: 16px; }
+  .ag-btn         { padding: 12px 16px; font-size: .9rem; }
+  .ag-resumo      { padding: 14px; }
+  .pag-btns       { gap: 8px; }
+}
+
 @media (max-width: 400px) {
   .adm-stats { grid-template-columns: 1fr; }
-  .pag-chave-valor { font-size: 1.2rem; }
+  .pag-tabs  { flex-direction: column; }
 }
 
 /* ============================================================
@@ -738,7 +755,7 @@ textarea { resize: vertical; min-height: 90px; }
 
 .seletor-qty-num {
   font-family: 'Cormorant Garamond', serif;
-  font-size: 2.4rem;
+  font-size: clamp(1.8rem, 5vw, 2.4rem);
   font-weight: 700;
   color: #013718;
   min-width: 40px;
