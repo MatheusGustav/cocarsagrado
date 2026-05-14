@@ -66,7 +66,7 @@ serve(async (req) => {
         model: "openai/gpt-oss-120b",
         messages,
         temperature: 0.5,
-        max_tokens: 180,
+        max_tokens: 1024,
       }),
     });
 
