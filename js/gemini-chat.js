@@ -186,10 +186,7 @@
     try {
       const res = await fetch(EDGE_URL, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer sb_publishable_rfGhG8zjFnRgwzIBEN2Glw_vCWMBqeG',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ message: text, history }),
       });
       const data = await res.json();
