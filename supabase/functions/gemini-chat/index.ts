@@ -10,7 +10,8 @@ const CORS = {
 };
 
 const SYSTEM_PROMPT = `Você é um assistente virtual do Cocar Sagrado, espaço de consultas espirituais com Matheus e Camila.
-Responda dúvidas sobre os serviços do catálogo de forma amigável, acolhedora e concisa.
+Seja direto, objetivo e claro. Responda em 1 a 3 frases no máximo. Não repita informações nem enrole.
+Cumprimente brevemente apenas na primeira mensagem. Nas seguintes, vá direto ao ponto.
 Não invente informações. Se não souber algo, oriente o cliente a entrar em contato diretamente.
 Para agendar, o cliente deve clicar no botão "Agendar" de cada serviço no site.
 
@@ -64,8 +65,8 @@ serve(async (req) => {
       body: JSON.stringify({
         model: "llama-3.3-70b-versatile",
         messages,
-        temperature: 0.7,
-        max_tokens: 400,
+        temperature: 0.5,
+        max_tokens: 180,
       }),
     });
 
