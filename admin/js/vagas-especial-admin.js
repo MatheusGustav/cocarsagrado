@@ -3,7 +3,7 @@
    ============================================================ */
 
 const SERVICOS_ESPECIAIS_INFO = {
-  matheus: ['Búzios Completo'],
+  matheus: ['Combo + 10', 'Búzios Completo'],
   camila:  ['Registros Akáshicos', 'Mesa Radiônica', 'Mesa Cigana Completa', 'Theta Healing'],
 };
 
