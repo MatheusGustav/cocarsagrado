@@ -12,7 +12,7 @@
     },
     {
       "id": "buzios-avulso",
-      "nome": "Búzios Avulso",
+      "nome": "Amarração de Igbo",
       "tipo": "tiers",
       "tiers": [
         { "label": "1 pergunta",   "preco": 30 },
@@ -36,7 +36,7 @@
     },
     {
       "id": "buzios-completo",
-      "nome": "Búzios Completo",
+      "nome": "Consulta Ao Vivo",
       "tipo": "simples",
       "preco": 200,
       "descontoAtivo": false,
