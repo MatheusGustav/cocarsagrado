@@ -12,16 +12,3 @@ if (window.supabase && typeof window.supabase.createClient === 'function') {
   console.error('Supabase SDK não carregado. Verifique a conexão com a CDN.');
 }
 
-async function testarConexao() {
-  try {
-    const { error } = await supabase.from('tipos_leitura').select('id').limit(1);
-    if (error) throw error;
-    console.log('✅ Supabase conectado!');
-    return true;
-  } catch (err) {
-    console.error('❌ Erro Supabase:', err.message);
-    return false;
-  }
-}
-  
-testarConexao();
