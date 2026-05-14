@@ -5,6 +5,7 @@
 const Estado = {
   tipoSelecionado: null,
   dataSelecionada: null,
+  horarioSelecionado: null,
   serviceId: null,
 };
 
@@ -257,8 +258,8 @@ async function carregarCalendario() {
       card.setAttribute('role', 'button');
       card.setAttribute('tabindex', '0');
       card.setAttribute('aria-label', `Agendar em ${DIAS_PT[d.getDay()]}, ${d.getDate()} de ${MESES_PT[d.getMonth()]} — ${vagasText}`);
-      card.addEventListener('click', () => selecionarData(data, card));
-      card.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); selecionarData(data, card); } });
+      card.addEventListener('click', () => selecionarData(data, ate_horario, card));
+      card.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); selecionarData(data, ate_horario, card); } });
       cal.appendChild(card);
     });
   } catch (err) {
@@ -336,10 +337,11 @@ async function _buscarDiasEspeciais(profissional, diasParaFrente) {
   return dias.sort((a, b) => a.data.localeCompare(b.data));
 }
 
-function selecionarData(dataStr, cardEl) {
+function selecionarData(dataStr, ateHorario, cardEl) {
   document.querySelectorAll('#calendario .ag-vagas-card').forEach(c => c.classList.remove('selected'));
   cardEl.classList.add('selected');
   Estado.dataSelecionada = dataStr;
+  Estado.horarioSelecionado = ateHorario || null;
   setTimeout(() => irParaPasso(2), 250);
 }
 
@@ -357,7 +359,8 @@ function atualizarResumo() {
   const set = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
   set('res-tipo',    tipo.nome);
   set('res-data',    `${d.getDate()} de ${MESES_PT[d.getMonth()]} de ${d.getFullYear()}`);
-  set('res-hora',    'A combinar via WhatsApp 💬');
+  const horaLabel = Estado.horarioSelecionado ? `até as ${Estado.horarioSelecionado.slice(0,5)}h` : 'A combinar via WhatsApp 💬';
+  set('res-hora',    horaLabel);
   set('res-duracao', _formatarDuracao(tipo.duracao_minutos));
   set('res-valor',   `R$ ${final.toFixed(2).replace('.', ',')}`);
 
