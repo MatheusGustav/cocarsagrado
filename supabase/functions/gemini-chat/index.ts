@@ -1,7 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
-const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
-const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
+const GROQ_API_KEY = Deno.env.get("GROQ_API_KEY");
+const GROQ_URL = "https://api.groq.com/openai/v1/chat/completions";
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -49,25 +49,30 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: "message required" }), { status: 400, headers: { ...CORS, "Content-Type": "application/json" } });
     }
 
-    const contents = [
+    const messages = [
+      { role: "system", content: SYSTEM_PROMPT },
       ...(Array.isArray(history) ? history : []),
-      { role: "user", parts: [{ text: message }] },
+      { role: "user", content: message },
     ];
 
-    const res = await fetch(GEMINI_URL, {
+    const res = await fetch(GROQ_URL, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${GROQ_API_KEY}`,
+      },
       body: JSON.stringify({
-        system_instruction: { parts: [{ text: SYSTEM_PROMPT }] },
-        contents,
-        generationConfig: { temperature: 0.7, maxOutputTokens: 400 },
+        model: "llama-3.1-8b-instant",
+        messages,
+        temperature: 0.7,
+        max_tokens: 400,
       }),
     });
 
     const data = await res.json();
-    if (!res.ok) throw new Error(data.error?.message || "Gemini API error");
+    if (!res.ok) throw new Error(data.error?.message || "Groq API error");
 
-    const reply = data.candidates?.[0]?.content?.parts?.[0]?.text || "Não consegui processar sua mensagem.";
+    const reply = data.choices?.[0]?.message?.content || "Não consegui processar sua mensagem.";
     return new Response(JSON.stringify({ reply }), {
       headers: { ...CORS, "Content-Type": "application/json" },
     });
