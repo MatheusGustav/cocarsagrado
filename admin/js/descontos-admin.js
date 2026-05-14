@@ -4,7 +4,7 @@
    ============================================================ */
 
 const _DESC_SERVICOS_META = [
-  { id: 'conselho',             nome: 'Conselho',                tipo: 'simples', preco: 0   },
+  { id: 'conselho',             nome: 'Conselho',                tipo: 'simples', preco: 20  },
   { id: 'buzios-avulso',        nome: 'Búzios Avulso',          tipo: 'tiers',   tiers: [{label:'1 pergunta',preco:30},{label:'2 perguntas',preco:50},{label:'3 perguntas',preco:70}] },
   { id: 'combo-10',             nome: 'Combo + 10',              tipo: 'simples', preco: 150 },
   { id: 'buzios-completo',      nome: 'Búzios Completo',         tipo: 'simples', preco: 200 },
