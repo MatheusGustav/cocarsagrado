@@ -1,6 +1,16 @@
 {
   "promocoes": [
     {
+      "id": "conselho",
+      "nome": "Conselho",
+      "tipo": "simples",
+      "preco": 0,
+      "descontoAtivo": false,
+      "percentualDesconto": 0,
+      "badge": "",
+      "mensagemPromocional": ""
+    },
+    {
       "id": "buzios-avulso",
       "nome": "Búzios Avulso",
       "tipo": "tiers",
@@ -9,6 +19,16 @@
         { "label": "2 perguntas",  "preco": 50 },
         { "label": "3 perguntas",  "preco": 70 }
       ],
+      "descontoAtivo": false,
+      "percentualDesconto": 0,
+      "badge": "",
+      "mensagemPromocional": ""
+    },
+    {
+      "id": "combo-10",
+      "nome": "Combo + 10",
+      "tipo": "simples",
+      "preco": 0,
       "descontoAtivo": false,
       "percentualDesconto": 0,
       "badge": "",

@@ -27,7 +27,9 @@ const WHATSAPP_TERAPEUTA = {
 };
 
 const SERVICO_CONFIG = {
+  'conselho':             { tipo: 'quantidade', terapeuta: 'matheus', nome: 'Conselho',             pergunta: 'Quantas sessões?' },
   'buzios-avulso':        { tipo: 'tier',      terapeuta: 'matheus', nome: 'Búzios Avulso',        prefixo: 'Búzios Avulso – ',       pergunta: 'Quantas perguntas?', requerPergunta: true },
+  'combo-10':             { tipo: 'quantidade', terapeuta: 'matheus', nome: 'Combo + 10',           pergunta: 'Quantas sessões?', maxQty: 1, especial: true },
   'mesa-cigana-avulsa':   { tipo: 'tier',      terapeuta: 'camila',  nome: 'Mesa Cigana Avulsa',   prefixo: 'Mesa Cigana Avulsa – ',  pergunta: 'Quantas perguntas?', requerPergunta: true },
   'buzios-completo':      { tipo: 'quantidade', terapeuta: 'matheus', nome: 'Búzios Completo',      pergunta: 'Quantas sessões?', maxQty: 1, especial: true },
   'confirmacao-orixas':   { tipo: 'quantidade', terapeuta: 'matheus', nome: 'Confirmação de Orixás',pergunta: 'Quantas sessões?' },
