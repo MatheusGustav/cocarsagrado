@@ -186,7 +186,10 @@
     try {
       const res = await fetch(EDGE_URL, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer sb_publishable_rfGhG8zjFnRgwzIBEN2Glw_vCWMBqeG',
+        },
         body: JSON.stringify({ message: text, history }),
       });
       const data = await res.json();
@@ -195,8 +198,8 @@
       if (data.error) throw new Error(data.error);
 
       addMsg('bot', data.reply);
-      history.push({ role: 'user',  parts: [{ text }] });
-      history.push({ role: 'model', parts: [{ text: data.reply }] });
+      history.push({ role: 'user',      content: text });
+      history.push({ role: 'assistant', content: data.reply });
       if (history.length > 20) history = history.slice(-20);
     } catch {
       removeTyping();
