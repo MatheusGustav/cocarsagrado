@@ -79,7 +79,7 @@ const CHAVE_LOCALSTORAGE = 'cocarsagrado_visitou'; // Nome da chave salva no loc
 /**
  * Verifica se é a primeira visita e exibe o overlay se necessário.
  */
-function inicializarOverlay() {
+async function inicializarOverlay() {
   const overlayBackdrop = document.getElementById('overlayBackdrop');
   if (!overlayBackdrop) return;
 
@@ -88,6 +88,14 @@ function inicializarOverlay() {
   const jaComprou  = localStorage.getItem('cocarsagrado_comprou');
 
   if (jaVisitou || jaComprou) return;
+
+  // Verifica se o admin habilitou o popup de 10%
+  try {
+    if (typeof carregarConfig === 'function') {
+      const cfg = await carregarConfig();
+      if (!cfg.desconto10Habilitado) return;
+    }
+  } catch {}
 
   // Primeira visita — mostra o overlay e aplica blur na página
   overlayBackdrop.classList.remove('overlay--hidden');

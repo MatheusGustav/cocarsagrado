@@ -1,30 +1,44 @@
 /* ============================================================
    SISTEMA DE DESCONTOS — COCAR SAGRADO
-   Gerencia desconto de 10% para novos clientes e promoções
-   configuráveis via /data/promocoes.json
-   ============================================================
-
-   PRIORIDADE:
-   1. Usuário aceitou 10% → mostra 10% em TUDO, ignora JSON
-   2. Usuário recusou (ou visitante antigo) → verifica JSON
-   3. Sem promoção no JSON → preço normal
+   Prioridade:
+   1. Usuário aceitou 10% → mostra 10% em TUDO (ignora promoções)
+   2. Usuário recusou → verifica promoções por serviço
+   3. Sem promoção → preço normal
    ============================================================ */
 
 const DESCONTO_10_KEY = 'aceitouDesconto10';
 
-let _promocoesCache = null;
+let _configCache = null;
+
+async function carregarConfig() {
+  if (_configCache !== null) return _configCache;
+  try {
+    const { data, error } = await window.supabase
+      .from('configuracoes')
+      .select('valor')
+      .eq('chave', 'descontos')
+      .single();
+    if (error) throw error;
+    _configCache = {
+      desconto10Habilitado: data.valor.desconto10Habilitado ?? true,
+      promocoes:            data.valor.promocoes            || [],
+    };
+  } catch {
+    try {
+      const r = await fetch('data/promocoes.json');
+      if (!r.ok) throw new Error();
+      const d = await r.json();
+      _configCache = { desconto10Habilitado: true, promocoes: d.promocoes || [] };
+    } catch {
+      _configCache = { desconto10Habilitado: true, promocoes: [] };
+    }
+  }
+  return _configCache;
+}
 
 async function carregarPromocoes() {
-  if (_promocoesCache !== null) return _promocoesCache;
-  try {
-    const r = await fetch('data/promocoes.json');
-    if (!r.ok) throw new Error('fetch failed');
-    const data = await r.json();
-    _promocoesCache = data.promocoes || [];
-  } catch {
-    _promocoesCache = [];
-  }
-  return _promocoesCache;
+  const cfg = await carregarConfig();
+  return cfg.promocoes;
 }
 
 function verificarStatusDesconto10() {
@@ -32,26 +46,23 @@ function verificarStatusDesconto10() {
 }
 
 function calcularResultado(servico, aceitou10) {
-  if (aceitou10 && !(servico && servico.excluirDesconto10)) {
+  if (aceitou10) {
     return { tipo: '10off', percentual: 10, badge: '10% OFF' };
   }
   if (servico && servico.descontoAtivo && servico.percentualDesconto > 0) {
     return {
-      tipo: 'promocao',
+      tipo:       'promocao',
       percentual: servico.percentualDesconto,
-      badge: servico.badge || ''
+      badge:      servico.badge || '',
     };
   }
   return { tipo: 'normal' };
 }
 
-// Arredonda para o centavo. Mesma fórmula usada em agendamento-system.js
-// para que o preço exibido no catálogo bata com o cobrado no checkout.
 function aplicarDesconto(valor, percentual) {
   return Math.round(valor * (100 - percentual)) / 100;
 }
 
-// "R$ 199,80" — sem casas decimais quando o valor é inteiro.
 function formatarMoeda(v) {
   const n = Number(v) || 0;
   return Number.isInteger(n)
@@ -91,7 +102,6 @@ function renderizarPrecoSimples(footer, preco, resultado) {
   footer.querySelectorAll('.cat-footer-price, .cat-price-wrapper').forEach(el => el.remove());
 
   const precoDesc = aplicarDesconto(preco, resultado.percentual);
-
   const wrapper = document.createElement('div');
   wrapper.className = 'cat-price-wrapper';
   wrapper.innerHTML = `<div class="cat-price-group">
@@ -108,7 +118,6 @@ function renderizarPrecoTiers(footer, tiers, resultado) {
   const tiersEl = footer.querySelector('.cat-footer-tiers');
   if (!tiersEl) return;
   const card = footer.closest('.cat-card');
-
   const jaTemDesconto = !!tiersEl.querySelector('.cat-badge-tier');
 
   inserirBadgeNoIcone(card, resultado);
@@ -122,7 +131,6 @@ function renderizarPrecoTiers(footer, tiers, resultado) {
   }
 
   tiersEl.innerHTML = '';
-
   tiers.forEach(t => {
     const precoDesc = aplicarDesconto(t.preco, resultado.percentual);
     const row = document.createElement('span');
@@ -141,9 +149,9 @@ async function renderizarDescontos() {
 
   document.querySelectorAll('.cat-card[data-service-id]').forEach(card => {
     const serviceId = card.dataset.serviceId;
-    const servico = promocoes.find(p => p.id === serviceId) || null;
+    const servico   = promocoes.find(p => p.id === serviceId) || null;
     const resultado = calcularResultado(servico, aceitou10);
-    const footer = card.querySelector('.cat-footer');
+    const footer    = card.querySelector('.cat-footer');
     if (!footer) return;
 
     if (servico && servico.tipo === 'tiers') {
