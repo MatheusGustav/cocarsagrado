@@ -3,7 +3,7 @@
    ============================================================ */
 
 (function () {
-  const EDGE_URL = 'https://demxedudbislzausvhwx.supabase.co/functions/v1/gemini-chat';
+  const EDGE_URL = 'https://demxedudbislzausvhwx.supabase.co/functions/v1/ai-chat';
 
   const SUGESTOES = [
     'Quais serviços vocês oferecem?',
