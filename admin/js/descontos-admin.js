@@ -5,9 +5,9 @@
 
 const _DESC_SERVICOS_META = [
   { id: 'conselho',             nome: 'Conselho',                tipo: 'simples', preco: 20  },
-  { id: 'buzios-avulso',        nome: 'Búzios Avulso',          tipo: 'tiers',   tiers: [{label:'1 pergunta',preco:30},{label:'2 perguntas',preco:50},{label:'3 perguntas',preco:70}] },
+  { id: 'buzios-avulso',        nome: 'Amarração de Igbo',      tipo: 'tiers',   tiers: [{label:'1 pergunta',preco:30},{label:'2 perguntas',preco:50},{label:'3 perguntas',preco:70}] },
   { id: 'combo-10',             nome: 'Combo + 10',              tipo: 'simples', preco: 150 },
-  { id: 'buzios-completo',      nome: 'Búzios Completo',         tipo: 'simples', preco: 200 },
+  { id: 'buzios-completo',      nome: 'Consulta Ao Vivo',        tipo: 'simples', preco: 200 },
   { id: 'confirmacao-orixas',   nome: 'Confirmação de Orixás',   tipo: 'simples', preco: 50  },
   { id: 'cabala-odu',           nome: 'Cabala de Odu',           tipo: 'simples', preco: 50  },
   { id: 'confirmacao-exu',      nome: 'Confirmação de Exu',      tipo: 'simples', preco: 70  },
