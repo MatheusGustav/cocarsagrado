@@ -37,44 +37,6 @@ a { color: var(--primary); text-decoration: none; }
   padding: 24px 16px 60px;
 }
 
-/* ---- Header ---- */
-.ag-header {
-  text-align: center;
-  padding: 32px 16px 24px;
-  background: linear-gradient(135deg, var(--primary), var(--secondary));
-  color: #fff;
-  margin-bottom: 32px;
-}
-.ag-header h1 { font-size: 1.6rem; font-weight: 700; }
-.ag-header p  { opacity: .85; margin-top: 6px; font-size: .95rem; }
-
-/* ---- Barra de progresso ---- */
-.ag-progress {
-  display: flex;
-  justify-content: center;
-  gap: 0;
-  margin-bottom: 32px;
-  overflow: hidden;
-  border-radius: 99px;
-  background: var(--border);
-  max-width: 600px;
-  margin-left: auto;
-  margin-right: auto;
-}
-.ag-step {
-  flex: 1;
-  text-align: center;
-  padding: 10px 8px;
-  font-size: .8rem;
-  font-weight: 600;
-  color: var(--text-muted);
-  transition: background .3s, color .3s;
-  cursor: default;
-  white-space: nowrap;
-}
-.ag-step.active  { background: var(--primary); color: #fff; }
-.ag-step.done    { background: var(--secondary); color: #fff; }
-
 /* ---- Seção de passo ---- */
 .ag-section { display: none; }
 .ag-section.active { display: block; }
@@ -84,118 +46,6 @@ a { color: var(--primary); text-decoration: none; }
   font-weight: 700;
   margin-bottom: 20px;
   color: var(--text);
-}
-
-/* ---- Grid de cards ---- */
-.ag-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(200px, 100%), 1fr));
-  gap: 16px;
-}
-
-/* ---- Card de leitura ---- */
-.ag-card {
-  border: 2px solid var(--border);
-  border-radius: var(--radius);
-  padding: 20px 16px;
-  background: var(--surface);
-  cursor: pointer;
-  transition: transform .2s, box-shadow .2s, border-color .2s;
-  position: relative;
-}
-.ag-card:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-lg);
-}
-.ag-card.selected {
-  border-color: var(--primary);
-  background: linear-gradient(135deg, #eef2ff, #f0fdf4);
-  box-shadow: 0 0 0 3px rgba(99,102,241,.15);
-}
-.ag-card h3 { font-size: 1rem; font-weight: 700; margin-bottom: 6px; }
-.ag-card p  { font-size: .85rem; color: var(--text-muted); line-height: 1.4; margin-bottom: 12px; }
-
-.ag-card-meta {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 6px;
-}
-.ag-card-duration {
-  font-size: .78rem;
-  color: var(--text-muted);
-  background: var(--bg);
-  padding: 3px 8px;
-  border-radius: 99px;
-  border: 1px solid var(--border);
-}
-
-/* ---- Preços ---- */
-.ag-price-block { display: flex; flex-direction: column; align-items: flex-end; }
-.ag-price       { font-weight: 700; color: var(--primary); font-size: 1.05rem; }
-.ag-price-old   { font-size: .8rem; color: var(--text-muted); text-decoration: line-through; }
-.ag-price-desc  { font-weight: 700; color: var(--secondary); font-size: 1.05rem; }
-
-/* ---- Badge ---- */
-.ag-badge {
-  position: absolute;
-  top: 10px; right: 10px;
-  background: var(--accent);
-  color: #1f2937;
-  font-size: .7rem;
-  font-weight: 700;
-  padding: 3px 10px;
-  border-radius: 99px;
-}
-
-/* ---- Calendário ---- */
-.ag-calendar {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(100px, 100%), 1fr));
-  gap: 10px;
-}
-.ag-day-card {
-  border: 2px solid var(--border);
-  border-radius: var(--radius);
-  padding: 14px 8px;
-  text-align: center;
-  cursor: pointer;
-  background: var(--surface);
-  transition: transform .2s, box-shadow .2s, border-color .2s;
-}
-.ag-day-card:hover { transform: translateY(-2px); box-shadow: var(--shadow); }
-.ag-day-card.selected {
-  border-color: var(--primary);
-  background: linear-gradient(135deg, #eef2ff, #f0fdf4);
-}
-.ag-day-card .day-num  { font-size: 1.4rem; font-weight: 700; color: var(--primary); }
-.ag-day-card .day-name { font-size: .7rem; color: var(--text-muted); text-transform: uppercase; margin-top: 2px; }
-.ag-day-card .day-month{ font-size: .75rem; color: var(--text-muted); margin-top: 2px; }
-
-/* ---- Horários ---- */
-.ag-slots {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(90px, 100%), 1fr));
-  gap: 10px;
-}
-.ag-slot {
-  border: 2px solid var(--border);
-  border-radius: 10px;
-  padding: 12px 6px;
-  text-align: center;
-  cursor: pointer;
-  background: var(--surface);
-  font-size: .9rem;
-  font-weight: 600;
-  transition: transform .2s, box-shadow .2s, border-color .2s;
-}
-.ag-slot:hover:not(.occupied) { transform: translateY(-2px); box-shadow: var(--shadow); }
-.ag-slot.selected { border-color: var(--primary); background: #eef2ff; color: var(--primary); }
-.ag-slot.occupied {
-  opacity: .4;
-  cursor: not-allowed;
-  text-decoration: line-through;
 }
 
 /* ---- Formulário ---- */
@@ -577,19 +427,15 @@ textarea { resize: vertical; min-height: 90px; }
    ============================================================ */
 @media (max-width: 640px) {
   .ag-form-row { grid-template-columns: 1fr; }
-  .ag-grid     { grid-template-columns: 1fr; }
   .adm-layout  { flex-direction: column; }
   .adm-sidebar { width: 100%; padding: 16px; }
   .adm-main    { padding: 16px; }
   .adm-stats   { grid-template-columns: 1fr 1fr; }
   .pag-tabs    { flex-direction: column; }
-  .ag-step     { font-size: .7rem; padding: 8px 4px; }
 }
 
 @media (max-width: 480px) {
   .ag-container   { padding: 16px 12px 48px; }
-  .ag-header      { padding: 24px 12px 18px; }
-  .ag-header h1   { font-size: 1.3rem; }
   .pag-container  { padding: 16px 12px 48px; }
   .pag-chave-box  { padding: 16px; }
   .pag-resumo-box { padding: 14px; }
