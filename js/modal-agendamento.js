@@ -167,7 +167,7 @@ window.redirecionarParaPagamento = function(chave) {
     tipo:      tipo.nome,
     terapeuta: tipo.terapeuta || 'camila',
     data:      `${d.getDate()} de ${MESES_PT[d.getMonth()]} de ${d.getFullYear()}`,
-    hora:      'A combinar via WhatsApp',
+    hora:      Estado.horarioSelecionado ? `até as ${Estado.horarioSelecionado.slice(0,5)}h` : 'A combinar via WhatsApp',
     duracao:   tipo.duracao_minutos,
     valor:     final.toFixed(2).replace('.', ','),
     nome:       document.getElementById('f-nome').value.trim(),
