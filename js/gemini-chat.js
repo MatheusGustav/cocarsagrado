@@ -1,9 +1,15 @@
 /* ============================================================
-   COCAR SAGRADO — Widget de Chat IA (Gemini)
+   COCAR SAGRADO — Widget de Chat IA
    ============================================================ */
 
 (function () {
   const EDGE_URL = 'https://demxedudbislzausvhwx.supabase.co/functions/v1/gemini-chat';
+
+  const SUGESTOES = [
+    'Quais serviços vocês oferecem?',
+    'Como funciona o agendamento?',
+    'Qual a diferença entre Combo + 10 e Consulta Ao Vivo?',
+  ];
 
   /* ---------- estilos ---------- */
   const css = `
@@ -18,6 +24,19 @@
     #cs-chat-btn:hover { background: #025522; transform: scale(1.08); }
     #cs-chat-btn svg { width: 24px; height: 24px; fill: #E2C97E; }
 
+    #cs-chat-btn::after {
+      content: ''; position: absolute;
+      width: 52px; height: 52px; border-radius: 50%;
+      border: 2px solid rgba(1,55,24,.5);
+      animation: cs-pulse 2.4s ease-out infinite;
+    }
+    @keyframes cs-pulse {
+      0%   { transform: scale(1);   opacity: .7; }
+      70%  { transform: scale(1.6); opacity: 0;  }
+      100% { transform: scale(1.6); opacity: 0;  }
+    }
+    #cs-chat-btn.cs-btn-open::after { animation: none; }
+
     #cs-chat-panel {
       position: fixed; bottom: 88px; right: 24px; z-index: 9999;
       width: 340px; max-width: calc(100vw - 32px);
@@ -29,6 +48,16 @@
     }
     #cs-chat-panel.cs-open {
       transform: scale(1) translateY(0); opacity: 1; pointer-events: all;
+    }
+
+    @media (max-width: 480px) {
+      #cs-chat-btn { bottom: 16px; right: 16px; }
+      #cs-chat-panel {
+        right: 0; left: 0; bottom: 0;
+        width: 100%; max-width: 100%;
+        border-radius: 16px 16px 0 0;
+        max-height: 90vh;
+      }
     }
 
     #cs-chat-header {
@@ -53,6 +82,9 @@
       display: flex; flex-direction: column; gap: 10px;
       max-height: 320px; min-height: 120px;
     }
+    @media (max-width: 480px) {
+      #cs-chat-msgs { max-height: calc(90vh - 160px); }
+    }
     #cs-chat-msgs::-webkit-scrollbar { width: 4px; }
     #cs-chat-msgs::-webkit-scrollbar-thumb { background: #C8C0B4; border-radius: 4px; }
 
@@ -76,6 +108,19 @@
     .cs-typing span:nth-child(2) { animation-delay: .15s; }
     .cs-typing span:nth-child(3) { animation-delay: .30s; }
     @keyframes cs-bounce { 0%,60%,100% { transform: translateY(0); } 30% { transform: translateY(-5px); } }
+
+    #cs-sugestoes {
+      display: flex; flex-wrap: wrap; gap: 6px;
+      padding: 0 12px 10px;
+    }
+    .cs-sug-btn {
+      background: none; border: 1px solid #C9A84C; border-radius: 20px;
+      padding: 5px 11px; font-size: 12px; color: #7A5618;
+      font-family: 'DM Sans', sans-serif; cursor: pointer;
+      transition: background .15s, color .15s;
+      text-align: left; line-height: 1.4;
+    }
+    .cs-sug-btn:hover { background: #C9A84C; color: #fff; }
 
     #cs-chat-form {
       display: flex; gap: 8px; padding: 10px 12px;
@@ -114,6 +159,7 @@
         <button class="cs-close" id="cs-chat-close" aria-label="Fechar">✕</button>
       </div>
       <div id="cs-chat-msgs"></div>
+      <div id="cs-sugestoes"></div>
       <form id="cs-chat-form" autocomplete="off">
         <input id="cs-chat-input" type="text" placeholder="Tire sua dúvida…" maxlength="400" />
         <button type="submit" id="cs-chat-send" aria-label="Enviar">
@@ -132,23 +178,44 @@
   wrap.innerHTML = html;
   document.body.appendChild(wrap);
 
-  const panel  = document.getElementById('cs-chat-panel');
-  const msgs   = document.getElementById('cs-chat-msgs');
-  const input  = document.getElementById('cs-chat-input');
-  const send   = document.getElementById('cs-chat-send');
-  const form   = document.getElementById('cs-chat-form');
+  const btn      = document.getElementById('cs-chat-btn');
+  const panel    = document.getElementById('cs-chat-panel');
+  const msgs     = document.getElementById('cs-chat-msgs');
+  const input    = document.getElementById('cs-chat-input');
+  const send     = document.getElementById('cs-chat-send');
+  const form     = document.getElementById('cs-chat-form');
+  const sugBox   = document.getElementById('cs-sugestoes');
 
   let history = [];
   let opened  = false;
 
-  document.getElementById('cs-chat-btn').addEventListener('click', toggle);
+  btn.addEventListener('click', toggle);
   document.getElementById('cs-chat-close').addEventListener('click', toggle);
 
   function toggle() {
     opened = !opened;
     panel.classList.toggle('cs-open', opened);
-    if (opened && !msgs.children.length) addMsg('bot', 'Olá! Sou o assistente do Cocar Sagrado. Posso te ajudar com dúvidas sobre os serviços. Como posso ajudar?');
+    btn.classList.toggle('cs-btn-open', opened);
+    if (opened && !msgs.children.length) {
+      addMsg('bot', 'Olá! Sou o assistente do Cocar Sagrado. Posso te ajudar com dúvidas sobre os serviços. Como posso ajudar?');
+      renderSugestoes();
+    }
     if (opened) setTimeout(() => input.focus(), 220);
+  }
+
+  function renderSugestoes() {
+    sugBox.innerHTML = '';
+    SUGESTOES.forEach(txt => {
+      const b = document.createElement('button');
+      b.className = 'cs-sug-btn';
+      b.textContent = txt;
+      b.type = 'button';
+      b.addEventListener('click', () => {
+        sugBox.innerHTML = '';
+        enviar(txt);
+      });
+      sugBox.appendChild(b);
+    });
   }
 
   function addMsg(role, text) {
@@ -173,11 +240,8 @@
     document.getElementById('cs-typing')?.remove();
   }
 
-  form.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const text = input.value.trim();
-    if (!text) return;
-
+  async function enviar(text) {
+    sugBox.innerHTML = '';
     input.value = '';
     send.disabled = true;
     addMsg('user', text);
@@ -205,5 +269,11 @@
 
     send.disabled = false;
     input.focus();
+  }
+
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const text = input.value.trim();
+    if (text) enviar(text);
   });
 })();
