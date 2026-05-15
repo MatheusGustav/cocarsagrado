@@ -361,7 +361,7 @@ function atualizarResumo() {
   const set = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
   set('res-tipo',    tipo.nome);
   set('res-data',    `${d.getDate()} de ${MESES_PT[d.getMonth()]} de ${d.getFullYear()}`);
-  const horaLabel = Estado.horarioSelecionado ? `até as ${Estado.horarioSelecionado.slice(0,5)}h` : 'A combinar via WhatsApp 💬';
+  const horaLabel = Estado.horarioSelecionado ? `até as ${Estado.horarioSelecionado.slice(0,5)}h` : '';
   set('res-hora',    horaLabel);
   set('res-duracao', _formatarDuracao(tipo.duracao_minutos));
   set('res-valor',   `R$ ${final.toFixed(2).replace('.', ',')}`);
