@@ -31,7 +31,7 @@ Separado do site principal, o painel dá controle total sobre:
 - HTML, CSS e JS puro no front
 - Supabase pro banco e Edge Functions
 - InfinityPay pra pagamentos
-- Claude API no chat de atendimento
+- Groq API no chat de atendimento
 - Deploy no Cloudflare Pages
 
 ## Estrutura
