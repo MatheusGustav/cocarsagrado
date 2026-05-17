@@ -194,7 +194,7 @@
           <!-- BÚZIOS -->
           <article class="cat-card" data-category="buzios matheus" data-service-id="conselho" data-modalidade="mensagem">
             <div class="cat-card-img">
-              <img src="images/conselho.png" alt="Conselho" class="cat-img">
+              <img src="images/conselho.webp" alt="Conselho" class="cat-img">
             </div>
             <div class="cat-body">
               <h3 class="cat-name">Conselho</h3>
@@ -226,7 +226,7 @@
 
           <article class="cat-card" data-category="buzios matheus" data-service-id="combo-10" data-modalidade="mensagem">
             <div class="cat-card-img">
-              <img src="images/combo10.png" alt="Combo + 10" class="cat-img">
+              <img src="images/combo10.webp" alt="Combo + 10" class="cat-img">
             </div>
             <div class="cat-body">
               <h3 class="cat-name">Combo + 10</h3>
@@ -448,27 +448,15 @@
             <p class="col-ig-body">Partilhamos reflexões, aberturas espirituais e novidades toda semana. Acompanhe o Cocar Sagrado e deixe que a energia chegue até você.</p>
 
             <div class="ig-posts-grid">
-              <div class="ig-post ig-post--main">
-                <div class="ig-post-lines">
-                  <div class="ig-line ig-line--dark"></div>
-                  <div class="ig-line"></div>
-                </div>
-                <span class="ig-post-label">Último post</span>
-              </div>
-              <div class="ig-post">
-                <div class="ig-post-lines">
-                  <div class="ig-line"></div>
-                  <div class="ig-line ig-line--short"></div>
-                </div>
-                <span class="ig-post-label">Anterior</span>
-              </div>
-              <div class="ig-post">
-                <div class="ig-post-lines">
-                  <div class="ig-line"></div>
-                  <div class="ig-line ig-line--short"></div>
-                </div>
-                <span class="ig-post-label">Anterior</span>
-              </div>
+              <a href="https://www.instagram.com/cocarsagrado" target="_blank" rel="noopener" class="ig-post ig-post--main">
+                <img src="images/instagram1.webp" alt="Post Instagram Cocar Sagrado" loading="lazy">
+              </a>
+              <a href="https://www.instagram.com/cocarsagrado" target="_blank" rel="noopener" class="ig-post">
+                <img src="images/instagram2.webp" alt="Post Instagram Cocar Sagrado" loading="lazy">
+              </a>
+              <a href="https://www.instagram.com/cocarsagrado" target="_blank" rel="noopener" class="ig-post">
+                <img src="images/instagram3.webp" alt="Post Instagram Cocar Sagrado" loading="lazy">
+              </a>
             </div>
 
             <div class="ig-footer">
@@ -487,7 +475,7 @@
 
               <div class="person-card">
                 <div class="person-avatar-wrap">
-                  <div class="person-avatar avatar-c"><img src="images/perfil-camila.jpeg" alt="Camila"></div>
+                  <div class="person-avatar avatar-c"><img src="images/perfil-camila.webp" alt="Camila"></div>
                   <span class="person-status-dot" id="status-camila"></span>
                 </div>
                 <div class="person-info">
@@ -499,7 +487,7 @@
 
               <div class="person-card">
                 <div class="person-avatar-wrap">
-                  <div class="person-avatar avatar-m"><img src="images/perfil-matheus.jpeg" alt="Matheus"></div>
+                  <div class="person-avatar avatar-m"><img src="images/perfil-matheus.webp" alt="Matheus"></div>
                   <span class="person-status-dot" id="status-matheus"></span>
                 </div>
                 <div class="person-info">
@@ -541,10 +529,10 @@
         </div>
 
         <div class="depos-grid">
-          <article class="depo-card fade-in-scroll"><img src="images/feedback-1.jpeg" alt="Depoimento 1" loading="lazy"></article>
-          <article class="depo-card fade-in-scroll"><img src="images/feedback-2.jpeg" alt="Depoimento 2" loading="lazy"></article>
-          <article class="depo-card fade-in-scroll"><img src="images/feedback-3.jpeg" alt="Depoimento 3" loading="lazy"></article>
-          <article class="depo-card fade-in-scroll"><img src="images/feedback-4.jpeg" alt="Depoimento 4" loading="lazy"></article>
+          <article class="depo-card fade-in-scroll"><img src="images/feedback-1.webp" alt="Depoimento 1" loading="lazy"></article>
+          <article class="depo-card fade-in-scroll"><img src="images/feedback-2.webp" alt="Depoimento 2" loading="lazy"></article>
+          <article class="depo-card fade-in-scroll"><img src="images/feedback-3.webp" alt="Depoimento 3" loading="lazy"></article>
+          <article class="depo-card fade-in-scroll"><img src="images/feedback-4.webp" alt="Depoimento 4" loading="lazy"></article>
         </div>
       </div>
     </section>
@@ -795,52 +783,5 @@
   <script src="js/discount-system.js?v=8"></script>
   <script src="js/script.js?v=7"></script>
   <script src="js/ai-chat.js?v=1"></script>
-  <script>
-(function() {
-    const USERNAME = 'cocarsagrado';
-    const MAX_POSTS = 3;
-
-    async function loadInstagramPosts() {
-        const grid = document.getElementById('instagramPostsCocar');
-
-        try {
-            const response = await fetch(`https://www.instagram.com/api/v1/users/web_profile_info/?username=${USERNAME}`, {
-                headers: { 'x-ig-app-id': '936619743392459' }
-            });
-
-            if (!response.ok) throw new Error('Erro');
-
-            const data = await response.json();
-            const posts = data.data.user.edge_owner_to_timeline_media.edges.slice(0, MAX_POSTS);
-
-            grid.innerHTML = '';
-
-            posts.forEach(({ node }) => {
-                const post = document.createElement('div');
-                post.className = 'post-item-cocar';
-                post.onclick = () => window.open(`https://instagram.com/p/${node.shortcode}`, '_blank');
-                post.innerHTML = `<img src="${node.thumbnail_src}" alt="Instagram" loading="lazy">`;
-                grid.appendChild(post);
-            });
-
-        } catch (error) {
-            // Fallback silencioso - mostra quadrados vazios
-            grid.innerHTML = '';
-            for (let i = 0; i < MAX_POSTS; i++) {
-                const placeholder = document.createElement('div');
-                placeholder.className = 'post-item-cocar';
-                placeholder.onclick = () => window.open('https://instagram.com/cocarsagrado', '_blank');
-                grid.appendChild(placeholder);
-            }
-        }
-    }
-
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', loadInstagramPosts);
-    } else {
-        loadInstagramPosts();
-    }
-})();
-  </script>
 </body>
 </html>
