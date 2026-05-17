@@ -24,14 +24,7 @@ async function carregarConfig() {
       promocoes:            data.valor.promocoes            || [],
     };
   } catch {
-    try {
-      const r = await fetch('data/promocoes.json');
-      if (!r.ok) throw new Error();
-      const d = await r.json();
-      _configCache = { desconto10Habilitado: true, promocoes: d.promocoes || [] };
-    } catch {
-      _configCache = { desconto10Habilitado: true, promocoes: [] };
-    }
+    _configCache = { desconto10Habilitado: true, promocoes: [] };
   }
   return _configCache;
 }
