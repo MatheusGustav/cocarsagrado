@@ -36,14 +36,14 @@ async function inicializarDescontos() {
       .single();
 
     if (error && error.code === 'PGRST116') {
-      _descConfig = await _descConfigDoJSON();
+      _descConfig = _descMergeComMeta({ desconto10Habilitado: true, promocoes: [] });
     } else if (error) {
       throw error;
     } else {
       _descConfig = _descMergeComMeta(data.valor);
     }
   } catch {
-    _descConfig = await _descConfigDoJSON();
+    _descConfig = _descMergeComMeta({ desconto10Habilitado: true, promocoes: [] });
   }
 
   _descRenderizar();
@@ -67,17 +67,6 @@ function _descMergeComMeta(valor) {
     desconto10Habilitado: valor.desconto10Habilitado ?? true,
     promocoes,
   };
-}
-
-async function _descConfigDoJSON() {
-  try {
-    const r = await fetch('../data/promocoes.json');
-    if (!r.ok) throw new Error();
-    const d = await r.json();
-    return _descMergeComMeta({ desconto10Habilitado: true, promocoes: d.promocoes || [] });
-  } catch {
-    return _descMergeComMeta({ desconto10Habilitado: true, promocoes: [] });
-  }
 }
 
 function _descFmt(preco, pct) {
