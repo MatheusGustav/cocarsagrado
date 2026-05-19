@@ -1,2 +1,5 @@
 # Configurações locais do Claude Code
 .claude/
+
+# InfinityPay — contém handle sensível (não versionar o arquivo, apenas o .gitignore)
+supabase/functions/infinitypay-checkout/index.ts

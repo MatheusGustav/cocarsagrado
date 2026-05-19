@@ -1982,6 +1982,17 @@ body {
   min-width: 64px;
 }
 
+.esp-restantes-wrap {
+  text-align: center;
+  margin-top: 6px;
+}
+
+.esp-restantes {
+  font-size: .7rem;
+  color: var(--secondary, #C9A84C);
+  font-weight: 600;
+}
+
 .esp-card-dianum {
   font-family: 'Cormorant Garamond', serif;
   font-size: 2rem;

@@ -1,7 +1,7 @@
 /* ============================================================
    COCAR SAGRADO — Controle do Modal de Agendamento
    Depende de: agendamento-system.js (Estado, calcularPrecoFinal,
-   carregarTiposLeitura, carregarCalendario, MESES_PT)
+   _garantirTipos, carregarCalendario, MESES_PT)
    ============================================================ */
 
 const MODAL_PIX      = 'cocarsagrado@gmail.com';

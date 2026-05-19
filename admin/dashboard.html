@@ -9,227 +9,304 @@
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="../css/agendamento-styles.css">
   <link rel="stylesheet" href="css/dashboard.css?v=6">
+  <style>
+    .adm-login-screen {
+      display: flex; align-items: center; justify-content: center;
+      min-height: 100vh; padding: 24px;
+      background: linear-gradient(135deg, #0a0f0a 0%, #1a2a1a 100%);
+    }
+    .adm-login-card {
+      background: #162016; border: 1px solid #2a3a2a;
+      border-radius: 16px; padding: 40px 36px;
+      width: 100%; max-width: 400px;
+      box-shadow: 0 20px 60px rgba(0,0,0,.6);
+      text-align: center;
+    }
+    .adm-login-card h1 {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 1.8rem; color: #d4c9a8; margin-bottom: 4px;
+    }
+    .adm-login-card p {
+      color: #7a8a7a; font-size: .85rem; margin-bottom: 28px;
+    }
+    .adm-login-card .ag-form-group {
+      text-align: left; margin-bottom: 16px;
+    }
+    .adm-login-card label {
+      display: block; font-size: .8rem; color: #9a9a7a; margin-bottom: 4px;
+    }
+    .adm-login-card input {
+      width: 100%; padding: 10px 14px; border-radius: 8px;
+      border: 1px solid #2a3a2a; background: #1a261a;
+      color: #e0e0d0; font-size: .9rem; outline: none;
+    }
+    .adm-login-card input:focus { border-color: #d4c9a8; }
+    .adm-login-card .adm-login-btn {
+      width: 100%; margin-top: 8px; padding: 12px;
+      background: #d4c9a8; color: #0a0f0a; font-weight: 600;
+      border: none; border-radius: 8px; font-size: .95rem;
+      cursor: pointer; transition: .2s;
+    }
+    .adm-login-card .adm-login-btn:hover { background: #c4b98a; }
+    .adm-login-card .adm-login-btn:disabled { opacity: .5; cursor: not-allowed; }
+    .adm-login-error {
+      color: #e55; font-size: .82rem; margin-top: 12px; display: none;
+    }
+    #admin-content { display: none; }
+    .adm-logout-btn {
+      background: none; border: 1px solid #4a4a3a; color: #8a8a7a;
+      padding: 6px 14px; border-radius: 6px; cursor: pointer;
+      font-size: .78rem; margin-top: 12px; transition: .2s;
+    }
+    .adm-logout-btn:hover { border-color: #c44; color: #c44; }
+  </style>
 </head>
 <body>
 
-<div class="adm-layout">
+<div class="adm-login-screen" id="adm-login-screen">
+  <div class="adm-login-card">
+    <h1>Cocar Sagrado</h1>
+    <p>Painel Administrativo — faça login</p>
+    <form id="adm-login-form">
+      <div class="ag-form-group">
+        <label for="adm-email">E-mail</label>
+        <input type="email" id="adm-email" placeholder="seu@email.com" autocomplete="email" required>
+      </div>
+      <div class="ag-form-group">
+        <label for="adm-password">Senha</label>
+        <input type="password" id="adm-password" placeholder="••••••••" autocomplete="current-password" required>
+      </div>
+      <button type="submit" class="adm-login-btn" id="adm-login-btn">Entrar</button>
+      <div class="adm-login-error" id="adm-login-error"></div>
+    </form>
+  </div>
+</div>
 
-  <!-- Sidebar -->
-  <aside class="adm-sidebar">
-    <div>
-      <h2>Cocar Sagrado</h2>
-      <p>Painel Administrativo</p>
-    </div>
-    <nav class="adm-nav" aria-label="Menu admin">
-      <a href="#" class="active" id="nav-agendamentos">✦ Agendamentos</a>
-      <a href="#" id="nav-vagas">✦ Vagas</a>
-      <a href="#" id="nav-especial">✦ Agenda Especial</a>
-      <a href="#" id="nav-descontos">✦ Descontos</a>
-      <a href="../index.html" target="_blank">✦ Ver site</a>
-    </nav>
-    <div style="margin-top:auto;">
-      v1.2.0
-    </div>
-  </aside>
+<div id="admin-content">
+  <div class="adm-layout">
 
-  <!-- Main -->
-  <main class="adm-main">
+    <!-- Sidebar -->
+    <aside class="adm-sidebar">
+      <div>
+        <h2>Cocar Sagrado</h2>
+        <p>Painel Administrativo</p>
+      </div>
+      <nav class="adm-nav" aria-label="Menu admin">
+        <a href="#" class="active" id="nav-agendamentos">✦ Agendamentos</a>
+        <a href="#" id="nav-vagas">✦ Vagas</a>
+        <a href="#" id="nav-especial">✦ Agenda Especial</a>
+        <a href="#" id="nav-descontos">✦ Descontos</a>
+        <a href="../index.html" target="_blank">✦ Ver site</a>
+      </nav>
+      <div style="margin-top:auto;">
+        <button class="adm-logout-btn" id="adm-logout-btn">Sair</button>
+        <div style="margin-top:6px; font-size:.7rem; color:#5a5a4a;">v1.2.0</div>
+      </div>
+    </aside>
 
-    <!-- ===== SEÇÃO: AGENDAMENTOS ===== -->
-    <div id="secao-agendamentos">
-      <header class="adm-main-header">
-        <h1>Agendamentos</h1>
-        <div style="display:flex; gap:10px; flex-wrap:wrap;">
-          <button class="ag-btn ag-btn-outline ag-btn-sm" id="btn-atualizar">🔄 Atualizar</button>
-          <button class="ag-btn ag-btn-copy ag-btn-sm" id="btn-exportar">⬇ Exportar CSV</button>
-        </div>
-      </header>
+    <!-- Main -->
+    <main class="adm-main">
 
-      <div class="adm-stats" role="region" aria-label="Estatísticas">
-        <div class="adm-stat-card hoje">
-          <div class="adm-stat-label">Agendamentos hoje</div>
-          <div class="adm-stat-value" id="stat-hoje">—</div>
+      <!-- AGENDAMENTOS -->
+      <div id="secao-agendamentos">
+        <header class="adm-main-header">
+          <h1>Agendamentos</h1>
+          <div style="display:flex; gap:10px; flex-wrap:wrap;">
+            <button class="ag-btn ag-btn-outline ag-btn-sm" id="btn-atualizar">🔄 Atualizar</button>
+            <button class="ag-btn ag-btn-copy ag-btn-sm" id="btn-exportar">⬇ Exportar CSV</button>
+          </div>
+        </header>
+
+        <div class="adm-stats" role="region" aria-label="Estatísticas">
+          <div class="adm-stat-card hoje">
+            <div class="adm-stat-label">Agendamentos hoje</div>
+            <div class="adm-stat-value" id="stat-hoje">—</div>
+          </div>
+          <div class="adm-stat-card pendente">
+            <div class="adm-stat-label">Pendentes</div>
+            <div class="adm-stat-value" id="stat-pendente">—</div>
+          </div>
+          <div class="adm-stat-card pagos">
+            <div class="adm-stat-label">Pagos / Confirmados</div>
+            <div class="adm-stat-value" id="stat-pagos">—</div>
+          </div>
+          <div class="adm-stat-card total">
+            <div class="adm-stat-label">Faturado no mês</div>
+            <div class="adm-stat-value" id="stat-total">—</div>
+          </div>
         </div>
-        <div class="adm-stat-card pendente">
-          <div class="adm-stat-label">Pendentes</div>
-          <div class="adm-stat-value" id="stat-pendente">—</div>
+
+        <div class="adm-status-pills" role="group" aria-label="Filtro por status">
+          <button class="adm-pill adm-pill-pendente active" data-status="pendente" onclick="filtrarPorPill('pendente')">
+            Pendente <span class="adm-pill-count" id="pill-count-pendente">—</span>
+          </button>
+          <button class="adm-pill adm-pill-pago" data-status="pago" onclick="filtrarPorPill('pago')">
+            Pago <span class="adm-pill-count" id="pill-count-pago">—</span>
+          </button>
+          <button class="adm-pill adm-pill-atendido" data-status="atendido" onclick="filtrarPorPill('atendido')">
+            Atendido <span class="adm-pill-count" id="pill-count-atendido">—</span>
+          </button>
+          <button class="adm-pill adm-pill-cancelado" data-status="cancelado" onclick="filtrarPorPill('cancelado')">
+            Cancelado <span class="adm-pill-count" id="pill-count-cancelado">—</span>
+          </button>
         </div>
-        <div class="adm-stat-card pagos">
-          <div class="adm-stat-label">Pagos / Confirmados</div>
-          <div class="adm-stat-value" id="stat-pagos">—</div>
+
+        <div class="adm-filters" role="search" aria-label="Filtros">
+          <div class="ag-form-group" style="margin:0">
+            <label for="filtro-data" style="font-size:.75rem">Data</label>
+            <input type="date" id="filtro-data">
+          </div>
+          <div class="ag-form-group" style="margin:0">
+            <label for="filtro-terapeuta" style="font-size:.75rem">Terapeuta</label>
+            <select id="filtro-terapeuta">
+              <option value="">Todos</option>
+              <option value="matheus">Matheus</option>
+              <option value="camila">Camila</option>
+            </select>
+          </div>
+          <div class="ag-form-group" style="margin:0">
+            <label for="filtro-metodo" style="font-size:.75rem">Método pag.</label>
+            <select id="filtro-metodo">
+              <option value="">Todos</option>
+              <option value="pix">PIX</option>
+              <option value="cartao">Cartão</option>
+              <option value="wise">Wise</option>
+              <option value="__null">Não registrado</option>
+            </select>
+          </div>
         </div>
-        <div class="adm-stat-card total">
-          <div class="adm-stat-label">Faturado no mês</div>
-          <div class="adm-stat-value" id="stat-total">—</div>
+
+        <div id="lista-agendamentos" class="adm-list" role="list" aria-label="Lista de agendamentos">
+          <div class="ag-loading"><div class="ag-spinner"></div> Carregando...</div>
         </div>
       </div>
 
-      <div class="adm-status-pills" role="group" aria-label="Filtro por status">
-        <button class="adm-pill adm-pill-pendente active" data-status="pendente" onclick="filtrarPorPill('pendente')">
-          Pendente <span class="adm-pill-count" id="pill-count-pendente">—</span>
-        </button>
-        <button class="adm-pill adm-pill-pago" data-status="pago" onclick="filtrarPorPill('pago')">
-          Pago <span class="adm-pill-count" id="pill-count-pago">—</span>
-        </button>
-        <button class="adm-pill adm-pill-atendido" data-status="atendido" onclick="filtrarPorPill('atendido')">
-          Atendido <span class="adm-pill-count" id="pill-count-atendido">—</span>
-        </button>
-        <button class="adm-pill adm-pill-cancelado" data-status="cancelado" onclick="filtrarPorPill('cancelado')">
-          Cancelado <span class="adm-pill-count" id="pill-count-cancelado">—</span>
-        </button>
-      </div>
-
-      <div class="adm-filters" role="search" aria-label="Filtros">
-        <div class="ag-form-group" style="margin:0">
-          <label for="filtro-data" style="font-size:.75rem">Data</label>
-          <input type="date" id="filtro-data">
-        </div>
-        <div class="ag-form-group" style="margin:0">
-          <label for="filtro-terapeuta" style="font-size:.75rem">Terapeuta</label>
-          <select id="filtro-terapeuta">
-            <option value="">Todos</option>
-            <option value="matheus">Matheus</option>
-            <option value="camila">Camila</option>
-          </select>
-        </div>
-        <div class="ag-form-group" style="margin:0">
-          <label for="filtro-metodo" style="font-size:.75rem">Método pag.</label>
-          <select id="filtro-metodo">
-            <option value="">Todos</option>
-            <option value="pix">PIX</option>
-            <option value="cartao">Cartão</option>
-            <option value="wise">Wise</option>
-            <option value="__null">Não registrado</option>
-          </select>
+      <!-- VAGAS -->
+      <div id="secao-vagas" style="display:none">
+        <header class="adm-main-header">
+          <h1>Vagas</h1>
+        </header>
+        <div id="vagas-padrao-container">
+          <div class="ag-loading"><div class="ag-spinner"></div> Carregando...</div>
         </div>
       </div>
 
-      <div id="lista-agendamentos" class="adm-list" role="list" aria-label="Lista de agendamentos">
-        <div class="ag-loading"><div class="ag-spinner"></div> Carregando...</div>
-      </div>
-    </div>
-
-    <!-- ===== SEÇÃO: VAGAS ===== -->
-    <div id="secao-vagas" style="display:none">
-      <header class="adm-main-header">
-        <h1>Vagas</h1>
-      </header>
-
-      <div id="vagas-padrao-container">
-        <div class="ag-loading"><div class="ag-spinner"></div> Carregando...</div>
-      </div>
-    </div>
-
-    <!-- ===== SEÇÃO: AGENDA ESPECIAL ===== -->
-    <div id="secao-especial" style="display:none">
-      <header class="adm-main-header">
-        <h1>Agenda Especial</h1>
-      </header>
-
-      <div style="display:flex; gap:8px; margin-bottom:12px;">
-        <button class="ag-btn ag-btn-outline ag-btn-sm active" id="btn-esp-matheus" onclick="trocarProfEspecial('matheus')">Matheus</button>
-        <button class="ag-btn ag-btn-outline ag-btn-sm" id="btn-esp-camila" onclick="trocarProfEspecial('camila')">Camila</button>
-      </div>
-
-      <p style="font-size:.82rem; color:var(--text-muted,#888); margin-bottom:20px;">
-        Serviços: <strong id="esp-servicos-info"></strong>
-      </p>
-
-      <div class="esp-add-form">
-        <div class="ag-form-group" style="margin:0">
-          <label style="font-size:.75rem">Data</label>
-          <input type="date" id="esp-nova-data">
+      <!-- AGENDA ESPECIAL -->
+      <div id="secao-especial" style="display:none">
+        <header class="adm-main-header">
+          <h1>Agenda Especial</h1>
+        </header>
+        <div style="display:flex; gap:8px; margin-bottom:12px;">
+          <button class="ag-btn ag-btn-outline ag-btn-sm active" id="btn-esp-matheus" onclick="trocarProfEspecial('matheus')">Matheus</button>
+          <button class="ag-btn ag-btn-outline ag-btn-sm" id="btn-esp-camila" onclick="trocarProfEspecial('camila')">Camila</button>
         </div>
-        <div class="ag-form-group" style="margin:0">
-          <label style="font-size:.75rem">Vagas</label>
-          <select id="esp-nova-vagas">
-            <option value="1">1</option>
-            <option value="2">2</option>
-            <option value="3">3</option>
-            <option value="4">4</option>
-            <option value="5">5</option>
-          </select>
+        <p style="font-size:.82rem; color:var(--text-muted,#888); margin-bottom:20px;">
+          Serviços: <strong id="esp-servicos-info"></strong>
+        </p>
+        <div class="esp-add-form">
+          <div class="ag-form-group" style="margin:0">
+            <label style="font-size:.75rem">Data</label>
+            <input type="date" id="esp-nova-data">
+          </div>
+          <div class="ag-form-group" style="margin:0">
+            <label style="font-size:.75rem">Vagas</label>
+            <select id="esp-nova-vagas">
+              <option value="1">1</option>
+              <option value="2">2</option>
+              <option value="3">3</option>
+              <option value="4">4</option>
+              <option value="5">5</option>
+            </select>
+          </div>
+          <div class="ag-form-group" style="margin:0">
+            <label style="font-size:.75rem">Até</label>
+            <select id="esp-nova-hora"></select>
+          </div>
+          <button class="ag-btn ag-btn-primary ag-btn-sm" id="esp-btn-adicionar" onclick="adicionarDataEspecial()" style="align-self:flex-end">
+            + Adicionar
+          </button>
         </div>
-        <div class="ag-form-group" style="margin:0">
-          <label style="font-size:.75rem">Até</label>
-          <select id="esp-nova-hora"></select>
-        </div>
-        <button class="ag-btn ag-btn-primary ag-btn-sm" id="esp-btn-adicionar" onclick="adicionarDataEspecial()" style="align-self:flex-end">
-          + Adicionar
-        </button>
+        <div id="esp-lista" style="margin-top:20px;"></div>
       </div>
 
-      <div id="esp-lista" style="margin-top:20px;"></div>
-    </div>
-
-    <!-- ===== SEÇÃO: DESCONTOS ===== -->
-    <div id="secao-descontos" style="display:none">
-      <header class="adm-main-header">
-        <h1>Descontos</h1>
-      </header>
-      <div id="descontos-container">
-        <div class="ag-loading"><div class="ag-spinner"></div> Carregando...</div>
+      <!-- DESCONTOS -->
+      <div id="secao-descontos" style="display:none">
+        <header class="adm-main-header">
+          <h1>Descontos</h1>
+        </header>
+        <div id="descontos-container">
+          <div class="ag-loading"><div class="ag-spinner"></div> Carregando...</div>
+        </div>
       </div>
-    </div>
 
-  </main>
+    </main>
+  </div>
 </div>
 
 <!-- Scripts -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="../js/supabase-config.js"></script>
-<script src="js/admin-system.js?v=5"></script>
+<script src="js/admin-system.js?v=6"></script>
 <script src="js/vagas-admin.js?v=5"></script>
-<script src="js/vagas-especial-admin.js?v=1"></script>
+<script src="js/vagas-especial-admin.js?v=2"></script>
 <script src="js/descontos-admin.js?v=1"></script>
 <script>
-  const navAgendamentos = document.getElementById('nav-agendamentos');
-  const navVagas        = document.getElementById('nav-vagas');
-  const navEspecial     = document.getElementById('nav-especial');
-  const navDescontos    = document.getElementById('nav-descontos');
-  const secAgendamentos = document.getElementById('secao-agendamentos');
-  const secVagas        = document.getElementById('secao-vagas');
-  const secEspecial     = document.getElementById('secao-especial');
-  const secDescontos    = document.getElementById('secao-descontos');
+  function _initAdminNav() {
+    const navAgendamentos = document.getElementById('nav-agendamentos');
+    const navVagas        = document.getElementById('nav-vagas');
+    const navEspecial     = document.getElementById('nav-especial');
+    const navDescontos    = document.getElementById('nav-descontos');
+    const secAgendamentos = document.getElementById('secao-agendamentos');
+    const secVagas        = document.getElementById('secao-vagas');
+    const secEspecial     = document.getElementById('secao-especial');
+    const secDescontos    = document.getElementById('secao-descontos');
 
-  const _todosNavs = [navAgendamentos, navVagas, navEspecial, navDescontos];
-  const _todasSecs = [secAgendamentos, secVagas, secEspecial, secDescontos];
+    const _todosNavs = [navAgendamentos, navVagas, navEspecial, navDescontos];
+    const _todasSecs = [secAgendamentos, secVagas, secEspecial, secDescontos];
 
-  function _ocultarTodas() {
-    _todasSecs.forEach(s => { s.style.display = 'none'; });
-    _todosNavs.forEach(n => n.classList.remove('active'));
+    function _ocultarTodas() {
+      _todasSecs.forEach(s => { s.style.display = 'none'; });
+      _todosNavs.forEach(n => n.classList.remove('active'));
+    }
+
+    navAgendamentos.addEventListener('click', e => {
+      e.preventDefault();
+      _ocultarTodas();
+      secAgendamentos.style.display = '';
+      navAgendamentos.classList.add('active');
+      carregarAgendamentos();
+    });
+
+    navVagas.addEventListener('click', e => {
+      e.preventDefault();
+      _ocultarTodas();
+      secVagas.style.display = '';
+      navVagas.classList.add('active');
+      inicializarVagas();
+    });
+
+    navEspecial.addEventListener('click', e => {
+      e.preventDefault();
+      _ocultarTodas();
+      secEspecial.style.display = '';
+      navEspecial.classList.add('active');
+      inicializarEspecial();
+    });
+
+    navDescontos.addEventListener('click', e => {
+      e.preventDefault();
+      _ocultarTodas();
+      secDescontos.style.display = '';
+      navDescontos.classList.add('active');
+      inicializarDescontos();
+    });
   }
 
-  navAgendamentos.addEventListener('click', e => {
-    e.preventDefault();
-    _ocultarTodas();
-    secAgendamentos.style.display = '';
-    navAgendamentos.classList.add('active');
-    carregarAgendamentos();
-  });
-
-  navVagas.addEventListener('click', e => {
-    e.preventDefault();
-    _ocultarTodas();
-    secVagas.style.display = '';
-    navVagas.classList.add('active');
-    inicializarVagas();
-  });
-
-  navEspecial.addEventListener('click', e => {
-    e.preventDefault();
-    _ocultarTodas();
-    secEspecial.style.display = '';
-    navEspecial.classList.add('active');
-    inicializarEspecial();
-  });
-
-  navDescontos.addEventListener('click', e => {
-    e.preventDefault();
-    _ocultarTodas();
-    secDescontos.style.display = '';
-    navDescontos.classList.add('active');
-    inicializarDescontos();
+  document.addEventListener('DOMContentLoaded', async () => {
+    await initAuth();
+    if (_admAutenticado) {
+      _initAdminNav();
+    }
   });
 </script>
 

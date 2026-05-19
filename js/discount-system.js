@@ -13,7 +13,7 @@ let _configCache = null;
 async function carregarConfig() {
   if (_configCache !== null) return _configCache;
   try {
-    const { data, error } = await window.supabase
+    const { data, error } = await supabase
       .from('configuracoes')
       .select('valor')
       .eq('chave', 'descontos')

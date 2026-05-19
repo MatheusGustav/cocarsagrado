@@ -75,6 +75,10 @@ function _renderEspecial() {
     const d    = new Date(rec.data + 'T00:00:00');
     const card = document.createElement('div');
     card.className = 'esp-card' + (rec.ativo ? '' : ' esp-card--off');
+    const restantesLabel = rec.vagas_restantes !== undefined
+      ? `<span class="esp-restantes">${rec.vagas_restantes} vaga${rec.vagas_restantes !== 1 ? 's' : ''} restante${rec.vagas_restantes !== 1 ? 's' : ''}</span>`
+      : '';
+
     card.innerHTML = `
       <div class="esp-card-data">
         <span class="esp-card-dianum">${d.getDate()}</span>
@@ -82,6 +86,7 @@ function _renderEspecial() {
           <span>${DIAS_ESP[d.getDay()]}</span>
           <span>${MESES_ESP[d.getMonth()]}</span>
         </div>
+        ${restantesLabel ? `<div class="esp-restantes-wrap">${restantesLabel}</div>` : ''}
       </div>
       <div class="esp-card-campos">
         <label class="esp-campo-wrap">
@@ -172,13 +177,17 @@ async function _salvarEspecial(data, card) {
   btn.disabled    = true;
   btn.textContent = 'Salvando...';
 
+  const rec = _especialCache.find(r => r.data === data);
+  let restantes = rec?.vagas_restantes ?? vagas;
+  if (restantes > vagas) restantes = vagas;
+
   const { error } = await supabase
     .from('disponibilidade_especial')
     .upsert({
       profissional:    _profEspecial,
       data,
       vagas_total:     vagas,
-      vagas_restantes: vagas,
+      vagas_restantes: restantes,
       ate_horario:     hora,
       ativo,
       updated_at: new Date().toISOString(),
