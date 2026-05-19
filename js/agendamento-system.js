@@ -315,26 +315,19 @@ async function _buscarDiasEspeciais(profissional, diasParaFrente) {
   const dataInicio = dataParaISO(hoje);
   const dataFim    = dataParaISO(new Date(hoje.getTime() + diasParaFrente * 86400000));
 
-  const [
-    { data: especiais },
-    { data: agendados },
-  ] = await Promise.all([
-    supabase.from('disponibilidade_especial').select('*').eq('profissional', profissional).gte('data', dataInicio).lte('data', dataFim),
-    supabase.from('agendamentos').select('data_agendamento').eq('terapeuta', profissional).eq('agendamento_especial', true).gte('data_agendamento', dataInicio).lte('data_agendamento', dataFim).in('status', ['pago','confirmado','atendido','pendente']),
-  ]);
+  const { data: especiais } = await supabase
+    .from('disponibilidade_especial')
+    .select('*')
+    .eq('profissional', profissional)
+    .gte('data', dataInicio)
+    .lte('data', dataFim)
+    .gt('vagas_restantes', 0);
 
-  const contagemMap = {};
-  (agendados || []).forEach(a => {
-    contagemMap[a.data_agendamento] = (contagemMap[a.data_agendamento] || 0) + 1;
-  });
-
-  const dias = [];
-  (especiais || []).forEach(e => {
-    if (!e.ativo) return;
-    const usadas    = contagemMap[e.data] || 0;
-    const restantes = Math.max(0, e.vagas_total - usadas);
-    if (restantes > 0) dias.push({ data: e.data, vagas: restantes, ate_horario: e.ate_horario });
-  });
+  const dias = (especiais || []).filter(e => e.ativo).map(e => ({
+    data: e.data,
+    vagas: e.vagas_restantes,
+    ate_horario: e.ate_horario,
+  }));
 
   return dias.sort((a, b) => a.data.localeCompare(b.data));
 }
@@ -462,6 +455,14 @@ async function salvarAgendamento() {
 
   const { error } = await supabase.from('agendamentos').insert(payload);
   if (error) throw error;
+
+  if (payload.agendamento_especial) {
+    await supabase.rpc('decrementar_vagas_restantes', {
+      p_profissional: payload.terapeuta,
+      p_data: payload.data_agendamento,
+    });
+  }
+
   return chave;
 }
 

@@ -7,6 +7,87 @@ const WHATSAPP_TERAPEUTA = { matheus: '5528999476620', camila: '5527998528483' }
 let _agendamentosTodos = [];
 let _statusAtivo       = 'pendente';
 let _autoRefreshTimer  = null;
+let _admAutenticado    = false;
+
+// ============================================================
+// Autenticação com Supabase Auth
+// ============================================================
+async function initAuth() {
+  const { data: { session } } = await supabase.auth.getSession();
+
+  if (session) {
+    _admAutenticado = true;
+    _mostrarAdmin();
+    carregarAgendamentos();
+    return;
+  }
+
+  _admAutenticado = false;
+  _mostrarLogin();
+
+  document.getElementById('adm-login-form')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    await _fazerLogin();
+  });
+}
+
+async function _fazerLogin() {
+  const email    = document.getElementById('adm-email')?.value?.trim();
+  const password = document.getElementById('adm-password')?.value;
+  const btn      = document.getElementById('adm-login-btn');
+  const errorEl  = document.getElementById('adm-login-error');
+
+  if (!email || !password) return;
+
+  btn.disabled    = true;
+  btn.textContent = 'Entrando...';
+  errorEl.style.display = 'none';
+
+  const { error } = await supabase.auth.signInWithPassword({ email, password });
+
+  btn.disabled    = false;
+  btn.textContent = 'Entrar';
+
+  if (error) {
+    errorEl.textContent = error.message === 'Invalid login credentials'
+      ? 'E-mail ou senha inválidos.'
+      : error.message;
+    errorEl.style.display = 'block';
+    return;
+  }
+
+  _admAutenticado = true;
+  _mostrarAdmin();
+  carregarAgendamentos();
+}
+
+async function _fazerLogout() {
+  await supabase.auth.signOut();
+  _admAutenticado = false;
+  _mostrarLogin();
+}
+
+function _mostrarAdmin() {
+  document.getElementById('adm-login-screen')?.style.setProperty('display', 'none');
+  document.getElementById('admin-content')?.style.setProperty('display', '');
+}
+
+function _mostrarLogin() {
+  document.getElementById('adm-login-screen')?.style.setProperty('display', '');
+  document.getElementById('admin-content')?.style.setProperty('display', 'none');
+}
+
+// Monitora mudanças de sessão (logout remoto, expiração)
+supabase.auth.onAuthStateChange((event, session) => {
+  if (event === 'SIGNED_OUT' || (!session && _admAutenticado)) {
+    _admAutenticado = false;
+    _mostrarLogin();
+  }
+  if (event === 'SIGNED_IN' && session) {
+    _admAutenticado = true;
+    _mostrarAdmin();
+  }
+});
 
 const STATUS_LABELS = {
   pendente:   'Pendente',
@@ -32,6 +113,7 @@ function _toastAdmin(msg, tipo) {
 // Carregamento principal
 // ============================================================
 async function carregarAgendamentos() {
+  if (!_admAutenticado) return;
   const filtroData      = document.getElementById('filtro-data')?.value      || '';
   const filtroTerapeuta = document.getElementById('filtro-terapeuta')?.value || '';
   const filtroMetodo    = document.getElementById('filtro-metodo')?.value    || '';
@@ -97,6 +179,7 @@ function _atualizarContadoresPills(todos) {
 function _iniciarAutoRefresh() {
   if (_autoRefreshTimer) return;
   _autoRefreshTimer = setInterval(async () => {
+    if (!_admAutenticado) return;
     const filtroData      = document.getElementById('filtro-data')?.value      || '';
     const filtroTerapeuta = document.getElementById('filtro-terapeuta')?.value || '';
     const filtroMetodo    = document.getElementById('filtro-metodo')?.value    || '';
@@ -245,6 +328,7 @@ function montarAcoes(ag) {
 // Ações de status
 // ============================================================
 async function marcarComoPago(id) {
+  if (!_admAutenticado) { _mostrarLogin(); return; }
   if (!confirm('Marcar agendamento como pago?')) return;
   const { error } = await supabase.from('agendamentos').update({ status: 'pago', pago_em: new Date().toISOString() }).eq('id', id);
   if (error) { _toastAdmin('Erro: ' + error.message, 'erro'); return; }
@@ -253,6 +337,7 @@ async function marcarComoPago(id) {
 }
 
 async function marcarComoAtendido(id) {
+  if (!_admAutenticado) { _mostrarLogin(); return; }
   if (!confirm('Marcar agendamento como atendido?')) return;
   const { error } = await supabase.from('agendamentos').update({ status: 'atendido', atendido_em: new Date().toISOString() }).eq('id', id);
   if (error) { _toastAdmin('Erro: ' + error.message, 'erro'); return; }
@@ -261,6 +346,7 @@ async function marcarComoAtendido(id) {
 }
 
 async function cancelarAgendamento(id) {
+  if (!_admAutenticado) { _mostrarLogin(); return; }
   if (!confirm('Cancelar este agendamento? Esta ação não pode ser desfeita.')) return;
   const { error } = await supabase.from('agendamentos').update({ status: 'cancelado' }).eq('id', id);
   if (error) { _toastAdmin('Erro: ' + error.message, 'erro'); return; }
@@ -269,6 +355,7 @@ async function cancelarAgendamento(id) {
 }
 
 async function apagarAgendamento(id) {
+  if (!_admAutenticado) { _mostrarLogin(); return; }
   if (!confirm('Apagar este agendamento permanentemente? Esta ação não pode ser desfeita.')) return;
   const { error } = await supabase.from('agendamentos').delete().eq('id', id);
   if (error) { _toastAdmin('Erro: ' + error.message, 'erro'); return; }
@@ -293,6 +380,7 @@ function abrirWhatsApp(fone, nome, tipo, data, hora) {
 // Exportar CSV
 // ============================================================
 async function exportarRelatorio() {
+  if (!_admAutenticado) { _mostrarLogin(); return; }
   const { data, error } = await supabase
     .from('agendamentos')
     .select('*, tipos_leitura(nome)')
@@ -364,14 +452,13 @@ function escapeAttr(s) {
 // Init
 // ============================================================
 document.addEventListener('DOMContentLoaded', () => {
-  carregarAgendamentos();
-
   document.getElementById('btn-atualizar')?.addEventListener('click', () => {
-    _autoRefreshTimer = null; // força reset do timer
+    _autoRefreshTimer = null;
     carregarAgendamentos();
   });
   document.getElementById('btn-exportar')?.addEventListener('click', exportarRelatorio);
   document.getElementById('filtro-data')?.addEventListener('change', carregarAgendamentos);
   document.getElementById('filtro-terapeuta')?.addEventListener('change', carregarAgendamentos);
   document.getElementById('filtro-metodo')?.addEventListener('change', carregarAgendamentos);
+  document.getElementById('adm-logout-btn')?.addEventListener('click', _fazerLogout);
 });
