@@ -1,0 +1,37 @@
+name: Backup do Banco de Dados
+
+on:
+  schedule:
+    - cron: '0 3 * * *' # todo dia às 03:00 UTC
+  workflow_dispatch: # permite rodar manualmente
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Instalar postgresql-client
+        run: sudo apt-get install -y postgresql-client
+
+      - name: Gerar backup
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          FILENAME="backup-$(date +'%Y-%m-%d_%H-%M-%S').sql"
+          pg_dump "$DATABASE_URL" \
+            --no-owner \
+            --no-acl \
+            --format=plain \
+            --file="$FILENAME"
+          gzip "$FILENAME"
+          echo "FILENAME=${FILENAME}.gz" >> $GITHUB_ENV
+
+      - name: Criar release com o backup
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: backup-${{ github.run_id }}
+          name: "Backup ${{ env.FILENAME }}"
+          files: ${{ env.FILENAME }}
+          body: "Backup automático do banco de dados."
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
