@@ -67,6 +67,14 @@ function calcularPrecoFinal(precoOriginal) {
     const final = Math.round(preco * 90) / 100;
     return { final, desconto: preco - final };
   }
+  if (Estado.serviceId && typeof _configCache !== 'undefined' && _configCache?.promocoes) {
+    const servico = _configCache.promocoes.find(p => p.id === Estado.serviceId);
+    if (servico?.descontoAtivo && servico.percentualDesconto > 0) {
+      const pct   = servico.percentualDesconto;
+      const final = Math.round(preco * (100 - pct)) / 100;
+      return { final, desconto: preco - final };
+    }
+  }
   return { final: preco, desconto: 0 };
 }
 
@@ -409,7 +417,15 @@ function validarFormulario() {
     el.classList.remove('error');
     const val = el.value.trim();
     const invalido = date
-      ? !val
+      ? (() => {
+          if (!val) return true;
+          const d = new Date(val);
+          if (isNaN(d.getTime())) return true;
+          const hoje = new Date();
+          const minData = new Date(hoje.getFullYear() - 120, hoje.getMonth(), hoje.getDate());
+          const maxData = new Date(hoje.getFullYear() - 10,  hoje.getMonth(), hoje.getDate());
+          return d > hoje || d > maxData || d < minData;
+        })()
       : id === 'f-fone'
         ? val.replace(/\D/g,'').length < minLen
         : val.length < minLen;
