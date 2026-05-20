@@ -3,3 +3,10 @@
 
 # InfinityPay — contém handle sensível (não versionar o arquivo, apenas o .gitignore)
 supabase/functions/infinitypay-checkout/index.ts
+
+# wrangler files
+.wrangler
+.dev.vars*
+!.dev.vars.example
+.env*
+!.env.example
