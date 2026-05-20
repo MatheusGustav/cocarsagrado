@@ -483,7 +483,8 @@ async function atualizarStatusOnline() {
     .from('disponibilidade_override')
     .select('profissional, ativo')
     .eq('data', str)
-    .eq('ativo', true);
+    .eq('ativo', true)
+    .gt('vagas_total', 0);
 
   const ativos = new Set((data || []).map(r => r.profissional));
 

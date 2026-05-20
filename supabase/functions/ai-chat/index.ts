@@ -74,6 +74,10 @@ serve(async (req) => {
   }
 
   try {
+    if (!GROQ_API_KEY) {
+      return new Response(JSON.stringify({ error: "GROQ_API_KEY não configurada" }), { status: 500, headers: { ...CORS, "Content-Type": "application/json" } });
+    }
+
     const { message, history } = await req.json();
     if (!message?.trim()) {
       return new Response(JSON.stringify({ error: "message required" }), { status: 400, headers: { ...CORS, "Content-Type": "application/json" } });
@@ -107,7 +111,8 @@ serve(async (req) => {
       headers: { ...CORS, "Content-Type": "application/json" },
     });
   } catch (e) {
-    return new Response(JSON.stringify({ error: e.message }), {
+    const msg = e instanceof Error ? e.message : String(e);
+    return new Response(JSON.stringify({ error: msg }), {
       status: 500,
       headers: { ...CORS, "Content-Type": "application/json" },
     });
