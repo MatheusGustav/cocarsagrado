@@ -251,7 +251,10 @@
 <script src="js/vagas-especial-admin.js?v=2"></script>
 <script src="js/descontos-admin.js?v=1"></script>
 <script>
+  let _navInit = false;
   function _initAdminNav() {
+    if (_navInit) return;
+    _navInit = true;
     const navAgendamentos = document.getElementById('nav-agendamentos');
     const navVagas        = document.getElementById('nav-vagas');
     const navEspecial     = document.getElementById('nav-especial');

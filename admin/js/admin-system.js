@@ -58,6 +58,7 @@ async function _fazerLogin() {
 
   _admAutenticado = true;
   _mostrarAdmin();
+  _initAdminNav();
   carregarAgendamentos();
 }
 
@@ -69,7 +70,7 @@ async function _fazerLogout() {
 
 function _mostrarAdmin() {
   document.getElementById('adm-login-screen')?.style.setProperty('display', 'none');
-  document.getElementById('admin-content')?.style.setProperty('display', '');
+  document.getElementById('admin-content')?.style.setProperty('display', 'block');
 }
 
 function _mostrarLogin() {
@@ -86,6 +87,8 @@ supabase.auth.onAuthStateChange((event, session) => {
   if (event === 'SIGNED_IN' && session) {
     _admAutenticado = true;
     _mostrarAdmin();
+    if (typeof _initAdminNav === 'function') _initAdminNav();
+    carregarAgendamentos();
   }
 });
 
