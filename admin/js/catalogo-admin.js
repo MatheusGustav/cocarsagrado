@@ -51,18 +51,28 @@ function _catRenderizar() {
 function _catCard(t) {
   const preco    = `R$ ${Number(t.preco_original || 0).toFixed(2).replace('.', ',')}`;
   const duracao  = `${t.duracao_minutos} min`;
+  const inativo  = t.ativo === false;
   const terapeutaTag = t.terapeuta
     ? `<span class="cat-card-terapeuta">${_CAT_TERAPEUTA_LABEL[t.terapeuta] || t.terapeuta}</span>`
     : `<span class="cat-card-terapeuta cat-card-terapeuta--missing">sem terapeuta</span>`;
+  const inativoTag = inativo
+    ? `<span class="cat-card-inativo">inativa</span>`
+    : '';
   const img      = t.imagem_url
     ? `<img src="${_catEsc(t.imagem_url)}" alt="${_catEsc(t.nome)}" class="cat-card-foto">`
     : `<div class="cat-card-foto cat-card-foto--placeholder">✦</div>`;
 
+  const acoes = inativo
+    ? `<button class="ag-btn ag-btn-primary ag-btn-sm" onclick="cat_reativar(${t.id})">Reativar</button>
+       <button class="ag-btn ag-btn-danger ag-btn-sm" onclick="cat_excluir(${t.id})">Excluir</button>`
+    : `<button class="ag-btn ag-btn-outline ag-btn-sm" onclick="cat_abrirFormEditar(${t.id})">Editar</button>
+       <button class="ag-btn ag-btn-danger ag-btn-sm" onclick="cat_excluir(${t.id})">Excluir</button>`;
+
   return `
-    <div class="cat-card" data-id="${t.id}">
+    <div class="cat-card${inativo ? ' cat-card--inativo' : ''}" data-id="${t.id}">
       ${img}
       <div class="cat-card-info">
-        <div class="cat-card-nome">${_catEsc(t.nome)}</div>
+        <div class="cat-card-nome">${_catEsc(t.nome)} ${inativoTag}</div>
         <div class="cat-card-meta">
           <span class="cat-card-preco">${preco}</span>
           <span class="cat-card-dur">${duracao}</span>
@@ -70,8 +80,7 @@ function _catCard(t) {
         ${terapeutaTag}
       </div>
       <div class="cat-card-acoes">
-        <button class="ag-btn ag-btn-outline ag-btn-sm" onclick="cat_abrirFormEditar(${t.id})">Editar</button>
-        <button class="ag-btn ag-btn-danger ag-btn-sm" onclick="cat_excluir(${t.id})">Excluir</button>
+        ${acoes}
       </div>
     </div>
   `;
@@ -162,10 +171,17 @@ function _catRenderForm(t) {
       </div>
 
       <div class="cat-form-flags">
-        <label class="cat-form-flag">
-          <input type="checkbox" id="cat-especial" ${t.especial ? 'checked' : ''}>
-          <span>Usa <strong>agenda especial</strong> (vagas avulsas em datas específicas)</span>
-        </label>
+        <div class="cat-form-agenda">
+          <span class="cat-form-agenda-label">Tipo de agenda</span>
+          <label class="cat-form-flag">
+            <input type="radio" name="cat-agenda" value="convencional" ${t.especial ? '' : 'checked'}>
+            <span><strong>Agenda convencional</strong> <em>(usa sistema de vagas)</em></span>
+          </label>
+          <label class="cat-form-flag">
+            <input type="radio" name="cat-agenda" value="especial" ${t.especial ? 'checked' : ''}>
+            <span><strong>Agenda especial</strong> <em>(datas específicas)</em></span>
+          </label>
+        </div>
         <label class="cat-form-flag">
           <input type="checkbox" id="cat-pergunta" ${t.requer_pergunta ? 'checked' : ''}>
           <span>Cliente precisa <strong>descrever a pergunta</strong> ao agendar</span>
@@ -237,7 +253,7 @@ async function _catSalvar() {
   const duracao   = parseInt(document.getElementById('cat-dur')?.value, 10);
   const terapeuta = document.getElementById('cat-terapeuta')?.value || null;
   const ordem     = parseInt(document.getElementById('cat-ordem')?.value, 10) || 100;
-  const especial  = document.getElementById('cat-especial')?.checked || false;
+  const especial  = document.querySelector('input[name="cat-agenda"]:checked')?.value === 'especial';
   const requer    = document.getElementById('cat-pergunta')?.checked || false;
 
   if (!nome)                          { _toastAdmin('Informe o nome.', 'erro'); return; }
@@ -321,16 +337,38 @@ async function cat_excluir(id) {
 
   if (error) {
     if (error.code === '23503') {
-      _toastAdmin('Esta leitura possui agendamentos vinculados e não pode ser removida.', 'erro');
-    } else {
-      _toastAdmin('Erro: ' + error.message, 'erro');
+      const { error: softErr } = await supabase
+        .from('tipos_leitura')
+        .update({ ativo: false })
+        .eq('id', id);
+      if (softErr) {
+        _toastAdmin('Erro: ' + softErr.message, 'erro');
+        return;
+      }
+      _toastAdmin('Leitura possui agendamentos — foi desativada (oculta no site).', 'ok');
+      await inicializarCatalogo();
+      return;
     }
+    _toastAdmin('Erro: ' + error.message, 'erro');
     return;
   }
 
   if (t.imagem_url) await _catRemoverArquivo(t.imagem_url);
 
   _toastAdmin('✅ Leitura excluída.', 'ok');
+  await inicializarCatalogo();
+}
+
+async function cat_reativar(id) {
+  const { error } = await supabase
+    .from('tipos_leitura')
+    .update({ ativo: true })
+    .eq('id', id);
+  if (error) {
+    _toastAdmin('Erro: ' + error.message, 'erro');
+    return;
+  }
+  _toastAdmin('✅ Leitura reativada.', 'ok');
   await inicializarCatalogo();
 }
 
