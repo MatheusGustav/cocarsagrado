@@ -989,6 +989,16 @@ body.overlay-active .footer {
   transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
 
+.cat-img--placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #F5F0E8 0%, #E2C97E 100%);
+  color: #013718;
+  font-family: var(--fonte-titulo);
+  font-size: 2rem;
+}
+
 .cat-card:hover .cat-img {
   transform: scale(1.06);
   box-shadow: 0 6px 20px rgba(0,0,0,0.26);
