@@ -19,6 +19,7 @@ CREATE TABLE public.tipos_leitura (
   descricao       TEXT,
   preco_original  NUMERIC(10,2) NOT NULL CHECK (preco_original >= 0),
   duracao_minutos INTEGER NOT NULL CHECK (duracao_minutos > 0),
+  imagem_url      TEXT,
   ativo           BOOLEAN NOT NULL DEFAULT TRUE,
   criado_em       TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
