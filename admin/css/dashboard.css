@@ -2466,6 +2466,29 @@ body {
   border-color: rgba(185, 28, 28, 0.3);
 }
 
+.cat-card--inativo {
+  opacity: 0.55;
+  filter: grayscale(0.35);
+}
+.cat-card--inativo:hover {
+  opacity: 0.85;
+  filter: none;
+}
+.cat-card-inativo {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 2px 8px;
+  font-size: .62rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #B91C1C;
+  background: rgba(185, 28, 28, 0.10);
+  border: 1px solid rgba(185, 28, 28, 0.35);
+  border-radius: 99px;
+  font-weight: 700;
+  vertical-align: middle;
+}
+
 .cat-form-flags {
   display: flex;
   flex-direction: column;
@@ -2485,10 +2508,33 @@ body {
   cursor: pointer;
   line-height: 1.4;
 }
-.cat-form-flag input[type="checkbox"] {
+.cat-form-flag input[type="checkbox"],
+.cat-form-flag input[type="radio"] {
   margin-top: 2px;
   accent-color: #C9A84C;
   cursor: pointer;
+}
+.cat-form-flag em {
+  font-style: normal;
+  color: #6B5D4D;
+  font-size: .78rem;
+}
+.cat-form-agenda {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px 12px;
+  background: #fff;
+  border: 1px solid #EDE7DC;
+  border-radius: 8px;
+}
+.cat-form-agenda-label {
+  font-size: .72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 700;
+  color: #6B5D4D;
+  margin-bottom: 2px;
 }
 
 /* Formulário */
