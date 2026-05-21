@@ -16,13 +16,13 @@
     #cs-chat-btn {
       position: fixed; bottom: 24px; right: 24px; z-index: 9998;
       width: 52px; height: 52px; border-radius: 50%;
-      background: #013718; border: none; cursor: pointer;
+      background: #2D4A2D; border: none; cursor: pointer;
       box-shadow: 0 4px 16px rgba(1,55,24,.35);
       display: flex; align-items: center; justify-content: center;
       transition: background .2s, transform .2s;
     }
-    #cs-chat-btn:hover { background: #025522; transform: scale(1.08); }
-    #cs-chat-btn svg { width: 24px; height: 24px; fill: #E2C97E; }
+    #cs-chat-btn:hover { background: #4A7A4A; transform: scale(1.08); }
+    #cs-chat-btn svg { width: 24px; height: 24px; fill: #D4B254; }
 
     #cs-chat-btn::after {
       content: ''; position: absolute;
@@ -40,7 +40,7 @@
     #cs-chat-panel {
       position: fixed; bottom: 88px; right: 24px; z-index: 9999;
       width: 340px; max-width: calc(100vw - 32px);
-      background: #F5F0E8; border-radius: 16px;
+      background: #F5F2E6; border-radius: 16px;
       box-shadow: 0 8px 40px rgba(1,55,24,.18);
       display: flex; flex-direction: column; overflow: hidden;
       transform: scale(.92) translateY(12px); opacity: 0;
@@ -61,21 +61,21 @@
     }
 
     #cs-chat-header {
-      background: #013718; padding: 14px 16px;
+      background: #2D4A2D; padding: 14px 16px;
       display: flex; align-items: center; gap: 10px;
     }
     #cs-chat-header .cs-avatar {
       width: 34px; height: 34px; border-radius: 50%;
-      background: #C9A84C; display: flex; align-items: center; justify-content: center;
+      background: #B8923E; display: flex; align-items: center; justify-content: center;
       font-size: 16px; flex-shrink: 0;
     }
-    #cs-chat-header .cs-title { color: #F5F0E8; font-family: 'Cormorant Garamond', serif; font-size: 16px; font-weight: 600; }
+    #cs-chat-header .cs-title { color: #F5F2E6; font-family: 'Cormorant Garamond', serif; font-size: 16px; font-weight: 600; }
     #cs-chat-header .cs-sub { color: #A8C8B0; font-size: 11px; }
     #cs-chat-header .cs-close {
       margin-left: auto; background: none; border: none; cursor: pointer;
       color: #A8C8B0; font-size: 18px; line-height: 1; padding: 4px;
     }
-    #cs-chat-header .cs-close:hover { color: #F5F0E8; }
+    #cs-chat-header .cs-close:hover { color: #F5F2E6; }
 
     #cs-chat-msgs {
       flex: 1; overflow-y: auto; padding: 14px 12px;
@@ -97,7 +97,7 @@
       box-shadow: 0 1px 4px rgba(0,0,0,.07); align-self: flex-start;
     }
     .cs-msg--user {
-      background: #013718; color: #F5F0E8; border-bottom-right-radius: 4px;
+      background: #2D4A2D; color: #F5F2E6; border-bottom-right-radius: 4px;
       align-self: flex-end;
     }
     .cs-typing { display: flex; gap: 4px; align-items: center; padding: 10px 12px; }
@@ -114,17 +114,17 @@
       padding: 0 12px 10px;
     }
     .cs-sug-btn {
-      background: none; border: 1px solid #C9A84C; border-radius: 20px;
-      padding: 5px 11px; font-size: 12px; color: #7A5618;
+      background: none; border: 1px solid #B8923E; border-radius: 20px;
+      padding: 5px 11px; font-size: 12px; color: #5A481A;
       font-family: 'DM Sans', sans-serif; cursor: pointer;
       transition: background .15s, color .15s;
       text-align: left; line-height: 1.4;
     }
-    .cs-sug-btn:hover { background: #C9A84C; color: #fff; }
+    .cs-sug-btn:hover { background: #B8923E; color: #fff; }
 
     #cs-chat-form {
       display: flex; gap: 8px; padding: 10px 12px;
-      border-top: 1px solid #EDE7DC; background: #F5F0E8;
+      border-top: 1px solid #EDE8D2; background: #F5F2E6;
     }
     #cs-chat-input {
       flex: 1; border: 1px solid #C8C0B4; border-radius: 20px;
@@ -132,14 +132,14 @@
       font-family: 'DM Sans', sans-serif; outline: none;
       color: #1A1410; resize: none;
     }
-    #cs-chat-input:focus { border-color: #C9A84C; }
+    #cs-chat-input:focus { border-color: #B8923E; }
     #cs-chat-send {
       width: 36px; height: 36px; border-radius: 50%; flex-shrink: 0;
-      background: #C9A84C; border: none; cursor: pointer;
+      background: #B8923E; border: none; cursor: pointer;
       display: flex; align-items: center; justify-content: center;
       transition: background .2s;
     }
-    #cs-chat-send:hover { background: #B8902A; }
+    #cs-chat-send:hover { background: #8A6E28; }
     #cs-chat-send svg { width: 16px; height: 16px; fill: #fff; }
     #cs-chat-send:disabled { background: #C8C0B4; cursor: not-allowed; }
   `;

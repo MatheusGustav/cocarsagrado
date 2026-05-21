@@ -1,15 +1,15 @@
 /* ============================================================
    COCAR SAGRADO — Admin Dashboard — Identidade Visual
-   Verde floresta #013718 + Dourado cerimonial #C9A84C
+   Verde floresta #2D4A2D + Dourado cerimonial #B8923E
    Tipografia: Cormorant Garamond + DM Sans
    ============================================================ */
 
 /* Override das variáveis para paleta Cocar Sagrado */
 :root {
-  --primary:   #013718;
-  --secondary: #C9A84C;
-  --accent:    #E2C97E;
-  --bg:        #F5F0E8;
+  --primary:   #2D4A2D;
+  --secondary: #B8923E;
+  --accent:    #D4B254;
+  --bg:        #F5F2E6;
   --surface:   #FFFFFF;
   --text:      #1A1410;
   --text-muted:#8C8478;
@@ -22,7 +22,7 @@
 
 body {
   font-family: 'DM Sans', system-ui, sans-serif;
-  background: #F5F0E8;
+  background: #F5F2E6;
   color: #1A1410;
 }
 
@@ -30,7 +30,7 @@ body {
    SIDEBAR
    ============================================================ */
 .adm-sidebar {
-  background: #013718;
+  background: #2D4A2D;
   background-image:
     radial-gradient(circle at 20% 80%, rgba(201,168,76,0.08) 0%, transparent 50%),
     radial-gradient(circle at 80% 20%, rgba(201,168,76,0.05) 0%, transparent 50%);
@@ -42,7 +42,7 @@ body {
   font-size: 2.2rem !important;
   display: block;
   text-align: center;
-  color: #C9A84C;
+  color: #B8923E;
   margin-bottom: 6px;
   filter: drop-shadow(0 0 8px rgba(201,168,76,0.4));
 }
@@ -52,7 +52,7 @@ body {
   font-size: 1.25rem !important;
   font-weight: 600 !important;
   letter-spacing: 0.08em;
-  color: #F5F0E8;
+  color: #F5F2E6;
   text-align: center;
   line-height: 1.2;
 }
@@ -87,14 +87,14 @@ body {
 
 .adm-nav a:hover {
   background: rgba(201,168,76,0.12) !important;
-  color: #E2C97E !important;
+  color: #D4B254 !important;
   border-left-color: rgba(201,168,76,0.5) !important;
 }
 
 .adm-nav a.active {
   background: rgba(201,168,76,0.18) !important;
-  color: #E2C97E !important;
-  border-left-color: #C9A84C !important;
+  color: #D4B254 !important;
+  border-left-color: #B8923E !important;
 }
 
 .adm-sidebar > div:last-child {
@@ -109,7 +109,7 @@ body {
    MAIN HEADER
    ============================================================ */
 .adm-main {
-  background: #F5F0E8;
+  background: #F5F2E6;
 }
 
 .adm-main-header {
@@ -121,7 +121,7 @@ body {
   font-family: 'Cormorant Garamond', Georgia, serif !important;
   font-size: 2rem !important;
   font-weight: 600 !important;
-  color: #013718;
+  color: #2D4A2D;
   letter-spacing: 0.02em;
   line-height: 1.1;
 }
@@ -147,10 +147,10 @@ body {
   width: 5px;
 }
 
-.adm-stat-card.hoje::after    { background: #013718; }
-.adm-stat-card.pendente::after{ background: #C9A84C; }
-.adm-stat-card.pagos::after   { background: #1A7A42; }
-.adm-stat-card.total::after   { background: #B8902A; }
+.adm-stat-card.hoje::after    { background: #2D4A2D; }
+.adm-stat-card.pendente::after{ background: #B8923E; }
+.adm-stat-card.pagos::after   { background: #7A9B72; }
+.adm-stat-card.total::after   { background: #8A6E28; }
 
 .adm-stat-label {
   font-family: 'DM Sans', system-ui, sans-serif;
@@ -169,10 +169,10 @@ body {
   margin-top: 4px;
 }
 
-.adm-stat-card.hoje .adm-stat-value    { color: #013718 !important; }
-.adm-stat-card.pendente .adm-stat-value{ color: #B8902A !important; }
-.adm-stat-card.pagos .adm-stat-value   { color: #1A7A42 !important; }
-.adm-stat-card.total .adm-stat-value   { color: #013718 !important; }
+.adm-stat-card.hoje .adm-stat-value    { color: #2D4A2D !important; }
+.adm-stat-card.pendente .adm-stat-value{ color: #8A6E28 !important; }
+.adm-stat-card.pagos .adm-stat-value   { color: #7A9B72 !important; }
+.adm-stat-card.total .adm-stat-value   { color: #2D4A2D !important; }
 
 /* ============================================================
    STATUS PILLS
@@ -202,8 +202,8 @@ body {
 }
 
 .adm-pill:hover {
-  border-color: #013718;
-  color: #013718;
+  border-color: #2D4A2D;
+  color: #2D4A2D;
 }
 
 .adm-pill-count {
@@ -221,7 +221,7 @@ body {
 /* Active states por status */
 .adm-pill-pendente.active {
   background: #FDF3DC;
-  color: #7A5618;
+  color: #5A481A;
   border-color: rgba(201,168,76,0.5);
 }
 .adm-pill-pendente.active .adm-pill-count {
@@ -229,8 +229,8 @@ body {
 }
 
 .adm-pill-pago.active {
-  background: #D4EBD9;
-  color: #013718;
+  background: #7A9B72;
+  color: #2D4A2D;
   border-color: rgba(1,55,24,0.25);
 }
 .adm-pill-pago.active .adm-pill-count {
@@ -238,8 +238,8 @@ body {
 }
 
 .adm-pill-atendido.active {
-  background: #013718;
-  color: #E2C97E;
+  background: #2D4A2D;
+  color: #D4B254;
   border-color: transparent;
 }
 .adm-pill-atendido.active .adm-pill-count {
@@ -286,7 +286,7 @@ body {
 .adm-filters select:focus,
 .adm-filters input[type="date"]:focus {
   outline: none;
-  border-color: #C9A84C !important;
+  border-color: #B8923E !important;
   box-shadow: 0 0 0 3px rgba(201,168,76,0.15);
 }
 
@@ -311,7 +311,7 @@ body {
   font-family: 'Cormorant Garamond', Georgia, serif !important;
   font-size: 1.1rem !important;
   font-weight: 600 !important;
-  color: #013718 !important;
+  color: #2D4A2D !important;
   letter-spacing: 0.01em;
 }
 
@@ -321,7 +321,7 @@ body {
 }
 
 .adm-item-details {
-  border-top: 1px solid #EDE7DC !important;
+  border-top: 1px solid #EDE8D2 !important;
   background: #FDFAF5;
 }
 
@@ -351,22 +351,22 @@ body {
 
 .adm-badge-pendente {
   background: #FDF3DC !important;
-  color: #7A5618 !important;
+  color: #5A481A !important;
   border: 1px solid rgba(201,168,76,0.35) !important;
 }
 .adm-badge-pago {
-  background: #D4EBD9 !important;
-  color: #013718 !important;
+  background: #7A9B72 !important;
+  color: #2D4A2D !important;
   border: 1px solid rgba(1,55,24,0.2) !important;
 }
 .adm-badge-confirmado {
   background: #E8DFC8 !important;
-  color: #7A5618 !important;
+  color: #5A481A !important;
   border: 1px solid rgba(184,144,42,0.3) !important;
 }
 .adm-badge-atendido {
-  background: #013718 !important;
-  color: #E2C97E !important;
+  background: #2D4A2D !important;
+  color: #D4B254 !important;
   border: 1px solid transparent !important;
 }
 .adm-badge-cancelado {
@@ -390,28 +390,28 @@ body {
   color: #4A4238 !important;
 }
 .ag-btn-outline:hover {
-  border-color: #013718 !important;
-  color: #013718 !important;
+  border-color: #2D4A2D !important;
+  color: #2D4A2D !important;
   background: rgba(1,55,24,0.04) !important;
 }
 
 .ag-btn-copy {
-  background: #013718 !important;
-  color: #E2C97E !important;
+  background: #2D4A2D !important;
+  color: #D4B254 !important;
   border: none !important;
 }
 .ag-btn-copy:hover {
-  background: #025522 !important;
+  background: #4A7A4A !important;
 }
 
 .ag-btn-secondary,
 .ag-btn-secondary.ag-btn-sm {
-  background: #013718 !important;
-  color: #E2C97E !important;
+  background: #2D4A2D !important;
+  color: #D4B254 !important;
   border: none !important;
 }
 .ag-btn-secondary:hover {
-  background: #025522 !important;
+  background: #4A7A4A !important;
 }
 
 /* Botões de ação dentro do card */
@@ -442,7 +442,7 @@ body {
 }
 
 .agenda-dia-card.agenda-dia-ativo {
-  border-color: #C9A84C !important;
+  border-color: #B8923E !important;
   background: #FFFDF7 !important;
 }
 
@@ -450,12 +450,12 @@ body {
   font-family: 'Cormorant Garamond', Georgia, serif !important;
   font-size: 1.1rem !important;
   font-weight: 600 !important;
-  color: #013718 !important;
+  color: #2D4A2D !important;
   letter-spacing: 0.03em;
 }
 
 .agenda-toggle-track { background: #DDD5C8 !important; }
-.agenda-toggle input:checked ~ .agenda-toggle-track { background: #C9A84C !important; }
+.agenda-toggle input:checked ~ .agenda-toggle-track { background: #B8923E !important; }
 .agenda-toggle-text { color: #8C8478 !important; }
 
 .agenda-time {
@@ -469,7 +469,7 @@ body {
 
 .agenda-time:focus {
   outline: none;
-  border-color: #C9A84C !important;
+  border-color: #B8923E !important;
   box-shadow: 0 0 0 3px rgba(201,168,76,0.15);
 }
 
@@ -488,8 +488,8 @@ body {
   transition: border-color 0.2s, color 0.2s;
 }
 .agenda-btn-add:hover {
-  border-color: #C9A84C !important;
-  color: #B8902A !important;
+  border-color: #B8923E !important;
+  color: #8A6E28 !important;
   background: rgba(201,168,76,0.05) !important;
 }
 
@@ -510,7 +510,7 @@ body {
    ============================================================ */
 .ag-spinner {
   border-color: #DDD5C8 !important;
-  border-top-color: #013718 !important;
+  border-top-color: #2D4A2D !important;
 }
 
 .ag-loading { color: #8C8478 !important; }
@@ -544,7 +544,7 @@ body {
 .ag-form-group select:focus,
 .ag-form-group textarea:focus {
   outline: none;
-  border-color: #C9A84C !important;
+  border-color: #B8923E !important;
   box-shadow: 0 0 0 3px rgba(201,168,76,0.15);
 }
 
@@ -552,9 +552,9 @@ body {
    SCROLLBAR sutil
    ============================================================ */
 ::-webkit-scrollbar { width: 6px; height: 6px; }
-::-webkit-scrollbar-track { background: #F5F0E8; }
+::-webkit-scrollbar-track { background: #F5F2E6; }
 ::-webkit-scrollbar-thumb { background: #DDD5C8; border-radius: 99px; }
-::-webkit-scrollbar-thumb:hover { background: #C9A84C; }
+::-webkit-scrollbar-thumb:hover { background: #B8923E; }
 
 /* ============================================================
    AGENDA — CARDS DE OVERVIEW (novos)
@@ -600,7 +600,7 @@ body {
   font-family: 'Cormorant Garamond', Georgia, serif;
   font-size: 1.15rem;
   font-weight: 600;
-  color: #013718;
+  color: #2D4A2D;
   letter-spacing: 0.02em;
 }
 
@@ -614,8 +614,8 @@ body {
   border-radius: 99px;
 }
 .agenda-status-pill.ativo {
-  background: #D4EBD9;
-  color: #013718;
+  background: #7A9B72;
+  color: #2D4A2D;
   border: 1px solid rgba(1,55,24,0.18);
 }
 .agenda-status-pill.inativo {
@@ -634,7 +634,7 @@ body {
 .agenda-tag-hora {
   display: inline-block;
   background: #F5EDD5;
-  color: #7A5618;
+  color: #5A481A;
   border: 1px solid rgba(201,168,76,0.3);
   border-radius: 6px;
   font-family: 'DM Sans', system-ui, sans-serif;
@@ -657,7 +657,7 @@ body {
   justify-content: space-between;
   margin-top: 2px;
   padding-top: 10px;
-  border-top: 1px solid #EDE7DC;
+  border-top: 1px solid #EDE8D2;
 }
 
 .agenda-card-hint {
@@ -669,7 +669,7 @@ body {
 
 .agenda-card-arrow {
   font-size: .8rem;
-  color: #C9A84C;
+  color: #B8923E;
   transition: transform 0.18s;
 }
 .agenda-card-overview:hover .agenda-card-arrow { transform: translateX(3px); }
@@ -759,7 +759,7 @@ body {
   align-items: center;
   justify-content: space-between;
   padding: 22px 24px 18px;
-  border-bottom: 1px solid #EDE7DC;
+  border-bottom: 1px solid #EDE8D2;
   background: #FFFDF7;
 }
 
@@ -767,7 +767,7 @@ body {
   font-family: 'Cormorant Garamond', Georgia, serif;
   font-size: 1.5rem;
   font-weight: 600;
-  color: #013718;
+  color: #2D4A2D;
   letter-spacing: 0.02em;
 }
 
@@ -777,7 +777,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #F5F0E8;
+  background: #F5F2E6;
   border: 1.5px solid #DDD5C8;
   border-radius: 10px;
   font-size: .9rem;
@@ -827,7 +827,7 @@ body {
   position: relative;
   transition: background 0.2s;
 }
-.agenda-toggle-switch input:checked ~ .agenda-toggle-track { background: #C9A84C; }
+.agenda-toggle-switch input:checked ~ .agenda-toggle-track { background: #B8923E; }
 .agenda-toggle-thumb {
   position: absolute;
   top: 3px;
@@ -873,13 +873,13 @@ body {
   align-items: center;
   gap: 10px;
   background: #FAF7F2;
-  border: 1.5px solid #EDE7DC;
+  border: 1.5px solid #EDE8D2;
   border-radius: 12px;
   padding: 10px 14px;
   transition: border-color 0.15s;
 }
 .agenda-faixa-row-modal:focus-within {
-  border-color: #C9A84C;
+  border-color: #B8923E;
   box-shadow: 0 0 0 3px rgba(201,168,76,0.12);
 }
 
@@ -906,7 +906,7 @@ body {
 }
 .agenda-time-modal:focus {
   outline: none;
-  border-color: #C9A84C;
+  border-color: #B8923E;
   box-shadow: 0 0 0 3px rgba(201,168,76,0.15);
 }
 .agenda-time-modal::-webkit-calendar-picker-indicator {
@@ -963,8 +963,8 @@ body {
   letter-spacing: 0.02em;
 }
 .agenda-btn-nova-faixa:hover {
-  border-color: #C9A84C;
-  color: #B8902A;
+  border-color: #B8923E;
+  color: #8A6E28;
   background: rgba(201,168,76,0.05);
 }
 
@@ -975,7 +975,7 @@ body {
   justify-content: flex-end;
   gap: 10px;
   padding: 16px 24px;
-  border-top: 1px solid #EDE7DC;
+  border-top: 1px solid #EDE8D2;
   background: #FDFAF5;
 }
 
@@ -997,19 +997,19 @@ body {
 }
 
 .agenda-modal-btn-salvar {
-  background: #013718;
+  background: #2D4A2D;
   border: none;
   border-radius: 10px;
   padding: 10px 24px;
   font-family: 'DM Sans', system-ui, sans-serif;
   font-size: .875rem;
   font-weight: 600;
-  color: #E2C97E;
+  color: #D4B254;
   cursor: pointer;
   letter-spacing: 0.04em;
   transition: background 0.15s, opacity 0.15s;
 }
-.agenda-modal-btn-salvar:hover  { background: #025522; }
+.agenda-modal-btn-salvar:hover  { background: #4A7A4A; }
 .agenda-modal-btn-salvar:disabled {
   opacity: 0.6;
   cursor: not-allowed;
@@ -1141,8 +1141,8 @@ body {
   .adm-nav a.active {
     background: transparent !important;
     border-left-color: transparent !important;
-    border-bottom-color: #C9A84C !important;
-    color: #E2C97E !important;
+    border-bottom-color: #B8923E !important;
+    color: #D4B254 !important;
   }
 
   /* ── Main ─────────────────────────────────────────────── */
@@ -1670,7 +1670,7 @@ body {
   letter-spacing: .02em;
 }
 
-.vps-chip--ok      { background: rgba(1,55,24,.1);   color: #013718; }
+.vps-chip--ok      { background: rgba(1,55,24,.1);   color: #2D4A2D; }
 .vps-chip--parcial { background: rgba(201,168,76,.2); color: #7a5c0a; }
 .vps-chip--folga   { background: rgba(185,28,28,.1);  color: #B91C1C; }
 
@@ -1933,10 +1933,10 @@ body {
   opacity: 1;
   transform: translateX(-50%) translateY(0);
 }
-.adm-toast--ok    { background: #013718; color: #E2C97E; }
+.adm-toast--ok    { background: #2D4A2D; color: #D4B254; }
 .adm-toast--erro  { background: #B91C1C; color: #fff; }
-.adm-toast--aviso { background: #C9A84C; color: #022D13; }
-.adm-toast--info  { background: #1A1410; color: #F5F0E8; }
+.adm-toast--aviso { background: #B8923E; color: #1F331F; }
+.adm-toast--info  { background: #1A1410; color: #F5F2E6; }
 
 /* Badge terapeuta */
 .adm-badge-terapeuta {
@@ -1989,7 +1989,7 @@ body {
 
 .esp-restantes {
   font-size: .7rem;
-  color: var(--secondary, #C9A84C);
+  color: var(--secondary, #B8923E);
   font-weight: 600;
 }
 
@@ -2165,7 +2165,7 @@ body {
   font-family: 'Cormorant Garamond', Georgia, serif;
   font-size: 1.05rem;
   font-weight: 600;
-  color: #013718;
+  color: #2D4A2D;
   line-height: 1.2;
 }
 
@@ -2234,7 +2234,7 @@ body {
 
 .desc-pct-input:focus {
   outline: none;
-  border-color: #C9A84C;
+  border-color: #B8923E;
   box-shadow: 0 0 0 3px rgba(201,168,76,0.15);
 }
 
@@ -2259,7 +2259,7 @@ body {
 
 .desc-badge-input:focus {
   outline: none;
-  border-color: #C9A84C;
+  border-color: #B8923E;
   box-shadow: 0 0 0 3px rgba(201,168,76,0.15);
 }
 
@@ -2282,7 +2282,7 @@ body {
   font-family: 'DM Sans', system-ui, sans-serif;
   font-size: .88rem;
   font-weight: 600;
-  color: #013718;
+  color: #2D4A2D;
 }
 
 /* Toggle reutilizável */
@@ -2307,7 +2307,7 @@ body {
   flex-shrink: 0;
 }
 
-.desc-toggle-wrap input:checked + .desc-toggle-track { background: #C9A84C; }
+.desc-toggle-wrap input:checked + .desc-toggle-track { background: #B8923E; }
 
 .desc-toggle-thumb {
   position: absolute;
@@ -2335,7 +2335,7 @@ body {
   display: flex;
   justify-content: flex-end;
   padding: 20px 0 8px;
-  border-top: 1px solid #EDE7DC;
+  border-top: 1px solid #EDE8D2;
   margin-top: 4px;
 }
 
@@ -2394,8 +2394,8 @@ body {
   max-height: 96px;
   border-radius: 50%;
   object-fit: cover;
-  border: 2px solid #E2C97E;
-  background: #F5F0E8;
+  border: 2px solid #D4B254;
+  background: #F5F2E6;
   margin-bottom: 12px;
   display: block;
   flex-shrink: 0;
@@ -2405,7 +2405,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #C9A84C;
+  color: #B8923E;
   font-size: 2rem;
   font-family: 'Cormorant Garamond', Georgia, serif;
 }
@@ -2419,7 +2419,7 @@ body {
   font-family: 'Cormorant Garamond', Georgia, serif;
   font-size: 1.05rem;
   font-weight: 600;
-  color: #013718;
+  color: #2D4A2D;
   line-height: 1.25;
   margin-bottom: 6px;
 }
@@ -2434,7 +2434,7 @@ body {
 }
 
 .cat-card-preco {
-  color: #013718;
+  color: #2D4A2D;
   font-weight: 600;
 }
 
@@ -2454,7 +2454,7 @@ body {
   font-size: .72rem;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  color: #013718;
+  color: #2D4A2D;
   background: rgba(201, 168, 76, 0.18);
   border: 1px solid rgba(201, 168, 76, 0.4);
   border-radius: 99px;
@@ -2496,7 +2496,7 @@ body {
   padding: 12px 14px;
   margin-bottom: 14px;
   background: #FBF8F2;
-  border: 1px solid #EDE7DC;
+  border: 1px solid #EDE8D2;
   border-radius: 8px;
 }
 .cat-form-flag {
@@ -2511,7 +2511,7 @@ body {
 .cat-form-flag input[type="checkbox"],
 .cat-form-flag input[type="radio"] {
   margin-top: 2px;
-  accent-color: #C9A84C;
+  accent-color: #B8923E;
   cursor: pointer;
 }
 .cat-form-flag em {
@@ -2525,7 +2525,7 @@ body {
   gap: 8px;
   padding: 10px 12px;
   background: #fff;
-  border: 1px solid #EDE7DC;
+  border: 1px solid #EDE8D2;
   border-radius: 8px;
 }
 .cat-form-agenda-label {
@@ -2553,13 +2553,13 @@ body {
   align-items: center;
   margin-bottom: 16px;
   padding-bottom: 12px;
-  border-bottom: 1px solid #EDE7DC;
+  border-bottom: 1px solid #EDE8D2;
 }
 
 .cat-form-header h3 {
   font-family: 'Cormorant Garamond', Georgia, serif;
   font-size: 1.3rem;
-  color: #013718;
+  color: #2D4A2D;
   margin: 0;
   font-weight: 600;
 }
@@ -2582,7 +2582,7 @@ body {
   gap: 18px;
   margin-bottom: 16px;
   padding-bottom: 16px;
-  border-bottom: 1px solid #EDE7DC;
+  border-bottom: 1px solid #EDE8D2;
 }
 
 .cat-form-preview {
@@ -2592,8 +2592,8 @@ body {
   max-height: 88px;
   border-radius: 50%;
   object-fit: cover;
-  border: 2px solid #E2C97E;
-  background: #F5F0E8;
+  border: 2px solid #D4B254;
+  background: #F5F2E6;
   display: block;
   flex-shrink: 0;
 }
@@ -2602,7 +2602,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #C9A84C;
+  color: #B8923E;
   font-size: 1.8rem;
   font-family: 'Cormorant Garamond', Georgia, serif;
 }
@@ -2641,7 +2641,7 @@ body {
 
 .cat-form .ag-form-group input:focus,
 .cat-form .ag-form-group textarea:focus {
-  border-color: #C9A84C;
+  border-color: #B8923E;
 }
 
 .cat-form-row {
@@ -2656,7 +2656,7 @@ body {
   gap: 10px;
   margin-top: 18px;
   padding-top: 14px;
-  border-top: 1px solid #EDE7DC;
+  border-top: 1px solid #EDE8D2;
 }
 
 @media (max-width: 640px) {

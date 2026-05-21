@@ -56,7 +56,7 @@ function _renderizarQrCode(payload) {
     text: payload,
     width: 200,
     height: 200,
-    colorDark: '#013718',
+    colorDark: '#2D4A2D',
     colorLight: '#ffffff',
     correctLevel: QRCode.CorrectLevel.M,
   });
