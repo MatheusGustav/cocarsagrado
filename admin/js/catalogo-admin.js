@@ -41,7 +41,6 @@ function _catRenderizar() {
       <button class="ag-btn ag-btn-primary ag-btn-sm" onclick="cat_abrirFormNovo()">+ Nova Leitura</button>
       <span class="cat-count">${_catCache.length} leitura${_catCache.length === 1 ? '' : 's'}</span>
     </div>
-    <div id="cat-form-wrap"></div>
     <div class="cat-grid">
       ${_catCache.map(_catCard).join('')}
     </div>
@@ -106,8 +105,8 @@ function cat_abrirFormEditar(id) {
 }
 
 function _catRenderForm(t) {
-  const wrap = document.getElementById('cat-form-wrap');
-  if (!wrap) return;
+  // Remove modal anterior, se existir
+  document.getElementById('cat-modal')?.remove();
 
   const titulo = _catEditandoId ? 'Editar Leitura' : 'Nova Leitura';
   const preview = t.imagem_url
@@ -116,88 +115,173 @@ function _catRenderForm(t) {
 
   const opt = (val, lbl, sel) => `<option value="${val}"${sel === val ? ' selected' : ''}>${lbl}</option>`;
 
-  wrap.innerHTML = `
-    <div class="cat-form">
-      <div class="cat-form-header">
-        <h3>${titulo}</h3>
-        <button class="cat-form-close" onclick="cat_fecharForm()" aria-label="Fechar">×</button>
+  const overlay = document.createElement('div');
+  overlay.id = 'cat-modal';
+  overlay.className = 'agenda-modal-overlay';
+  overlay.innerHTML = `
+    <div class="agenda-modal-container cat-modal-container" role="dialog" aria-modal="true" aria-labelledby="cat-modal-titulo">
+      <div class="agenda-modal-header">
+        <h3 class="agenda-modal-titulo" id="cat-modal-titulo">${titulo}</h3>
+        <button class="agenda-modal-fechar" type="button" onclick="cat_fecharForm()" aria-label="Fechar">×</button>
       </div>
-
-      <div class="cat-form-foto-row">
-        <div id="cat-preview-wrap">${preview}</div>
-        <div class="cat-form-foto-acoes">
-          <label class="ag-btn ag-btn-outline ag-btn-sm cat-upload-btn">
-            ${t.imagem_url ? 'Trocar foto' : 'Escolher foto'}
-            <input type="file" id="cat-input-foto" accept="image/*" hidden>
-          </label>
-          ${t.imagem_url ? `<button class="ag-btn ag-btn-outline ag-btn-sm" onclick="cat_removerFoto()" style="color:#B91C1C">Remover</button>` : ''}
+      <div class="agenda-modal-body">
+        <div class="cat-form-foto-row">
+          <div id="cat-preview-wrap">${preview}</div>
+          <div class="cat-form-foto-acoes">
+            <label class="ag-btn ag-btn-outline ag-btn-sm cat-upload-btn">
+              ${t.imagem_url ? 'Trocar foto' : 'Escolher foto'}
+              <input type="file" id="cat-input-foto" accept="image/*" hidden>
+            </label>
+            ${t.imagem_url ? `<button class="ag-btn ag-btn-outline ag-btn-sm" type="button" onclick="cat_removerFoto()" style="color:#B91C1C">Remover</button>` : ''}
+          </div>
         </div>
-      </div>
 
-      <div class="ag-form-group">
-        <label for="cat-nome">Nome</label>
-        <input type="text" id="cat-nome" value="${_catEsc(t.nome || '')}" maxlength="100">
-      </div>
-
-      <div class="ag-form-group">
-        <label for="cat-desc">Descrição</label>
-        <textarea id="cat-desc" rows="3">${_catEsc(t.descricao || '')}</textarea>
-      </div>
-
-      <div class="cat-form-row">
         <div class="ag-form-group">
-          <label for="cat-preco">Preço (R$)</label>
-          <input type="number" id="cat-preco" value="${t.preco_original ?? ''}" min="0" step="0.01">
+          <label for="cat-nome">Nome</label>
+          <input type="text" id="cat-nome" value="${_catEsc(t.nome || '')}" maxlength="100">
         </div>
-        <div class="ag-form-group">
-          <label for="cat-dur">Duração (min)</label>
-          <input type="number" id="cat-dur" value="${t.duracao_minutos ?? ''}" min="1" step="1">
-        </div>
-      </div>
 
-      <div class="cat-form-row">
         <div class="ag-form-group">
-          <label for="cat-terapeuta">Terapeuta</label>
-          <select id="cat-terapeuta">
-            ${opt('', '— selecione —', t.terapeuta || '')}
-            ${opt('matheus', 'Matheus', t.terapeuta || '')}
-            ${opt('camila', 'Camila', t.terapeuta || '')}
-          </select>
+          <label for="cat-desc">Descrição</label>
+          <textarea id="cat-desc" rows="3">${_catEsc(t.descricao || '')}</textarea>
         </div>
-        <div class="ag-form-group">
-          <label for="cat-ordem">Ordem</label>
-          <input type="number" id="cat-ordem" value="${t.ordem ?? 100}" min="0" step="1">
-        </div>
-      </div>
 
-      <div class="cat-form-flags">
-        <div class="cat-form-agenda">
-          <span class="cat-form-agenda-label">Tipo de agenda</span>
+        <div class="cat-form-row">
+          <div class="ag-form-group">
+            <label for="cat-preco">Preço (R$)</label>
+            <input type="number" id="cat-preco" value="${t.preco_original ?? ''}" min="0" step="0.01">
+          </div>
+          <div class="ag-form-group">
+            <label for="cat-dur">Duração (min)</label>
+            <input type="number" id="cat-dur" value="${t.duracao_minutos ?? ''}" min="1" step="1">
+          </div>
+        </div>
+
+        <div class="cat-form-row">
+          <div class="ag-form-group">
+            <label for="cat-terapeuta">Terapeuta</label>
+            <select id="cat-terapeuta">
+              ${opt('', '— selecione —', t.terapeuta || '')}
+              ${opt('matheus', 'Matheus', t.terapeuta || '')}
+              ${opt('camila', 'Camila', t.terapeuta || '')}
+            </select>
+          </div>
+          <div class="ag-form-group">
+            <label for="cat-ordem">Posição na lista</label>
+            <select id="cat-ordem" disabled><option>Selecione um terapeuta…</option></select>
+          </div>
+        </div>
+
+        <div class="cat-form-flags">
+          <div class="cat-form-agenda">
+            <span class="cat-form-agenda-label">Tipo de agenda</span>
+            <label class="cat-form-flag">
+              <input type="radio" name="cat-agenda" value="convencional" ${t.especial ? '' : 'checked'}>
+              <span><strong>Agenda convencional</strong> <em>(usa sistema de vagas)</em></span>
+            </label>
+            <label class="cat-form-flag">
+              <input type="radio" name="cat-agenda" value="especial" ${t.especial ? 'checked' : ''}>
+              <span><strong>Agenda especial</strong> <em>(datas específicas)</em></span>
+            </label>
+          </div>
           <label class="cat-form-flag">
-            <input type="radio" name="cat-agenda" value="convencional" ${t.especial ? '' : 'checked'}>
-            <span><strong>Agenda convencional</strong> <em>(usa sistema de vagas)</em></span>
-          </label>
-          <label class="cat-form-flag">
-            <input type="radio" name="cat-agenda" value="especial" ${t.especial ? 'checked' : ''}>
-            <span><strong>Agenda especial</strong> <em>(datas específicas)</em></span>
+            <input type="checkbox" id="cat-pergunta" ${t.requer_pergunta ? 'checked' : ''}>
+            <span>Cliente precisa <strong>descrever a pergunta</strong> ao agendar</span>
           </label>
         </div>
-        <label class="cat-form-flag">
-          <input type="checkbox" id="cat-pergunta" ${t.requer_pergunta ? 'checked' : ''}>
-          <span>Cliente precisa <strong>descrever a pergunta</strong> ao agendar</span>
-        </label>
       </div>
 
       <div class="cat-form-actions">
-        <button class="ag-btn ag-btn-outline ag-btn-sm" onclick="cat_fecharForm()">Cancelar</button>
-        <button class="ag-btn ag-btn-primary ag-btn-sm" id="cat-btn-salvar" onclick="_catSalvar()">Salvar</button>
+        <button class="ag-btn ag-btn-outline ag-btn-sm" type="button" onclick="cat_fecharForm()">Cancelar</button>
+        <button class="ag-btn ag-btn-primary ag-btn-sm" id="cat-btn-salvar" type="button" onclick="_catSalvar()">Salvar</button>
       </div>
     </div>
   `;
 
+  document.body.appendChild(overlay);
   document.getElementById('cat-input-foto')?.addEventListener('change', _catPreviewArquivo);
 
-  wrap.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  // Popular o select de posição com base no terapeuta atual
+  _catAtualizarOrdemSelect(t.terapeuta || '');
+  document.getElementById('cat-terapeuta')?.addEventListener('change', e => {
+    _catAtualizarOrdemSelect(e.target.value);
+  });
+
+  // Fechar ao clicar no fundo
+  overlay.addEventListener('click', e => {
+    if (e.target === overlay) cat_fecharForm();
+  });
+
+  // Fechar com ESC
+  document.addEventListener('keydown', _catEscHandler);
+
+  // Trava scroll do body e dispara animação de abertura
+  document.body.classList.add('modal-aberto');
+  requestAnimationFrame(() => overlay.classList.add('open'));
+}
+
+function _catEscHandler(e) {
+  if (e.key === 'Escape') cat_fecharForm();
+}
+
+/* Monta o <select id="cat-ordem"> com posições relativas ao terapeuta.
+   Inativas não contam. Se editando, a leitura entra na contagem; se nova,
+   adiciona uma posição extra ao final. */
+function _catAtualizarOrdemSelect(terapeuta) {
+  const sel = document.getElementById('cat-ordem');
+  if (!sel) return;
+
+  if (!terapeuta) {
+    sel.disabled = true;
+    sel.innerHTML = '<option>Selecione um terapeuta…</option>';
+    return;
+  }
+
+  const ativasDoTerapeuta = _catCache.filter(x =>
+    x.terapeuta === terapeuta && x.ativo !== false
+  );
+  const editandoTrocouTerapeuta = _catEditandoId &&
+    !ativasDoTerapeuta.some(x => x.id === _catEditandoId);
+  const editandoMesmoTerapeuta = _catEditandoId &&
+    ativasDoTerapeuta.some(x => x.id === _catEditandoId);
+
+  // Quantos itens haverá na lista após salvar
+  const total = editandoMesmoTerapeuta
+    ? ativasDoTerapeuta.length
+    : ativasDoTerapeuta.length + 1;
+
+  // Posição padrão sugerida no select
+  let posPadrao;
+  if (editandoMesmoTerapeuta) {
+    // Mantém posição atual (ordena pela ordem real e descobre o índice)
+    const ordenadas = [...ativasDoTerapeuta].sort(_catCmpOrdem);
+    posPadrao = ordenadas.findIndex(x => x.id === _catEditandoId) + 1;
+  } else {
+    posPadrao = total; // entra no fim
+  }
+
+  sel.disabled = false;
+  sel.innerHTML = '';
+  for (let i = 1; i <= total; i++) {
+    const opt = document.createElement('option');
+    opt.value = String(i);
+    opt.textContent = `${i}ª de ${total}`;
+    if (i === posPadrao) opt.selected = true;
+    sel.appendChild(opt);
+  }
+
+  if (editandoTrocouTerapeuta) {
+    // Aviso visual sutil: trocou de terapeuta → vai pro fim por padrão
+    sel.title = 'Trocou de terapeuta — entrará no fim da lista do novo terapeuta';
+  } else {
+    sel.title = '';
+  }
+}
+
+function _catCmpOrdem(a, b) {
+  const da = a.ordem ?? 100, db = b.ordem ?? 100;
+  if (da !== db) return da - db;
+  return String(a.nome || '').localeCompare(String(b.nome || ''));
 }
 
 function _catPreviewArquivo(e) {
@@ -233,8 +317,12 @@ function cat_fecharForm() {
   _catEditandoId     = null;
   _catArquivoNovo    = null;
   _catImagemRemovida = false;
-  const wrap = document.getElementById('cat-form-wrap');
-  if (wrap) wrap.innerHTML = '';
+  document.removeEventListener('keydown', _catEscHandler);
+  const overlay = document.getElementById('cat-modal');
+  if (!overlay) return;
+  overlay.classList.remove('open');
+  document.body.classList.remove('modal-aberto');
+  setTimeout(() => overlay.remove(), 280);
 }
 
 function _catSlugify(s) {
@@ -252,7 +340,7 @@ async function _catSalvar() {
   const preco     = parseFloat(document.getElementById('cat-preco')?.value);
   const duracao   = parseInt(document.getElementById('cat-dur')?.value, 10);
   const terapeuta = document.getElementById('cat-terapeuta')?.value || null;
-  const ordem     = parseInt(document.getElementById('cat-ordem')?.value, 10) || 100;
+  const posicao   = parseInt(document.getElementById('cat-ordem')?.value, 10);
   const especial  = document.querySelector('input[name="cat-agenda"]:checked')?.value === 'especial';
   const requer    = document.getElementById('cat-pergunta')?.checked || false;
 
@@ -260,6 +348,7 @@ async function _catSalvar() {
   if (isNaN(preco) || preco < 0)      { _toastAdmin('Preço inválido.', 'erro'); return; }
   if (isNaN(duracao) || duracao <= 0) { _toastAdmin('Duração inválida.', 'erro'); return; }
   if (!terapeuta)                     { _toastAdmin('Selecione um terapeuta.', 'erro'); return; }
+  if (isNaN(posicao) || posicao < 1)  { _toastAdmin('Selecione uma posição.', 'erro'); return; }
 
   const btn = document.getElementById('cat-btn-salvar');
   if (btn) { btn.disabled = true; btn.textContent = 'Salvando...'; }
@@ -295,18 +384,26 @@ async function _catSalvar() {
       imagem_url,
       slug,
       terapeuta,
-      ordem,
+      ordem:           posicao * 10,
       especial,
       requer_pergunta: requer,
     };
 
+    let salvoId = _catEditandoId;
     if (_catEditandoId) {
       const { error } = await supabase.from('tipos_leitura').update(payload).eq('id', _catEditandoId);
       if (error) throw error;
     } else {
-      const { error } = await supabase.from('tipos_leitura').insert(payload);
+      const { data, error } = await supabase
+        .from('tipos_leitura')
+        .insert(payload)
+        .select('id')
+        .single();
       if (error) throw error;
+      salvoId = data?.id;
     }
+
+    await _catRenumerarTerapeuta(terapeuta, salvoId, posicao);
 
     _toastAdmin('✅ Salvo com sucesso!', 'ok');
     cat_fecharForm();
@@ -315,6 +412,35 @@ async function _catSalvar() {
     _toastAdmin('Erro ao salvar: ' + (e.message || e), 'erro');
     if (btn) { btn.disabled = false; btn.textContent = 'Salvar'; }
   }
+}
+
+/* Renumera todas as leituras ATIVAS do terapeuta com ordens 10, 20, 30…
+   garantindo que `idAlvo` fique na posição `posicaoAlvo` (1-based). */
+async function _catRenumerarTerapeuta(terapeuta, idAlvo, posicaoAlvo) {
+  const { data, error } = await supabase
+    .from('tipos_leitura')
+    .select('id, nome, ordem, ativo')
+    .eq('terapeuta', terapeuta)
+    .eq('ativo', true);
+  if (error) throw error;
+
+  const lista = (data || []).slice().sort(_catCmpOrdem);
+  const alvoIdx = lista.findIndex(x => x.id === idAlvo);
+  if (alvoIdx === -1) return; // alvo inativo ou de outro terapeuta — nada a fazer
+  const [alvo] = lista.splice(alvoIdx, 1);
+  const destino = Math.max(0, Math.min(lista.length, posicaoAlvo - 1));
+  lista.splice(destino, 0, alvo);
+
+  const updates = lista
+    .map((item, i) => ({ id: item.id, novaOrdem: (i + 1) * 10 }))
+    .filter(u => {
+      const original = (data || []).find(x => x.id === u.id);
+      return original && original.ordem !== u.novaOrdem;
+    });
+
+  await Promise.all(updates.map(u =>
+    supabase.from('tipos_leitura').update({ ordem: u.novaOrdem }).eq('id', u.id)
+  ));
 }
 
 async function _catSlugUnico(base) {
@@ -360,6 +486,8 @@ async function cat_excluir(id) {
 }
 
 async function cat_reativar(id) {
+  const t = _catCache.find(x => x.id === id);
+
   const { error } = await supabase
     .from('tipos_leitura')
     .update({ ativo: true })
@@ -368,6 +496,20 @@ async function cat_reativar(id) {
     _toastAdmin('Erro: ' + error.message, 'erro');
     return;
   }
+
+  // Joga para o fim da lista do terapeuta dela
+  if (t?.terapeuta) {
+    const ativasDoTerapeuta = _catCache.filter(x =>
+      x.terapeuta === t.terapeuta && x.ativo !== false && x.id !== id
+    );
+    const posicaoFinal = ativasDoTerapeuta.length + 1;
+    try {
+      await _catRenumerarTerapeuta(t.terapeuta, id, posicaoFinal);
+    } catch (e) {
+      console.warn('Falha ao renumerar após reativar:', e);
+    }
+  }
+
   _toastAdmin('✅ Leitura reativada.', 'ok');
   await inicializarCatalogo();
 }
