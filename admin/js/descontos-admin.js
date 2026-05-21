@@ -1,26 +1,9 @@
 /* ============================================================
    DESCONTOS — Painel Admin
-   Lê/salva em supabase.configuracoes WHERE chave = 'descontos'
+   Lê/salva em supabase.configuracoes WHERE chave = 'descontos'.
+   Serviços (promoções) vêm dinamicamente de public.tipos_leitura,
+   agrupados por grupo_slug (igual ao site).
    ============================================================ */
-
-const _DESC_SERVICOS_META = [
-  { id: 'conselho',             nome: 'Conselho',                tipo: 'simples', preco: 20  },
-  { id: 'buzios-avulso',        nome: 'Amarração de Igbo',      tipo: 'tiers',   tiers: [{label:'1 pergunta',preco:30},{label:'2 perguntas',preco:50},{label:'3 perguntas',preco:70}] },
-  { id: 'combo-10',             nome: 'Combo + 10',              tipo: 'simples', preco: 150 },
-  { id: 'buzios-completo',      nome: 'Consulta Ao Vivo',        tipo: 'simples', preco: 200 },
-  { id: 'confirmacao-orixas',   nome: 'Confirmação de Orixás',   tipo: 'simples', preco: 50  },
-  { id: 'cabala-odu',           nome: 'Cabala de Odu',           tipo: 'simples', preco: 50  },
-  { id: 'confirmacao-exu',      nome: 'Confirmação de Exu',      tipo: 'simples', preco: 70  },
-  { id: 'mesa-cigana-avulsa',   nome: 'Mesa Cigana Avulsa',      tipo: 'tiers',   tiers: [{label:'1 pergunta',preco:30},{label:'2 perguntas',preco:50},{label:'3 perguntas',preco:70}] },
-  { id: 'mesa-cigana-completa', nome: 'Mesa Cigana Completa',    tipo: 'simples', preco: 150 },
-  { id: 'aguas-oxum',           nome: 'Águas de Oxum',           tipo: 'simples', preco: 50  },
-  { id: 'rosa-venus',           nome: 'Rosa de Vênus',           tipo: 'simples', preco: 55  },
-  { id: 'leitura-mentores',     nome: 'Leitura dos Mentores',    tipo: 'simples', preco: 50  },
-  { id: 'mesa-mediunica',       nome: 'Mesa Mediúnica',          tipo: 'simples', preco: 70  },
-  { id: 'mesa-radionica',       nome: 'Mesa Radiônica',          tipo: 'simples', preco: 222 },
-  { id: 'registros-akashicos',  nome: 'Registros Akáshicos',     tipo: 'simples', preco: 188 },
-  { id: 'theta-healing',        nome: 'Theta Healing',           tipo: 'simples', preco: 150 },
-];
 
 let _descConfig = null;
 
@@ -29,34 +12,93 @@ async function inicializarDescontos() {
   container.innerHTML = '<div class="ag-loading"><div class="ag-spinner"></div> Carregando...</div>';
 
   try {
-    const { data, error } = await supabase
-      .from('configuracoes')
-      .select('valor')
-      .eq('chave', 'descontos')
-      .single();
+    const [leiturasResp, configResp] = await Promise.all([
+      supabase.from('tipos_leitura')
+        .select('id, nome, slug, grupo_slug, tier_label, preco_original, ordem, terapeuta')
+        .eq('ativo', true)
+        .order('ordem')
+        .order('nome'),
+      supabase.from('configuracoes')
+        .select('valor')
+        .eq('chave', 'descontos')
+        .maybeSingle(),
+    ]);
 
-    if (error && error.code === 'PGRST116') {
-      _descConfig = _descMergeComMeta({ desconto10Habilitado: true, promocoes: [] });
-    } else if (error) {
-      throw error;
-    } else {
-      _descConfig = _descMergeComMeta(data.valor);
-    }
-  } catch {
-    _descConfig = _descMergeComMeta({ desconto10Habilitado: true, promocoes: [] });
+    if (leiturasResp.error) throw leiturasResp.error;
+
+    const valor = configResp?.data?.valor || { desconto10Habilitado: true, promocoes: [] };
+    _descConfig = _descMergeComMeta(leiturasResp.data || [], valor);
+  } catch (e) {
+    console.error('Erro ao carregar descontos:', e);
+    _descConfig = _descMergeComMeta([], { desconto10Habilitado: true, promocoes: [] });
   }
 
   _descRenderizar();
 }
 
-function _descMergeComMeta(valor) {
+/* Constrói a lista de serviços (single + grupos com tiers) a partir das
+   linhas brutas de tipos_leitura. Mesma lógica do site (js/agendamento-system.js)
+   pra manter consistência: itens com grupo_slug viram um único cartão com tiers. */
+function _descAgruparServicos(linhas) {
+  const grupos = new Map();
+  const lista  = [];
+
+  for (const t of linhas) {
+    if (t.grupo_slug) {
+      if (!grupos.has(t.grupo_slug)) {
+        const item = {
+          id:       t.grupo_slug,
+          tipo:     'tiers',
+          ordem:    t.ordem ?? 100,
+          principal: t,
+          tiers:    [],
+        };
+        grupos.set(t.grupo_slug, item);
+        lista.push(item);
+      }
+      grupos.get(t.grupo_slug).tiers.push(t);
+    } else if (t.slug) {
+      lista.push({
+        id:    t.slug,
+        nome:  t.nome,
+        tipo:  'simples',
+        preco: Number(t.preco_original),
+        ordem: t.ordem ?? 100,
+      });
+    }
+    // Linhas sem slug nem grupo_slug não têm identidade estável → ignoradas
+  }
+
+  // Finaliza grupos: ordena tiers por preço (igual ao site) e calcula nome base
+  for (const g of grupos.values()) {
+    g.tiers.sort((a, b) => Number(a.preco_original) - Number(b.preco_original));
+    g.nome  = _descNomeGrupo(g.principal);
+    g.tiers = g.tiers.map(t => ({
+      label: t.tier_label || t.nome,
+      preco: Number(t.preco_original),
+    }));
+  }
+
+  // Ordem global por `ordem`, depois nome
+  lista.sort((a, b) => (a.ordem - b.ordem) || a.nome.localeCompare(b.nome));
+  return lista;
+}
+
+function _descNomeGrupo(principal) {
+  if (!principal.tier_label) return principal.nome;
+  const sep = principal.nome.indexOf(' – ');
+  return sep > 0 ? principal.nome.slice(0, sep) : principal.nome;
+}
+
+function _descMergeComMeta(linhas, valor) {
+  const itens    = _descAgruparServicos(linhas);
   const salvoMap = {};
   (valor.promocoes || []).forEach(p => { salvoMap[p.id] = p; });
 
-  const promocoes = _DESC_SERVICOS_META.map(meta => ({
-    id: meta.id,
-    nome: meta.nome,
-    tipo: meta.tipo,
+  const promocoes = itens.map(meta => ({
+    id:                 meta.id,
+    nome:               meta.nome,
+    tipo:               meta.tipo,
     ...(meta.tipo === 'tiers' ? { tiers: meta.tiers } : { preco: meta.preco }),
     descontoAtivo:      salvoMap[meta.id]?.descontoAtivo      ?? false,
     percentualDesconto: salvoMap[meta.id]?.percentualDesconto ?? 0,
