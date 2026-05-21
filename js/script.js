@@ -267,6 +267,28 @@ function inicializarAnimacoesScroll() {
 
 
 /* ============================================================
+   CARROSSEL INFINITO DE DEPOIMENTOS
+   ============================================================
+   Clona os cards do .depos-track uma vez para fechar o loop
+   da animação CSS sem costura (translateX -50%).
+   ============================================================ */
+
+function inicializarCarrosselDepoimentos() {
+  document.querySelectorAll('[data-marquee]').forEach(track => {
+    if (track.dataset.marqueeReady === '1') return;
+    const originais = Array.from(track.children);
+    originais.forEach(card => {
+      const clone = card.cloneNode(true);
+      clone.setAttribute('aria-hidden', 'true');
+      clone.querySelectorAll('img').forEach(img => img.setAttribute('alt', ''));
+      track.appendChild(clone);
+    });
+    track.dataset.marqueeReady = '1';
+  });
+}
+
+
+/* ============================================================
    BADGES DE MODALIDADE DE ATENDIMENTO
    ============================================================ */
 
@@ -451,6 +473,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // 4. Animações ao rolar a página
   inicializarAnimacoesScroll();
+
+  // 4b. Carrossel infinito de depoimentos (clona os cards p/ loop)
+  inicializarCarrosselDepoimentos();
 
   // 5. Filtros do catálogo
   inicializarFiltrosCatalogo();
