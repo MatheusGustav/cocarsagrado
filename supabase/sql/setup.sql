@@ -21,6 +21,8 @@ CREATE TABLE public.tipos_leitura (
   duracao_minutos INTEGER NOT NULL CHECK (duracao_minutos > 0),
   imagem_url      TEXT,
   slug            TEXT,
+  grupo_slug      TEXT,
+  tier_label      TEXT,
   terapeuta       TEXT    CHECK (terapeuta IN ('matheus','camila')),
   ordem           INTEGER NOT NULL DEFAULT 100,
   requer_pergunta BOOLEAN NOT NULL DEFAULT FALSE,
