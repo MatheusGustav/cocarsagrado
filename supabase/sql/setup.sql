@@ -20,9 +20,15 @@ CREATE TABLE public.tipos_leitura (
   preco_original  NUMERIC(10,2) NOT NULL CHECK (preco_original >= 0),
   duracao_minutos INTEGER NOT NULL CHECK (duracao_minutos > 0),
   imagem_url      TEXT,
+  slug            TEXT,
+  terapeuta       TEXT    CHECK (terapeuta IN ('matheus','camila')),
+  ordem           INTEGER NOT NULL DEFAULT 100,
+  requer_pergunta BOOLEAN NOT NULL DEFAULT FALSE,
+  especial        BOOLEAN NOT NULL DEFAULT FALSE,
   ativo           BOOLEAN NOT NULL DEFAULT TRUE,
   criado_em       TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+CREATE UNIQUE INDEX idx_tipos_leitura_slug ON public.tipos_leitura (slug) WHERE slug IS NOT NULL;
 
 INSERT INTO public.tipos_leitura (nome, descricao, preco_original, duracao_minutos) VALUES
   ('Conselho',                          'Conselho geral em relação aos caminhos do consulente com aprofundamento breve.',                                     20.00, 20),

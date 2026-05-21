@@ -2388,14 +2388,17 @@ body {
 }
 
 .cat-card-foto {
-  width: 96px;
-  height: 96px;
+  width: 96px !important;
+  height: 96px !important;
+  max-width: 96px;
+  max-height: 96px;
   border-radius: 50%;
   object-fit: cover;
   border: 2px solid #E2C97E;
   background: #F5F0E8;
   margin-bottom: 12px;
   display: block;
+  flex-shrink: 0;
 }
 
 .cat-card-foto--placeholder {
@@ -2443,6 +2446,50 @@ body {
 }
 
 .cat-card-acoes .ag-btn { flex: 1; max-width: 110px; }
+
+.cat-card-terapeuta {
+  display: inline-block;
+  margin-top: 8px;
+  padding: 3px 10px;
+  font-size: .72rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #013718;
+  background: rgba(201, 168, 76, 0.18);
+  border: 1px solid rgba(201, 168, 76, 0.4);
+  border-radius: 99px;
+  font-weight: 600;
+}
+.cat-card-terapeuta--missing {
+  color: #B91C1C;
+  background: rgba(185, 28, 28, 0.08);
+  border-color: rgba(185, 28, 28, 0.3);
+}
+
+.cat-form-flags {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px 14px;
+  margin-bottom: 14px;
+  background: #FBF8F2;
+  border: 1px solid #EDE7DC;
+  border-radius: 8px;
+}
+.cat-form-flag {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: .82rem;
+  color: #1A1410;
+  cursor: pointer;
+  line-height: 1.4;
+}
+.cat-form-flag input[type="checkbox"] {
+  margin-top: 2px;
+  accent-color: #C9A84C;
+  cursor: pointer;
+}
 
 /* Formulário */
 .cat-form {
@@ -2493,13 +2540,16 @@ body {
 }
 
 .cat-form-preview {
-  width: 88px;
-  height: 88px;
+  width: 88px !important;
+  height: 88px !important;
+  max-width: 88px;
+  max-height: 88px;
   border-radius: 50%;
   object-fit: cover;
   border: 2px solid #E2C97E;
   background: #F5F0E8;
   display: block;
+  flex-shrink: 0;
 }
 
 .cat-form-preview--placeholder {

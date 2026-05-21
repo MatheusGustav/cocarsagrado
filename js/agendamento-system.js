@@ -13,45 +13,31 @@ const DIAS_PT  = ['Domingo','Segunda','Terça','Quarta','Quinta','Sexta','Sábad
 const MESES_PT = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
 
 // ============================================================
-// SELETOR DE QUANTIDADE / TIER
+// SELETOR DE QUANTIDADE
 // ============================================================
 
-let _tiposCache          = null;
-let _seletorConfig       = null;
-let _seletorQty          = 1;
-let _seletorTierEscolhido= null;
+let _tiposCache    = null;
+let _seletorTipo   = null;
+let _seletorQty    = 1;
 
 const WHATSAPP_TERAPEUTA = {
   matheus: '5528999476620',
   camila:  '5527998528483',
 };
 
-const SERVICO_CONFIG = {
-  'conselho':             { tipo: 'quantidade', terapeuta: 'matheus', nome: 'Conselho',             pergunta: 'Quantas sessões?' },
-  'buzios-avulso':        { tipo: 'tier',      terapeuta: 'matheus', nome: 'Amarração de Igbo',     prefixo: 'Amarração de Igbo – ',   pergunta: 'Quantas perguntas?', requerPergunta: true },
-  'combo-10':             { tipo: 'quantidade', terapeuta: 'matheus', nome: 'Combo + 10',           pergunta: 'Quantas sessões?', maxQty: 1, especial: true },
-  'mesa-cigana-avulsa':   { tipo: 'tier',      terapeuta: 'camila',  nome: 'Mesa Cigana Avulsa',   prefixo: 'Mesa Cigana Avulsa – ',  pergunta: 'Quantas perguntas?', requerPergunta: true },
-  'buzios-completo':      { tipo: 'quantidade', terapeuta: 'matheus', nome: 'Consulta Ao Vivo',     pergunta: 'Quantas sessões?', maxQty: 1, especial: true },
-  'confirmacao-orixas':   { tipo: 'quantidade', terapeuta: 'matheus', nome: 'Confirmação de Orixás',pergunta: 'Quantas sessões?' },
-  'cabala-odu':           { tipo: 'quantidade', terapeuta: 'matheus', nome: 'Cabala de Odu',        pergunta: 'Quantas sessões?' },
-  'confirmacao-exu':      { tipo: 'quantidade', terapeuta: 'matheus', nome: 'Confirmação de Exu',   pergunta: 'Quantas sessões?' },
-  'mesa-cigana-completa': { tipo: 'quantidade', terapeuta: 'camila',  nome: 'Mesa Cigana Completa', pergunta: 'Quantas sessões?', maxQty: 1, especial: true },
-  'aguas-oxum':           { tipo: 'quantidade', terapeuta: 'camila',  nome: 'Águas de Oxum',        pergunta: 'Quantas sessões?' },
-  'rosa-venus':           { tipo: 'quantidade', terapeuta: 'camila',  nome: 'Rosa de Vênus',        pergunta: 'Quantas sessões?' },
-  'leitura-mentores':     { tipo: 'quantidade', terapeuta: 'camila',  nome: 'Leitura dos Mentores', pergunta: 'Quantas sessões?' },
-  'mesa-mediunica':       { tipo: 'quantidade', terapeuta: 'camila',  nome: 'Mesa Mediúnica',       pergunta: 'Quantas sessões?' },
-  'mesa-radionica':       { tipo: 'quantidade', terapeuta: 'camila',  nome: 'Mesa Radiônica',       pergunta: 'Quantas sessões?', especial: true },
-  'registros-akashicos':  { tipo: 'quantidade', terapeuta: 'camila',  nome: 'Registros Akáshicos',  pergunta: 'Quantas sessões?', especial: true },
-  'theta-healing':        { tipo: 'quantidade', terapeuta: 'camila',  nome: 'Theta Healing',        pergunta: 'Quantas sessões?', especial: true },
-};
-
-async function _garantirTipos() {
-  if (_tiposCache) return _tiposCache;
+async function _garantirTipos(forcar) {
+  if (_tiposCache && !forcar) return _tiposCache;
   if (typeof supabase === 'undefined' || !supabase) {
     console.error('Supabase não carregado — verifique a conexão com a CDN.');
     return [];
   }
-  const { data, error } = await supabase.from('tipos_leitura').select('*');
+  const { data, error } = await supabase
+    .from('tipos_leitura')
+    .select('*')
+    .eq('ativo', true)
+    .not('terapeuta', 'is', null)
+    .order('ordem')
+    .order('nome');
   if (error) {
     console.error('Erro ao carregar tipos:', error);
     return [];
@@ -60,10 +46,13 @@ async function _garantirTipos() {
   return _tiposCache;
 }
 
+function _tipoMaxQty(t) {
+  return t.especial ? 1 : 5;
+}
+
 function calcularPrecoFinal(precoOriginal) {
   const preco = parseFloat(precoOriginal) || 0;
-  const excluido = !!(Estado.serviceId && SERVICO_CONFIG[Estado.serviceId]?.excluirDesconto10);
-  if (!excluido && localStorage.getItem('aceitouDesconto10') === 'true') {
+  if (localStorage.getItem('aceitouDesconto10') === 'true') {
     const final = Math.round(preco * 90) / 100;
     return { final, desconto: preco - final };
   }
@@ -78,10 +67,7 @@ function calcularPrecoFinal(precoOriginal) {
   return { final: preco, desconto: 0 };
 }
 
-async function abrirSeletor(serviceId) {
-  const config = SERVICO_CONFIG[serviceId];
-  if (!config) return;
-
+async function abrirSeletor(ref) {
   let tipos;
   try {
     tipos = await _garantirTipos();
@@ -91,72 +77,42 @@ async function abrirSeletor(serviceId) {
     return;
   }
 
-  _seletorConfig        = config;
-  Estado.serviceId      = serviceId;
-  _seletorQty           = 1;
-  _seletorTierEscolhido = null;
+  const tipo = typeof ref === 'number'
+    ? tipos.find(t => t.id === ref)
+    : tipos.find(t => t.slug === ref || t.id === Number(ref));
+
+  if (!tipo) {
+    console.warn('Tipo não encontrado:', ref);
+    mostrarAlerta('Serviço temporariamente indisponível. Tente novamente.', 'error');
+    return;
+  }
+
+  _seletorTipo     = tipo;
+  Estado.serviceId = tipo.slug || tipo.id;
+  _seletorQty      = 1;
 
   const tiersEl    = document.getElementById('seletor-tiers');
   const qtyEl      = document.getElementById('seletor-qty-wrap');
   const resumoEl   = document.getElementById('seletor-resumo');
   const btnConfirm = document.getElementById('seletor-btn-confirm');
 
-  document.getElementById('seletor-nome').textContent     = config.nome;
-  document.getElementById('seletor-pergunta').textContent = config.pergunta;
+  document.getElementById('seletor-nome').textContent     = tipo.nome;
+  document.getElementById('seletor-pergunta').textContent = tipo.especial
+    ? 'Confirme para escolher a data'
+    : 'Quantas sessões?';
 
-  if (config.tipo === 'tier') {
-    const tiers = tipos
-      .filter(t => t.nome.startsWith(config.prefixo))
-      .sort((a, b) => a.preco_original - b.preco_original);
-
-    tiersEl.innerHTML = '';
-    tiers.forEach(tier => {
-      const { final } = calcularPrecoFinal(tier.preco_original);
-      const label = tier.nome.replace(config.prefixo, '');
-      const opt = document.createElement('div');
-      opt.className = 'seletor-tier-opt';
-      opt.innerHTML = `
-        <span class="tier-label">${label}</span>
-        <div class="tier-info">
-          <span class="tier-duracao">⏱ ${tier.duracao_minutos} min</span>
-          <span class="tier-preco">R$ ${final.toFixed(0)}</span>
-        </div>`;
-      opt.addEventListener('click', () => {
-        tiersEl.querySelectorAll('.seletor-tier-opt').forEach(o => o.classList.remove('selected'));
-        opt.classList.add('selected');
-        _seletorTierEscolhido = tier;
-        btnConfirm.removeAttribute('disabled');
-      });
-      tiersEl.appendChild(opt);
-    });
-
-    tiersEl.style.display  = 'flex';
-    qtyEl.style.display    = 'none';
-    resumoEl.style.display = 'none';
-    btnConfirm.setAttribute('disabled', '');
-
-  } else {
-    const tipo = tipos.find(t => t.nome === config.nome);
-    if (!tipo) {
-      console.warn('Tipo não encontrado:', config.nome);
-      mostrarAlerta('Serviço temporariamente indisponível. Tente novamente.', 'error');
-      return;
-    }
-
-    _seletorTierEscolhido = tipo;
-    tiersEl.style.display  = 'none';
-    qtyEl.style.display    = config.maxQty === 1 ? 'none' : 'flex';
-    resumoEl.style.display = 'flex';
-    _atualizarResumoSeletor();
-    btnConfirm.removeAttribute('disabled');
-  }
+  if (tiersEl) { tiersEl.innerHTML = ''; tiersEl.style.display = 'none'; }
+  qtyEl.style.display    = _tipoMaxQty(tipo) === 1 ? 'none' : 'flex';
+  resumoEl.style.display = 'flex';
+  _atualizarResumoSeletor();
+  btnConfirm.removeAttribute('disabled');
 
   document.getElementById('seletor-overlay').classList.add('open');
   document.body.classList.add('seletor-aberto');
 }
 
 function _atualizarResumoSeletor() {
-  const tipo = _seletorTierEscolhido;
+  const tipo = _seletorTipo;
   if (!tipo) return;
   const total    = tipo.preco_original  * _seletorQty;
   const durTotal = tipo.duracao_minutos * _seletorQty;
@@ -175,7 +131,7 @@ function _formatarDuracao(min) {
 }
 
 function alterarQty(delta) {
-  const max = _seletorConfig?.maxQty ?? 5;
+  const max = _tipoMaxQty(_seletorTipo);
   _seletorQty = Math.max(1, Math.min(max, _seletorQty + delta));
   _atualizarResumoSeletor();
 }
@@ -186,23 +142,18 @@ function fecharSeletor() {
 }
 
 function confirmarSeletor() {
-  if (!_seletorConfig || !_seletorTierEscolhido) return;
+  if (!_seletorTipo) return;
 
-  let tipoFinal;
-  if (_seletorConfig.tipo === 'tier') {
-    tipoFinal = { ..._seletorTierEscolhido, terapeuta: _seletorConfig.terapeuta, requerPergunta: !!_seletorConfig.requerPergunta, especial: !!_seletorConfig.especial };
-  } else {
-    tipoFinal = {
-      ..._seletorTierEscolhido,
-      terapeuta:       _seletorConfig.terapeuta,
-      especial:        !!_seletorConfig.especial,
-      preco_original:  _seletorTierEscolhido.preco_original  * _seletorQty,
-      duracao_minutos: _seletorTierEscolhido.duracao_minutos * _seletorQty,
-      nome: _seletorQty > 1
-        ? `${_seletorTierEscolhido.nome} (×${_seletorQty})`
-        : _seletorTierEscolhido.nome,
-    };
-  }
+  const t = _seletorTipo;
+  const tipoFinal = {
+    ...t,
+    terapeuta:       t.terapeuta,
+    especial:        !!t.especial,
+    requerPergunta:  !!t.requer_pergunta,
+    preco_original:  t.preco_original  * _seletorQty,
+    duracao_minutos: t.duracao_minutos * _seletorQty,
+    nome: _seletorQty > 1 ? `${t.nome} (×${_seletorQty})` : t.nome,
+  };
 
   fecharSeletor();
   abrirModal(tipoFinal);
@@ -589,10 +540,66 @@ function aplicarMascaraFone(input) {
 }
 
 // ============================================================
+// Renderização dinâmica do catálogo no site
+// ============================================================
+function _escCat(s) {
+  return String(s ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function _formatarPrecoCat(v) {
+  const n = Number(v) || 0;
+  return Number.isInteger(n)
+    ? `R$&nbsp;${n}`
+    : `R$&nbsp;${n.toFixed(2).replace('.', ',')}`;
+}
+
+async function renderizarCatalogoSite() {
+  const grid = document.getElementById('catGrid');
+  if (!grid) return;
+
+  const tipos = await _garantirTipos();
+  if (!tipos.length) {
+    grid.innerHTML = '<div class="ag-empty">Nenhuma leitura disponível no momento.</div>';
+    return;
+  }
+
+  grid.innerHTML = tipos.map(t => {
+    const slug    = t.slug || `id-${t.id}`;
+    const img     = t.imagem_url
+      ? `<img src="${_escCat(t.imagem_url)}" alt="${_escCat(t.nome)}" class="cat-img" loading="lazy">`
+      : `<div class="cat-img cat-img--placeholder" aria-hidden="true">✦</div>`;
+    const desc    = t.descricao ? `<p class="cat-desc">${_escCat(t.descricao)}</p>` : '';
+    const onclick = t.slug ? `abrirSeletor('${_escCat(slug)}')` : `abrirSeletor(${t.id})`;
+
+    return `
+      <article class="cat-card" data-category="${_escCat(t.terapeuta)}" data-service-id="${_escCat(slug)}">
+        <div class="cat-card-img">${img}</div>
+        <div class="cat-body">
+          <h3 class="cat-name">${_escCat(t.nome)}</h3>
+          ${desc}
+        </div>
+        <div class="cat-footer">
+          <span class="cat-footer-price">${_formatarPrecoCat(t.preco_original)}</span>
+          <button class="cat-btn" onclick="${onclick}">Agendar</button>
+        </div>
+      </article>
+    `;
+  }).join('');
+
+  if (typeof inicializarFiltrosCatalogo === 'function') inicializarFiltrosCatalogo();
+  if (typeof renderizarDescontos === 'function') renderizarDescontos();
+}
+
+// ============================================================
 // Init
 // ============================================================
 document.addEventListener('DOMContentLoaded', () => {
-  _garantirTipos();
+  renderizarCatalogoSite();
 
   const fone = document.getElementById('f-fone');
   if (fone) aplicarMascaraFone(fone);
