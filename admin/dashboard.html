@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="../css/agendamento-styles.css">
-  <link rel="stylesheet" href="css/dashboard.css?v=9">
+  <link rel="stylesheet" href="css/dashboard.css?v=10">
   <style>
     .adm-login-screen {
       display: flex; align-items: center; justify-content: center;
@@ -83,10 +83,21 @@
 </div>
 
 <div id="admin-content">
+  <!-- Topbar mobile (só aparece em telas < 900px) -->
+  <header class="adm-topbar" aria-label="Cabeçalho mobile">
+    <button class="adm-hamburger" id="adm-hamburger" type="button" aria-label="Abrir menu" aria-controls="adm-sidebar" aria-expanded="false">
+      <span></span><span></span><span></span>
+    </button>
+    <span class="adm-topbar-title">Cocar Sagrado</span>
+  </header>
+
+  <!-- Overlay do drawer mobile -->
+  <div class="adm-drawer-overlay" id="adm-drawer-overlay" aria-hidden="true"></div>
+
   <div class="adm-layout">
 
     <!-- Sidebar -->
-    <aside class="adm-sidebar">
+    <aside class="adm-sidebar" id="adm-sidebar">
       <div>
         <h2>Cocar Sagrado</h2>
         <p>Painel Administrativo</p>
@@ -257,6 +268,7 @@
 <!-- Scripts -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="../js/supabase-config.js"></script>
+<script src="js/admin-shell.js?v=1"></script>
 <script src="js/admin-system.js?v=6"></script>
 <script src="js/vagas-admin.js?v=5"></script>
 <script src="js/vagas-especial-admin.js?v=2"></script>

@@ -1035,9 +1035,9 @@ body.modal-aberto { overflow: hidden; }
 /* ============================================================
    RESPONSIVIDADE — TABLET  641px – 1024px
    ============================================================ */
-@media (min-width: 641px) and (max-width: 1024px) {
+@media (min-width: 900px) and (max-width: 1024px) {
   .adm-sidebar {
-    width: 190px;
+    width: 200px;
   }
   .adm-main {
     padding: 22px;
@@ -1054,98 +1054,9 @@ body.modal-aberto { overflow: hidden; }
 }
 
 /* ============================================================
-   RESPONSIVIDADE — MOBILE  ≤ 640px
+   RESPONSIVIDADE — MOBILE  ≤ 899px (drawer + hamburger)
    ============================================================ */
-@media (max-width: 640px) {
-
-  /* Layout geral */
-  .adm-layout {
-    flex-direction: column;
-    min-height: 100dvh;
-  }
-
-  /* ── Sidebar → topbar sticky ──────────────────────────── */
-  .adm-sidebar {
-    width: 100%;
-    position: sticky;
-    top: 0;
-    z-index: 200;
-    flex-direction: row;
-    flex-wrap: wrap;
-    align-items: center;
-    padding: 10px 16px 0;
-    gap: 0;
-    border-right: none;
-    border-bottom: 1px solid rgba(201,168,76,0.2);
-  }
-
-  /* Brand: logo + título na mesma linha */
-  .adm-sidebar > div:first-child {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    border-bottom: none;
-    padding-bottom: 0;
-    margin-bottom: 0;
-    flex: 1;
-    min-width: 0;
-  }
-
-  .adm-logo {
-    font-size: 1.5rem !important;
-    margin-bottom: 0 !important;
-    display: inline !important;
-    filter: none;
-  }
-
-  .adm-sidebar h2 {
-    font-size: .95rem !important;
-    text-align: left;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
-  /* Oculta subtítulo e versão */
-  .adm-sidebar p,
-  .adm-sidebar > div:last-child {
-    display: none;
-  }
-
-  /* Nav: abas horizontais em linha cheia */
-  .adm-nav {
-    display: flex;
-    flex-direction: row;
-    width: 100%;
-    margin-top: 6px;
-    gap: 0;
-  }
-
-  .adm-nav a {
-    flex: 1;
-    text-align: center;
-    padding: 8px 4px !important;
-    font-size: .72rem !important;
-    border-left: none !important;
-    border-bottom: 2px solid transparent;
-    border-radius: 0;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
-  .adm-nav a:hover {
-    background: rgba(201,168,76,0.10) !important;
-    border-left-color: transparent !important;
-    border-bottom-color: rgba(201,168,76,0.4) !important;
-  }
-
-  .adm-nav a.active {
-    background: transparent !important;
-    border-left-color: transparent !important;
-    border-bottom-color: #B8923E !important;
-    color: #D4B254 !important;
-  }
+@media (max-width: 899px) {
 
   /* ── Main ─────────────────────────────────────────────── */
   .adm-main {
@@ -1274,25 +1185,12 @@ body.modal-aberto { overflow: hidden; }
    RESPONSIVIDADE — EXTRA PEQUENO  ≤ 400px
    ============================================================ */
 @media (max-width: 400px) {
-  .adm-sidebar h2 {
-    display: none;
-  }
-
-  .adm-logo {
-    font-size: 1.6rem !important;
-  }
-
   .adm-stat-value {
     font-size: 1.75rem !important;
   }
 
   .adm-details-grid {
     grid-template-columns: 1fr;
-  }
-
-  .adm-nav a {
-    font-size: .65rem !important;
-    padding: 8px 2px !important;
   }
 }
 
@@ -1302,17 +1200,20 @@ body.modal-aberto { overflow: hidden; }
    ============================================================ */
 @supports (padding: env(safe-area-inset-top)) {
 
-  /* Topbar: empurra para baixo do notch */
-  @media (max-width: 640px) {
-    .adm-sidebar {
+  /* Topbar mobile: empurra para baixo do notch */
+  @media (max-width: 899px) {
+    .adm-topbar {
       padding-top: max(10px, env(safe-area-inset-top));
       padding-left: max(16px, env(safe-area-inset-left));
       padding-right: max(16px, env(safe-area-inset-right));
     }
+    .adm-sidebar {
+      padding-top: max(20px, env(safe-area-inset-top));
+    }
   }
 
   /* Desktop: sidebar lateral respeita safe-area esquerda */
-  @media (min-width: 641px) {
+  @media (min-width: 900px) {
     .adm-sidebar {
       padding-left: max(16px, env(safe-area-inset-left));
     }
@@ -1324,7 +1225,7 @@ body.modal-aberto { overflow: hidden; }
     padding-bottom: max(28px, env(safe-area-inset-bottom));
   }
 
-  @media (max-width: 640px) {
+  @media (max-width: 899px) {
     .adm-main {
       padding-right: max(16px, env(safe-area-inset-right));
       padding-bottom: max(16px, env(safe-area-inset-bottom));
@@ -2637,4 +2538,138 @@ body.modal-aberto { overflow: hidden; }
   .cat-grid { grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); }
   .cat-form-row { grid-template-columns: 1fr; }
   .cat-form-foto-row { flex-direction: column; text-align: center; }
+}
+
+/* ============================================================
+   SHELL MOBILE — Topbar + Hamburger + Drawer
+   ============================================================
+   Em desktop (>=900px), a topbar e o overlay ficam ocultos e a
+   sidebar funciona normalmente. Em <900px a sidebar vira um
+   drawer deslizante controlado pelo botão hamburger.
+   ============================================================ */
+
+/* Topbar e overlay: ocultos por padrão (desktop) */
+.adm-topbar,
+.adm-drawer-overlay {
+  display: none;
+}
+
+/* --- Hamburger --- */
+.adm-hamburger {
+  width: 44px;
+  height: 44px;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  background: transparent;
+  border: 1px solid rgba(201,168,76,0.3);
+  border-radius: 10px;
+  cursor: pointer;
+  padding: 0;
+  transition: background 0.18s, border-color 0.18s;
+  flex-shrink: 0;
+}
+.adm-hamburger:hover {
+  background: rgba(201,168,76,0.10);
+  border-color: rgba(201,168,76,0.55);
+}
+.adm-hamburger span {
+  display: block;
+  width: 22px;
+  height: 2px;
+  background: #D4B254;
+  border-radius: 2px;
+  transition: transform 0.22s ease, opacity 0.22s ease;
+}
+/* Estado aberto: vira X */
+.adm-hamburger.open span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+.adm-hamburger.open span:nth-child(2) { opacity: 0; }
+.adm-hamburger.open span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
+/* --- Lock do scroll quando drawer aberto --- */
+body.drawer-aberto { overflow: hidden; }
+
+@media (max-width: 899px) {
+
+  /* Layout principal: sidebar vai pra fora do fluxo (vira drawer) */
+  .adm-layout {
+    display: block;
+    min-height: 100dvh;
+  }
+
+  /* Topbar visível */
+  .adm-topbar {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    position: sticky;
+    top: 0;
+    z-index: 90;
+    padding: 10px 16px;
+    background: #2D4A2D;
+    background-image:
+      radial-gradient(circle at 20% 80%, rgba(201,168,76,0.10) 0%, transparent 50%),
+      radial-gradient(circle at 80% 20%, rgba(201,168,76,0.06) 0%, transparent 50%);
+    border-bottom: 1px solid rgba(201,168,76,0.18);
+    box-shadow: 0 1px 12px rgba(0,0,0,0.18);
+  }
+
+  .adm-topbar-title {
+    font-family: 'Cormorant Garamond', Georgia, serif;
+    font-size: 1.15rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    color: #F5F2E6;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* Sidebar como drawer fixo */
+  .adm-sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: min(280px, 82vw);
+    height: 100dvh;
+    z-index: 110;
+    transform: translateX(-100%);
+    transition: transform 0.28s ease;
+    overflow-y: auto;
+    box-shadow: 8px 0 24px rgba(0,0,0,0.25);
+    padding: 24px 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+  .adm-sidebar.open {
+    transform: translateX(0);
+  }
+
+  /* Overlay escuro atrás do drawer */
+  .adm-drawer-overlay {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    background: rgba(10, 16, 10, 0.55);
+    backdrop-filter: blur(2px);
+    -webkit-backdrop-filter: blur(2px);
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.28s ease, visibility 0.28s ease;
+  }
+  .adm-drawer-overlay.open {
+    opacity: 1;
+    visibility: visible;
+  }
+
+  /* Main ocupa toda a largura agora */
+  .adm-main {
+    width: 100%;
+    margin-left: 0 !important;
+  }
 }
