@@ -77,6 +77,19 @@ async function abrirSeletor(ref) {
     return;
   }
 
+  const isGrupo = typeof ref === 'string' && ref.startsWith('grupo:');
+  if (isGrupo) {
+    const grupoSlug = ref.slice(6);
+    const tiers = tipos
+      .filter(t => t.grupo_slug === grupoSlug)
+      .sort((a, b) => Number(a.preco_original) - Number(b.preco_original));
+    if (!tiers.length) {
+      mostrarAlerta('Serviço temporariamente indisponível. Tente novamente.', 'error');
+      return;
+    }
+    return _abrirSeletorGrupo(grupoSlug, tiers);
+  }
+
   const tipo = typeof ref === 'number'
     ? tipos.find(t => t.id === ref)
     : tipos.find(t => t.slug === ref || t.id === Number(ref));
@@ -106,6 +119,52 @@ async function abrirSeletor(ref) {
   resumoEl.style.display = 'flex';
   _atualizarResumoSeletor();
   btnConfirm.removeAttribute('disabled');
+
+  document.getElementById('seletor-overlay').classList.add('open');
+  document.body.classList.add('seletor-aberto');
+}
+
+function _abrirSeletorGrupo(grupoSlug, tiers) {
+  const principal = tiers[0];
+
+  _seletorTipo     = null;
+  _seletorQty      = 1;
+  Estado.serviceId = `grupo:${grupoSlug}`;
+
+  const tiersEl    = document.getElementById('seletor-tiers');
+  const qtyEl      = document.getElementById('seletor-qty-wrap');
+  const resumoEl   = document.getElementById('seletor-resumo');
+  const btnConfirm = document.getElementById('seletor-btn-confirm');
+
+  document.getElementById('seletor-nome').textContent     = _nomeGrupo(principal);
+  document.getElementById('seletor-pergunta').textContent = principal.requer_pergunta
+    ? 'Quantas perguntas?'
+    : 'Escolha uma opção';
+
+  tiersEl.innerHTML = '';
+  tiers.forEach(tier => {
+    const { final } = calcularPrecoFinal(tier.preco_original);
+    const opt = document.createElement('div');
+    opt.className = 'seletor-tier-opt';
+    opt.innerHTML = `
+      <span class="tier-label">${_escCat(tier.tier_label || tier.nome)}</span>
+      <div class="tier-info">
+        <span class="tier-duracao">⏱ ${tier.duracao_minutos} min</span>
+        <span class="tier-preco">R$ ${final.toFixed(0)}</span>
+      </div>`;
+    opt.addEventListener('click', () => {
+      tiersEl.querySelectorAll('.seletor-tier-opt').forEach(o => o.classList.remove('selected'));
+      opt.classList.add('selected');
+      _seletorTipo = tier;
+      btnConfirm.removeAttribute('disabled');
+    });
+    tiersEl.appendChild(opt);
+  });
+
+  tiersEl.style.display  = 'flex';
+  qtyEl.style.display    = 'none';
+  resumoEl.style.display = 'none';
+  btnConfirm.setAttribute('disabled', '');
 
   document.getElementById('seletor-overlay').classList.add('open');
   document.body.classList.add('seletor-aberto');
@@ -558,6 +617,33 @@ function _formatarPrecoCat(v) {
     : `R$&nbsp;${n.toFixed(2).replace('.', ',')}`;
 }
 
+function _agruparCatalogo(tipos) {
+  const itens = [];
+  const grupos = new Map();
+  for (const t of tipos) {
+    if (t.grupo_slug) {
+      if (!grupos.has(t.grupo_slug)) {
+        const item = { kind: 'grupo', grupo_slug: t.grupo_slug, principal: t, tiers: [] };
+        grupos.set(t.grupo_slug, item);
+        itens.push(item);
+      }
+      grupos.get(t.grupo_slug).tiers.push(t);
+    } else {
+      itens.push({ kind: 'single', tipo: t });
+    }
+  }
+  for (const g of grupos.values()) {
+    g.tiers.sort((a, b) => Number(a.preco_original) - Number(b.preco_original));
+  }
+  return itens;
+}
+
+function _nomeGrupo(principal) {
+  if (!principal.tier_label) return principal.nome;
+  const sep = principal.nome.indexOf(' – ');
+  return sep > 0 ? principal.nome.slice(0, sep) : principal.nome;
+}
+
 async function renderizarCatalogoSite() {
   const grid = document.getElementById('catGrid');
   if (!grid) return;
@@ -568,7 +654,36 @@ async function renderizarCatalogoSite() {
     return;
   }
 
-  grid.innerHTML = tipos.map(t => {
+  const itens = _agruparCatalogo(tipos);
+
+  grid.innerHTML = itens.map(item => {
+    if (item.kind === 'grupo') {
+      const p     = item.principal;
+      const nome  = _nomeGrupo(p);
+      const img   = p.imagem_url
+        ? `<img src="${_escCat(p.imagem_url)}" alt="${_escCat(nome)}" class="cat-img" loading="lazy">`
+        : `<div class="cat-img cat-img--placeholder" aria-hidden="true">✦</div>`;
+      const desc  = p.descricao ? `<p class="cat-desc">${_escCat(p.descricao)}</p>` : '';
+      const tiers = item.tiers.map(t => `
+        <span><span>${_escCat(t.tier_label || t.nome)}</span><strong>${_formatarPrecoCat(t.preco_original)}</strong></span>
+      `).join('');
+
+      return `
+        <article class="cat-card" data-category="${_escCat(p.terapeuta)}" data-service-id="grupo:${_escCat(item.grupo_slug)}">
+          <div class="cat-card-img">${img}</div>
+          <div class="cat-body">
+            <h3 class="cat-name">${_escCat(nome)}</h3>
+            ${desc}
+          </div>
+          <div class="cat-footer">
+            <div class="cat-footer-tiers">${tiers}</div>
+            <button class="cat-btn" onclick="abrirSeletor('grupo:${_escCat(item.grupo_slug)}')">Agendar</button>
+          </div>
+        </article>
+      `;
+    }
+
+    const t       = item.tipo;
     const slug    = t.slug || `id-${t.id}`;
     const img     = t.imagem_url
       ? `<img src="${_escCat(t.imagem_url)}" alt="${_escCat(t.nome)}" class="cat-img" loading="lazy">`
