@@ -2,7 +2,7 @@
 /* ============================================================
   COCAR SAGRADO — STYLESHEET
    Identidade visual: minimalista, premium, espiritual.
-   Paleta: Verde floresta sagrado + Dourado cerimonial sobre ivory.
+   Paleta: Ficus elastica variegata — verde profundo + dourado oliva.
    Tipografia: Cormorant Garamond (títulos serif) + DM Sans (corpo).
    ============================================================ */
 
@@ -16,46 +16,46 @@
 
 /* === VARIÁVEIS CSS — PALETA OFICIAL COCAR SAGRADO === */
 :root {
-  /* === PRIMÁRIAS (verde floresta) === */
-  --color-primary:          #013718;
-  --color-primary-hover:    #025522;
-  --color-primary-deep:     #022D13;
-  --color-primary-light:    #1A7A42;
-  --color-primary-whisper:  #D4EBD9;
+  /* === PRIMÁRIAS (verde Ficus) === */
+  --color-primary:          #2D4A2D;
+  --color-primary-hover:    #4A7A4A;
+  --color-primary-deep:     #1F331F;
+  --color-primary-light:    #7A9B72;
+  --color-primary-whisper:  #7A9B72;
 
-  /* === DOURADO CERIMONIAL === */
-  --color-gold:             #C9A84C;
-  --color-gold-deep:        #B8902A;
-  --color-gold-shadow:      #7A5618;
-  --color-gold-light:       #E2C97E;
-  --color-gold-mist:        #F5E8C0;
+  /* === DOURADO OLIVA (acento cerimonial) === */
+  --color-gold:             #B8923E;
+  --color-gold-deep:        #8A6E28;
+  --color-gold-shadow:      #5A481A;
+  --color-gold-light:       #D4B254;
+  --color-gold-mist:        #F0E4BC;
 
   /* === FUNDOS === */
-  --color-bg-page:          #F5F0E8;
-  --color-bg-section-alt:   #EDE7DC;
-  --color-bg-card:          #FFFFFF;
-  --color-bg-dark:          #013718;
-  --color-bg-dark-deep:     #022D13;
+  --color-bg-page:          #F5F2E6;
+  --color-bg-section-alt:   #EDE8D2;
+  --color-bg-card:          #FFFCF2;
+  --color-bg-dark:          #2D4A2D;
+  --color-bg-dark-deep:     #1F331F;
 
   /* === TEXTO === */
-  --color-text-primary:     #1A1410;
-  --color-text-body:        #4A4238;
-  --color-text-muted:       #8C8478;
-  --color-text-link:        #C9A84C;
-  --color-text-on-dark:     #F5F0E8;
+  --color-text-primary:     #1A2818;
+  --color-text-body:        #3D4A38;
+  --color-text-muted:       #7A8678;
+  --color-text-link:        #8A6E28;
+  --color-text-on-dark:     #F0E8C8;
 
   /* === NEUTROS === */
-  --color-neutral-white:    #FFFFFF;
-  --color-neutral-ivory:    #F5F0E8;
-  --color-neutral-sand:     #EDE7DC;
-  --color-neutral-stone:    #C8C0B4;
-  --color-neutral-driftwood:#8C8478;
+  --color-neutral-white:    #FFFCF2;
+  --color-neutral-ivory:    #F5F2E6;
+  --color-neutral-sand:     #EDE8D2;
+  --color-neutral-stone:    #C8C2AC;
+  --color-neutral-driftwood:#7A8678;
 
   /* === ESTADOS === */
-  --color-hover-gold:       #B8902A;
-  --color-hover-green:      #025522;
-  --color-focus-ring:       #E2C97E;
-  --color-success:          #1A6B3C;
+  --color-hover-gold:       #8A6E28;
+  --color-hover-green:      #4A7A4A;
+  --color-focus-ring:       #9DBF94;
+  --color-success:          #4A7A4A;
   --color-error:            #8B3A1E;
 
   /* === TIPOGRAFIA === */
@@ -532,8 +532,7 @@ body.overlay-active .footer {
   font-weight: 500;
   letter-spacing: 0.02em;
   color: var(--color-text-on-dark);
-  opacity: 0.85;
-  transition: color var(--transicao), opacity var(--transicao);
+  transition: color var(--transicao);
   position: relative;
 }
 
@@ -549,8 +548,7 @@ body.overlay-active .footer {
 }
 
 .nav-link:hover {
-  color: var(--color-gold);
-  opacity: 1;
+  color: var(--color-gold-light);
 }
 
 .nav-link:hover::after {
@@ -728,8 +726,11 @@ body.overlay-active .footer {
   width: clamp(120px, 18vw, 240px);
   height: clamp(120px, 18vw, 240px);
   border-radius: 50%;
-  object-fit: cover;
+  object-fit: contain;
   display: block;
+  background: var(--color-primary);
+  padding: clamp(14px, 2vw, 24px);
+  box-shadow: 0 8px 32px rgba(45, 74, 45, 0.25);
 }
 
 .photo-circle {
@@ -993,8 +994,8 @@ body.overlay-active .footer {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #F5F0E8 0%, #E2C97E 100%);
-  color: #013718;
+  background: linear-gradient(135deg, var(--color-neutral-ivory) 0%, var(--color-gold-light) 100%);
+  color: var(--color-primary);
   font-family: var(--fonte-titulo);
   font-size: 2rem;
 }
@@ -1546,6 +1547,25 @@ body.overlay-active .footer {
   justify-content: center;
 }
 
+.cta-bar-btns .btn-fill {
+  background: var(--color-gold);
+  color: var(--color-primary-deep);
+  border-color: var(--color-gold);
+}
+.cta-bar-btns .btn-fill:hover {
+  background: var(--color-gold-deep);
+  border-color: var(--color-gold-deep);
+}
+.cta-bar-btns .btn-outline-cta {
+  color: var(--color-primary-deep);
+  border-color: var(--color-gold);
+}
+.cta-bar-btns .btn-outline-cta:hover {
+  background: var(--color-gold);
+  color: var(--color-primary-deep);
+  border-color: var(--color-gold);
+}
+
 
 /* ============================================================
    RODAPÉ
@@ -1751,20 +1771,20 @@ body.overlay-active .footer {
     box-shadow: 0 1px 20px rgba(1, 55, 24, 0.12);
   }
 
-  .brand-logo { color: var(--color-gold-deep); }
-  .brand-sub  { color: var(--color-gold-deep); opacity: 0.85; }
+  .brand-logo { color: var(--color-gold-light); }
+  .brand-sub  { color: var(--color-gold); }
 
   .header .nav-link {
-    color: var(--color-gold-deep);
-    opacity: 1;
+    color: var(--color-text-on-dark);
+    font-weight: 500;
   }
 
   .header .nav-link:hover {
-    color: var(--color-primary-deep);
+    color: var(--color-gold-light);
   }
 
   .header .nav-link::after {
-    background: var(--color-gold-deep);
+    background: var(--color-gold-light);
   }
 
   /* === HERO === */
@@ -1829,25 +1849,6 @@ body.overlay-active .footer {
 
   /* === CTA BAR === */
   .cta-bar { border-top: none; border-bottom: none; }
-
-  .cta-bar-btns .btn-outline-cta {
-    color: var(--color-text-on-dark);
-    border-color: var(--color-gold-light);
-  }
-  .cta-bar-btns .btn-outline-cta:hover {
-    background: var(--color-gold);
-    color: var(--color-primary-deep);
-    border-color: var(--color-gold);
-  }
-  .cta-bar-btns .btn-fill {
-    background: var(--color-gold);
-    color: var(--color-primary-deep);
-    border-color: var(--color-gold);
-  }
-  .cta-bar-btns .btn-fill:hover {
-    background: var(--color-gold-deep);
-    border-color: var(--color-gold-deep);
-  }
 
   /* === FOOTER dividido === */
   .footer {
@@ -1947,23 +1948,34 @@ body.overlay-active .footer {
    ============================================================ */
 
 [data-theme="dark"] {
-  --color-bg-page:          #0A0A0A;
-  --color-bg-section-alt:   #111111;
-  --color-bg-card:          #1A1A1A;
-  --color-bg-dark:          #0D1F12;
-  --color-bg-dark-deep:     #0D1F12;
-  --color-primary-whisper:  #013718;
-  --color-text-primary:     #F5F1E8;
-  --color-text-body:        #D4D4D4;
-  --color-text-muted:       #A0A0A0;
-  --color-text-on-dark:     #F5F1E8;
-  --color-neutral-white:    #1A1A1A;
-  --color-neutral-ivory:    #0A0A0A;
-  --color-neutral-sand:     #111111;
-  --color-neutral-stone:    #2A2A2A;
-  --color-neutral-driftwood:#A0A0A0;
+  --color-primary:          #4A7A4A;
+  --color-primary-hover:    #9DBF94;
+  --color-primary-deep:     #2D4A2D;
+  --color-primary-light:    #9DBF94;
+  --color-primary-whisper:  #2D4A2D;
+  --color-bg-page:          #0F1A0F;
+  --color-bg-section-alt:   #152215;
+  --color-bg-card:          #1A2818;
+  --color-bg-dark:          #080F08;
+  --color-bg-dark-deep:     #080F08;
+  --color-text-primary:     #C8BC8A;
+  --color-text-body:        #B8AC7A;
+  --color-text-muted:       #8A8260;
+  --color-text-link:        #D4B254;
+  --color-text-on-dark:     #C8BC8A;
+  --color-neutral-white:    #1A2818;
+  --color-neutral-ivory:    #0F1A0F;
+  --color-neutral-sand:     #152215;
+  --color-neutral-stone:    #2A3A28;
+  --color-neutral-driftwood:#8A8260;
+  --color-gold:             #D4B254;
+  --color-gold-deep:        #B8923E;
+  --color-gold-light:       #E8C97E;
   --color-gold-mist:        #1A1500;
-  --borda-dourada-translucida: 1px solid rgba(201, 168, 76, 0.12);
+  --color-focus-ring:       #D4B254;
+  --color-hover-green:      #9DBF94;
+  --color-hover-gold:       #B8923E;
+  --borda-dourada-translucida: 1px solid rgba(212, 178, 84, 0.22);
 }
 
 .theme-switching *,
@@ -2135,8 +2147,8 @@ body.overlay-active .footer {
 
 /* Modo escuro */
 [data-theme="dark"] .cat-badge--10off {
-  background: #013718;
-  border-color: rgba(226, 201, 126, 0.3);
+  background: var(--color-primary-deep);
+  border-color: rgba(200, 188, 138, 0.3);
 }
 
 [data-theme="dark"] .cat-price-desconto,
@@ -2168,26 +2180,26 @@ body.overlay-active .footer {
 }
 
 .cat-badge-atendimento--video {
-  background: #C9960C;
-  color: #1A1200;
-  border: 1px solid rgba(180, 130, 0, 0.35);
+  background: var(--color-gold-deep);
+  color: var(--color-primary-deep);
+  border: 1px solid rgba(106, 95, 56, 0.35);
 }
 
 .cat-badge-atendimento--mensagem {
-  background: #013718;
-  color: #E2C97E;
-  border: 1px solid rgba(226, 201, 126, 0.3);
+  background: var(--color-primary);
+  color: var(--color-gold-light);
+  border: 1px solid rgba(200, 188, 138, 0.3);
 }
 
 [data-theme="dark"] .cat-badge-atendimento--video {
-  background: #A07808;
-  color: #FFF8DC;
-  border-color: rgba(200, 160, 20, 0.4);
+  background: var(--color-gold-deep);
+  color: var(--color-bg-page);
+  border-color: rgba(200, 188, 138, 0.4);
 }
 
 [data-theme="dark"] .cat-badge-atendimento--mensagem {
-  background: rgba(0, 40, 15, 0.90);
-  border-color: rgba(226, 201, 126, 0.25);
+  background: rgba(45, 74, 45, 0.90);
+  border-color: rgba(200, 188, 138, 0.25);
 }
 
 /* ============================================================
@@ -2210,7 +2222,7 @@ body.overlay-active .footer {
 
 .inapp-card {
   position: relative;
-  background: var(--bg-primary, #FDFAF4);
+  background: var(--color-bg-card);
   border-radius: 16px;
   padding: 2rem 1.75rem 1.5rem;
   max-width: 300px;
@@ -2226,7 +2238,7 @@ body.overlay-active .footer {
   background: none;
   border: none;
   font-size: 1.1rem;
-  color: var(--text-secondary, #4A3B1A);
+  color: var(--color-text-muted);
   cursor: pointer;
   line-height: 1;
   padding: 0.2rem 0.35rem;
@@ -2241,7 +2253,7 @@ body.overlay-active .footer {
 .inapp-text {
   font-family: 'DM Sans', sans-serif;
   font-size: 1rem;
-  color: var(--text-primary, #1A1200);
+  color: var(--color-text-primary);
   line-height: 1.6;
   margin: 0;
 }
@@ -2262,21 +2274,21 @@ body.overlay-active .footer {
 }
 
 [data-theme="dark"] .inapp-card {
-  background: #1a1508;
+  background: var(--color-bg-card);
   box-shadow: 0 8px 40px rgba(0,0,0,0.5);
 }
 
 [data-theme="dark"] .inapp-text {
-  color: #F5E6C8;
+  color: var(--color-text-primary);
 }
 
 [data-theme="dark"] .inapp-close {
-  color: #C4A882;
+  color: var(--color-gold);
 }
 
 [data-theme="dark"] .inapp-dots-badge {
-  background: #3a3020;
-  color: #F5E6C8;
+  background: var(--color-neutral-stone);
+  color: var(--color-text-primary);
 }
 
 /* ============================================================

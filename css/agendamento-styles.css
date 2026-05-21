@@ -503,7 +503,7 @@ textarea { resize: vertical; min-height: 90px; }
   border-radius: 50%;
   cursor: pointer;
   font-size: 13px;
-  color: #013718;
+  color: #2D4A2D;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -518,7 +518,7 @@ textarea { resize: vertical; min-height: 90px; }
   font-family: 'Cormorant Garamond', serif;
   font-size: 1.4rem;
   font-weight: 700;
-  color: #013718;
+  color: #2D4A2D;
   margin-bottom: 4px;
 }
 
@@ -551,17 +551,17 @@ textarea { resize: vertical; min-height: 90px; }
   text-align: left;
 }
 .seletor-tier-opt:hover {
-  border-color: #C9A84C;
+  border-color: #B8923E;
   background: rgba(201, 168, 76, 0.06);
 }
 .seletor-tier-opt.selected {
-  border-color: #C9A84C;
+  border-color: #B8923E;
   background: rgba(201, 168, 76, 0.1);
   box-shadow: 0 0 0 3px rgba(201, 168, 76, 0.2);
 }
 .tier-label {
   font-weight: 600;
-  color: #013718;
+  color: #2D4A2D;
   font-size: 0.9rem;
 }
 .tier-info {
@@ -571,7 +571,7 @@ textarea { resize: vertical; min-height: 90px; }
   gap: 2px;
 }
 .tier-duracao { font-size: 0.72rem; color: #6b7280; }
-.tier-preco   { font-size: 1rem; font-weight: 700; color: #B8902A; }
+.tier-preco   { font-size: 1rem; font-weight: 700; color: #8A6E28; }
 
 /* Quantity stepper */
 .seletor-qty-wrap {
@@ -584,9 +584,9 @@ textarea { resize: vertical; min-height: 90px; }
 .seletor-qty-btn {
   width: 44px; height: 44px;
   border-radius: 50%;
-  border: 1.5px solid #C9A84C;
+  border: 1.5px solid #B8923E;
   background: transparent;
-  color: #013718;
+  color: #2D4A2D;
   font-size: 1.5rem;
   font-weight: 300;
   cursor: pointer;
@@ -597,13 +597,13 @@ textarea { resize: vertical; min-height: 90px; }
   line-height: 1;
   font-family: inherit;
 }
-.seletor-qty-btn:hover { background: #C9A84C; color: #022D13; }
+.seletor-qty-btn:hover { background: #B8923E; color: #1F331F; }
 
 .seletor-qty-num {
   font-family: 'Cormorant Garamond', serif;
   font-size: clamp(1.8rem, 5vw, 2.4rem);
   font-weight: 700;
-  color: #013718;
+  color: #2D4A2D;
   min-width: 40px;
   text-align: center;
   line-height: 1;
@@ -620,7 +620,7 @@ textarea { resize: vertical; min-height: 90px; }
   border-radius: 10px;
   margin-bottom: 22px;
 }
-.seletor-resumo-preco { font-size: 1.15rem; font-weight: 700; color: #B8902A; }
+.seletor-resumo-preco { font-size: 1.15rem; font-weight: 700; color: #8A6E28; }
 .seletor-resumo-sep   { color: #9ca3af; }
 .seletor-resumo-dur   { font-size: 0.85rem; color: #6b7280; font-weight: 500; }
 
@@ -640,15 +640,15 @@ textarea { resize: vertical; min-height: 90px; }
   transition: border-color 0.15s;
   font-family: inherit;
 }
-.seletor-btn-cancel:hover { border-color: rgba(1, 55, 24, 0.4); color: #013718; }
+.seletor-btn-cancel:hover { border-color: rgba(1, 55, 24, 0.4); color: #2D4A2D; }
 
 .seletor-btn-confirm {
   flex: 2;
   padding: 13px 20px;
   border: none;
   border-radius: 10px;
-  background: #C9A84C;
-  color: #022D13;
+  background: #B8923E;
+  color: #1F331F;
   font-size: 0.875rem;
   font-weight: 700;
   cursor: pointer;
@@ -656,7 +656,7 @@ textarea { resize: vertical; min-height: 90px; }
   font-family: inherit;
   letter-spacing: 0.03em;
 }
-.seletor-btn-confirm:hover    { background: #B8902A; }
+.seletor-btn-confirm:hover    { background: #8A6E28; }
 .seletor-btn-confirm:disabled { opacity: 0.35; cursor: not-allowed; }
 
 @media (max-width: 420px) {
@@ -691,13 +691,13 @@ textarea { resize: vertical; min-height: 90px; }
 }
 
 .ag-vagas-card:hover {
-  border-color: var(--secondary, #C9A84C);
+  border-color: var(--secondary, #B8923E);
   box-shadow: 0 4px 16px rgba(1,55,24,.10);
   transform: translateY(-1px);
 }
 
 .ag-vagas-card.selected {
-  border-color: var(--primary, #013718);
+  border-color: var(--primary, #2D4A2D);
   background: linear-gradient(135deg, #fff 80%, rgba(1,55,24,.04) 100%);
   box-shadow: 0 4px 18px rgba(1,55,24,.14);
 }
@@ -714,7 +714,7 @@ textarea { resize: vertical; min-height: 90px; }
   font-size: 2rem;
   font-weight: 600;
   line-height: 1;
-  color: var(--primary, #013718);
+  color: var(--primary, #2D4A2D);
 }
 
 .ag-vagas-dia-nome {
@@ -751,7 +751,7 @@ textarea { resize: vertical; min-height: 90px; }
 
 .ag-vagas-info.vagas-ok .ag-vagas-badge {
   background: rgba(1,55,24,.08);
-  color: var(--primary, #013718);
+  color: var(--primary, #2D4A2D);
 }
 
 .ag-vagas-info.vagas-poucas .ag-vagas-badge {
@@ -766,7 +766,7 @@ textarea { resize: vertical; min-height: 90px; }
 }
 
 .ag-vagas-card.selected .ag-vagas-action {
-  color: var(--primary, #013718);
+  color: var(--primary, #2D4A2D);
   font-weight: 600;
 }
 
