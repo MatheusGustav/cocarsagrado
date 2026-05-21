@@ -310,7 +310,14 @@ async function _buscarDiasComVagas(profissional, diasParaFrente) {
     const ov = overrideMap[str];
     if (ov && ov.ativo) {
       const restantes = Math.max(0, ov.vagas_total - usadas);
-      if (restantes > 0) dias.push({ data: str, vagas: restantes, ate_horario: ov.ate_horario });
+      if (restantes > 0) {
+        if (i === 0 && ov.ate_horario) {
+          const [h, m] = ov.ate_horario.split(':').map(Number);
+          const limite = new Date(); limite.setHours(h, m, 0, 0);
+          if (new Date() >= limite) continue;
+        }
+        dias.push({ data: str, vagas: restantes, ate_horario: ov.ate_horario });
+      }
     }
   }
 
@@ -331,7 +338,17 @@ async function _buscarDiasEspeciais(profissional, diasParaFrente) {
     .lte('data', dataFim)
     .gt('vagas_restantes', 0);
 
-  const dias = (especiais || []).filter(e => e.ativo).map(e => ({
+  const agora = new Date();
+  const hojeStr = dataParaISO(new Date());
+  const dias = (especiais || []).filter(e => {
+    if (!e.ativo) return false;
+    if (e.data === hojeStr && e.ate_horario) {
+      const [h, m] = e.ate_horario.split(':').map(Number);
+      const limite = new Date(); limite.setHours(h, m, 0, 0);
+      if (agora >= limite) return false;
+    }
+    return true;
+  }).map(e => ({
     data: e.data,
     vagas: e.vagas_restantes,
     ate_horario: e.ate_horario,
