@@ -610,6 +610,10 @@ function _escCat(s) {
     .replace(/'/g, '&#39;');
 }
 
+function _escDesc(s) {
+  return _escCat(s).replace(/&lt;br\s*\/?&gt;/gi, '<br>');
+}
+
 function _formatarPrecoCat(v) {
   const n = Number(v) || 0;
   return Number.isInteger(n)
@@ -663,7 +667,7 @@ async function renderizarCatalogoSite() {
       const img   = p.imagem_url
         ? `<img src="${_escCat(p.imagem_url)}" alt="${_escCat(nome)}" class="cat-img" loading="lazy">`
         : `<div class="cat-img cat-img--placeholder" aria-hidden="true">✦</div>`;
-      const desc  = p.descricao ? `<p class="cat-desc">${_escCat(p.descricao)}</p>` : '';
+      const desc  = p.descricao ? `<p class="cat-desc">${_escDesc(p.descricao)}</p>` : '';
       const tiers = item.tiers.map(t => `
         <span><span>${_escCat(t.tier_label || t.nome)}</span><strong>${_formatarPrecoCat(t.preco_original)}</strong></span>
       `).join('');
@@ -688,7 +692,7 @@ async function renderizarCatalogoSite() {
     const img     = t.imagem_url
       ? `<img src="${_escCat(t.imagem_url)}" alt="${_escCat(t.nome)}" class="cat-img" loading="lazy">`
       : `<div class="cat-img cat-img--placeholder" aria-hidden="true">✦</div>`;
-    const desc    = t.descricao ? `<p class="cat-desc">${_escCat(t.descricao)}</p>` : '';
+    const desc    = t.descricao ? `<p class="cat-desc">${_escDesc(t.descricao)}</p>` : '';
     const onclick = t.slug ? `abrirSeletor('${_escCat(slug)}')` : `abrirSeletor(${t.id})`;
 
     return `
