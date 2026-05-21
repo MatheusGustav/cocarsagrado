@@ -717,6 +717,8 @@ body {
 /* ============================================================
    MODAL DE EDIÇÃO DE DIA
    ============================================================ */
+body.modal-aberto { overflow: hidden; }
+
 .agenda-modal-overlay {
   position: fixed;
   inset: 0;
@@ -2538,43 +2540,13 @@ body {
 }
 
 /* Formulário */
-.cat-form {
-  background: #fff;
-  border: 1px solid #DDD5C8;
-  border-radius: 14px;
-  padding: 20px 22px;
-  margin-bottom: 20px;
-  box-shadow: 0 4px 18px rgba(1,55,24,0.10);
+/* Modal do catálogo: alarga o container e libera scroll no corpo. */
+.cat-modal-container {
+  max-width: 560px;
 }
-
-.cat-form-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 16px;
-  padding-bottom: 12px;
-  border-bottom: 1px solid #EDE8D2;
+.cat-modal-container .agenda-modal-body {
+  max-height: 70vh;
 }
-
-.cat-form-header h3 {
-  font-family: 'Cormorant Garamond', Georgia, serif;
-  font-size: 1.3rem;
-  color: #2D4A2D;
-  margin: 0;
-  font-weight: 600;
-}
-
-.cat-form-close {
-  background: none;
-  border: none;
-  font-size: 1.6rem;
-  color: #8C8478;
-  cursor: pointer;
-  line-height: 1;
-  padding: 0 6px;
-  transition: color .2s;
-}
-.cat-form-close:hover { color: #B91C1C; }
 
 .cat-form-foto-row {
   display: flex;
@@ -2615,17 +2587,18 @@ body {
 
 .cat-upload-btn { cursor: pointer; }
 
-.cat-form .ag-form-group { margin-bottom: 14px; }
+.cat-modal-container .ag-form-group { margin-bottom: 0; }
 
-.cat-form .ag-form-group label {
+.cat-modal-container .ag-form-group label {
   font-size: .78rem;
   color: #8C8478;
   margin-bottom: 4px;
   display: block;
 }
 
-.cat-form .ag-form-group input,
-.cat-form .ag-form-group textarea {
+.cat-modal-container .ag-form-group input,
+.cat-modal-container .ag-form-group textarea,
+.cat-modal-container .ag-form-group select {
   width: 100%;
   padding: 9px 12px;
   border: 1px solid #DDD5C8;
@@ -2639,8 +2612,9 @@ body {
   resize: vertical;
 }
 
-.cat-form .ag-form-group input:focus,
-.cat-form .ag-form-group textarea:focus {
+.cat-modal-container .ag-form-group input:focus,
+.cat-modal-container .ag-form-group textarea:focus,
+.cat-modal-container .ag-form-group select:focus {
   border-color: #B8923E;
 }
 
@@ -2654,9 +2628,9 @@ body {
   display: flex;
   justify-content: flex-end;
   gap: 10px;
-  margin-top: 18px;
-  padding-top: 14px;
+  padding: 14px 24px 18px;
   border-top: 1px solid #EDE8D2;
+  background: #FFFDF7;
 }
 
 @media (max-width: 640px) {
