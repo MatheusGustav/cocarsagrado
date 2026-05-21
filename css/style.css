@@ -1478,18 +1478,38 @@ body.overlay-active .footer {
   font-style: italic;
 }
 
-.depos-grid {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 24px;
+/* Carrossel infinito de depoimentos — esteira contínua com cards 4:5. */
+.depos-carousel {
+  position: relative;
+  overflow: hidden;
+  width: 100%;
+  -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 8%, #000 92%, transparent 100%);
+          mask-image: linear-gradient(90deg, transparent 0, #000 8%, #000 92%, transparent 100%);
 }
 
-/* Cards "fantasma" — molduras douradas vazias prontas para receber imagens. */
+.depos-track {
+  --depo-gap: 24px;
+  --depo-card-w: 80vw;
+  --depo-duration: 40s;
+  display: flex;
+  gap: var(--depo-gap);
+  width: max-content;
+  animation: depos-marquee var(--depo-duration) linear infinite;
+  will-change: transform;
+}
+
+@keyframes depos-marquee {
+  from { transform: translate3d(0, 0, 0); }
+  to   { transform: translate3d(calc(-50% - var(--depo-gap) / 2), 0, 0); }
+}
+
 .depo-card {
+  flex: 0 0 var(--depo-card-w);
+  width: var(--depo-card-w);
+  aspect-ratio: 4 / 5;
   background: transparent;
   border: 1px solid rgba(226, 201, 126, 0.35);
   border-radius: var(--raio-lg);
-  min-height: clamp(180px, 40vw, 300px);
   overflow: hidden;
   transition: border-color var(--transicao);
 }
@@ -1501,8 +1521,8 @@ body.overlay-active .footer {
   object-fit: cover;
 }
 
-.depo-card:hover {
-  border-color: var(--color-gold);
+@media (prefers-reduced-motion: reduce) {
+  .depos-track { animation: none; }
 }
 
 
@@ -1630,8 +1650,8 @@ body.overlay-active .footer {
     gap: 14px;
   }
 
-  .depos-grid {
-    grid-template-columns: repeat(2, 1fr);
+  .depos-track {
+    --depo-card-w: 44vw;
   }
 }
 
@@ -1756,8 +1776,9 @@ body.overlay-active .footer {
     align-items: center;
   }
 
-  .depos-grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+  .depos-track {
+    --depo-card-w: clamp(280px, 30vw, 360px);
+    --depo-duration: 55s;
   }
 
   /* === CTA bar === */
