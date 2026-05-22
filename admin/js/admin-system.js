@@ -260,7 +260,7 @@ function criarItemAgendamento(ag) {
   const nomeTipo        = ag.tipos_leitura?.nome || '—';
   const data            = formatarData(ag.data_agendamento);
   const horaRaw         = ag.hora_agendamento?.slice(0,5) || '';
-  const hora            = (!horaRaw || horaRaw === '00:00') ? 'A combinar' : horaRaw;
+  const horaLabel       = (!horaRaw || horaRaw === '00:00') ? '(horário a combinar)' : `até as ${horaRaw}`;
   const valor           = `R$ ${Number(ag.valor_final || 0).toFixed(2).replace('.', ',')}`;
   const badge           = `<span class="adm-badge adm-badge-${_esc(ag.status)}">${_esc(STATUS_LABELS[ag.status] || ag.status)}</span>`;
   const terapeutaNome   = ag.terapeuta === 'matheus' ? 'Matheus' : ag.terapeuta === 'camila' ? 'Camila' : '';
@@ -272,7 +272,7 @@ function criarItemAgendamento(ag) {
     <div class="adm-item-header" onclick="toggleDetalhes(this)">
       <div class="adm-item-info">
         <h4>${_esc(ag.cliente_nome)}</h4>
-        <p>${_esc(nomeTipo)} — ${_esc(data)} às ${_esc(hora)}</p>
+        <p>${_esc(nomeTipo)} — ${_esc(data)} ${_esc(horaLabel)}</p>
       </div>
       <div class="adm-item-right">
         <span style="font-weight:700; color:var(--primary)">${_esc(valor)}</span>
@@ -305,7 +305,7 @@ function montarAcoes(ag) {
   const nome    = ag.cliente_nome     || '';
   const tipo    = ag.tipos_leitura?.nome || 'Leitura';
   const data    = formatarData(ag.data_agendamento);
-  const horaBtn = (() => { const h = ag.hora_agendamento?.slice(0,5) || ''; return (!h || h === '00:00') ? 'A combinar' : h; })();
+  const horaBtn = (() => { const h = ag.hora_agendamento?.slice(0,5) || ''; return (!h || h === '00:00') ? '' : h; })();
 
   let html = '';
 
@@ -374,7 +374,7 @@ function abrirWhatsApp(fone, nome, tipo, data, hora) {
   if (numero.length < 10) { _toastAdmin('WhatsApp do cliente não cadastrado.', 'aviso'); return; }
   // Considera 55 como DDI somente se o número tiver 12-13 dígitos (DDI + DDD + número).
   const dest = (numero.startsWith('55') && numero.length >= 12) ? numero : `55${numero}`;
-  const horaTexto = (!hora || hora === 'A combinar') ? '' : ` às ${hora}`;
+  const horaTexto = (!hora || hora === '00:00') ? '' : ` até as ${hora}`;
   const msg = `Olá ${nome}! 😊\nRecebi seu pedido de ${tipo} para o dia ${data}${horaTexto}.\nEstá tudo confirmado! Combinaremos o horário por aqui. 🌙✨\nCocar Sagrado`;
   window.open(`https://wa.me/${dest}?text=${encodeURIComponent(msg)}`, '_blank');
 }

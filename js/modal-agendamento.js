@@ -262,10 +262,11 @@ function avisarWhatsAppModal(metodo) {
   if (!ag) return;
 
   const infoCliente = `*Nome:* ${ag.nome}\n*Nascimento:* ${ag.nascimento}${ag.obs ? `\n*Pergunta/Questão:* ${ag.obs}` : ''}`;
+  const horaLinha = ag.hora ? `\n*Horário:* ${ag.hora}` : '';
   const msgs = {
-    pix:    `Olá! 😊 Fiz o pagamento via *PIX*.\n\n*Pedido:* ${ag.chave}\n*Leitura:* ${ag.tipo}\n*Data:* ${ag.data}\n*Valor:* R$ ${ag.valor}\n\n${infoCliente}\n\nPode confirmar o recebimento? Combinaremos o horário por aqui! 🙏`,
-    cartao: `Olá! 😊 Gostaria de pagar via *cartão* meu agendamento.\n\n*Pedido:* ${ag.chave}\n*Leitura:* ${ag.tipo}\n*Data:* ${ag.data}\n*Valor:* R$ ${ag.valor}\n\n${infoCliente}\n\nPode me enviar o link de pagamento? Combinaremos o horário por aqui! 🙏`,
-    wise:   `Olá! 😊 Realizei a transferência via *Wise*.\n\n*Pedido:* ${ag.chave}\n*Leitura:* ${ag.tipo}\n*Data:* ${ag.data}\n*Valor:* R$ ${ag.valor}\n\n${infoCliente}\n\nPode confirmar o recebimento? Combinaremos o horário por aqui! 🙏`,
+    pix:    `Olá! 😊 Fiz o pagamento via *PIX*.\n\n*Pedido:* ${ag.chave}\n*Leitura:* ${ag.tipo}\n*Data:* ${ag.data}${horaLinha}\n*Valor:* R$ ${ag.valor}\n\n${infoCliente}\n\nPode confirmar o recebimento? Combinaremos o horário por aqui! 🙏`,
+    cartao: `Olá! 😊 Gostaria de pagar via *cartão* meu agendamento.\n\n*Pedido:* ${ag.chave}\n*Leitura:* ${ag.tipo}\n*Data:* ${ag.data}${horaLinha}\n*Valor:* R$ ${ag.valor}\n\n${infoCliente}\n\nPode me enviar o link de pagamento? Combinaremos o horário por aqui! 🙏`,
+    wise:   `Olá! 😊 Realizei a transferência via *Wise*.\n\n*Pedido:* ${ag.chave}\n*Leitura:* ${ag.tipo}\n*Data:* ${ag.data}${horaLinha}\n*Valor:* R$ ${ag.valor}\n\n${infoCliente}\n\nPode confirmar o recebimento? Combinaremos o horário por aqui! 🙏`,
   };
 
   const numero = WHATSAPP_TERAPEUTA[ag.terapeuta] || WHATSAPP_TERAPEUTA.camila;
