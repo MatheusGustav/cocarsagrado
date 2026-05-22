@@ -239,13 +239,32 @@ async function calcularEstatisticas(todos) {
 // ============================================================
 // Renderização
 // ============================================================
+const DIAS_SEMANA_PT = ['Domingo','Segunda','Terça','Quarta','Quinta','Sexta','Sábado'];
+
+function _rotuloDivisor(dataIso) {
+  if (!dataIso) return 'Sem data';
+  const [y, m, d] = dataIso.split('-').map(Number);
+  const dt = new Date(y, m - 1, d);
+  return `${DIAS_SEMANA_PT[dt.getDay()]}, ${String(d).padStart(2,'0')}/${String(m).padStart(2,'0')}`;
+}
+
 function renderizarAgendamentos(lista, container) {
   if (!lista.length) {
     container.innerHTML = '<div class="ag-empty">Nenhum agendamento encontrado.</div>';
     return;
   }
   container.innerHTML = '';
-  lista.forEach(ag => container.appendChild(criarItemAgendamento(ag)));
+  let dataAtual = null;
+  lista.forEach(ag => {
+    if (ag.data_agendamento !== dataAtual) {
+      dataAtual = ag.data_agendamento;
+      const divisor = document.createElement('div');
+      divisor.className = 'adm-divisor-dia';
+      divisor.innerHTML = `<span>${_esc(_rotuloDivisor(dataAtual))}</span>`;
+      container.appendChild(divisor);
+    }
+    container.appendChild(criarItemAgendamento(ag));
+  });
 }
 
 function _esc(str) {
