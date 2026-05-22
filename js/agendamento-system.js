@@ -497,13 +497,11 @@ async function salvarAgendamento() {
   };
 
   const { error } = await supabase.from('agendamentos').insert(payload);
-  if (error) throw error;
-
-  if (payload.agendamento_especial) {
-    await supabase.rpc('decrementar_vagas_restantes', {
-      p_profissional: payload.terapeuta,
-      p_data: payload.data_agendamento,
-    });
+  if (error) {
+    if (payload.agendamento_especial && /sem vagas/i.test(error.message)) {
+      throw new Error('A última vaga acabou de ser preenchida. Escolha outra data.');
+    }
+    throw error;
   }
 
   return chave;
