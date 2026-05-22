@@ -216,15 +216,19 @@ function _iniciarAutoRefresh() {
 // ============================================================
 // Estatísticas
 // ============================================================
+function _dataLocalISO(d = new Date()) {
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
 async function calcularEstatisticas(todos) {
-  const hoje = new Date().toISOString().slice(0,10);
+  const hoje = _dataLocalISO();
 
   const agendamentosHoje = todos.filter(a => a.data_agendamento === hoje).length;
   const pendentes        = todos.filter(a => a.status === 'pendente').length;
   const pagos            = todos.filter(a => ['pago','confirmado','atendido'].includes(a.status)).length;
 
   // Total faturado no mês
-  const mesAtual = new Date().toISOString().slice(0,7);
+  const mesAtual = hoje.slice(0, 7);
   const totalMes = todos
     .filter(a => a.data_agendamento?.startsWith(mesAtual) && ['pago','confirmado','atendido'].includes(a.status))
     .reduce((acc, a) => acc + Number(a.valor_final || 0), 0);
@@ -449,7 +453,7 @@ async function exportarRelatorio() {
   const url  = URL.createObjectURL(blob);
   const a    = document.createElement('a');
   a.href     = url;
-  a.download = `agendamentos_${new Date().toISOString().slice(0,10)}.csv`;
+  a.download = `agendamentos_${_dataLocalISO()}.csv`;
   a.click();
   URL.revokeObjectURL(url);
 }
