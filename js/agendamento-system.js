@@ -486,7 +486,7 @@ async function salvarAgendamento() {
     cliente_whatsapp:    obterWhatsappCompleto(),
     cliente_observacoes: document.getElementById('f-obs')?.value?.trim() || null,
     data_agendamento:    Estado.dataSelecionada,
-    hora_agendamento:    '00:00',
+    hora_agendamento:    Estado.horarioSelecionado || '00:00',
     duracao_minutos:     tipo.duracao_minutos,
     valor_original:      tipo.preco_original,
     desconto_aplicado:   desconto,
