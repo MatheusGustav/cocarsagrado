@@ -168,42 +168,52 @@ function _descRenderizar() {
   });
 }
 
+function _descEsc(s) {
+  return String(s ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 function _descCartaoServico(s) {
   const orig = _descPrecoOrig(s);
   const desc = s.descontoAtivo ? _descPrecoComDesc(s, s.percentualDesconto) : null;
+  const id   = _descEsc(s.id);
 
   return `
-    <div class="desc-card" data-id="${s.id}">
+    <div class="desc-card" data-id="${id}">
       <div class="desc-card-header">
         <div>
-          <div class="desc-card-nome">${s.nome}</div>
+          <div class="desc-card-nome">${_descEsc(s.nome)}</div>
           <div class="desc-card-preco-base">${orig}</div>
         </div>
         <label class="desc-toggle-wrap">
-          <input type="checkbox" class="desc-svc-chk" data-id="${s.id}"
+          <input type="checkbox" class="desc-svc-chk" data-id="${id}"
             ${s.descontoAtivo ? 'checked' : ''}
-            onchange="desc_toggleServico('${s.id}', this.checked)">
+            onchange="desc_toggleServico('${id}', this.checked)">
           <span class="desc-toggle-track"><span class="desc-toggle-thumb"></span></span>
         </label>
       </div>
-      <div class="desc-card-fields ${s.descontoAtivo ? '' : 'desc-fields-off'}" id="desc-fields-${s.id}">
+      <div class="desc-card-fields ${s.descontoAtivo ? '' : 'desc-fields-off'}" id="desc-fields-${id}">
         <div class="desc-fields-row">
           <div class="desc-field">
             <label>Desconto</label>
             <div class="desc-pct-row">
               <input type="number" class="desc-pct-input" min="1" max="99"
                 value="${s.percentualDesconto || ''}" placeholder="–"
-                data-id="${s.id}" oninput="desc_atualizarPreview('${s.id}')">
+                data-id="${id}" oninput="desc_atualizarPreview('${id}')">
               <span class="desc-pct-sym">%</span>
             </div>
           </div>
           <div class="desc-field desc-field-badge">
             <label>Badge</label>
             <input type="text" class="desc-badge-input" maxlength="20"
-              value="${s.badge || ''}" placeholder="ex: 20% OFF" data-id="${s.id}">
+              value="${_descEsc(s.badge || '')}" placeholder="ex: 20% OFF" data-id="${id}">
           </div>
         </div>
-        <div class="desc-preview" id="desc-preview-${s.id}">
+        <div class="desc-preview" id="desc-preview-${id}">
           ${desc ? `<span class="desc-prev-orig">${orig}</span><span class="desc-prev-novo">${desc}</span>` : ''}
         </div>
       </div>
