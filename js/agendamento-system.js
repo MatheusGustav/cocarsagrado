@@ -257,8 +257,7 @@ async function carregarCalendario() {
       const card = document.createElement('div');
       card.className = 'ag-vagas-card';
 
-      const h = ate_horario ? parseInt(ate_horario.slice(0, 2)) : null;
-      const horarioLabel = h !== null ? `até ${h}h` : '';
+      const horarioLabel = ate_horario ? `até as ${ate_horario.slice(0, 5)}` : '';
       const vagasText    = vagas === 1 ? '1 vaga disponível' : `${vagas} vagas disponíveis`;
       const cls          = vagas <= 2 ? 'vagas-poucas' : 'vagas-ok';
 
@@ -321,8 +320,9 @@ async function _buscarDiasComVagas(profissional, diasParaFrente) {
     if (ov && ov.ativo) {
       const restantes = Math.max(0, ov.vagas_total - usadas);
       if (restantes > 0) {
-        if (i === 0 && ov.ate_horario) {
-          const [h, m] = ov.ate_horario.split(':').map(Number);
+        if (i === 0) {
+          const ateH = ov.ate_horario || '18:00';
+          const [h, m] = ateH.split(':').map(Number);
           const limite = new Date(); limite.setHours(h, m, 0, 0);
           if (new Date() >= limite) continue;
         }
@@ -389,7 +389,7 @@ function atualizarResumo() {
   const set = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
   set('res-tipo',    tipo.nome);
   set('res-data',    `${d.getDate()} de ${MESES_PT[d.getMonth()]} de ${d.getFullYear()}`);
-  const horaLabel = Estado.horarioSelecionado ? `até as ${Estado.horarioSelecionado.slice(0,5)}h` : '';
+  const horaLabel = Estado.horarioSelecionado ? `até as ${Estado.horarioSelecionado.slice(0,5)}` : '';
   set('res-hora',    horaLabel);
   set('res-duracao', _formatarDuracao(tipo.duracao_minutos));
   set('res-valor',   `R$ ${final.toFixed(2).replace('.', ',')}`);
