@@ -410,7 +410,8 @@ function processarFormulario(e) {
     .then(chave => { if (chave) redirecionarParaPagamento(chave); })
     .catch(err => {
       console.error('salvarAgendamento:', err);
-      mostrarAlerta('Erro ao salvar agendamento. Tente novamente.', 'error');
+      const msg = err?.userMessage ? err.message : 'Erro ao salvar agendamento. Tente novamente.';
+      mostrarAlerta(msg, 'error');
       if (btn) { btn.disabled = false; btn.textContent = 'Continuar para Pagamento'; }
     });
 }
@@ -474,6 +475,22 @@ function mostrarErroField(input, msg) {
 
 async function salvarAgendamento() {
   const tipo = Estado.tipoSelecionado;
+  const whatsapp = obterWhatsappCompleto();
+  const aceitouDesconto = localStorage.getItem('aceitouDesconto10') === 'true';
+
+  if (aceitouDesconto) {
+    const { data: elegivel, error: errElig } = await supabase
+      .rpc('cliente_elegivel_desconto', { p_whatsapp: whatsapp });
+    if (errElig) throw errElig;
+    if (elegivel === false) {
+      localStorage.setItem('aceitouDesconto10', 'false');
+      atualizarResumo();
+      const err = new Error('Você já tem agendamento conosco — o desconto de novo cliente não se aplica. Os valores foram atualizados, revise antes de continuar.');
+      err.userMessage = true;
+      throw err;
+    }
+  }
+
   const { final, desconto } = calcularPrecoFinal(tipo.preco_original);
   const chave = await gerarChavePedido();
 
@@ -483,7 +500,7 @@ async function salvarAgendamento() {
     terapeuta:           tipo.terapeuta || null,
     cliente_nome:        document.getElementById('f-nome').value.trim(),
     cliente_nascimento:  document.getElementById('f-nasc')?.value || null,
-    cliente_whatsapp:    obterWhatsappCompleto(),
+    cliente_whatsapp:    whatsapp,
     cliente_observacoes: document.getElementById('f-obs')?.value?.trim() || null,
     data_agendamento:    Estado.dataSelecionada,
     hora_agendamento:    Estado.horarioSelecionado || '00:00',
@@ -491,7 +508,7 @@ async function salvarAgendamento() {
     valor_original:      tipo.preco_original,
     desconto_aplicado:   desconto,
     valor_final:         final,
-    aceitou_desconto_10:  localStorage.getItem('aceitouDesconto10') === 'true',
+    aceitou_desconto_10:  aceitouDesconto,
     agendamento_especial: !!(Estado.tipoSelecionado?.especial),
     status:               'pendente',
   };
@@ -499,7 +516,16 @@ async function salvarAgendamento() {
   const { error } = await supabase.from('agendamentos').insert(payload);
   if (error) {
     if (payload.agendamento_especial && /sem vagas/i.test(error.message)) {
-      throw new Error('A última vaga acabou de ser preenchida. Escolha outra data.');
+      const err = new Error('A última vaga acabou de ser preenchida. Escolha outra data.');
+      err.userMessage = true;
+      throw err;
+    }
+    if (/desconto_novo_cliente_invalido/i.test(error.message)) {
+      localStorage.setItem('aceitouDesconto10', 'false');
+      atualizarResumo();
+      const err = new Error('Você já tem agendamento conosco — o desconto de novo cliente não se aplica. Os valores foram atualizados, revise antes de continuar.');
+      err.userMessage = true;
+      throw err;
     }
     throw error;
   }
