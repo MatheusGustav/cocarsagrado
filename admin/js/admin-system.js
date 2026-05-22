@@ -367,11 +367,23 @@ async function marcarComoAtendido(id) {
   carregarAgendamentos();
 }
 
+async function _devolverVagaEspecialSeAplicavel(ag) {
+  if (!ag?.agendamento_especial) return;
+  if (ag.status === 'cancelado') return;
+  if (!ag.terapeuta || !ag.data_agendamento) return;
+  await supabase.rpc('incrementar_vagas_restantes', {
+    p_profissional: ag.terapeuta,
+    p_data: ag.data_agendamento,
+  });
+}
+
 async function cancelarAgendamento(id) {
   if (!_admAutenticado) { _mostrarLogin(); return; }
   if (!confirm('Cancelar este agendamento? Esta ação não pode ser desfeita.')) return;
+  const ag = _agendamentosTodos.find(a => String(a.id) === String(id));
   const { error } = await supabase.from('agendamentos').update({ status: 'cancelado' }).eq('id', id);
   if (error) { _toastAdmin('Erro: ' + error.message, 'erro'); return; }
+  await _devolverVagaEspecialSeAplicavel(ag);
   _toastAdmin('✅ Agendamento cancelado.', 'ok');
   carregarAgendamentos();
 }
@@ -379,8 +391,10 @@ async function cancelarAgendamento(id) {
 async function apagarAgendamento(id) {
   if (!_admAutenticado) { _mostrarLogin(); return; }
   if (!confirm('Apagar este agendamento permanentemente? Esta ação não pode ser desfeita.')) return;
+  const ag = _agendamentosTodos.find(a => String(a.id) === String(id));
   const { error } = await supabase.from('agendamentos').delete().eq('id', id);
   if (error) { _toastAdmin('Erro: ' + error.message, 'erro'); return; }
+  await _devolverVagaEspecialSeAplicavel(ag);
   _toastAdmin('✅ Agendamento apagado.', 'ok');
   carregarAgendamentos();
 }

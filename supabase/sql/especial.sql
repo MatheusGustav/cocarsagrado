@@ -40,3 +40,36 @@ CREATE POLICY "all_disp_especial"
   ON public.disponibilidade_especial FOR ALL
   TO anon
   USING (true) WITH CHECK (true);
+
+-- ============================================================
+-- Funções para controle de vagas restantes
+-- ============================================================
+CREATE OR REPLACE FUNCTION public.decrementar_vagas_restantes(
+  p_profissional text,
+  p_data date
+)
+RETURNS void AS $$
+BEGIN
+  UPDATE public.disponibilidade_especial
+  SET vagas_restantes = vagas_restantes - 1
+  WHERE profissional = p_profissional
+    AND data = p_data
+    AND vagas_restantes > 0;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION public.incrementar_vagas_restantes(
+  p_profissional text,
+  p_data date
+)
+RETURNS void AS $$
+BEGIN
+  UPDATE public.disponibilidade_especial
+  SET vagas_restantes = least(vagas_restantes + 1, vagas_total)
+  WHERE profissional = p_profissional
+    AND data = p_data;
+END;
+$$ LANGUAGE plpgsql;
+
+GRANT EXECUTE ON FUNCTION public.decrementar_vagas_restantes TO anon;
+GRANT EXECUTE ON FUNCTION public.incrementar_vagas_restantes TO anon;
