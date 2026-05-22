@@ -119,6 +119,8 @@ CREATE INDEX idx_agend_whatsapp_norm ON public.agendamentos (regexp_replace(clie
 
 -- ============================================================
 -- 4) TRIGGER: bloqueia desconto 10% para clientes recorrentes
+--    Bloqueia o INSERT com exceção; o frontend deve pré-validar
+--    via cliente_elegivel_desconto para evitar o erro.
 -- ============================================================
 CREATE OR REPLACE FUNCTION public.validar_desconto_primeiro_cliente()
 RETURNS TRIGGER AS $$
@@ -129,9 +131,7 @@ BEGIN
         = regexp_replace(NEW.cliente_whatsapp, '\D', '', 'g')
       AND status IN ('pago', 'confirmado', 'atendido')
   ) THEN
-    NEW.aceitou_desconto_10 := FALSE;
-    NEW.desconto_aplicado   := 0;
-    NEW.valor_final         := NEW.valor_original;
+    RAISE EXCEPTION 'desconto_novo_cliente_invalido: este WhatsApp já possui agendamento — o desconto de novo cliente não se aplica';
   END IF;
   RETURN NEW;
 END;
@@ -141,6 +141,21 @@ CREATE TRIGGER trg_desconto_primeiro_cliente
   BEFORE INSERT ON public.agendamentos
   FOR EACH ROW
   EXECUTE FUNCTION public.validar_desconto_primeiro_cliente();
+
+-- RPC consultada pelo frontend antes do INSERT
+CREATE OR REPLACE FUNCTION public.cliente_elegivel_desconto(p_whatsapp text)
+RETURNS boolean AS $$
+BEGIN
+  RETURN NOT EXISTS (
+    SELECT 1 FROM public.agendamentos
+    WHERE regexp_replace(cliente_whatsapp, '\D', '', 'g')
+        = regexp_replace(p_whatsapp, '\D', '', 'g')
+      AND status IN ('pago', 'confirmado', 'atendido')
+  );
+END;
+$$ LANGUAGE plpgsql STABLE;
+
+GRANT EXECUTE ON FUNCTION public.cliente_elegivel_desconto(text) TO anon;
 
 -- ============================================================
 -- 5) RLS — anon tem acesso total (admin + checkout no front)
