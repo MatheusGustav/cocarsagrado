@@ -67,8 +67,11 @@ function renderizarPadraoSemanal() {
   const grid  = document.createElement('div');
   grid.className = 'vps-semana-grid';
 
+  const hojeStr = _dataParaISO(new Date());
+
   for (const d of datas) {
     const str            = _dataParaISO(d);
+    const ehHoje         = str === hojeStr;
     const ativosCamila   = _overrideCache[`camila_${str}`]?.ativo  ?? false;
     const ativosMatheus  = _overrideCache[`matheus_${str}`]?.ativo ?? false;
     const totalAtivos    = [ativosCamila, ativosMatheus].filter(Boolean).length;
@@ -83,10 +86,10 @@ function renderizarPadraoSemanal() {
     const mesAbr  = MESES_VAGAS_ABREV[d.getMonth()];
 
     const card = document.createElement('div');
-    card.className = 'vps-dia-card';
+    card.className = 'vps-dia-card' + (ehHoje ? ' vps-dia-card--hoje' : '');
     card.innerHTML = `
       <div class="vps-dia-header">
-        <span class="vps-dia-nome">${diaNome} <span style="font-weight:400;font-size:.8em;opacity:.7">${diaNum} ${mesAbr}</span></span>
+        <span class="vps-dia-nome">${ehHoje ? '<span class="vps-badge-hoje">HOJE</span> ' : ''}${diaNome} <span style="font-weight:400;font-size:.8em;opacity:.7">${diaNum} ${mesAbr}</span></span>
         <span class="vps-chip ${chipCls}" data-chip-data="${str}">${chipTxt}</span>
       </div>
       <div class="vps-dia-body">
