@@ -142,13 +142,28 @@ async function adicionarDataEspecial() {
   btn.disabled    = true;
   btn.textContent = 'Adicionando...';
 
+  // Se a data já existe (re-adição), preserva o vagas_restantes
+  // ajustado pelos agendamentos já feitos, limitado ao novo total.
+  const { data: existente } = await supabase
+    .from('disponibilidade_especial')
+    .select('vagas_total, vagas_restantes')
+    .eq('profissional', _profEspecial)
+    .eq('data', data)
+    .maybeSingle();
+
+  let restantes = vagas;
+  if (existente) {
+    const ocupadas = Math.max(0, existente.vagas_total - existente.vagas_restantes);
+    restantes = Math.max(0, vagas - ocupadas);
+  }
+
   const { error } = await supabase
     .from('disponibilidade_especial')
     .upsert({
       profissional:    _profEspecial,
       data,
       vagas_total:     vagas,
-      vagas_restantes: vagas,
+      vagas_restantes: restantes,
       ate_horario:     hora,
       ativo:           true,
       updated_at:      new Date().toISOString(),
