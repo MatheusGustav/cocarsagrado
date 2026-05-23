@@ -258,7 +258,7 @@
         </div>
         <button class="cs-close" id="cs-chat-close" aria-label="Fechar">✕</button>
       </div>
-      <div id="cs-chat-msgs"></div>
+      <div id="cs-chat-msgs" role="log" aria-live="polite" aria-label="Mensagens do chat"></div>
       <div id="cs-sugestoes"></div>
       <div id="cs-wa-bar">
         <a class="cs-wa-btn" href="${WA_MATHEUS}" target="_blank" rel="noopener" aria-label="WhatsApp Matheus">
@@ -309,6 +309,7 @@
   );
   document.getElementById('cs-chat-close').addEventListener('click', closeChat);
   backdrop.addEventListener('click', closeChat);
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && opened) closeChat(); });
 
   // Clique fora do painel (incluindo área do header) fecha o chat,
   // exceto nos botões que devem permanecer ativos.

@@ -323,3 +323,40 @@ body.modal-aberto { overflow: hidden; }
   border-color: #4b5563;
   color: #9ca3af;
 }
+[data-theme="dark"] .pag-voltar-btn:hover {
+  border-color: #818cf8;
+  color: #818cf8;
+}
+[data-theme="dark"] .modal-overlay {
+  background: rgba(0,0,0,0.75);
+}
+[data-theme="dark"] .modal-tela-step .t-num {
+  background: #4b5563;
+  color: #9ca3af;
+}
+[data-theme="dark"] .modal-tela-step.active {
+  background: #1e1b4b;
+  color: #a5b4fc;
+  border-color: #6366f1;
+}
+[data-theme="dark"] .modal-tela-step.active .t-num {
+  background: #6366f1;
+  color: #fff;
+}
+[data-theme="dark"] .modal-tela-step.done {
+  background: #052e16;
+  color: #6ee7b7;
+  border-color: #10b981;
+}
+[data-theme="dark"] .modal-tela-step.done .t-num {
+  background: #10b981;
+  color: #fff;
+}
+[data-theme="dark"] .modal-progress-sep {
+  color: #4b5563;
+}
+[data-theme="dark"] .modal-close-btn:hover {
+  background: #450a0a;
+  border-color: #dc2626;
+  color: #fca5a5;
+}

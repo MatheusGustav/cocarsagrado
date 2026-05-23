@@ -72,7 +72,8 @@ function _renderEspecial() {
   }
 
   _especialCache.forEach(rec => {
-    const d    = new Date(rec.data + 'T00:00:00');
+    const [eY, eM, eD] = rec.data.split('-').map(Number);
+    const d    = new Date(eY, eM - 1, eD);
     const card = document.createElement('div');
     card.className = 'esp-card' + (rec.ativo ? '' : ' esp-card--off');
     const restantesLabel = rec.vagas_restantes !== undefined

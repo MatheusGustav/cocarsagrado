@@ -30,11 +30,18 @@ DROP POLICY IF EXISTS "select_disp_override" ON public.disponibilidade_override;
 DROP POLICY IF EXISTS "all_disp_override"   ON public.disponibilidade_override;
 DROP POLICY IF EXISTS "anon_select_disp_override" ON public.disponibilidade_override;
 
--- anon só pode ler (cliente vê vagas). Escrita só pelo admin (auth_all_*).
+-- anon só pode ler (cliente vê vagas). Escrita só pelo admin autenticado.
 CREATE POLICY "anon_select_disp_override"
   ON public.disponibilidade_override FOR SELECT
   TO anon
   USING (true);
+
+DROP POLICY IF EXISTS "auth_all_disp_override" ON public.disponibilidade_override;
+CREATE POLICY "auth_all_disp_override"
+  ON public.disponibilidade_override FOR ALL
+  TO authenticated
+  USING (true)
+  WITH CHECK (true);
 
 -- ============================================================
 -- Permitir hora_agendamento como '00:00' (horário a combinar)
