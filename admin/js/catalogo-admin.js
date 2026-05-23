@@ -188,6 +188,11 @@ function _catRenderForm(t) {
             <input type="checkbox" id="cat-pergunta" ${t.requer_pergunta ? 'checked' : ''}>
             <span>Cliente precisa <strong>descrever a pergunta</strong> ao agendar</span>
           </label>
+          <div class="ag-form-group" id="cat-num-perg-wrap" style="${t.requer_pergunta ? '' : 'display:none'}">
+            <label for="cat-num-perg">Quantas perguntas?</label>
+            <input type="number" id="cat-num-perg" min="1" max="20" step="1"
+              value="${t.num_perguntas || 1}" style="max-width:120px">
+          </div>
         </div>
       </div>
 
@@ -198,8 +203,16 @@ function _catRenderForm(t) {
     </div>
   `;
 
+
   document.body.appendChild(overlay);
   document.getElementById('cat-input-foto')?.addEventListener('change', _catPreviewArquivo);
+
+  // Toggle visibility do campo "Quantas perguntas?" baseado no checkbox
+  const chkPerg = document.getElementById('cat-pergunta');
+  const wrapPerg = document.getElementById('cat-num-perg-wrap');
+  chkPerg?.addEventListener('change', () => {
+    if (wrapPerg) wrapPerg.style.display = chkPerg.checked ? '' : 'none';
+  });
 
   // Popular o select de posição com base no terapeuta atual
   _catAtualizarOrdemSelect(t.terapeuta || '');
@@ -343,6 +356,8 @@ async function _catSalvar() {
   const posicao   = parseInt(document.getElementById('cat-ordem')?.value, 10);
   const especial  = document.querySelector('input[name="cat-agenda"]:checked')?.value === 'especial';
   const requer    = document.getElementById('cat-pergunta')?.checked || false;
+  const numPergRaw = parseInt(document.getElementById('cat-num-perg')?.value, 10);
+  const numPerg    = requer ? (Number.isFinite(numPergRaw) && numPergRaw > 0 ? Math.min(20, numPergRaw) : 1) : 0;
 
   if (!nome)                          { _toastAdmin('Informe o nome.', 'erro'); return; }
   if (isNaN(preco) || preco < 0)      { _toastAdmin('Preço inválido.', 'erro'); return; }
@@ -387,6 +402,7 @@ async function _catSalvar() {
       ordem:           posicao * 10,
       especial,
       requer_pergunta: requer,
+      num_perguntas:   numPerg,
     };
 
     let salvoId = _catEditandoId;

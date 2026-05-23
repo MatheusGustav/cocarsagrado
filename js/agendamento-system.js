@@ -50,6 +50,27 @@ function _tipoMaxQty(t) {
   return t.especial ? 1 : 5;
 }
 
+function _numeroDePerguntas(tipo) {
+  if (!tipo?.requerPergunta && !tipo?.requer_pergunta) return 0;
+  const n = parseInt(tipo.num_perguntas, 10);
+  if (Number.isFinite(n) && n > 0) return Math.min(20, n);
+  // Fallback (registros antigos sem a coluna): tenta extrair do nome
+  const fonte = `${tipo.tier_label || ''} ${tipo.nome || ''}`;
+  const m = fonte.match(/(\d+)\s*pergunta/i);
+  return m ? Math.max(1, Math.min(20, parseInt(m[1], 10))) : 1;
+}
+
+function _coletarObservacoes(tipo) {
+  const n = _numeroDePerguntas(tipo);
+  if (n === 0) return null;
+  const partes = [];
+  for (let i = 1; i <= n; i++) {
+    const v = document.getElementById(`f-obs-${i}`)?.value?.trim();
+    if (v) partes.push(n === 1 ? v : `${i}. ${v}`);
+  }
+  return partes.length ? partes.join('\n') : null;
+}
+
 function calcularPrecoFinal(precoOriginal) {
   const preco = parseFloat(precoOriginal) || 0;
   if (localStorage.getItem('aceitouDesconto10') === 'true') {
@@ -441,7 +462,14 @@ function validarFormulario() {
     { id: 'f-fone', minLen: 6,  msg: 'Número inválido.' },
   ];
   if (Estado.tipoSelecionado?.requerPergunta) {
-    campos.push({ id: 'f-obs', minLen: 3, msg: 'Descreva sua pergunta/questão.' });
+    const n = _numeroDePerguntas(Estado.tipoSelecionado);
+    for (let i = 1; i <= n; i++) {
+      campos.push({
+        id: `f-obs-${i}`,
+        minLen: 3,
+        msg: n > 1 ? `Descreva a pergunta ${i}.` : 'Descreva sua pergunta/questão.',
+      });
+    }
   }
   campos.forEach(({ id, minLen, date, msg }) => {
     const el = document.getElementById(id);
@@ -505,7 +533,7 @@ async function salvarAgendamento() {
     cliente_nome:        document.getElementById('f-nome').value.trim(),
     cliente_nascimento:  document.getElementById('f-nasc')?.value || null,
     cliente_whatsapp:    whatsapp,
-    cliente_observacoes: document.getElementById('f-obs')?.value?.trim() || null,
+    cliente_observacoes: _coletarObservacoes(Estado.tipoSelecionado),
     data_agendamento:    Estado.dataSelecionada,
     hora_agendamento:    Estado.horarioSelecionado || '00:00',
     duracao_minutos:     tipo.duracao_minutos,
