@@ -9,6 +9,7 @@ const PROFISSIONAL_NOME_VAGAS = { camila: 'Camila', matheus: 'Matheus' };
 const DIAS_A_FRENTE           = 6;
 
 let _overrideCache = {};
+let _ocupadasCache = {};
 
 function _dataParaISO(d) {
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
@@ -38,20 +39,37 @@ async function carregarPadraoSemanal() {
   const dataIni  = _dataParaISO(datas[0]);
   const dataFim  = _dataParaISO(datas[datas.length - 1]);
 
-  const { data, error } = await supabase
-    .from('disponibilidade_override')
-    .select('*')
-    .in('profissional', PROFISSIONAIS_VAGAS)
-    .gte('data', dataIni)
-    .lte('data', dataFim);
+  const [overridesResp, ...contagensResps] = await Promise.all([
+    supabase
+      .from('disponibilidade_override')
+      .select('*')
+      .in('profissional', PROFISSIONAIS_VAGAS)
+      .gte('data', dataIni)
+      .lte('data', dataFim),
+    ...PROFISSIONAIS_VAGAS.map(prof =>
+      supabase.rpc('contar_agendamentos_por_data', {
+        p_terapeuta: prof,
+        p_inicio:    dataIni,
+        p_fim:       dataFim,
+      })
+    ),
+  ]);
 
-  if (error) {
+  if (overridesResp.error) {
     container.innerHTML = '<div class="ag-empty">Erro ao carregar configuração.</div>';
     return;
   }
 
   _overrideCache = {};
-  (data || []).forEach(r => { _overrideCache[`${r.profissional}_${r.data}`] = r; });
+  (overridesResp.data || []).forEach(r => { _overrideCache[`${r.profissional}_${r.data}`] = r; });
+
+  _ocupadasCache = {};
+  PROFISSIONAIS_VAGAS.forEach((prof, i) => {
+    (contagensResps[i]?.data || []).forEach(c => {
+      _ocupadasCache[`${prof}_${c.data_agendamento}`] = Number(c.total) || 0;
+    });
+  });
+
   renderizarPadraoSemanal();
 }
 
@@ -94,10 +112,13 @@ function renderizarPadraoSemanal() {
       </div>
       <div class="vps-dia-body">
         ${PROFISSIONAIS_VAGAS.map((prof, i) => {
-          const rec   = _overrideCache[`${prof}_${str}`];
-          const ativo = rec?.ativo  ?? false;
-          const vagas = rec?.vagas_total ?? 0;
-          const ate   = rec?.ate_horario?.slice(0, 5) ?? '18:00';
+          const rec      = _overrideCache[`${prof}_${str}`];
+          const ativo    = rec?.ativo  ?? false;
+          const vagas    = rec?.vagas_total ?? 0;
+          const ate      = rec?.ate_horario?.slice(0, 5) ?? '18:00';
+          const ocupadas = _ocupadasCache[`${prof}_${str}`] ?? 0;
+          const livres   = Math.max(0, vagas - ocupadas);
+          const ocupCls  = !ativo ? '' : (livres === 0 && vagas > 0 ? 'vagas-ocup--cheio' : (ocupadas > 0 ? 'vagas-ocup--parcial' : ''));
           return `
             ${i > 0 ? '<div class="vps-prof-divider"></div>' : ''}
             <div class="vps-prof-row">
@@ -123,6 +144,11 @@ function renderizarPadraoSemanal() {
                   </select>
                 </div>
               </div>
+              <div class="vagas-ocup-info ${ocupCls}" data-prof="${prof}" data-data="${str}" ${ativo ? '' : 'style="display:none"'}>
+                <span class="vagas-ocup-num"><strong>${ocupadas}</strong> ocupadas</span>
+                <span class="vagas-ocup-sep">·</span>
+                <span class="vagas-ocup-num"><strong>${livres}</strong> livres</span>
+              </div>
             </div>`;
         }).join('')}
       </div>
@@ -132,14 +158,21 @@ function renderizarPadraoSemanal() {
 
     PROFISSIONAIS_VAGAS.forEach(prof => {
       const chk = card.querySelector(`.vagas-chk[data-prof="${prof}"]`);
+      const ocupInfo = card.querySelector(`.vagas-ocup-info[data-prof="${prof}"]`);
+      const selQty   = card.querySelector(`.vagas-sel-qty[data-prof="${prof}"]`);
+
       chk.addEventListener('change', () => {
         const row  = chk.closest('.vps-prof-row');
         const flds = row.querySelector('.vps-prof-fields');
         const txt  = chk.closest('.vagas-toggle-wrap').querySelector('.vagas-toggle-txt');
         flds.classList.toggle('vps-prof-fields--off', !chk.checked);
         txt.textContent = chk.checked ? 'Ativo' : 'Folga';
+        if (ocupInfo) ocupInfo.style.display = chk.checked ? '' : 'none';
         _atualizarChipData(str, card);
       });
+
+      // Atualiza badge ocupadas/livres ao mudar o total no select
+      selQty?.addEventListener('change', () => _refreshOcupInfo(ocupInfo, selQty, prof, str));
     });
 
     card.querySelector('.vps-btn-salvar').addEventListener('click', function() {
@@ -150,6 +183,18 @@ function renderizarPadraoSemanal() {
   }
 
   container.appendChild(grid);
+}
+
+function _refreshOcupInfo(ocupInfo, selQty, prof, str) {
+  if (!ocupInfo) return;
+  const total    = parseInt(selQty?.value || '0', 10);
+  const ocupadas = _ocupadasCache[`${prof}_${str}`] ?? 0;
+  const livres   = Math.max(0, total - ocupadas);
+  const nums = ocupInfo.querySelectorAll('.vagas-ocup-num strong');
+  if (nums[0]) nums[0].textContent = ocupadas;
+  if (nums[1]) nums[1].textContent = livres;
+  ocupInfo.classList.toggle('vagas-ocup--cheio',   livres === 0 && total > 0);
+  ocupInfo.classList.toggle('vagas-ocup--parcial', livres > 0 && ocupadas > 0);
 }
 
 function _atualizarChipData(str, card) {

@@ -1952,6 +1952,35 @@ body.modal-aberto { overflow: hidden; }
   margin-right: 4px;
 }
 
+.vagas-ocup-info {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  font-size: .78rem;
+  color: var(--text-muted, #6B655B);
+  background: rgba(1, 55, 24, 0.04);
+  border: 1px solid rgba(1, 55, 24, 0.08);
+}
+.vagas-ocup-info strong { color: var(--primary, #2D4A2D); font-weight: 600; }
+.vagas-ocup-sep { opacity: .4; }
+
+.vagas-ocup-info.vagas-ocup--parcial {
+  background: rgba(201, 168, 76, 0.10);
+  border-color: rgba(201, 168, 76, 0.30);
+  color: #7a5c0a;
+}
+.vagas-ocup-info.vagas-ocup--parcial strong { color: #7a5c0a; }
+
+.vagas-ocup-info.vagas-ocup--cheio {
+  background: rgba(185, 28, 28, 0.08);
+  border-color: rgba(185, 28, 28, 0.25);
+  color: #B91C1C;
+}
+.vagas-ocup-info.vagas-ocup--cheio strong { color: #B91C1C; }
+
 .vps-dia-body {
   padding: 14px 16px;
   flex: 1;
