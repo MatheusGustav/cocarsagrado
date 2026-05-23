@@ -555,7 +555,9 @@ function gerarChaveAleatoria() {
 
 function redirecionarParaPagamento(chave) {
   console.warn('redirecionarParaPagamento não foi substituído — verifique se modal-agendamento.js carregou corretamente.');
-  mostrarAlerta('Erro interno ao redirecionar para pagamento. Recarregue a página.', 'error');
+  const err = new Error('Erro interno ao redirecionar para pagamento. Recarregue a página.');
+  err.userMessage = true;
+  throw err;
 }
 
 // ============================================================
