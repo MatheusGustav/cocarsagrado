@@ -223,9 +223,10 @@ function _dataLocalISO(d = new Date()) {
 async function calcularEstatisticas(todos) {
   const hoje = _dataLocalISO();
 
-  const agendamentosHoje = todos.filter(a => a.data_agendamento === hoje).length;
-  const pendentes        = todos.filter(a => a.status === 'pendente').length;
-  const pagos            = todos.filter(a => ['pago','confirmado','atendido'].includes(a.status)).length;
+  const agendamentosHoje  = todos.filter(a => a.data_agendamento === hoje).length;
+  const pendentes         = todos.filter(a => a.status === 'pendente').length;
+  const pagos             = todos.filter(a => ['pago','confirmado','atendido'].includes(a.status)).length;
+  const leiturasPendentes = todos.filter(a => ['pago','confirmado'].includes(a.status)).length;
 
   // Total faturado no mês
   const mesAtual = hoje.slice(0, 7);
@@ -238,6 +239,24 @@ async function calcularEstatisticas(todos) {
   set('stat-pendente',pendentes);
   set('stat-pagos',   pagos);
   set('stat-total',   `R$ ${totalMes.toFixed(2).replace('.', ',')}`);
+
+  atualizarMascote(leiturasPendentes, pagos);
+}
+
+function atualizarMascote(leiturasPendentes, pagos) {
+  const wrap  = document.getElementById('mascote-chefe');
+  const balao = document.getElementById('mascote-balao');
+  if (!wrap || !balao) return;
+  wrap.classList.remove('mascote-pendente', 'mascote-grana');
+  if (leiturasPendentes > 0) {
+    balao.textContent = 'da baixa nos atendimentos pourra!!';
+    wrap.classList.add('mascote-pendente');
+  } else if (pagos >= 8) {
+    balao.textContent = 'ta com a grana né!! só de olho...';
+    wrap.classList.add('mascote-grana');
+  } else {
+    balao.textContent = 'estou de olho por aqui...';
+  }
 }
 
 // ============================================================
