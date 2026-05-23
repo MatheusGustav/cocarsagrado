@@ -123,7 +123,11 @@ CREATE INDEX idx_agend_whatsapp_norm ON public.agendamentos (regexp_replace(clie
 --    via cliente_elegivel_desconto para evitar o erro.
 -- ============================================================
 CREATE OR REPLACE FUNCTION public.validar_desconto_primeiro_cliente()
-RETURNS TRIGGER AS $$
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
 BEGIN
   IF NEW.aceitou_desconto_10 = TRUE AND EXISTS (
     SELECT 1 FROM public.agendamentos
@@ -135,7 +139,7 @@ BEGIN
   END IF;
   RETURN NEW;
 END;
-$$ LANGUAGE plpgsql;
+$$;
 
 CREATE TRIGGER trg_desconto_primeiro_cliente
   BEFORE INSERT ON public.agendamentos
@@ -144,7 +148,12 @@ CREATE TRIGGER trg_desconto_primeiro_cliente
 
 -- RPC consultada pelo frontend antes do INSERT
 CREATE OR REPLACE FUNCTION public.cliente_elegivel_desconto(p_whatsapp text)
-RETURNS boolean AS $$
+RETURNS boolean
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+STABLE
+AS $$
 BEGIN
   RETURN NOT EXISTS (
     SELECT 1 FROM public.agendamentos
@@ -153,7 +162,7 @@ BEGIN
       AND status IN ('pago', 'confirmado', 'atendido')
   );
 END;
-$$ LANGUAGE plpgsql STABLE;
+$$;
 
 GRANT EXECUTE ON FUNCTION public.cliente_elegivel_desconto(text) TO anon;
 
@@ -174,17 +183,49 @@ DROP POLICY IF EXISTS "anon_all_horarios" ON public.horarios_disponiveis;
 CREATE POLICY "anon_all_horarios" ON public.horarios_disponiveis
   FOR ALL TO anon USING (TRUE) WITH CHECK (TRUE);
 
--- agendamentos
+-- agendamentos — anon SÓ pode INSERT (criar agendamento novo).
+-- SELECT/UPDATE/DELETE bloqueados: clientes não podem ler ou modificar
+-- agendamentos de outras pessoas. Frontend usa RPCs security definer
+-- (chave_pedido_existe, contar_agendamentos_por_data).
 DROP POLICY IF EXISTS "anon_select_agend" ON public.agendamentos;
 DROP POLICY IF EXISTS "anon_insert_agend" ON public.agendamentos;
 DROP POLICY IF EXISTS "anon_update_agend" ON public.agendamentos;
 DROP POLICY IF EXISTS "anon_delete_agend" ON public.agendamentos;
 
-CREATE POLICY "anon_select_agend" ON public.agendamentos
-  FOR SELECT TO anon USING (TRUE);
 CREATE POLICY "anon_insert_agend" ON public.agendamentos
   FOR INSERT TO anon WITH CHECK (TRUE);
-CREATE POLICY "anon_update_agend" ON public.agendamentos
-  FOR UPDATE TO anon USING (TRUE);
-CREATE POLICY "anon_delete_agend" ON public.agendamentos
-  FOR DELETE TO anon USING (TRUE);
+
+-- RPCs públicas que substituem o SELECT direto
+CREATE OR REPLACE FUNCTION public.chave_pedido_existe(p_chave text)
+RETURNS boolean
+LANGUAGE sql
+SECURITY DEFINER
+SET search_path = public
+STABLE
+AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM public.agendamentos WHERE chave_pedido = p_chave
+  );
+$$;
+
+CREATE OR REPLACE FUNCTION public.contar_agendamentos_por_data(
+  p_terapeuta text,
+  p_inicio    date,
+  p_fim       date
+)
+RETURNS TABLE (data_agendamento date, total bigint)
+LANGUAGE sql
+SECURITY DEFINER
+SET search_path = public
+STABLE
+AS $$
+  SELECT data_agendamento, count(*)::bigint AS total
+  FROM public.agendamentos
+  WHERE terapeuta = p_terapeuta
+    AND data_agendamento BETWEEN p_inicio AND p_fim
+    AND status IN ('pago','confirmado','atendido','pendente')
+  GROUP BY data_agendamento;
+$$;
+
+GRANT EXECUTE ON FUNCTION public.chave_pedido_existe(text) TO anon;
+GRANT EXECUTE ON FUNCTION public.contar_agendamentos_por_data(text, date, date) TO anon;

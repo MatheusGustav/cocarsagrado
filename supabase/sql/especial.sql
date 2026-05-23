@@ -28,18 +28,15 @@ ALTER TABLE public.agendamentos
 -- RLS
 ALTER TABLE public.disponibilidade_especial ENABLE ROW LEVEL SECURITY;
 
-DROP POLICY IF EXISTS "select_disp_especial" ON public.disponibilidade_especial;
-DROP POLICY IF EXISTS "all_disp_especial"    ON public.disponibilidade_especial;
+DROP POLICY IF EXISTS "select_disp_especial"      ON public.disponibilidade_especial;
+DROP POLICY IF EXISTS "all_disp_especial"         ON public.disponibilidade_especial;
+DROP POLICY IF EXISTS "anon_select_disp_especial" ON public.disponibilidade_especial;
 
-CREATE POLICY "select_disp_especial"
+-- anon só pode ler (cliente vê vagas). Escrita só pelo admin (auth_all_*).
+CREATE POLICY "anon_select_disp_especial"
   ON public.disponibilidade_especial FOR SELECT
-  TO anon, authenticated
-  USING (true);
-
-CREATE POLICY "all_disp_especial"
-  ON public.disponibilidade_especial FOR ALL
   TO anon
-  USING (true) WITH CHECK (true);
+  USING (true);
 
 -- ============================================================
 -- Funções para controle de vagas restantes
@@ -79,7 +76,11 @@ GRANT EXECUTE ON FUNCTION public.incrementar_vagas_restantes TO anon;
 -- O FOR UPDATE bloqueia a linha durante a transação.
 -- ============================================================
 CREATE OR REPLACE FUNCTION public.decrementar_vaga_especial_trigger()
-RETURNS TRIGGER AS $$
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
 DECLARE
   v_restantes INTEGER;
 BEGIN
@@ -114,7 +115,7 @@ BEGIN
 
   RETURN NEW;
 END;
-$$ LANGUAGE plpgsql;
+$$;
 
 DROP TRIGGER IF EXISTS trg_decrementar_vaga_especial ON public.agendamentos;
 
