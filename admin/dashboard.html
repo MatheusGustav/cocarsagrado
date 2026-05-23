@@ -53,6 +53,68 @@
       color: #e55; font-size: .82rem; margin-top: 12px; display: none;
     }
     #admin-content { display: none; }
+
+    /* Mascote chefe (meme interno) */
+    .mascote-chefe {
+      position: fixed;
+      right: 18px;
+      bottom: 18px;
+      display: flex;
+      align-items: flex-end;
+      gap: 10px;
+      z-index: 40;
+      pointer-events: none;
+      animation: mascote-flutuar 4s ease-in-out infinite;
+    }
+    @keyframes mascote-flutuar {
+      0%,100% { transform: translateY(0); }
+      50%     { transform: translateY(-4px); }
+    }
+    .mascote-balao {
+      background: #fff;
+      color: #1A1410;
+      border: 1px solid #DDD5C8;
+      border-radius: 14px;
+      padding: 9px 13px;
+      font-size: .82rem;
+      line-height: 1.25;
+      max-width: 210px;
+      box-shadow: 0 8px 22px rgba(0,0,0,.22);
+      position: relative;
+      font-family: 'DM Sans', system-ui, sans-serif;
+      font-weight: 500;
+    }
+    .mascote-img {
+      width: 72px;
+      height: 72px;
+      border-radius: 50%;
+      object-fit: cover;
+      object-position: center 45%;
+      border: 3px solid #D4B254;
+      box-shadow: 0 8px 22px rgba(0,0,0,.4);
+    }
+    .mascote-pendente .mascote-balao {
+      background: #fff1f1;
+      border-color: #B91C1C;
+      color: #B91C1C;
+    }
+    .mascote-pendente { animation: mascote-treme .4s ease-in-out infinite; }
+    @keyframes mascote-treme {
+      0%,100% { transform: translateX(0); }
+      25%     { transform: translateX(-2px); }
+      75%     { transform: translateX(2px); }
+    }
+    .mascote-grana .mascote-balao {
+      background: #fff4d6;
+      border-color: #B8923E;
+      color: #6b5118;
+    }
+
+    @media (max-width: 700px) {
+      .mascote-chefe { right: 10px; bottom: 10px; gap: 6px; }
+      .mascote-img { width: 54px; height: 54px; border-width: 2px; }
+      .mascote-balao { font-size: .72rem; max-width: 150px; padding: 7px 10px; }
+    }
   </style>
 </head>
 <body>
@@ -256,6 +318,12 @@
       </div>
 
     </main>
+  </div>
+
+  <!-- Mascote chefe (meme interno) -->
+  <div id="mascote-chefe" class="mascote-chefe" aria-hidden="true">
+    <div class="mascote-balao" id="mascote-balao">estou de olho por aqui...</div>
+    <img src="mascote-chefe.jpg" alt="" class="mascote-img">
   </div>
 </div>
 
