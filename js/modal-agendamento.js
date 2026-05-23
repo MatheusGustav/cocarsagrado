@@ -73,12 +73,31 @@ function abrirModal(tipo) {
   const overlay = document.getElementById('modalAgendamento');
   if (!overlay) return;
 
-  const obsGroup = document.getElementById('f-obs')?.closest('.ag-form-group');
-  const obsField = document.getElementById('f-obs');
-  if (obsGroup && obsField) {
-    const mostrar = !!(tipo && tipo.requerPergunta);
-    obsGroup.style.display = mostrar ? '' : 'none';
-    obsField.required = mostrar;
+  const obsGroup = document.getElementById('f-obs-group');
+  if (obsGroup) {
+    const n = (tipo && tipo.requerPergunta) ? _numeroDePerguntas(tipo) : 0;
+    obsGroup.innerHTML = '';
+    if (n === 0) {
+      obsGroup.style.display = 'none';
+    } else {
+      obsGroup.style.display = '';
+      for (let i = 1; i <= n; i++) {
+        const id  = `f-obs-${i}`;
+        const lbl = document.createElement('label');
+        lbl.htmlFor    = id;
+        lbl.textContent = n === 1 ? 'Pergunta/Questão *' : `Pergunta ${i} *`;
+        const ta = document.createElement('textarea');
+        ta.id          = id;
+        ta.name        = `obs${i}`;
+        ta.required    = true;
+        ta.rows        = 3;
+        ta.placeholder = n === 1
+          ? 'Escreva sua pergunta ou questão para a leitura...'
+          : `Escreva a pergunta ${i}...`;
+        obsGroup.appendChild(lbl);
+        obsGroup.appendChild(ta);
+      }
+    }
   }
 
   overlay.classList.add('open');
@@ -172,7 +191,7 @@ window.redirecionarParaPagamento = function(chave) {
     valor:     final.toFixed(2).replace('.', ','),
     nome:       document.getElementById('f-nome').value.trim(),
     nascimento: nascFmt,
-    obs:        document.getElementById('f-obs')?.value?.trim() || '',
+    obs:        _coletarObservacoes(tipo) || '',
     whatsapp:   (typeof obterWhatsappCompleto === 'function' ? obterWhatsappCompleto() : document.getElementById('f-fone').value.trim()),
   };
 

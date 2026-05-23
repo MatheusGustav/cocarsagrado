@@ -26,6 +26,7 @@ CREATE TABLE public.tipos_leitura (
   terapeuta       TEXT    CHECK (terapeuta IN ('matheus','camila')),
   ordem           INTEGER NOT NULL DEFAULT 100,
   requer_pergunta BOOLEAN NOT NULL DEFAULT FALSE,
+  num_perguntas   INTEGER NOT NULL DEFAULT 0 CHECK (num_perguntas >= 0 AND num_perguntas <= 20),
   especial        BOOLEAN NOT NULL DEFAULT FALSE,
   ativo           BOOLEAN NOT NULL DEFAULT TRUE,
   criado_em       TIMESTAMPTZ NOT NULL DEFAULT NOW()
