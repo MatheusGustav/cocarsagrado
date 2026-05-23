@@ -609,7 +609,7 @@ body.cs-chat-active .nav-chat-btn { color: var(--color-gold); }
 
 /* Mobile: toggle + chat colados ao hambúrguer, empurrados pra direita */
 @media (max-width: 768px) {
-  .nav-theme-wrapper { display: none; }
+  .nav-links .nav-theme-wrapper { display: none; }
   .header-inner { gap: 0.5rem; }
   .theme-toggle--mobile {
     margin-left: auto;
