@@ -223,6 +223,60 @@
 /* Bloqueia scroll do body quando modal aberto */
 body.modal-aberto { overflow: hidden; }
 
+/* Pantero na tela de pagamento */
+.pag-pantero {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 18px;
+  animation: pag-pantero-in .35s ease-out;
+}
+@keyframes pag-pantero-in {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.pag-pantero-avatar {
+  width: 80px; height: 80px;
+  flex-shrink: 0;
+}
+.pag-pantero-balao {
+  position: relative;
+  flex: 1;
+  background: #F5F2E6;
+  border: 1px solid #E8E2CC;
+  border-radius: 14px;
+  padding: 10px 14px;
+  font-size: .9rem;
+  line-height: 1.45;
+  color: #1A1410;
+  font-family: 'DM Sans', sans-serif;
+}
+.pag-pantero-balao strong { color: #2D4A2D; }
+.pag-pantero-balao::before {
+  content: '';
+  position: absolute;
+  left: -8px; top: 22px;
+  width: 0; height: 0;
+  border-top: 7px solid transparent;
+  border-bottom: 7px solid transparent;
+  border-right: 8px solid #F5F2E6;
+  filter: drop-shadow(-1px 0 0 #E8E2CC);
+}
+[data-theme="dark"] .pag-pantero-balao {
+  background: #2a2f2a;
+  border-color: #3a3f3a;
+  color: #E8E2CC;
+}
+[data-theme="dark"] .pag-pantero-balao strong { color: #B8923E; }
+[data-theme="dark"] .pag-pantero-balao::before {
+  border-right-color: #2a2f2a;
+  filter: drop-shadow(-1px 0 0 #3a3f3a);
+}
+@media (max-width: 480px) {
+  .pag-pantero-avatar { width: 64px; height: 64px; }
+  .pag-pantero-balao { font-size: .85rem; padding: 9px 12px; }
+}
+
 /* Botão voltar dentro do pagamento */
 .pag-voltar-btn {
   display: inline-flex;
