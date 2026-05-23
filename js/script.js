@@ -403,22 +403,24 @@ function inicializarScrollSuave() {
    ============================================================ */
 
 function inicializarToggleTema() {
-  const btn = document.getElementById('theme-toggle');
-  if (!btn) return;
+  const btns = document.querySelectorAll('.theme-toggle');
+  if (!btns.length) return;
 
-  btn.addEventListener('click', () => {
-    const temaAtual = document.documentElement.getAttribute('data-theme') || 'light';
-    const novoTema = temaAtual === 'dark' ? 'light' : 'dark';
+  btns.forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const temaAtual = document.documentElement.getAttribute('data-theme') || 'light';
+      const novoTema = temaAtual === 'dark' ? 'light' : 'dark';
 
-    btn.classList.add('rotating');
-    btn.addEventListener('animationend', () => {
-      btn.classList.remove('rotating');
-      btn.blur();
-    }, { once: true });
+      btn.classList.add('rotating');
+      btn.addEventListener('animationend', () => {
+        btn.classList.remove('rotating');
+        btn.blur();
+      }, { once: true });
 
-    document.documentElement.classList.add('theme-switching');
-    document.documentElement.setAttribute('data-theme', novoTema);
-    setTimeout(() => document.documentElement.classList.remove('theme-switching'), 350);
+      document.documentElement.classList.add('theme-switching');
+      document.documentElement.setAttribute('data-theme', novoTema);
+      setTimeout(() => document.documentElement.classList.remove('theme-switching'), 350);
+    });
   });
 }
 

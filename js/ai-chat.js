@@ -22,33 +22,6 @@
 
   /* ---------- estilos ---------- */
   const css = `
-    /* Botão flutuante */
-    #cs-chat-btn {
-      position: fixed; bottom: 24px; right: 24px; z-index: 9998;
-      width: 52px; height: 52px; border-radius: 50%;
-      background: #2D4A2D; border: none; cursor: pointer;
-      box-shadow: 0 4px 16px rgba(1,55,24,.35);
-      display: flex; align-items: center; justify-content: center;
-      transition: background .2s, transform .2s, opacity .25s, right .25s ease;
-    }
-    #cs-chat-btn:hover { background: #4A7A4A; transform: scale(1.08); }
-    #cs-chat-btn svg { width: 24px; height: 24px; fill: #D4B254; }
-    #cs-chat-btn::after {
-      content: ''; position: absolute;
-      width: 52px; height: 52px; border-radius: 50%;
-      border: 2px solid rgba(1,55,24,.5);
-      animation: cs-pulse 2.4s ease-out infinite;
-    }
-    @keyframes cs-pulse {
-      0%   { transform: scale(1);   opacity: .7; }
-      70%  { transform: scale(1.6); opacity: 0;  }
-      100% { transform: scale(1.6); opacity: 0;  }
-    }
-    body.cs-chat-active #cs-chat-btn {
-      opacity: 0; pointer-events: none; transform: scale(.85);
-    }
-    body.cs-chat-active #cs-chat-btn::after { animation: none; }
-
     /* Backdrop */
     #cs-chat-backdrop {
       position: fixed; inset: 0; z-index: 9997;
@@ -223,8 +196,8 @@
       #cs-chat-panel.cs-open { transform: translateX(0); }
     }
 
-    /* ============ TABLET / DESKTOP — empurra o site ============ */
-    @media (min-width: 1024px) {
+    /* ============ DESKTOP LARGO — empurra o site (>=1280px) ============ */
+    @media (min-width: 1280px) {
       html { transition: padding-right .28s cubic-bezier(.4,0,.2,1); }
       html.cs-chat-pushing { padding-right: 420px; }
       #cs-chat-backdrop { display: none !important; }
@@ -233,9 +206,6 @@
 
   /* ---------- HTML ---------- */
   const html = `
-    <button id="cs-chat-btn" aria-label="Abrir chat">
-      <svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg>
-    </button>
     <div id="cs-chat-backdrop"></div>
     <div id="cs-chat-panel" role="dialog" aria-label="Chat de atendimento" aria-modal="false">
       <div id="cs-handle" aria-label="Arrastar para expandir ou fechar" role="button" tabindex="0"></div>
@@ -277,7 +247,6 @@
   wrap.innerHTML = html;
   document.body.appendChild(wrap);
 
-  const btn      = document.getElementById('cs-chat-btn');
   const panel    = document.getElementById('cs-chat-panel');
   const backdrop = document.getElementById('cs-chat-backdrop');
   const handle   = document.getElementById('cs-handle');
@@ -291,9 +260,12 @@
   let opened  = false;
 
   const isMobile      = () => window.matchMedia('(max-width: 1023px)').matches;
-  const isDesktopPush = () => window.matchMedia('(min-width: 1024px)').matches;
+  const isDesktopPush = () => window.matchMedia('(min-width: 1280px)').matches;
 
-  btn.addEventListener('click', openChat);
+  function toggleChat() { opened ? closeChat() : openChat(); }
+  document.querySelectorAll('[data-cs-open]').forEach(el =>
+    el.addEventListener('click', toggleChat)
+  );
   document.getElementById('cs-chat-close').addEventListener('click', closeChat);
   backdrop.addEventListener('click', closeChat);
 
