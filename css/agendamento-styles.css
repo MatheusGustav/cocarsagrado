@@ -782,3 +782,112 @@ textarea { resize: vertical; min-height: 90px; }
   .ag-vagas-card { gap: 12px; padding: 12px 14px; }
   .ag-vagas-dia-num { font-size: 1.7rem; }
 }
+
+/* ============================================================
+   DARK MODE — Seletor de quantidade/tier + Vagas
+   ============================================================ */
+[data-theme="dark"] .seletor-overlay {
+  background: rgba(0,0,0,0.78);
+}
+[data-theme="dark"] .seletor-card {
+  background: #162016;
+  border-color: rgba(212, 178, 84, 0.3);
+  box-shadow: 0 24px 64px rgba(0,0,0,0.6);
+}
+[data-theme="dark"] .seletor-close {
+  background: rgba(212, 178, 84, 0.1);
+  color: #D4B254;
+}
+[data-theme="dark"] .seletor-close:hover {
+  background: rgba(212, 178, 84, 0.2);
+}
+[data-theme="dark"] .seletor-nome {
+  color: #D4B254;
+}
+[data-theme="dark"] .seletor-pergunta {
+  color: #8A8260;
+}
+[data-theme="dark"] .seletor-tier-opt {
+  border-color: rgba(212, 178, 84, 0.2);
+}
+[data-theme="dark"] .seletor-tier-opt:hover {
+  border-color: #D4B254;
+  background: rgba(212, 178, 84, 0.06);
+}
+[data-theme="dark"] .seletor-tier-opt.selected {
+  border-color: #D4B254;
+  background: rgba(212, 178, 84, 0.12);
+  box-shadow: 0 0 0 3px rgba(212, 178, 84, 0.2);
+}
+[data-theme="dark"] .tier-label {
+  color: #C8BC8A;
+}
+[data-theme="dark"] .tier-duracao {
+  color: #8A8260;
+}
+[data-theme="dark"] .tier-preco {
+  color: #D4B254;
+}
+[data-theme="dark"] .seletor-qty-btn {
+  border-color: #D4B254;
+  color: #D4B254;
+}
+[data-theme="dark"] .seletor-qty-btn:hover {
+  background: #D4B254;
+  color: #0F1A0F;
+}
+[data-theme="dark"] .seletor-qty-num {
+  color: #D4B254;
+}
+[data-theme="dark"] .seletor-resumo {
+  background: rgba(212, 178, 84, 0.08);
+}
+[data-theme="dark"] .seletor-resumo-preco {
+  color: #D4B254;
+}
+[data-theme="dark"] .seletor-resumo-sep {
+  color: #4a4a3a;
+}
+[data-theme="dark"] .seletor-resumo-dur {
+  color: #8A8260;
+}
+[data-theme="dark"] .seletor-btn-cancel {
+  border-color: rgba(212, 178, 84, 0.2);
+  color: #8A8260;
+}
+[data-theme="dark"] .seletor-btn-cancel:hover {
+  border-color: rgba(212, 178, 84, 0.4);
+  color: #D4B254;
+}
+[data-theme="dark"] .seletor-btn-confirm {
+  background: #D4B254;
+  color: #0F1A0F;
+}
+[data-theme="dark"] .seletor-btn-confirm:hover {
+  background: #B8923E;
+}
+/* Vagas cards */
+[data-theme="dark"] .ag-vagas-card {
+  background: #162016;
+  border-color: #2a3a2a;
+}
+[data-theme="dark"] .ag-vagas-card:hover {
+  border-color: #D4B254;
+  box-shadow: 0 4px 16px rgba(212, 178, 84, 0.08);
+}
+[data-theme="dark"] .ag-vagas-card.selected {
+  border-color: #D4B254;
+  background: linear-gradient(135deg, #162016 80%, rgba(212, 178, 84, 0.06) 100%);
+  box-shadow: 0 4px 18px rgba(212, 178, 84, 0.1);
+}
+[data-theme="dark"] .ag-vagas-dia-num {
+  color: #D4B254;
+}
+[data-theme="dark"] .ag-vagas-info.vagas-ok .ag-vagas-badge {
+  background: rgba(212, 178, 84, 0.1);
+  color: #D4B254;
+}
+[data-theme="dark"] .ag-vagas-info.vagas-poucas .ag-vagas-badge {
+  background: rgba(255, 180, 50, 0.12);
+  color: #E8B84A;
+}

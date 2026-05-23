@@ -72,6 +72,10 @@ function abrirModal(tipo) {
   if (tipo) Estado.tipoSelecionado = tipo;
   const overlay = document.getElementById('modalAgendamento');
   if (!overlay) return;
+  // Salva foco pra restaurar depois
+  if (document.activeElement && document.activeElement !== document.body) {
+    document.activeElement.setAttribute('data-last-focus', '');
+  }
 
   const obsGroup = document.getElementById('f-obs-group');
   if (obsGroup) {
@@ -110,6 +114,9 @@ function fecharModal() {
   const overlay = document.getElementById('modalAgendamento');
   overlay?.classList.remove('open');
   document.body.classList.remove('modal-aberto');
+  // Restaura foco pro gatilho
+  const trigger = document.querySelector('[data-last-focus]');
+  if (trigger) { trigger.focus(); trigger.removeAttribute('data-last-focus'); }
   setTimeout(_resetarModal, 360);
 }
 
@@ -174,7 +181,8 @@ function _mostrarTela(num, animacao) {
 window.redirecionarParaPagamento = function(chave) {
   const tipo  = Estado.tipoSelecionado;
   const { final } = calcularPrecoFinal(tipo.preco_original);
-  const d = new Date(Estado.dataSelecionada + 'T00:00:00');
+  const [mY, mM, mD] = Estado.dataSelecionada.split('-').map(Number);
+  const d = new Date(mY, mM - 1, mD);
 
   const nascRaw = document.getElementById('f-nasc')?.value || '';
   const nascFmt = nascRaw
@@ -197,8 +205,8 @@ window.redirecionarParaPagamento = function(chave) {
 
   sessionStorage.setItem('agendamento', JSON.stringify(_dadosPagamento));
 
-  localStorage.setItem('aceitouDesconto10', 'false');
-  localStorage.setItem('cocarsagrado_comprou', 'true');
+  try { localStorage.setItem('aceitouDesconto10', 'false'); } catch {}
+  try { localStorage.setItem('cocarsagrado_comprou', 'true'); } catch {}
 
   _preencherTelaPagamento();
   _mostrarTela(2);

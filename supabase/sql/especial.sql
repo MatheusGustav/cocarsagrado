@@ -32,11 +32,18 @@ DROP POLICY IF EXISTS "select_disp_especial"      ON public.disponibilidade_espe
 DROP POLICY IF EXISTS "all_disp_especial"         ON public.disponibilidade_especial;
 DROP POLICY IF EXISTS "anon_select_disp_especial" ON public.disponibilidade_especial;
 
--- anon só pode ler (cliente vê vagas). Escrita só pelo admin (auth_all_*).
+-- anon só pode ler (cliente vê vagas). Escrita só pelo admin autenticado.
 CREATE POLICY "anon_select_disp_especial"
   ON public.disponibilidade_especial FOR SELECT
   TO anon
   USING (true);
+
+DROP POLICY IF EXISTS "auth_all_disp_especial" ON public.disponibilidade_especial;
+CREATE POLICY "auth_all_disp_especial"
+  ON public.disponibilidade_especial FOR ALL
+  TO authenticated
+  USING (true)
+  WITH CHECK (true);
 
 -- ============================================================
 -- Funções para controle de vagas restantes
@@ -70,6 +77,8 @@ $$ LANGUAGE plpgsql;
 
 GRANT EXECUTE ON FUNCTION public.decrementar_vagas_restantes TO anon;
 GRANT EXECUTE ON FUNCTION public.incrementar_vagas_restantes TO anon;
+GRANT EXECUTE ON FUNCTION public.decrementar_vagas_restantes TO authenticated;
+GRANT EXECUTE ON FUNCTION public.incrementar_vagas_restantes TO authenticated;
 
 -- ============================================================
 -- Trigger atômico (BEFORE INSERT) — previne overbooking

@@ -76,6 +76,13 @@ function aplicarDescontoAutomatico() {
 
 const CHAVE_LOCALSTORAGE = 'cocarsagrado_visitou'; // Nome da chave salva no localStorage
 
+function _lsGet(key) {
+  try { return localStorage.getItem(key); } catch { return null; }
+}
+function _lsSet(key, val) {
+  try { localStorage.setItem(key, val); } catch { /* private browsing */ }
+}
+
 /**
  * Verifica se é a primeira visita e exibe o overlay se necessário.
  */
@@ -84,8 +91,8 @@ async function inicializarOverlay() {
   if (!overlayBackdrop) return;
 
   // Verifica se o usuário já visitou ou já fez uma compra
-  const jaVisitou  = localStorage.getItem(CHAVE_LOCALSTORAGE);
-  const jaComprou  = localStorage.getItem('cocarsagrado_comprou');
+  const jaVisitou  = _lsGet(CHAVE_LOCALSTORAGE);
+  const jaComprou  = _lsGet('cocarsagrado_comprou');
 
   if (jaVisitou || jaComprou) return;
 
@@ -100,12 +107,15 @@ async function inicializarOverlay() {
   // Primeira visita — mostra o overlay e aplica blur na página
   overlayBackdrop.classList.remove('overlay--hidden');
   document.body.classList.add('overlay-active');
+  // Move foco pro overlay
+  const overlayEnter = document.getElementById('overlayEnter');
+  if (overlayEnter) setTimeout(() => overlayEnter.focus(), 100);
 
   // Botão principal: "Garantir meu desconto"
   const btnEntrar = document.getElementById('overlayEnter');
   if (btnEntrar) {
     btnEntrar.addEventListener('click', () => {
-      localStorage.setItem('aceitouDesconto10', 'true');
+      _lsSet('aceitouDesconto10', 'true');
       fecharOverlay();
       // Rola suavemente até o catálogo
       setTimeout(() => {
@@ -119,7 +129,7 @@ async function inicializarOverlay() {
   const btnPular = document.getElementById('overlaySkip');
   if (btnPular) {
     btnPular.addEventListener('click', () => {
-      localStorage.setItem('aceitouDesconto10', 'false');
+      _lsSet('aceitouDesconto10', 'false');
       fecharOverlay();
     });
   }
@@ -128,7 +138,7 @@ async function inicializarOverlay() {
   const btnFechar = document.getElementById('overlayClose');
   if (btnFechar) {
     btnFechar.addEventListener('click', () => {
-      localStorage.setItem('aceitouDesconto10', 'false');
+      _lsSet('aceitouDesconto10', 'false');
       fecharOverlay();
     });
   }
@@ -139,7 +149,7 @@ async function inicializarOverlay() {
   // Fecha ao clicar fora do card (tratado como recusa)
   overlayBackdrop.addEventListener('click', (e) => {
     if (overlayVisivel() && e.target === overlayBackdrop) {
-      localStorage.setItem('aceitouDesconto10', 'false');
+      _lsSet('aceitouDesconto10', 'false');
       fecharOverlay();
     }
   });
@@ -147,7 +157,7 @@ async function inicializarOverlay() {
   // Fecha ao pressionar ESC (tratado como recusa) — só se o overlay estiver aberto
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape' && overlayVisivel()) {
-      localStorage.setItem('aceitouDesconto10', 'false');
+      _lsSet('aceitouDesconto10', 'false');
       fecharOverlay();
     }
   });
@@ -167,10 +177,12 @@ function fecharOverlay() {
   setTimeout(() => {
     overlayBackdrop.classList.add('overlay--hidden');
     document.body.classList.remove('overlay-active');
+    // Restaura foco pro header
+    document.querySelector('[data-last-focus]')?.removeAttribute('data-last-focus');
   }, 300);
 
   // Salva no localStorage que o usuário já visitou
-  localStorage.setItem(CHAVE_LOCALSTORAGE, 'true');
+  _lsSet(CHAVE_LOCALSTORAGE, 'true');
 
   // Atualiza preços do catálogo com base na escolha do usuário
   if (typeof renderizarDescontos === 'function') {

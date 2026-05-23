@@ -71,9 +71,16 @@ function _coletarObservacoes(tipo) {
   return partes.length ? partes.join('\n') : null;
 }
 
+function _lsGet(key) {
+  try { return localStorage.getItem(key); } catch { return null; }
+}
+function _lsSet(key, val) {
+  try { localStorage.setItem(key, val); } catch { /* private browsing */ }
+}
+
 function calcularPrecoFinal(precoOriginal) {
   const preco = parseFloat(precoOriginal) || 0;
-  if (localStorage.getItem('aceitouDesconto10') === 'true') {
+  if (_lsGet('aceitouDesconto10') === 'true') {
     const final = Math.round(preco * 90) / 100;
     return { final, desconto: preco - final };
   }
@@ -89,6 +96,10 @@ function calcularPrecoFinal(precoOriginal) {
 }
 
 async function abrirSeletor(ref) {
+  // Salva elemento que tinha foco pra restaurar depois
+  if (document.activeElement && document.activeElement !== document.body) {
+    document.activeElement.setAttribute('data-last-focus', '');
+  }
   let tipos;
   try {
     tipos = await _garantirTipos();
@@ -143,6 +154,12 @@ async function abrirSeletor(ref) {
 
   document.getElementById('seletor-overlay').classList.add('open');
   document.body.classList.add('seletor-aberto');
+
+  // Fecha com Escape
+  const _escSeletor = (e) => {
+    if (e.key === 'Escape') { fecharSeletor(); document.removeEventListener('keydown', _escSeletor); }
+  };
+  document.addEventListener('keydown', _escSeletor);
 }
 
 function _abrirSeletorGrupo(grupoSlug, tiers) {
@@ -189,6 +206,12 @@ function _abrirSeletorGrupo(grupoSlug, tiers) {
 
   document.getElementById('seletor-overlay').classList.add('open');
   document.body.classList.add('seletor-aberto');
+
+  // Fecha com Escape
+  const _escGrupo = (e) => {
+    if (e.key === 'Escape') { fecharSeletor(); document.removeEventListener('keydown', _escGrupo); }
+  };
+  document.addEventListener('keydown', _escGrupo);
 }
 
 function _atualizarResumoSeletor() {
@@ -219,6 +242,9 @@ function alterarQty(delta) {
 function fecharSeletor() {
   document.getElementById('seletor-overlay')?.classList.remove('open');
   document.body.classList.remove('seletor-aberto');
+  // Restaura foco pro gatilho
+  const trigger = document.querySelector('[data-last-focus]');
+  if (trigger) { trigger.focus(); trigger.removeAttribute('data-last-focus'); }
 }
 
 function confirmarSeletor() {
@@ -274,7 +300,8 @@ async function carregarCalendario() {
     cal.className = 'ag-vagas-lista';
 
     dias.forEach(({ data, vagas, ate_horario }) => {
-      const d = new Date(data + 'T00:00:00');
+      const [aY, aM, aD] = data.split('-').map(Number);
+      const d = new Date(aY, aM - 1, aD);
       const card = document.createElement('div');
       card.className = 'ag-vagas-card';
 
@@ -409,7 +436,8 @@ function atualizarResumo() {
   if (!tipo || !data) return;
 
   const { final, desconto } = calcularPrecoFinal(tipo.preco_original);
-  const d = new Date(data + 'T00:00:00');
+  const [rY, rM, rD] = data.split('-').map(Number);
+  const d = new Date(rY, rM - 1, rD);
 
   const set = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
   set('res-tipo',    tipo.nome);
@@ -429,6 +457,7 @@ function processarFormulario(e) {
   if (!validarFormulario()) return;
 
   const btn = document.getElementById('btn-pagar');
+  if (btn?.disabled) return;
   if (btn) { btn.disabled = true; btn.textContent = 'Salvando...'; }
 
   salvarAgendamento()
@@ -508,7 +537,7 @@ function mostrarErroField(input, msg) {
 async function salvarAgendamento() {
   const tipo = Estado.tipoSelecionado;
   const whatsapp = obterWhatsappCompleto();
-  const aceitouDesconto = localStorage.getItem('aceitouDesconto10') === 'true';
+  const aceitouDesconto = _lsGet('aceitouDesconto10') === 'true';
 
   if (aceitouDesconto) {
     const { data: elegivel, error: errElig } = await supabase

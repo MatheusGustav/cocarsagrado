@@ -179,15 +179,24 @@ DROP POLICY IF EXISTS "anon_select_tipos" ON public.tipos_leitura;
 CREATE POLICY "anon_select_tipos" ON public.tipos_leitura
   FOR SELECT TO anon USING (TRUE);
 
--- horarios_disponiveis (admin gerencia pelo painel anônimo)
+DROP POLICY IF EXISTS "auth_all_tipos" ON public.tipos_leitura;
+CREATE POLICY "auth_all_tipos" ON public.tipos_leitura
+  FOR ALL TO authenticated USING (TRUE) WITH CHECK (TRUE);
+
+-- horarios_disponiveis (admin gerencia pelo painel autenticado)
 DROP POLICY IF EXISTS "anon_all_horarios" ON public.horarios_disponiveis;
 CREATE POLICY "anon_all_horarios" ON public.horarios_disponiveis
   FOR ALL TO anon USING (TRUE) WITH CHECK (TRUE);
+
+DROP POLICY IF EXISTS "auth_all_horarios" ON public.horarios_disponiveis;
+CREATE POLICY "auth_all_horarios" ON public.horarios_disponiveis
+  FOR ALL TO authenticated USING (TRUE) WITH CHECK (TRUE);
 
 -- agendamentos — anon SÓ pode INSERT (criar agendamento novo).
 -- SELECT/UPDATE/DELETE bloqueados: clientes não podem ler ou modificar
 -- agendamentos de outras pessoas. Frontend usa RPCs security definer
 -- (chave_pedido_existe, contar_agendamentos_por_data).
+-- Admin autenticado pode SELECT, UPDATE, DELETE.
 DROP POLICY IF EXISTS "anon_select_agend" ON public.agendamentos;
 DROP POLICY IF EXISTS "anon_insert_agend" ON public.agendamentos;
 DROP POLICY IF EXISTS "anon_update_agend" ON public.agendamentos;
@@ -195,6 +204,19 @@ DROP POLICY IF EXISTS "anon_delete_agend" ON public.agendamentos;
 
 CREATE POLICY "anon_insert_agend" ON public.agendamentos
   FOR INSERT TO anon WITH CHECK (TRUE);
+
+DROP POLICY IF EXISTS "auth_select_agend" ON public.agendamentos;
+DROP POLICY IF EXISTS "auth_update_agend" ON public.agendamentos;
+DROP POLICY IF EXISTS "auth_delete_agend" ON public.agendamentos;
+
+CREATE POLICY "auth_select_agend" ON public.agendamentos
+  FOR SELECT TO authenticated USING (TRUE);
+
+CREATE POLICY "auth_update_agend" ON public.agendamentos
+  FOR UPDATE TO authenticated USING (TRUE) WITH CHECK (TRUE);
+
+CREATE POLICY "auth_delete_agend" ON public.agendamentos
+  FOR DELETE TO authenticated USING (TRUE);
 
 -- RPCs públicas que substituem o SELECT direto
 CREATE OR REPLACE FUNCTION public.chave_pedido_existe(p_chave text)
@@ -230,3 +252,24 @@ $$;
 
 GRANT EXECUTE ON FUNCTION public.chave_pedido_existe(text) TO anon;
 GRANT EXECUTE ON FUNCTION public.contar_agendamentos_por_data(text, date, date) TO anon;
+
+-- ============================================================
+-- 6) CONFIGURAÇÕES (descontos, flags, etc)
+-- ============================================================
+CREATE TABLE IF NOT EXISTS public.configuracoes (
+  chave       TEXT    PRIMARY KEY,
+  valor       JSONB   NOT NULL DEFAULT '{}',
+  criado_em   TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+ALTER TABLE public.configuracoes ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "anon_select_config" ON public.configuracoes;
+DROP POLICY IF EXISTS "anon_upsert_config" ON public.configuracoes;
+DROP POLICY IF EXISTS "auth_all_config" ON public.configuracoes;
+
+CREATE POLICY "anon_select_config" ON public.configuracoes
+  FOR SELECT TO anon USING (TRUE);
+
+CREATE POLICY "auth_all_config" ON public.configuracoes
+  FOR ALL TO authenticated USING (TRUE) WITH CHECK (TRUE);
