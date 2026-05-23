@@ -31,13 +31,9 @@
     }
     #cs-chat-backdrop.cs-open { opacity: 1; pointer-events: all; }
 
-    /* Mantém só os botões interativos do header acima do backdrop.
-       O resto da área do header continua sob o backdrop → tocar fecha o chat. */
-    body.cs-chat-active .theme-toggle,
-    body.cs-chat-active .nav-chat-btn {
-      position: relative;
-      z-index: 9998;
-    }
+    /* Eleva o header acima do backdrop pra preservar cliques em botões.
+       JS abaixo fecha o chat quando clicam fora dos botões essenciais. */
+    body.cs-chat-active .header { z-index: 9998; }
 
     /* Painel — base comum */
     #cs-chat-panel {
@@ -313,6 +309,14 @@
   );
   document.getElementById('cs-chat-close').addEventListener('click', closeChat);
   backdrop.addEventListener('click', closeChat);
+
+  // Clique fora do painel (incluindo área do header) fecha o chat,
+  // exceto nos botões que devem permanecer ativos.
+  document.querySelector('.header')?.addEventListener('click', (e) => {
+    if (!opened) return;
+    if (e.target.closest('.theme-toggle, .nav-chat-btn, .cs-close')) return;
+    closeChat();
+  });
 
   function openChat() {
     if (opened) return;
