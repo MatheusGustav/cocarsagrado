@@ -295,18 +295,22 @@ async function _buscarDiasComVagas(profissional, diasParaFrente) {
 
   const [
     { data: overrides },
-    { data: agendados },
+    { data: contagens },
   ] = await Promise.all([
     supabase.from('disponibilidade_override').select('*').eq('profissional', profissional).gte('data', dataInicio).lte('data', dataFim),
-    supabase.from('agendamentos').select('data_agendamento').eq('terapeuta', profissional).gte('data_agendamento', dataInicio).lte('data_agendamento', dataFim).in('status', ['pago','confirmado','atendido','pendente']),
+    supabase.rpc('contar_agendamentos_por_data', {
+      p_terapeuta: profissional,
+      p_inicio:    dataInicio,
+      p_fim:       dataFim,
+    }),
   ]);
 
   const overrideMap = {};
   (overrides || []).forEach(o => { overrideMap[o.data] = o; });
 
   const contagemMap = {};
-  (agendados || []).forEach(a => {
-    contagemMap[a.data_agendamento] = (contagemMap[a.data_agendamento] || 0) + 1;
+  (contagens || []).forEach(c => {
+    contagemMap[c.data_agendamento] = Number(c.total) || 0;
   });
 
   const dias = [];
@@ -536,10 +540,10 @@ async function salvarAgendamento() {
 async function gerarChavePedido(tentativas = 0) {
   if (tentativas > 5) throw new Error('Falha ao gerar chave única');
   const chave = gerarChaveAleatoria();
-  const { data, error } = await supabase
-    .from('agendamentos').select('id').eq('chave_pedido', chave).maybeSingle();
+  const { data: existe, error } = await supabase
+    .rpc('chave_pedido_existe', { p_chave: chave });
   if (error) throw error;
-  if (data) return gerarChavePedido(tentativas + 1);
+  if (existe) return gerarChavePedido(tentativas + 1);
   return chave;
 }
 

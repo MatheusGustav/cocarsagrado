@@ -28,16 +28,13 @@ ALTER TABLE public.disponibilidade_override ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS "select_disp_override" ON public.disponibilidade_override;
 DROP POLICY IF EXISTS "all_disp_override"   ON public.disponibilidade_override;
+DROP POLICY IF EXISTS "anon_select_disp_override" ON public.disponibilidade_override;
 
-CREATE POLICY "select_disp_override"
+-- anon só pode ler (cliente vê vagas). Escrita só pelo admin (auth_all_*).
+CREATE POLICY "anon_select_disp_override"
   ON public.disponibilidade_override FOR SELECT
-  TO anon, authenticated
-  USING (true);
-
-CREATE POLICY "all_disp_override"
-  ON public.disponibilidade_override FOR ALL
   TO anon
-  USING (true) WITH CHECK (true);
+  USING (true);
 
 -- ============================================================
 -- Permitir hora_agendamento como '00:00' (horário a combinar)
