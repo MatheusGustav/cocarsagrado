@@ -48,7 +48,10 @@
     #cs-chat-header .cs-avatar {
       width: 38px; height: 38px; border-radius: 50%;
       background: #B8923E; display: flex; align-items: center; justify-content: center;
-      font-size: 18px; flex-shrink: 0; color: #F5F2E6;
+      flex-shrink: 0; overflow: hidden;
+    }
+    #cs-chat-header .cs-avatar img {
+      width: 100%; height: 100%; object-fit: cover; display: block;
     }
     #cs-chat-header .cs-title {
       color: #F5F2E6; font-family: 'Cormorant Garamond', serif;
@@ -89,6 +92,10 @@
     .cs-msg--user {
       background: #2D4A2D; color: #F5F2E6; border-bottom-right-radius: 4px;
       align-self: flex-end;
+    }
+    .cs-msg .cs-foto-pantero {
+      display: block; max-width: 220px; width: 100%;
+      margin: 6px 0 2px; border-radius: 10px;
     }
     .cs-typing { display: flex; gap: 4px; align-items: center; padding: 12px 14px; }
     .cs-typing span {
@@ -210,9 +217,9 @@
     <div id="cs-chat-panel" role="dialog" aria-label="Chat de atendimento" aria-modal="false">
       <div id="cs-handle" aria-label="Arrastar para expandir ou fechar" role="button" tabindex="0"></div>
       <div id="cs-chat-header">
-        <div class="cs-avatar">✦</div>
+        <div class="cs-avatar"><img src="images/pantero.svg" alt="Pantero" /></div>
         <div>
-          <div class="cs-title">Cocar Sagrado</div>
+          <div class="cs-title">Pantero</div>
           <div class="cs-sub">Assistente virtual</div>
         </div>
         <button class="cs-close" id="cs-chat-close" aria-label="Fechar">✕</button>
@@ -277,7 +284,7 @@
     document.body.classList.add('cs-chat-active');
     if (isDesktopPush()) document.documentElement.classList.add('cs-chat-pushing');
     if (!msgs.children.length) {
-      addMsg('bot', 'Olá! Sou o assistente do Cocar Sagrado. Posso te ajudar com dúvidas sobre os serviços. Como posso ajudar?');
+      addMsg('bot', 'Olá! Sou o Pantero, assistente do Cocar Sagrado. Posso te ajudar com dúvidas sobre os serviços. Como posso ajudar?');
       renderSugestoes();
     }
     setTimeout(() => input.focus(), 240);
@@ -382,7 +389,22 @@
   function addMsg(role, text) {
     const el = document.createElement('div');
     el.className = `cs-msg cs-msg--${role}`;
-    el.textContent = text;
+    if (role === 'bot' && text.includes('[FOTO_PANTERO]')) {
+      const partes = text.split('[FOTO_PANTERO]');
+      partes.forEach((parte, i) => {
+        if (parte) el.appendChild(document.createTextNode(parte));
+        if (i < partes.length - 1) {
+          const img = document.createElement('img');
+          img.src = 'images/pantero-foto.webp';
+          img.alt = 'Pantero, o gatinho preto';
+          img.className = 'cs-foto-pantero';
+          img.loading = 'lazy';
+          el.appendChild(img);
+        }
+      });
+    } else {
+      el.textContent = text;
+    }
     msgs.appendChild(el);
     msgs.scrollTop = msgs.scrollHeight;
     return el;
