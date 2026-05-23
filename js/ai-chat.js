@@ -31,6 +31,14 @@
     }
     #cs-chat-backdrop.cs-open { opacity: 1; pointer-events: all; }
 
+    /* Mantém só os botões interativos do header acima do backdrop.
+       O resto da área do header continua sob o backdrop → tocar fecha o chat. */
+    body.cs-chat-active .theme-toggle,
+    body.cs-chat-active .nav-chat-btn {
+      position: relative;
+      z-index: 9998;
+    }
+
     /* Painel — base comum */
     #cs-chat-panel {
       position: fixed; z-index: 9999;
@@ -209,6 +217,36 @@
       html.cs-chat-pushing { padding-right: 420px; }
       #cs-chat-backdrop { display: none !important; }
     }
+
+    /* ============ DARK MODE ============ */
+    [data-theme="dark"] #cs-chat-backdrop { background: rgba(0,0,0,.55); }
+    [data-theme="dark"] #cs-chat-panel { background: #0F1A0F; }
+    [data-theme="dark"] #cs-chat-header { background: #1A2818; }
+    [data-theme="dark"] #cs-chat-header .cs-avatar { background: #2A3A28; }
+    [data-theme="dark"] #cs-chat-header .cs-title { color: #E8C97E; }
+    [data-theme="dark"] #cs-chat-header .cs-sub { color: #8A8260; }
+    [data-theme="dark"] #cs-chat-header .cs-close { color: #8A8260; }
+    [data-theme="dark"] #cs-chat-header .cs-close:hover { color: #E8C97E; background: rgba(255,255,255,.06); }
+    [data-theme="dark"] #cs-chat-msgs::-webkit-scrollbar-thumb { background: #2A3A28; }
+    [data-theme="dark"] .cs-msg--bot {
+      background: #1A2818; color: #C8BC8A;
+      box-shadow: 0 1px 4px rgba(0,0,0,.3);
+    }
+    [data-theme="dark"] .cs-msg--user { background: #2D4A2D; color: #E8C97E; }
+    [data-theme="dark"] .cs-typing span { background: #8A8260; }
+    [data-theme="dark"] .cs-sug-btn { border-color: #B8923E; color: #D4B254; }
+    [data-theme="dark"] .cs-sug-btn:hover { background: #B8923E; color: #0F1A0F; }
+    [data-theme="dark"] #cs-wa-bar { background: #0F1A0F; }
+    [data-theme="dark"] #cs-chat-form {
+      background: #0F1A0F; border-top-color: #2A3A28;
+    }
+    [data-theme="dark"] #cs-chat-input {
+      background: #1A2818; color: #C8BC8A; border-color: #2A3A28;
+    }
+    [data-theme="dark"] #cs-chat-input::placeholder { color: #8A8260; }
+    [data-theme="dark"] #cs-chat-input:focus { border-color: #D4B254; }
+    [data-theme="dark"] #cs-handle { background: #0F1A0F; }
+    [data-theme="dark"] #cs-handle::before { background: #2A3A28; }
   `;
 
   /* ---------- HTML ---------- */
