@@ -88,7 +88,7 @@
   </script>
   <link rel="stylesheet" href="css/style.css?v=12" />
   <link rel="stylesheet" href="css/agendamento-styles.css?v=9">
-  <link rel="stylesheet" href="css/modal-agendamento.css?v=10">
+  <link rel="stylesheet" href="css/modal-agendamento.css?v=12">
 </head>
 <body>
 
@@ -534,6 +534,10 @@
         <div id="telaPagamento" class="modal-screen">
           <div class="pag-container">
             <button class="pag-voltar-btn" onclick="_mostrarTela(1)">← Voltar ao agendamento</button>
+            <div class="pag-pantero" id="pag-pantero" role="note">
+              <img src="images/pantero.svg" alt="" class="pag-pantero-avatar">
+              <div class="pag-pantero-balao" id="pag-pantero-balao">Depois de concluir o pagamento, volte para esta página e clique em <strong>"Avisar que paguei via PIX"</strong>.</div>
+            </div>
             <div class="pag-chave-box" role="region" aria-label="Chave do pedido">
               <div class="pag-chave-label">🔑 Chave do Pedido</div>
               <div class="pag-chave-valor" id="modal-chave-pedido">CS-XXXX-XXXX-XXXX</div>
@@ -612,7 +616,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js" crossorigin="anonymous"></script>
   <script src="js/supabase-config.js?v=9"></script>
   <script src="js/agendamento-system.js?v=23"></script>
-  <script src="js/modal-agendamento.js?v=15"></script>
+  <script src="js/modal-agendamento.js?v=16"></script>
   <script src="js/discount-system.js?v=8"></script>
   <script src="js/script.js?v=9"></script>
   <script src="js/ai-chat.js?v=2"></script>
