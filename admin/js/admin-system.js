@@ -240,15 +240,15 @@ async function calcularEstatisticas(todos) {
   set('stat-pagos',   pagos);
   set('stat-total',   `R$ ${totalMes.toFixed(2).replace('.', ',')}`);
 
-  atualizarMascote(leiturasPendentes, pagos);
+  atualizarMascote(pendentes, pagos);
 }
 
-function atualizarMascote(leiturasPendentes, pagos) {
+function atualizarMascote(pendentes, pagos) {
   const wrap  = document.getElementById('mascote-chefe');
   const balao = document.getElementById('mascote-balao');
   if (!wrap || !balao) return;
   wrap.classList.remove('mascote-pendente', 'mascote-grana');
-  if (leiturasPendentes > 0) {
+  if (pendentes > 0) {
     balao.textContent = 'da baixa nos atendimentos pourra!!';
     wrap.classList.add('mascote-pendente');
   } else if (pagos >= 8) {
