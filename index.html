@@ -562,19 +562,15 @@
             </div>
             <div class="pag-panel active pag-metodo-box" id="modal-painel-pix" role="tabpanel" aria-labelledby="modal-tab-pix">
               <h3>💰 Pagamento via PIX</h3>
-              <div id="pag-qrcode" class="pag-qrcode"></div>
-              <p style="font-size:.85rem; color:var(--text-muted); margin-bottom:8px; font-weight:600;">Chave PIX:</p>
-              <div class="pag-pix-chave" id="modal-chave-pix">—</div>
-              <button class="ag-btn ag-btn-copy ag-btn-sm" onclick="copiarPixModal()" style="margin-bottom:20px;">📋 Copiar chave PIX</button>
-              <ol class="pag-instrucoes">
-                <li><span class="step-num">1</span><span>Abra seu banco → <strong>Pix → Fazer transferência</strong></span></li>
-                <li><span class="step-num">2</span><span>Cole a chave PIX acima ou use o QR Code</span></li>
-                <li><span class="step-num">3</span><span>Informe o valor: <strong id="modal-valor-pix">—</strong></span></li>
-                <li><span class="step-num">4</span><span>No campo mensagem, coloque sua <strong>chave do pedido</strong></span></li>
-                <li><span class="step-num">5</span><span>Confirme o pagamento e clique abaixo ✅</span></li>
-              </ol>
+              <p style="color:var(--cor-texto-suave);margin-bottom:16px;font-size:.9rem;">Gere um link seguro e pague via PIX no checkout — a confirmação chega automaticamente.</p>
+              <p style="text-align:center;font-size:1.05rem;margin-bottom:20px;">Valor: <strong id="modal-valor-pix">—</strong></p>
+              <div id="pix-link-box" style="display:none;text-align:center;margin-bottom:16px;">
+                <a id="pix-link-btn" href="#" target="_blank" rel="noopener noreferrer" class="ag-btn ag-btn-primary" style="display:inline-flex;align-items:center;gap:8px;text-decoration:none;">💰 Abrir checkout PIX</a>
+              </div>
+              <div id="pix-erro-box" class="ag-alert ag-alert-error" style="display:none;margin-bottom:16px;"></div>
+              <div id="pix-status-box" class="ag-alert ag-alert-success" style="display:none;margin-bottom:16px;">✅ Pagamento confirmado! Combinaremos o horário no WhatsApp.</div>
               <div class="pag-btns">
-                <button class="ag-btn ag-btn-whatsapp" onclick="avisarWhatsAppModal('pix')">📱 Avisar que paguei via PIX</button>
+                <button id="pix-gerar-btn" class="ag-btn ag-btn-primary" onclick="gerarLinkPix()">🔗 Gerar link PIX</button>
               </div>
             </div>
             <div class="pag-panel pag-metodo-box" id="modal-painel-cartao" role="tabpanel" aria-labelledby="modal-tab-cartao">
@@ -585,6 +581,7 @@
                 <a id="cartao-link-btn" href="#" target="_blank" rel="noopener noreferrer" class="ag-btn ag-btn-primary" style="display:inline-flex;align-items:center;gap:8px;text-decoration:none;">💳 Abrir checkout para pagar</a>
               </div>
               <div id="cartao-erro-box" class="ag-alert ag-alert-error" style="display:none;margin-bottom:16px;"></div>
+              <div id="cartao-status-box" class="ag-alert ag-alert-success" style="display:none;margin-bottom:16px;">✅ Pagamento confirmado! Combinaremos o horário no WhatsApp.</div>
               <div class="pag-btns">
                 <button id="cartao-gerar-btn" class="ag-btn ag-btn-primary" onclick="gerarLinkCartao()">🔗 Gerar link de pagamento</button>
               </div>
@@ -612,11 +609,10 @@
     </div>
   </div>
 
-  <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js" integrity="sha384-3zSEDfvllQohrq0PHL1fOXJuC/jSOO34H46t6UQfobFOmxE5BpjjaIJY5F2/bMnU" crossorigin="anonymous"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js" crossorigin="anonymous"></script>
   <script src="js/supabase-config.js?v=9"></script>
-  <script src="js/agendamento-system.js?v=23"></script>
-  <script src="js/modal-agendamento.js?v=16"></script>
+  <script src="js/agendamento-system.js?v=24"></script>
+  <script src="js/modal-agendamento.js?v=17"></script>
   <script src="js/discount-system.js?v=8"></script>
   <script src="js/script.js?v=9"></script>
   <script src="js/ai-chat.js?v=6"></script>
