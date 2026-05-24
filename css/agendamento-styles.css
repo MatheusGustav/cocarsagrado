@@ -182,18 +182,6 @@ textarea { resize: vertical; min-height: 90px; }
    ============================================================ */
 .pag-container { max-width: 680px; margin: 0 auto; padding: 24px 16px 60px; }
 
-.pag-chave-box {
-  background: linear-gradient(135deg, #fef3c7, #fde68a);
-  border: 2px solid var(--accent);
-  border-radius: var(--radius);
-  padding: 24px;
-  text-align: center;
-  margin-bottom: 24px;
-}
-.pag-chave-label { font-size: .85rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: .05em; margin-bottom: 8px; }
-.pag-chave-valor { font-size: clamp(1.1rem, 4vw, 1.6rem); font-weight: 900; color: var(--text); letter-spacing: .08em; margin-bottom: 14px; font-family: monospace; word-break: break-all; }
-.pag-chave-copia { font-size: .8rem; color: var(--text-muted); margin-top: 6px; }
-
 .pag-resumo-box {
   background: var(--surface);
   border: 2px solid var(--border);
@@ -437,7 +425,6 @@ textarea { resize: vertical; min-height: 90px; }
 @media (max-width: 480px) {
   .ag-container   { padding: 16px 12px 48px; }
   .pag-container  { padding: 16px 12px 48px; }
-  .pag-chave-box  { padding: 16px; }
   .pag-resumo-box { padding: 14px; }
   .pag-metodo-box { padding: 16px; }
   .seletor-card   { padding: 24px 14px 18px; max-width: 100%; }

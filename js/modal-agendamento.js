@@ -322,7 +322,6 @@ function _preencherTelaPagamento() {
   if (!ag) return;
 
   const set = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
-  set('modal-chave-pedido', ag.chave);
   set('modal-r-tipo',       ag.tipo);
   set('modal-r-data',       ag.data);
   set('modal-r-hora',       ag.hora);
@@ -397,7 +396,6 @@ function _copiarTexto(texto, msg) {
     .catch(() => mostrarAlerta('Copie manualmente: ' + texto, 'info'));
 }
 
-function copiarChavePedido() { _copiarTexto(_dadosPagamento?.chave || '', '✅ Chave copiada!'); }
 function copiarWiseModal()   { _copiarTexto(MODAL_WISE, '✅ E-mail Wise copiado!'); }
 
 function avisarWhatsAppModal(metodo) {
