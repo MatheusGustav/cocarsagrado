@@ -28,6 +28,7 @@ CREATE TABLE public.tipos_leitura (
   requer_pergunta BOOLEAN NOT NULL DEFAULT FALSE,
   num_perguntas   INTEGER NOT NULL DEFAULT 0 CHECK (num_perguntas >= 0 AND num_perguntas <= 20),
   especial        BOOLEAN NOT NULL DEFAULT FALSE,
+  badge           TEXT    CHECK (badge IS NULL OR badge IN ('buzios', 'cartas', 'radiestesia')),
   ativo           BOOLEAN NOT NULL DEFAULT TRUE,
   criado_em       TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
