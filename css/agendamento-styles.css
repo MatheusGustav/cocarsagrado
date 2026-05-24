@@ -878,3 +878,60 @@ textarea { resize: vertical; min-height: 90px; }
   background: rgba(255, 180, 50, 0.12);
   color: #E8B84A;
 }
+
+/* ============================================================
+   DARK MODE — Formulário, boxes de pagamento, abas, alerts
+   ============================================================ */
+[data-theme="dark"] .ag-section-title { color: #E8C97E; }
+[data-theme="dark"] label              { color: #C8BC8A; }
+[data-theme="dark"] input,
+[data-theme="dark"] textarea,
+[data-theme="dark"] select {
+  background: #162016;
+  border-color: #2A3A28;
+  color: #E8E2CC;
+}
+[data-theme="dark"] input::placeholder,
+[data-theme="dark"] textarea::placeholder { color: #6e6849; }
+[data-theme="dark"] input:focus,
+[data-theme="dark"] textarea:focus,
+[data-theme="dark"] select:focus { border-color: #D4B254; }
+
+[data-theme="dark"] .pag-resumo-box,
+[data-theme="dark"] .pag-metodo-box {
+  background: #162016;
+  border-color: #2A3A28;
+  color: #E8E2CC;
+}
+[data-theme="dark"] .pag-resumo-box h3,
+[data-theme="dark"] .pag-metodo-box h3 { color: #E8C97E; }
+[data-theme="dark"] .pag-resumo-linha          { color: #8A8260; }
+[data-theme="dark"] .pag-resumo-linha strong   { color: #E8E2CC; }
+[data-theme="dark"] .pag-metodo-box p          { color: #B8AC7A; }
+[data-theme="dark"] .pag-metodo-box p strong   { color: #E8E2CC; }
+
+[data-theme="dark"] .pag-tabs {
+  background: #0F1A0F;
+  border-color: #2A3A28;
+}
+[data-theme="dark"] .pag-tab            { color: #8A8260; }
+[data-theme="dark"] .pag-tab.active     { background: #D4B254; color: #0F1A0F; }
+
+[data-theme="dark"] .pag-pix-chave {
+  background: #0F1A0F;
+  border-color: #2A3A28;
+  color: #D4B254;
+}
+[data-theme="dark"] .pag-instrucoes li        { color: #C8BC8A; }
+[data-theme="dark"] .pag-instrucoes li strong { color: #E8E2CC; }
+
+/* Alerts mantêm cor própria mas com bg mais escuro para contraste */
+[data-theme="dark"] .ag-alert-success {
+  background: rgba(16,185,129,.12); color: #6ee7b7; border-color: rgba(16,185,129,.35);
+}
+[data-theme="dark"] .ag-alert-error {
+  background: rgba(239,68,68,.12);  color: #fca5a5; border-color: rgba(239,68,68,.35);
+}
+[data-theme="dark"] .ag-alert-info {
+  background: rgba(99,102,241,.12); color: #a5b4fc; border-color: rgba(99,102,241,.35);
+}
