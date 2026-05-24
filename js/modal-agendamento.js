@@ -488,13 +488,13 @@ async function gerarLinkPix() {
       body: JSON.stringify({ chave: ag.chave, tipo: ag.tipo, valor: ag.valor, nome: ag.nome, whatsapp: ag.whatsapp, methods: ['pix'] }),
     });
     const data = await res.json();
-    if (!res.ok || data.error) throw new Error();
+    if (!res.ok || data.error) throw new Error(typeof data.error === 'string' ? data.error : (data.error?.message || 'falha'));
     document.getElementById('pix-link-btn').href = data.url;
     linkBox.style.display = 'block';
     btn.textContent = '🔄 Gerar novo link PIX';
     btn.disabled = false;
-  } catch {
-    erroBox.textContent = 'Não foi possível gerar o link PIX. Tente novamente.';
+  } catch (e) {
+    erroBox.textContent = 'Não foi possível gerar o link PIX: ' + (e?.message || 'tente novamente.');
     erroBox.style.display = 'block';
     btn.textContent = '🔗 Gerar link PIX';
     btn.disabled = false;

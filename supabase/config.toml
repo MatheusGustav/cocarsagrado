@@ -409,3 +409,9 @@ s3_secret_key = "env(S3_SECRET_KEY)"
 
 [functions.ai-chat]
 verify_jwt = false
+
+[functions.infinitypay-checkout]
+verify_jwt = false
+
+[functions.infinitypay-webhook]
+verify_jwt = false
