@@ -4,63 +4,8 @@
    _garantirTipos, carregarCalendario, MESES_PT)
    ============================================================ */
 
-const MODAL_PIX      = 'cocarsagrado@gmail.com';
 const _CHECKOUT_URL  = 'https://demxedudbislzausvhwx.supabase.co/functions/v1/infinitypay-checkout';
 const MODAL_WISE     = 'cocarsagrado@gmail.com';
-const MODAL_NOME     = 'Cocar Sagrado';   // máx 25 chars — nome na conta PIX
-const MODAL_CIDADE   = 'Guarapari';       // máx 15 chars
-
-// ============================================================
-// PIX BR Code (EMV) — geração de payload e QR Code dinâmico
-// ============================================================
-function _pixCrc16(str) {
-  let crc = 0xFFFF;
-  for (let i = 0; i < str.length; i++) {
-    crc ^= str.charCodeAt(i) << 8;
-    for (let j = 0; j < 8; j++) {
-      crc = (crc & 0x8000) ? ((crc << 1) ^ 0x1021) : (crc << 1);
-      crc &= 0xFFFF;
-    }
-  }
-  return crc;
-}
-
-function gerarPayloadPix(chave, nome, cidade, valor, txid) {
-  const f = (id, v) => `${id}${String(v.length).padStart(2,'0')}${v}`;
-  const mai = f('00','BR.GOV.BCB.PIX') + f('01', chave);
-  const txidSanitized = (txid || '***').replace(/[^A-Za-z0-9]/g,'').substring(0,25) || '***';
-  const add = f('05', txidSanitized);
-  let payload =
-    f('00','01') +
-    f('26', mai) +
-    f('52','0000') +
-    f('53','986') +
-    f('54', valor.toFixed(2)) +
-    f('58','BR') +
-    f('59', nome.substring(0,25)) +
-    f('60', cidade.substring(0,15)) +
-    f('62', add) +
-    '6304';
-  return payload + _pixCrc16(payload).toString(16).toUpperCase().padStart(4,'0');
-}
-
-function _renderizarQrCode(payload) {
-  const el = document.getElementById('pag-qrcode');
-  if (!el) return;
-  el.innerHTML = '';
-  if (typeof QRCode === 'undefined') {
-    el.textContent = 'QR Code indisponível';
-    return;
-  }
-  new QRCode(el, {
-    text: payload,
-    width: 200,
-    height: 200,
-    colorDark: '#2D4A2D',
-    colorLight: '#ffffff',
-    correctLevel: QRCode.CorrectLevel.M,
-  });
-}
 
 let _dadosPagamento = null;
 let _calendarioOk   = false;
@@ -204,6 +149,7 @@ window.redirecionarParaPagamento = function(chave) {
   };
 
   sessionStorage.setItem('agendamento', JSON.stringify(_dadosPagamento));
+  _salvarPedidoPendente(_dadosPagamento);
 
   try { localStorage.setItem('aceitouDesconto10', 'false'); } catch {}
   try { localStorage.setItem('cocarsagrado_comprou', 'true'); } catch {}
@@ -211,6 +157,165 @@ window.redirecionarParaPagamento = function(chave) {
   _preencherTelaPagamento();
   _mostrarTela(2);
 };
+
+// ============================================================
+// Persistência de pedido pendente (retomar / bloquear duplicado)
+// ============================================================
+const PENDENTE_KEY = 'cocarsagrado_pedidoPendente';
+const PENDENTE_MAX_MS = 30 * 60 * 1000; // 30 min
+
+function _salvarPedidoPendente(dados) {
+  try {
+    localStorage.setItem(PENDENTE_KEY, JSON.stringify({
+      criadoEm: Date.now(),
+      dados,
+    }));
+  } catch {}
+}
+
+function _lerPedidoPendente() {
+  try {
+    const raw = localStorage.getItem(PENDENTE_KEY);
+    if (!raw) return null;
+    const obj = JSON.parse(raw);
+    if (!obj?.dados?.chave) return null;
+    if (Date.now() - (obj.criadoEm || 0) > PENDENTE_MAX_MS) {
+      localStorage.removeItem(PENDENTE_KEY);
+      return null;
+    }
+    return obj;
+  } catch { return null; }
+}
+
+function _limparPedidoPendente() {
+  try { localStorage.removeItem(PENDENTE_KEY); } catch {}
+}
+
+async function _checarStatusPedido(chave) {
+  if (typeof supabase === 'undefined' || !supabase) return null;
+  try {
+    const { data } = await supabase
+      .from('agendamentos')
+      .select('status')
+      .eq('chave_pedido', chave)
+      .maybeSingle();
+    return data?.status || null;
+  } catch { return null; }
+}
+
+async function _verificarPedidoPendenteAoCarregar() {
+  const pend = _lerPedidoPendente();
+  if (!pend) return;
+  const status = await _checarStatusPedido(pend.dados.chave);
+  if (status === 'pago') {
+    mostrarAlerta('✅ Pagamento do pedido ' + pend.dados.chave + ' confirmado!', 'success');
+    _limparPedidoPendente();
+  } else if (status === 'cancelado' || status === null) {
+    _limparPedidoPendente();
+  }
+}
+
+function _retomarPedidoPendente() {
+  const pend = _lerPedidoPendente();
+  if (!pend) return false;
+  _dadosPagamento = pend.dados;
+  const overlay = document.getElementById('modalAgendamento');
+  overlay?.classList.add('open');
+  document.body.classList.add('modal-aberto');
+  _preencherTelaPagamento();
+  _mostrarTela(2, false);
+  return true;
+}
+
+window.retomarPedidoPendente = _retomarPedidoPendente;
+window.descartarPedidoPendente = () => { _limparPedidoPendente(); mostrarAlerta('Pedido anterior descartado.', 'info'); };
+
+function _ofereceRetomar(onContinuarNovo) {
+  const pend = _lerPedidoPendente();
+  if (!pend) { onContinuarNovo(); return; }
+  const ag = pend.dados;
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay open';
+  overlay.style.zIndex = '10000';
+  overlay.innerHTML = `
+    <div class="modal-container" style="max-width:440px;">
+      <div class="modal-body" style="padding:28px;">
+        <h3 style="margin-top:0;">⏳ Você tem um pedido pendente</h3>
+        <p style="margin:12px 0;"><strong>Pedido:</strong> ${ag.chave}<br><strong>Leitura:</strong> ${ag.tipo}<br><strong>Valor:</strong> R$ ${ag.valor}</p>
+        <p style="font-size:.9rem;color:var(--cor-texto-suave);">Se você já fez o PIX ou está pagando, retome o pedido atual. Criar um novo vai gerar cobrança duplicada.</p>
+        <div style="display:flex;flex-direction:column;gap:10px;margin-top:18px;">
+          <button class="ag-btn ag-btn-primary" id="_retomarBtn">📲 Retomar pedido pendente</button>
+          <button class="ag-btn" id="_novoBtn" style="background:transparent;border:1px solid var(--border);">Cancelar e criar novo</button>
+        </div>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+  overlay.querySelector('#_retomarBtn').addEventListener('click', () => {
+    overlay.remove();
+    _retomarPedidoPendente();
+  });
+  overlay.querySelector('#_novoBtn').addEventListener('click', () => {
+    overlay.remove();
+    _limparPedidoPendente();
+    onContinuarNovo();
+  });
+  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+}
+
+// Intercept abrirSeletor (mantém função original)
+if (typeof window.abrirSeletor === 'function') {
+  const _abrirSeletorOrig = window.abrirSeletor;
+  window.abrirSeletor = function(ref) {
+    _ofereceRetomar(() => _abrirSeletorOrig(ref));
+  };
+}
+
+// ============================================================
+// Polling de status (detecta webhook de PIX/Cartão)
+// ============================================================
+let _pollTimer = null;
+function _iniciarPollStatus() {
+  _pararPollStatus();
+  const chave = _dadosPagamento?.chave;
+  if (!chave) return;
+  const tick = async () => {
+    const overlay = document.getElementById('modalAgendamento');
+    const tela2 = document.getElementById('telaPagamento');
+    if (!overlay?.classList.contains('open') || !tela2?.classList.contains('active')) {
+      _pararPollStatus();
+      return;
+    }
+    const status = await _checarStatusPedido(chave);
+    if (status === 'pago') {
+      _mostrarPagamentoConfirmado();
+      _pararPollStatus();
+    }
+  };
+  _pollTimer = setInterval(tick, 5000);
+  document.addEventListener('visibilitychange', _onVisibilityCheck);
+}
+
+function _pararPollStatus() {
+  if (_pollTimer) { clearInterval(_pollTimer); _pollTimer = null; }
+  document.removeEventListener('visibilitychange', _onVisibilityCheck);
+}
+
+function _onVisibilityCheck() {
+  if (document.visibilityState === 'visible' && _dadosPagamento?.chave) {
+    _checarStatusPedido(_dadosPagamento.chave).then(s => {
+      if (s === 'pago') { _mostrarPagamentoConfirmado(); _pararPollStatus(); }
+    });
+  }
+}
+
+function _mostrarPagamentoConfirmado() {
+  ['pix', 'cartao'].forEach(m => {
+    const sb = document.getElementById(`${m}-status-box`);
+    if (sb) sb.style.display = 'block';
+  });
+  _limparPedidoPendente();
+  mostrarAlerta('✅ Pagamento confirmado!', 'success');
+}
 
 function _preencherTelaPagamento() {
   const ag = _dadosPagamento;
@@ -225,23 +330,23 @@ function _preencherTelaPagamento() {
   set('modal-r-valor',      `R$ ${ag.valor}`);
 
   ['pix', 'cartao', 'wise'].forEach(m => set(`modal-valor-${m}`, `R$ ${ag.valor}`));
-  const _lb = document.getElementById('cartao-link-box');
-  const _eb = document.getElementById('cartao-erro-box');
-  const _gb = document.getElementById('cartao-gerar-btn');
-  if (_lb) _lb.style.display = 'none';
-  if (_eb) _eb.style.display = 'none';
-  if (_gb) { _gb.disabled = false; _gb.textContent = '🔗 Gerar link de pagamento'; }
-  set('modal-chave-pix',  ag.chave);
+  ['cartao', 'pix'].forEach(m => {
+    const lb = document.getElementById(`${m}-link-box`);
+    const eb = document.getElementById(`${m}-erro-box`);
+    const sb = document.getElementById(`${m}-status-box`);
+    const gb = document.getElementById(`${m}-gerar-btn`);
+    if (lb) lb.style.display = 'none';
+    if (eb) eb.style.display = 'none';
+    if (sb) sb.style.display = 'none';
+    if (gb) {
+      gb.disabled = false;
+      gb.textContent = m === 'pix' ? '🔗 Gerar link PIX' : '🔗 Gerar link de pagamento';
+    }
+  });
   set('modal-email-wise', MODAL_WISE);
 
-  const valorNum = parseFloat(ag.valor.replace(',', '.'));
-  const txid = ag.chave.replace(/[^A-Za-z0-9]/g, '').substring(0, 25);
-  const payload = gerarPayloadPix(MODAL_PIX, MODAL_NOME, MODAL_CIDADE, valorNum, txid);
-  _dadosPagamento.pixPayload = payload;
-  set('modal-chave-pix', payload.substring(0, 40) + '…');
-  _renderizarQrCode(payload);
-
   trocarAbaPagamento('pix');
+  _iniciarPollStatus();
 }
 
 // ============================================================
@@ -279,7 +384,7 @@ function _atualizarPantero(metodo) {
   const balao = document.getElementById('pag-pantero-balao');
   if (!balao) return;
   const msgs = {
-    pix:    'Depois de concluir o pagamento, volte para esta página e clique em <strong>"Avisar que paguei via PIX"</strong>.',
+    pix:    'Gere o link PIX, pague pelo seu banco e pronto — a confirmação chega automaticamente pra gente 🖤',
     cartao: 'Pague pelo checkout que abrir e pronto — a confirmação chega automaticamente pra gente 🖤',
     wise:   'Depois de fazer a transferência, volte para esta página e clique em <strong>"Avisar sobre pagamento Wise"</strong>.',
   };
@@ -293,7 +398,6 @@ function _copiarTexto(texto, msg) {
 }
 
 function copiarChavePedido() { _copiarTexto(_dadosPagamento?.chave || '', '✅ Chave copiada!'); }
-function copiarPixModal()    { _copiarTexto(_dadosPagamento?.pixPayload || '', '✅ Código PIX copiado!'); }
 function copiarWiseModal()   { _copiarTexto(MODAL_WISE, '✅ E-mail Wise copiado!'); }
 
 function avisarWhatsAppModal(metodo) {
@@ -328,6 +432,9 @@ document.addEventListener('DOMContentLoaded', () => {
   overlay.addEventListener('click', e => {
     if (e.target === overlay) fecharModal();
   });
+
+  // Checa pedido pendente ao carregar (atualiza se foi pago via webhook)
+  setTimeout(_verificarPedidoPendenteAoCarregar, 1500);
 });
 
 // ============================================================
@@ -363,3 +470,34 @@ async function gerarLinkCartao() {
   }
 }
 window.gerarLinkCartao = gerarLinkCartao;
+
+async function gerarLinkPix() {
+  const ag = _dadosPagamento;
+  if (!ag) return;
+  const btn     = document.getElementById('pix-gerar-btn');
+  const linkBox = document.getElementById('pix-link-box');
+  const erroBox = document.getElementById('pix-erro-box');
+  btn.disabled = true;
+  btn.textContent = '⏳ Gerando...';
+  linkBox.style.display = 'none';
+  erroBox.style.display = 'none';
+  try {
+    const res = await fetch(_CHECKOUT_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ chave: ag.chave, tipo: ag.tipo, valor: ag.valor, nome: ag.nome, whatsapp: ag.whatsapp, methods: ['pix'] }),
+    });
+    const data = await res.json();
+    if (!res.ok || data.error) throw new Error();
+    document.getElementById('pix-link-btn').href = data.url;
+    linkBox.style.display = 'block';
+    btn.textContent = '🔄 Gerar novo link PIX';
+    btn.disabled = false;
+  } catch {
+    erroBox.textContent = 'Não foi possível gerar o link PIX. Tente novamente.';
+    erroBox.style.display = 'block';
+    btn.textContent = '🔗 Gerar link PIX';
+    btn.disabled = false;
+  }
+}
+window.gerarLinkPix = gerarLinkPix;
