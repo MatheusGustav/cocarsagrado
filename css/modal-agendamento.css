@@ -236,8 +236,12 @@ body.modal-aberto { overflow: hidden; }
   to   { opacity: 1; transform: translateY(0); }
 }
 .pag-pantero-avatar {
-  width: 80px; height: 80px;
+  width: 64px; height: 64px;
   flex-shrink: 0;
+  border-radius: 50%;
+  object-fit: cover;
+  background: #F5F2E6;
+  border: 2px solid var(--accent, #C9A04A);
 }
 .pag-pantero-balao {
   position: relative;
@@ -273,7 +277,7 @@ body.modal-aberto { overflow: hidden; }
   filter: drop-shadow(-1px 0 0 #3a3f3a);
 }
 @media (max-width: 480px) {
-  .pag-pantero-avatar { width: 64px; height: 64px; }
+  .pag-pantero-avatar { width: 52px; height: 52px; }
   .pag-pantero-balao { font-size: .85rem; padding: 9px 12px; }
 }
 
