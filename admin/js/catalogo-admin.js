@@ -47,6 +47,8 @@ function _catRenderizar() {
   `;
 }
 
+const _CAT_BADGE_LABEL = { buzios: 'Búzios', cartas: 'Cartas', radiestesia: 'Radiestesia' };
+
 function _catCard(t) {
   const preco    = `R$ ${Number(t.preco_original || 0).toFixed(2).replace('.', ',')}`;
   const duracao  = `${t.duracao_minutos} min`;
@@ -54,6 +56,9 @@ function _catCard(t) {
   const terapeutaTag = t.terapeuta
     ? `<span class="cat-card-terapeuta">${_CAT_TERAPEUTA_LABEL[t.terapeuta] || t.terapeuta}</span>`
     : `<span class="cat-card-terapeuta cat-card-terapeuta--missing">sem terapeuta</span>`;
+  const badgeTag = t.badge
+    ? `<span class="cat-card-badge cat-card-badge--${t.badge}">● ${_CAT_BADGE_LABEL[t.badge] || t.badge}</span>`
+    : '';
   const inativoTag = inativo
     ? `<span class="cat-card-inativo">inativa</span>`
     : '';
@@ -76,6 +81,7 @@ function _catCard(t) {
           <span class="cat-card-preco">${preco}</span>
           <span class="cat-card-dur">${duracao}</span>
         </div>
+        ${badgeTag}
         ${terapeutaTag}
       </div>
       <div class="cat-card-acoes">
@@ -169,6 +175,28 @@ function _catRenderForm(t) {
           <div class="ag-form-group">
             <label for="cat-ordem">Posição na lista</label>
             <select id="cat-ordem" disabled><option>Selecione um terapeuta…</option></select>
+          </div>
+        </div>
+
+        <div class="ag-form-group">
+          <label>Badge da leitura</label>
+          <div class="cat-badge-group">
+            <label class="cat-badge-opt cat-badge-opt--none">
+              <input type="radio" name="cat-badge" value="" ${!t.badge ? 'checked' : ''}>
+              Nenhum
+            </label>
+            <label class="cat-badge-opt cat-badge-opt--buzios">
+              <input type="radio" name="cat-badge" value="buzios" ${t.badge === 'buzios' ? 'checked' : ''}>
+              ● Búzios
+            </label>
+            <label class="cat-badge-opt cat-badge-opt--cartas">
+              <input type="radio" name="cat-badge" value="cartas" ${t.badge === 'cartas' ? 'checked' : ''}>
+              ● Cartas
+            </label>
+            <label class="cat-badge-opt cat-badge-opt--radiestesia">
+              <input type="radio" name="cat-badge" value="radiestesia" ${t.badge === 'radiestesia' ? 'checked' : ''}>
+              ● Radiestesia
+            </label>
           </div>
         </div>
 
@@ -355,6 +383,7 @@ async function _catSalvar() {
   const terapeuta = document.getElementById('cat-terapeuta')?.value || null;
   const posicao   = parseInt(document.getElementById('cat-ordem')?.value, 10);
   const especial  = document.querySelector('input[name="cat-agenda"]:checked')?.value === 'especial';
+  const badge     = document.querySelector('input[name="cat-badge"]:checked')?.value || null;
   const requer    = document.getElementById('cat-pergunta')?.checked || false;
   const numPergRaw = parseInt(document.getElementById('cat-num-perg')?.value, 10);
   const numPerg    = requer ? (Number.isFinite(numPergRaw) && numPergRaw > 0 ? Math.min(20, numPergRaw) : 1) : 0;
@@ -401,6 +430,7 @@ async function _catSalvar() {
       terapeuta,
       ordem:           posicao * 10,
       especial,
+      badge:           badge || null,
       requer_pergunta: requer,
       num_perguntas:   numPerg,
     };

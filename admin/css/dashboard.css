@@ -2833,6 +2833,53 @@ body.modal-aberto { overflow: hidden; }
   vertical-align: middle;
 }
 
+/* Badge de modalidade na leitura */
+.cat-card-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 5px;
+  padding: 3px 10px;
+  border-radius: 99px;
+  font-size: .68rem;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+.cat-card-badge--buzios    { background: rgba(22,163,74,0.12);  color: #15803D; border: 1px solid rgba(22,163,74,0.35);  }
+.cat-card-badge--cartas    { background: rgba(185,28,28,0.10);  color: #B91C1C; border: 1px solid rgba(185,28,28,0.35);  }
+.cat-card-badge--radiestesia { background: rgba(202,138,4,0.12); color: #B45309; border: 1px solid rgba(202,138,4,0.35); }
+
+/* Seletor de badge no form */
+.cat-badge-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 4px;
+}
+.cat-badge-opt {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 13px;
+  border-radius: 99px;
+  border: 1.5px solid #ddd;
+  cursor: pointer;
+  font-size: .78rem;
+  font-weight: 600;
+  transition: border-color .15s, background .15s;
+  user-select: none;
+}
+.cat-badge-opt input[type=radio] { display: none; }
+.cat-badge-opt--none  { background: #f9f6f0; color: #888; border-color: #ddd; }
+.cat-badge-opt--none:has(input:checked)       { border-color: #aaa; background: #eee; }
+.cat-badge-opt--buzios { background: rgba(22,163,74,0.07); color: #15803D; border-color: rgba(22,163,74,0.3); }
+.cat-badge-opt--buzios:has(input:checked)     { border-color: #16a34a; background: rgba(22,163,74,0.18); }
+.cat-badge-opt--cartas { background: rgba(185,28,28,0.07); color: #B91C1C; border-color: rgba(185,28,28,0.3); }
+.cat-badge-opt--cartas:has(input:checked)     { border-color: #b91c1c; background: rgba(185,28,28,0.16); }
+.cat-badge-opt--radiestesia { background: rgba(202,138,4,0.07); color: #B45309; border-color: rgba(202,138,4,0.3); }
+.cat-badge-opt--radiestesia:has(input:checked){ border-color: #ca8a04; background: rgba(202,138,4,0.16); }
+
 .cat-form-flags {
   display: flex;
   flex-direction: column;
