@@ -3,12 +3,48 @@
 -- Reset total + criação. Rode no SQL Editor.
 -- ============================================================
 
+-- Extensões usadas pelas tabelas de disponibilidade
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+
 -- DROP em ordem (respeita FKs)
 DROP TRIGGER IF EXISTS trg_desconto_primeiro_cliente ON public.agendamentos;
 DROP FUNCTION IF EXISTS public.validar_desconto_primeiro_cliente();
-DROP TABLE IF EXISTS public.agendamentos          CASCADE;
-DROP TABLE IF EXISTS public.horarios_disponiveis  CASCADE;
-DROP TABLE IF EXISTS public.tipos_leitura         CASCADE;
+DROP TABLE IF EXISTS public.agendamentos             CASCADE;
+DROP TABLE IF EXISTS public.bloqueios_horario        CASCADE;
+DROP TABLE IF EXISTS public.disponibilidade_especial CASCADE;
+DROP TABLE IF EXISTS public.disponibilidade_override CASCADE;
+DROP TABLE IF EXISTS public.horarios_disponiveis     CASCADE;
+DROP TABLE IF EXISTS public.tipos_leitura            CASCADE;
+
+-- ============================================================
+-- 0) FUNÇÕES BASE (usadas por policies e triggers abaixo)
+-- ============================================================
+
+-- Define quem é admin: a RLS de authenticated em todas as tabelas
+-- usa is_admin(). Apenas estes e-mails têm acesso pleno ao painel.
+CREATE OR REPLACE FUNCTION public.is_admin()
+RETURNS boolean
+LANGUAGE sql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+  SELECT auth.email() IN (
+    'cocarsagrado@gmail.com'
+    -- adicione outros e-mails de admin aqui se necessário
+  );
+$$;
+
+-- Atualiza updated_at em UPDATE (disponibilidade_especial/override).
+CREATE OR REPLACE FUNCTION public.update_updated_at_column()
+RETURNS trigger
+LANGUAGE plpgsql
+SET search_path = public
+AS $$
+BEGIN
+  NEW.updated_at = NOW();
+  RETURN NEW;
+END;
+$$;
 
 -- ============================================================
 -- 1) TIPOS DE LEITURA (catálogo de serviços)
@@ -86,6 +122,110 @@ INSERT INTO public.horarios_disponiveis (terapeuta, dia_semana, hora_inicio, hor
   ('camila',  5, '09:00', '18:00');
 
 -- ============================================================
+-- 2.1) BLOQUEIOS DE HORÁRIO
+--      Faixas pontuais bloqueadas na agenda (folga, evento, etc).
+-- ============================================================
+CREATE TABLE public.bloqueios_horario (
+  id            UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  data_bloqueio DATE NOT NULL,
+  hora_inicio   TIME NOT NULL,
+  hora_fim      TIME NOT NULL,
+  motivo        TEXT,
+  created_at    TIMESTAMP DEFAULT NOW()
+);
+
+-- Não exposta ao público (anon). Admin gerencia pelo painel.
+ALTER TABLE public.bloqueios_horario ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "auth_admin_bloqueios" ON public.bloqueios_horario;
+CREATE POLICY "auth_admin_bloqueios" ON public.bloqueios_horario
+  FOR ALL TO authenticated USING (is_admin()) WITH CHECK (is_admin());
+
+-- ============================================================
+-- 2.2) DISPONIBILIDADE ESPECIAL (vagas extras por data/profissional)
+--      Datas avulsas com nº de vagas; vagas_restantes decrementa a
+--      cada agendamento especial (trigger em agendamentos) e é
+--      devolvida no cancelamento (RPC incrementar_vagas_restantes).
+-- ============================================================
+CREATE TABLE public.disponibilidade_especial (
+  id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  profissional    TEXT NOT NULL CHECK (profissional IN ('camila','matheus')),
+  data            DATE NOT NULL,
+  vagas_total     INTEGER NOT NULL DEFAULT 1 CHECK (vagas_total >= 0),
+  vagas_restantes INTEGER NOT NULL CHECK (vagas_restantes >= 0),
+  ate_horario     TIME NOT NULL DEFAULT '18:00:00',
+  ativo           BOOLEAN NOT NULL DEFAULT TRUE,
+  created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  UNIQUE (profissional, data),
+  CHECK (vagas_restantes <= vagas_total)
+);
+CREATE INDEX idx_disp_especial_prof ON public.disponibilidade_especial (profissional);
+CREATE INDEX idx_disp_especial_data ON public.disponibilidade_especial (data);
+
+CREATE TRIGGER trg_disp_especial_updated
+  BEFORE UPDATE ON public.disponibilidade_especial
+  FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+
+ALTER TABLE public.disponibilidade_especial ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "anon_select_disp_especial" ON public.disponibilidade_especial;
+CREATE POLICY "anon_select_disp_especial" ON public.disponibilidade_especial
+  FOR SELECT TO anon USING (TRUE);
+
+DROP POLICY IF EXISTS "auth_admin_disp_especial" ON public.disponibilidade_especial;
+CREATE POLICY "auth_admin_disp_especial" ON public.disponibilidade_especial
+  FOR ALL TO authenticated USING (is_admin()) WITH CHECK (is_admin());
+
+-- Devolve 1 vaga (até o total) ao cancelar/apagar um agendamento
+-- especial. Chamada pelo painel admin (admin-system.js).
+CREATE OR REPLACE FUNCTION public.incrementar_vagas_restantes(p_profissional text, p_data date)
+RETURNS void
+LANGUAGE plpgsql
+SET search_path = public
+AS $$
+BEGIN
+  UPDATE public.disponibilidade_especial
+  SET vagas_restantes = least(vagas_restantes + 1, vagas_total)
+  WHERE profissional = p_profissional
+    AND data = p_data;
+END;
+$$;
+
+-- ============================================================
+-- 2.3) DISPONIBILIDADE OVERRIDE (ajuste de vagas que sobrepõe o padrão)
+-- ============================================================
+CREATE TABLE public.disponibilidade_override (
+  id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  profissional    TEXT NOT NULL CHECK (profissional IN ('camila','matheus')),
+  data            DATE NOT NULL,
+  vagas_total     INTEGER NOT NULL CHECK (vagas_total >= 0),
+  vagas_restantes INTEGER NOT NULL CHECK (vagas_restantes >= 0),
+  ate_horario     TIME NOT NULL,
+  ativo           BOOLEAN NOT NULL DEFAULT TRUE,
+  created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  UNIQUE (profissional, data),
+  CHECK (vagas_restantes <= vagas_total)
+);
+CREATE INDEX idx_disp_override_prof ON public.disponibilidade_override (profissional);
+CREATE INDEX idx_disp_override_data ON public.disponibilidade_override (data);
+
+CREATE TRIGGER trg_disp_override_updated
+  BEFORE UPDATE ON public.disponibilidade_override
+  FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+
+ALTER TABLE public.disponibilidade_override ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "anon_select_disp_override" ON public.disponibilidade_override;
+CREATE POLICY "anon_select_disp_override" ON public.disponibilidade_override
+  FOR SELECT TO anon USING (TRUE);
+
+DROP POLICY IF EXISTS "auth_admin_disp_override" ON public.disponibilidade_override;
+CREATE POLICY "auth_admin_disp_override" ON public.disponibilidade_override
+  FOR ALL TO authenticated USING (is_admin()) WITH CHECK (is_admin());
+
+-- ============================================================
 -- 3) AGENDAMENTOS
 -- ============================================================
 CREATE TABLE public.agendamentos (
@@ -109,6 +249,7 @@ CREATE TABLE public.agendamentos (
                       CHECK (status IN ('pendente','pago','confirmado','atendido','cancelado')),
   payment_id          TEXT,
   metodo_pagamento    TEXT,
+  agendamento_especial BOOLEAN NOT NULL DEFAULT FALSE,
   pago_em             TIMESTAMPTZ,
   atendido_em         TIMESTAMPTZ,
   criado_em           TIMESTAMPTZ NOT NULL DEFAULT NOW()
@@ -148,6 +289,55 @@ CREATE TRIGGER trg_desconto_primeiro_cliente
   FOR EACH ROW
   EXECUTE FUNCTION public.validar_desconto_primeiro_cliente();
 
+-- Agendamento especial: decrementa vaga em disponibilidade_especial de
+-- forma atômica (FOR UPDATE) e bloqueia o INSERT se não houver vaga.
+CREATE OR REPLACE FUNCTION public.decrementar_vaga_especial_trigger()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_restantes INTEGER;
+BEGIN
+  IF NEW.agendamento_especial IS NOT TRUE THEN
+    RETURN NEW;
+  END IF;
+
+  IF NEW.terapeuta IS NULL OR NEW.data_agendamento IS NULL THEN
+    RAISE EXCEPTION 'Agendamento especial exige terapeuta e data';
+  END IF;
+
+  SELECT vagas_restantes INTO v_restantes
+  FROM public.disponibilidade_especial
+  WHERE profissional = NEW.terapeuta
+    AND data = NEW.data_agendamento
+  FOR UPDATE;
+
+  IF v_restantes IS NULL THEN
+    RAISE EXCEPTION 'Disponibilidade especial não encontrada para % em %',
+      NEW.terapeuta, NEW.data_agendamento;
+  END IF;
+
+  IF v_restantes <= 0 THEN
+    RAISE EXCEPTION 'Sem vagas disponíveis para % em %',
+      NEW.terapeuta, NEW.data_agendamento;
+  END IF;
+
+  UPDATE public.disponibilidade_especial
+  SET vagas_restantes = vagas_restantes - 1
+  WHERE profissional = NEW.terapeuta
+    AND data = NEW.data_agendamento;
+
+  RETURN NEW;
+END;
+$$;
+
+CREATE TRIGGER trg_decrementar_vaga_especial
+  BEFORE INSERT ON public.agendamentos
+  FOR EACH ROW
+  EXECUTE FUNCTION public.decrementar_vaga_especial_trigger();
+
 -- RPC consultada pelo frontend antes do INSERT
 CREATE OR REPLACE FUNCTION public.cliente_elegivel_desconto(p_whatsapp text)
 RETURNS boolean
@@ -169,35 +359,37 @@ $$;
 GRANT EXECUTE ON FUNCTION public.cliente_elegivel_desconto(text) TO anon;
 
 -- ============================================================
--- 5) RLS — anon tem acesso total (admin + checkout no front)
+-- 5) RLS — modelo limpo
+--    anon  -> SELECT no catálogo/disponibilidade + INSERT agendamentos.
+--             Mutações sensíveis só via RPC security definer.
+--    admin -> authenticated ALL via is_admin() (e-mail do painel).
 -- ============================================================
 ALTER TABLE public.tipos_leitura         ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.horarios_disponiveis  ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.agendamentos          ENABLE ROW LEVEL SECURITY;
 
--- tipos_leitura
+-- tipos_leitura (catálogo público; admin edita)
 DROP POLICY IF EXISTS "anon_select_tipos" ON public.tipos_leitura;
 CREATE POLICY "anon_select_tipos" ON public.tipos_leitura
   FOR SELECT TO anon USING (TRUE);
 
-DROP POLICY IF EXISTS "auth_all_tipos" ON public.tipos_leitura;
-CREATE POLICY "auth_all_tipos" ON public.tipos_leitura
-  FOR ALL TO authenticated USING (TRUE) WITH CHECK (TRUE);
+DROP POLICY IF EXISTS "auth_admin_tipos" ON public.tipos_leitura;
+CREATE POLICY "auth_admin_tipos" ON public.tipos_leitura
+  FOR ALL TO authenticated USING (is_admin()) WITH CHECK (is_admin());
 
--- horarios_disponiveis (admin gerencia pelo painel autenticado)
-DROP POLICY IF EXISTS "anon_all_horarios" ON public.horarios_disponiveis;
-CREATE POLICY "anon_all_horarios" ON public.horarios_disponiveis
-  FOR ALL TO anon USING (TRUE) WITH CHECK (TRUE);
+-- horarios_disponiveis (anon SÓ lê a disponibilidade; admin gerencia)
+DROP POLICY IF EXISTS "anon_select_horarios" ON public.horarios_disponiveis;
+CREATE POLICY "anon_select_horarios" ON public.horarios_disponiveis
+  FOR SELECT TO anon USING (TRUE);
 
-DROP POLICY IF EXISTS "auth_all_horarios" ON public.horarios_disponiveis;
-CREATE POLICY "auth_all_horarios" ON public.horarios_disponiveis
-  FOR ALL TO authenticated USING (TRUE) WITH CHECK (TRUE);
+DROP POLICY IF EXISTS "auth_admin_horarios" ON public.horarios_disponiveis;
+CREATE POLICY "auth_admin_horarios" ON public.horarios_disponiveis
+  FOR ALL TO authenticated USING (is_admin()) WITH CHECK (is_admin());
 
 -- agendamentos — anon SÓ pode INSERT (criar agendamento novo).
--- SELECT/UPDATE/DELETE bloqueados: clientes não podem ler ou modificar
+-- SELECT/UPDATE/DELETE bloqueados: clientes não leem nem alteram
 -- agendamentos de outras pessoas. Frontend usa RPCs security definer
--- (chave_pedido_existe, contar_agendamentos_por_data).
--- Admin autenticado pode SELECT, UPDATE, DELETE.
+-- (chave_pedido_existe, contar_agendamentos_por_data). Admin = is_admin().
 DROP POLICY IF EXISTS "anon_select_agend" ON public.agendamentos;
 DROP POLICY IF EXISTS "anon_insert_agend" ON public.agendamentos;
 DROP POLICY IF EXISTS "anon_update_agend" ON public.agendamentos;
@@ -206,18 +398,9 @@ DROP POLICY IF EXISTS "anon_delete_agend" ON public.agendamentos;
 CREATE POLICY "anon_insert_agend" ON public.agendamentos
   FOR INSERT TO anon WITH CHECK (TRUE);
 
-DROP POLICY IF EXISTS "auth_select_agend" ON public.agendamentos;
-DROP POLICY IF EXISTS "auth_update_agend" ON public.agendamentos;
-DROP POLICY IF EXISTS "auth_delete_agend" ON public.agendamentos;
-
-CREATE POLICY "auth_select_agend" ON public.agendamentos
-  FOR SELECT TO authenticated USING (TRUE);
-
-CREATE POLICY "auth_update_agend" ON public.agendamentos
-  FOR UPDATE TO authenticated USING (TRUE) WITH CHECK (TRUE);
-
-CREATE POLICY "auth_delete_agend" ON public.agendamentos
-  FOR DELETE TO authenticated USING (TRUE);
+DROP POLICY IF EXISTS "auth_admin_agend" ON public.agendamentos;
+CREATE POLICY "auth_admin_agend" ON public.agendamentos
+  FOR ALL TO authenticated USING (is_admin()) WITH CHECK (is_admin());
 
 -- RPCs públicas que substituem o SELECT direto
 CREATE OR REPLACE FUNCTION public.chave_pedido_existe(p_chave text)
@@ -268,9 +451,33 @@ ALTER TABLE public.configuracoes ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "anon_select_config" ON public.configuracoes;
 DROP POLICY IF EXISTS "anon_upsert_config" ON public.configuracoes;
 DROP POLICY IF EXISTS "auth_all_config" ON public.configuracoes;
+DROP POLICY IF EXISTS "auth_admin_config" ON public.configuracoes;
 
 CREATE POLICY "anon_select_config" ON public.configuracoes
   FOR SELECT TO anon USING (TRUE);
 
-CREATE POLICY "auth_all_config" ON public.configuracoes
-  FOR ALL TO authenticated USING (TRUE) WITH CHECK (TRUE);
+CREATE POLICY "auth_admin_config" ON public.configuracoes
+  FOR ALL TO authenticated USING (is_admin()) WITH CHECK (is_admin());
+
+-- ============================================================
+-- 7) REALTIME — dashboard escuta a tabela agendamentos
+--    Quando o webhook da InfinitePay muda pendente -> pago,
+--    o painel admin recebe o evento e atualiza na hora.
+--    REPLICA IDENTITY FULL garante que payload.old traga o
+--    status anterior (necessário para detectar pendente->pago).
+--    A autorização do canal respeita a RLS: só authenticated
+--    admin (auth_admin_agend / is_admin) recebe os eventos.
+-- ============================================================
+ALTER TABLE public.agendamentos REPLICA IDENTITY FULL;
+
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_publication_tables
+    WHERE pubname = 'supabase_realtime'
+      AND schemaname = 'public'
+      AND tablename = 'agendamentos'
+  ) THEN
+    ALTER PUBLICATION supabase_realtime ADD TABLE public.agendamentos;
+  END IF;
+END $$;
