@@ -10,27 +10,37 @@ let _autoRefreshTimer  = null;
 let _admAutenticado    = false;
 let _realtimeChannel   = null;
 let _refreshDebounce   = null;
+let _mfaFactorId       = null;
+let _avaliandoSessao   = false;
 
 // ============================================================
-// Autenticação com Supabase Auth
+// Autenticação com Supabase Auth + MFA (TOTP, 2º fator)
+//
+// Fluxo: senha -> verifica o nível de garantia da sessão (AAL).
+//   - tem fator TOTP verificado e sessão só com senha (aal1) -> desafio
+//   - nenhum fator inscrito (nextLevel aal1) -> força inscrição (QR)
+//   - sessão já elevada (aal2) -> entra no painel
+// Só ao atingir aal2 o painel é liberado e o Realtime conectado.
 // ============================================================
 async function initAuth() {
-  const { data: { session } } = await supabase.auth.getSession();
-
-  if (session) {
-    _admAutenticado = true;
-    _mostrarAdmin();
-    carregarAgendamentos();
-    return;
-  }
-
-  _admAutenticado = false;
-  _mostrarLogin();
-
+  // Listeners do card de login (anexados uma única vez).
   document.getElementById('adm-login-form')?.addEventListener('submit', async (e) => {
     e.preventDefault();
     await _fazerLogin();
   });
+  document.getElementById('adm-mfa-btn')?.addEventListener('click', _verificarMFA);
+  document.getElementById('adm-mfa-cancel')?.addEventListener('click', _fazerLogout);
+  document.getElementById('adm-mfa-code')?.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') { e.preventDefault(); _verificarMFA(); }
+  });
+
+  const { data: { session } } = await supabase.auth.getSession();
+  if (session) {
+    await _avaliarSessao();
+    return;
+  }
+  _admAutenticado = false;
+  _mostrarLogin();
 }
 
 async function _fazerLogin() {
@@ -47,10 +57,9 @@ async function _fazerLogin() {
 
   const { error } = await supabase.auth.signInWithPassword({ email, password });
 
-  btn.disabled    = false;
-  btn.textContent = 'Entrar';
-
   if (error) {
+    btn.disabled    = false;
+    btn.textContent = 'Entrar';
     errorEl.textContent = error.message === 'Invalid login credentials'
       ? 'E-mail ou senha inválidos.'
       : error.message;
@@ -58,14 +67,130 @@ async function _fazerLogin() {
     return;
   }
 
+  // Senha OK (sessão aal1). Decide entre exigir MFA, inscrever ou entrar.
+  await _avaliarSessao();
+  btn.disabled    = false;
+  btn.textContent = 'Entrar';
+}
+
+// Lê o AAL (Authenticator Assurance Level) e roteia o fluxo de login.
+async function _avaliarSessao() {
+  if (_avaliandoSessao) return;
+  _avaliandoSessao = true;
+  try {
+    const { data, error } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+    if (error || !data) { _entrarNoPainel(); return; }      // MFA indisponível: não trava o acesso
+    const { currentLevel, nextLevel } = data;
+
+    if (nextLevel === 'aal2' && currentLevel !== 'aal2') {
+      await _mostrarMFAChallenge();   // tem fator verificado, sessão só senha
+    } else if (nextLevel === 'aal1') {
+      await _mostrarMFAEnroll();      // nenhum fator: força configuração
+    } else {
+      _entrarNoPainel();              // currentLevel === 'aal2'
+    }
+  } finally {
+    _avaliandoSessao = false;
+  }
+}
+
+function _entrarNoPainel() {
   _admAutenticado = true;
   _mostrarAdmin();
-  _initAdminNav();
+  if (typeof _initAdminNav === 'function') _initAdminNav();
   carregarAgendamentos();
+}
+
+// Desafio: o usuário já tem um TOTP verificado.
+async function _mostrarMFAChallenge() {
+  const err = document.getElementById('adm-mfa-error');
+  if (err) err.style.display = 'none';
+  const { data: factors, error } = await supabase.auth.mfa.listFactors();
+  if (error) { _mostrarLogin(); return; }
+  const verificados = (factors?.totp || []);
+  const totp = verificados.find(f => f.status === 'verified') || verificados[0];
+  if (!totp) { await _mostrarMFAEnroll(); return; }   // sem fator verificado -> inscrever
+  _mfaFactorId = totp.id;
+  _mostrarTelaMFA('challenge');
+}
+
+// Inscrição: gera um novo fator TOTP e mostra QR + chave manual.
+async function _mostrarMFAEnroll() {
+  const err = document.getElementById('adm-mfa-error');
+  if (err) err.style.display = 'none';
+
+  // Remove fatores não verificados pendentes (evita acúmulo/erros).
+  try {
+    const { data: list } = await supabase.auth.mfa.listFactors();
+    for (const f of (list?.all || [])) {
+      if (f.status !== 'verified') await supabase.auth.mfa.unenroll({ factorId: f.id });
+    }
+  } catch (_) { /* best-effort */ }
+
+  const { data, error } = await supabase.auth.mfa.enroll({
+    factorType: 'totp',
+    friendlyName: 'painel-' + Date.now(),
+  });
+  _mostrarTelaMFA('enroll');
+  if (error) {
+    if (err) { err.textContent = error.message; err.style.display = 'block'; }
+    return;
+  }
+  _mfaFactorId = data.id;
+  const qr = document.getElementById('adm-mfa-qr');
+  if (qr) qr.innerHTML =
+    `<img src="${data.totp.qr_code}" alt="QR Code MFA" style="width:184px;height:184px;background:#fff;border-radius:8px;padding:6px;">`;
+  const secret = document.getElementById('adm-mfa-secret');
+  if (secret) secret.textContent = data.totp.secret;
+}
+
+// Cria o challenge e verifica o código (mesma rotina p/ inscrição e desafio).
+async function _verificarMFA() {
+  const code = (document.getElementById('adm-mfa-code')?.value || '').replace(/\D/g, '');
+  const btn  = document.getElementById('adm-mfa-btn');
+  const err  = document.getElementById('adm-mfa-error');
+  if (err) err.style.display = 'none';
+
+  if (!/^\d{6}$/.test(code)) {
+    if (err) { err.textContent = 'Digite os 6 dígitos do código.'; err.style.display = 'block'; }
+    return;
+  }
+  if (!_mfaFactorId) {
+    if (err) { err.textContent = 'Fator MFA não encontrado. Recarregue a página.'; err.style.display = 'block'; }
+    return;
+  }
+
+  btn.disabled = true; btn.textContent = 'Verificando...';
+
+  const { data: ch, error: chErr } = await supabase.auth.mfa.challenge({ factorId: _mfaFactorId });
+  if (chErr) {
+    btn.disabled = false; btn.textContent = 'Verificar';
+    if (err) { err.textContent = chErr.message; err.style.display = 'block'; }
+    return;
+  }
+
+  const { error: vErr } = await supabase.auth.mfa.verify({
+    factorId: _mfaFactorId,
+    challengeId: ch.id,
+    code,
+  });
+
+  btn.disabled = false; btn.textContent = 'Verificar';
+
+  if (vErr) {
+    if (err) { err.textContent = 'Código inválido ou expirado. Tente novamente.'; err.style.display = 'block'; }
+    return;
+  }
+
+  // Sucesso -> sessão elevada para aal2.
+  const codeEl = document.getElementById('adm-mfa-code');
+  if (codeEl) codeEl.value = '';
+  _entrarNoPainel();
 }
 
 async function _fazerLogout() {
   _pararRealtime();
+  _mfaFactorId = null;
   await supabase.auth.signOut();
   _admAutenticado = false;
   _mostrarLogin();
@@ -79,20 +204,31 @@ function _mostrarAdmin() {
 function _mostrarLogin() {
   document.getElementById('adm-login-screen')?.style.setProperty('display', '');
   document.getElementById('admin-content')?.style.setProperty('display', 'none');
+  // Garante que o card volte ao formulário de senha (esconde etapa MFA).
+  const form = document.getElementById('adm-login-form');
+  const mfa  = document.getElementById('adm-mfa');
+  if (form) form.style.display = '';
+  if (mfa)  mfa.style.display  = 'none';
 }
 
-// Monitora mudanças de sessão (logout remoto, expiração)
+// Alterna as telas do card de login: senha | enroll | challenge.
+function _mostrarTelaMFA(modo) {
+  const form = document.getElementById('adm-login-form');
+  const mfa  = document.getElementById('adm-mfa');
+  if (form) form.style.display = 'none';
+  if (mfa)  mfa.style.display  = '';
+  document.getElementById('adm-mfa-enroll').style.display         = modo === 'enroll'    ? '' : 'none';
+  document.getElementById('adm-mfa-challenge-text').style.display = modo === 'challenge' ? '' : 'none';
+  document.getElementById('adm-mfa-code')?.focus();
+}
+
+// Monitora mudanças de sessão (logout remoto, expiração).
+// O SIGNED_IN NÃO entra direto: o acesso passa sempre pelo gate de AAL.
 supabase.auth.onAuthStateChange((event, session) => {
   if (event === 'SIGNED_OUT' || (!session && _admAutenticado)) {
     _admAutenticado = false;
     _pararRealtime();
     _mostrarLogin();
-  }
-  if (event === 'SIGNED_IN' && session) {
-    _admAutenticado = true;
-    _mostrarAdmin();
-    if (typeof _initAdminNav === 'function') _initAdminNav();
-    carregarAgendamentos();
   }
 });
 

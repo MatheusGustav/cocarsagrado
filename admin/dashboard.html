@@ -135,6 +135,36 @@
       <button type="submit" class="adm-login-btn" id="adm-login-btn">Entrar</button>
       <div class="adm-login-error" id="adm-login-error"></div>
     </form>
+
+    <!-- Etapa MFA (2º fator) -->
+    <div id="adm-mfa" style="display:none; text-align:left;">
+      <div id="adm-mfa-enroll" style="display:none;">
+        <p style="color:#9a9a7a; font-size:.82rem; margin-bottom:12px;">
+          Configure a verificação em duas etapas. Escaneie o QR no seu app
+          autenticador (Google Authenticator, Authy…) e digite o código gerado.
+        </p>
+        <div id="adm-mfa-qr" style="display:flex; justify-content:center; margin-bottom:10px;"></div>
+        <p style="color:#7a8a7a; font-size:.72rem; word-break:break-all; margin-bottom:14px;">
+          Ou insira a chave manualmente:<br><code id="adm-mfa-secret" style="color:#d4c9a8;"></code>
+        </p>
+      </div>
+      <div id="adm-mfa-challenge-text" style="display:none;">
+        <p style="color:#9a9a7a; font-size:.82rem; margin-bottom:12px;">
+          Digite o código de 6 dígitos do seu app autenticador.
+        </p>
+      </div>
+      <div class="ag-form-group">
+        <label for="adm-mfa-code">Código de verificação</label>
+        <input type="text" id="adm-mfa-code" inputmode="numeric" autocomplete="one-time-code"
+               maxlength="6" placeholder="000000" style="letter-spacing:.3em; text-align:center;">
+      </div>
+      <button type="button" class="adm-login-btn" id="adm-mfa-btn">Verificar</button>
+      <button type="button" id="adm-mfa-cancel"
+              style="width:100%; margin-top:8px; padding:8px; background:transparent; color:#7a8a7a; border:1px solid #2a3a2a; border-radius:8px; font-size:.82rem; cursor:pointer;">
+        Cancelar e sair
+      </button>
+      <div class="adm-login-error" id="adm-mfa-error"></div>
+    </div>
   </div>
 </div>
 
@@ -331,7 +361,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="../js/supabase-config.js"></script>
 <script src="js/admin-shell.js?v=1"></script>
-<script src="js/admin-system.js?v=7"></script>
+<script src="js/admin-system.js?v=8"></script>
 <script src="js/vagas-admin.js?v=5"></script>
 <script src="js/vagas-especial-admin.js?v=2"></script>
 <script src="js/descontos-admin.js?v=2"></script>
