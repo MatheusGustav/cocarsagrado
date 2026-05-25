@@ -8,6 +8,8 @@ let _agendamentosTodos = [];
 let _statusAtivo       = 'pendente';
 let _autoRefreshTimer  = null;
 let _admAutenticado    = false;
+let _realtimeChannel   = null;
+let _refreshDebounce   = null;
 
 // ============================================================
 // Autenticação com Supabase Auth
@@ -63,6 +65,7 @@ async function _fazerLogin() {
 }
 
 async function _fazerLogout() {
+  _pararRealtime();
   await supabase.auth.signOut();
   _admAutenticado = false;
   _mostrarLogin();
@@ -82,6 +85,7 @@ function _mostrarLogin() {
 supabase.auth.onAuthStateChange((event, session) => {
   if (event === 'SIGNED_OUT' || (!session && _admAutenticado)) {
     _admAutenticado = false;
+    _pararRealtime();
     _mostrarLogin();
   }
   if (event === 'SIGNED_IN' && session) {
@@ -153,6 +157,7 @@ async function carregarAgendamentos() {
     : _agendamentosTodos;
   renderizarAgendamentos(filtrados, lista);
 
+  _iniciarRealtime();
   _iniciarAutoRefresh();
 }
 
@@ -177,6 +182,40 @@ function _atualizarContadoresPills(todos) {
   set('pill-count-pago',      (c.pago || 0) + (c.confirmado || 0));
   set('pill-count-atendido',  c.atendido || 0);
   set('pill-count-cancelado', c.cancelado || 0);
+}
+
+// ============================================================
+// Realtime — webhook InfinitePay marca pago -> painel atualiza
+// ============================================================
+function _agendarRefresh() {
+  clearTimeout(_refreshDebounce);
+  _refreshDebounce = setTimeout(() => {
+    if (_admAutenticado) carregarAgendamentos();
+  }, 400);
+}
+
+function _iniciarRealtime() {
+  if (_realtimeChannel) return;
+  _realtimeChannel = supabase
+    .channel('agendamentos-admin')
+    .on('postgres_changes',
+      { event: '*', schema: 'public', table: 'agendamentos' },
+      (payload) => {
+        const novo = payload.new || {};
+        const velho = payload.old || {};
+        // Pagamento confirmado pelo webhook (pendente -> pago)
+        if (payload.eventType === 'UPDATE' && velho.status === 'pendente' && novo.status === 'pago') {
+          _toastAdmin('💰 Pagamento confirmado: ' + (novo.cliente_nome || 'cliente'), 'ok');
+        }
+        _agendarRefresh();
+      })
+    .subscribe();
+}
+
+function _pararRealtime() {
+  if (!_realtimeChannel) return;
+  supabase.removeChannel(_realtimeChannel);
+  _realtimeChannel = null;
 }
 
 function _iniciarAutoRefresh() {
