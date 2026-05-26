@@ -310,7 +310,6 @@ function inicializarCarrosselDepoimentos() {
     let offset = 0;
     let ultimo = performance.now();
 
-    let hoverPausa = false; // mouse em cima (desktop)
     let tapPausa   = false; // tap pra ler (mobile)
     let arrastando = false;
     let startX = 0, startOffset = 0, movido = 0, pointerId = null;
@@ -336,7 +335,7 @@ function inicializarCarrosselDepoimentos() {
     function frame(agora) {
       const dt = Math.min((agora - ultimo) / 1000, 0.05); // clamp p/ aba inativa
       ultimo = agora;
-      const rodando = !hoverPausa && !tapPausa && !arrastando && !reduzido;
+      const rodando = !tapPausa && !arrastando && !reduzido;
       if (rodando && velocidade > 0) {
         offset -= velocidade * dt;
         normalizar();
@@ -344,10 +343,6 @@ function inicializarCarrosselDepoimentos() {
       }
       requestAnimationFrame(frame);
     }
-
-    // --- Pause no hover (desktop) ---
-    track.addEventListener('mouseenter', () => { hoverPausa = true; });
-    track.addEventListener('mouseleave', () => { hoverPausa = false; });
 
     // --- Arrastar / deslizar (mouse + touch via Pointer Events) ---
     track.addEventListener('pointerdown', (e) => {
