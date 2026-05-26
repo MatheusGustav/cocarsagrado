@@ -239,9 +239,17 @@ body.modal-aberto { overflow: hidden; }
   width: 64px; height: 64px;
   flex-shrink: 0;
   border-radius: 50%;
-  object-fit: cover;
+  overflow: hidden;
+  display: inline-flex;
   background: #F5F2E6;
   border: 2px solid var(--accent, #C9A04A);
+}
+.pag-pantero-avatar img {
+  width: 100%; height: 100%;
+  object-fit: cover;
+  display: block;
+  transform: scale(1.28);
+  transform-origin: center 35%;
 }
 .pag-pantero-balao {
   position: relative;
@@ -453,23 +461,32 @@ body.modal-aberto { overflow: hidden; }
   display: none;
   align-items: center;
   gap: 8px;
-  padding: 13px 20px;
-  border: none;
+  padding: 13px 22px;
+  border: 1px solid var(--color-gold-deep, #8A6E28);
   border-radius: 999px;
-  background: linear-gradient(135deg, var(--primary, #7c3aed), var(--secondary, #db2777));
-  color: #fff;
-  font-size: .95rem;
+  background: var(--color-gold, #B8923E);
+  color: var(--color-primary-deep, #1F331F);
+  font-family: var(--fonte-corpo, inherit);
+  font-size: .92rem;
   font-weight: 700;
+  letter-spacing: .03em;
   cursor: pointer;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, .28);
+  box-shadow: 0 6px 20px rgba(45, 74, 45, .28);
+  transition: background .2s ease, border-color .2s ease, transform .12s ease, box-shadow .2s ease;
   animation: retomar-pop .28s ease;
 }
 .btn-retomar-pedido.visivel {
   display: inline-flex;
 }
 .btn-retomar-pedido:hover {
-  filter: brightness(1.05);
+  background: var(--color-gold-deep, #8A6E28);
+  border-color: var(--color-gold-deep, #8A6E28);
+  color: var(--color-text-on-dark, #F0E8C8);
   transform: translateY(-2px);
+  box-shadow: 0 8px 26px rgba(45, 74, 45, .36);
+}
+.btn-retomar-pedido:active {
+  transform: scale(.97);
 }
 @keyframes retomar-pop {
   from { opacity: 0; transform: translateY(12px); }

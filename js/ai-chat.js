@@ -56,6 +56,7 @@
     }
     #cs-chat-header .cs-avatar img {
       width: 100%; height: 100%; object-fit: cover; display: block;
+      transform: scale(1.28); transform-origin: center 35%;
     }
     #cs-chat-header .cs-title {
       color: #F5F2E6; font-family: 'Cormorant Garamond', serif;
