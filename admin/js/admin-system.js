@@ -138,10 +138,38 @@ async function _mostrarMFAEnroll() {
   }
   _mfaFactorId = data.id;
   const qr = document.getElementById('adm-mfa-qr');
-  if (qr) qr.innerHTML =
-    `<img src="${data.totp.qr_code}" alt="QR Code MFA" style="width:184px;height:184px;background:#fff;border-radius:8px;padding:6px;">`;
+  if (qr) {
+    qr.innerHTML = '';
+    const img = document.createElement('img');
+    img.alt = 'QR Code MFA';
+    img.style.cssText = 'width:184px;height:184px;background:#fff;border-radius:8px;padding:6px;';
+    img.src = _normalizarQrCode(data.totp.qr_code);
+    // Fallback: se o SVG não renderizar, orienta usar a chave manual abaixo.
+    img.onerror = () => {
+      qr.innerHTML = '<p style="color:#d4c9a8;font-size:.8rem;max-width:200px;text-align:center;">' +
+        'Não foi possível exibir o QR. Use a chave manual abaixo no app autenticador.</p>';
+    };
+    qr.appendChild(img);
+  }
   const secret = document.getElementById('adm-mfa-secret');
   if (secret) secret.textContent = data.totp.secret;
+}
+
+// O Supabase devolve o QR como data URI de SVG (data:image/svg+xml;utf-8,<svg...>).
+// O '#' das cores não vem escapado e trunca o data URI no fragmento → imagem
+// quebrada. Re-encoda o payload do SVG quando ele vem cru.
+function _normalizarQrCode(src) {
+  if (typeof src !== 'string') return src;
+  if (src.startsWith('data:image/svg+xml')) {
+    const i = src.indexOf(',');
+    if (i !== -1) {
+      const svg = src.slice(i + 1);
+      if (svg.includes('<svg')) {           // veio cru (não percent-encoded)
+        return 'data:image/svg+xml,' + encodeURIComponent(svg);
+      }
+    }
+  }
+  return src;
 }
 
 // Cria o challenge e verifica o código (mesma rotina p/ inscrição e desafio).
@@ -415,23 +443,153 @@ async function calcularEstatisticas(todos) {
   set('stat-pagos',   pagos);
   set('stat-total',   `R$ ${totalMes.toFixed(2).replace('.', ',')}`);
 
-  atualizarMascote(pendentes, pagos);
+  let semVagas = [];
+  try { semVagas = await _terapeutasSemVagasHoje(todos); } catch (_) { /* não trava stats */ }
+  atualizarMascote(pendentes, pagos, semVagas);
 }
 
-function atualizarMascote(pendentes, pagos) {
+// Quem está com 0 vagas hoje (folga ou lotado). Vagas = override (vagas_total
+// menos os agendamentos do dia) + especiais (vagas_restantes). Sem linha de
+// disponibilidade = 0 vagas.
+async function _terapeutasSemVagasHoje(todos) {
+  const hoje  = _dataLocalISO();
+  const profs = ['camila', 'matheus'];
+  const nomes = { camila: 'Camila', matheus: 'Matheus' };
+
+  const [{ data: ovs }, { data: esps }] = await Promise.all([
+    supabase.from('disponibilidade_override')
+      .select('profissional, vagas_total, ativo').eq('data', hoje),
+    supabase.from('disponibilidade_especial')
+      .select('profissional, vagas_restantes, ativo').eq('data', hoje),
+  ]);
+
+  const semVagas = [];
+  for (const p of profs) {
+    const ocupadas = todos.filter(a =>
+      a.data_agendamento === hoje && a.terapeuta === p && a.status !== 'cancelado'
+    ).length;
+
+    let vagas = 0;
+    (ovs  || []).filter(o => o.profissional === p && o.ativo)
+      .forEach(o => { vagas += Math.max(0, (o.vagas_total || 0) - ocupadas); });
+    (esps || []).filter(e => e.profissional === p && e.ativo)
+      .forEach(e => { vagas += Math.max(0, e.vagas_restantes || 0); });
+
+    if (vagas <= 0) semVagas.push(nomes[p]);
+  }
+  return semVagas;
+}
+
+// Estado mais recente (alimenta o sorteio de frases ao trocar de tela).
+let _mascoteEstado = { pagos: 0, semVagas: [] };
+
+const _MASCOTE_NEUTRAS = ['estou de olho por aqui...', 'só peidanno por aqui...'];
+const _MASCOTE_GRANA   = ['ta com a grana né!! só de olho...', 'a grana ta entrando hein!'];
+
+// Guarda o estado e fala. Chamado quando as estatísticas atualizam.
+function atualizarMascote(pendentes, pagos, semVagas = []) {
+  _mascoteEstado = { pagos, semVagas };
+  falarMascote();
+}
+
+// Sorteia uma frase do pool do estado atual. Mesmo com um gatilho ativo o
+// pool tem várias frases (+ neutras), então a mensagem não fica travada —
+// trocar de tela re-sorteia.
+function falarMascote() {
   const wrap  = document.getElementById('mascote-chefe');
   const balao = document.getElementById('mascote-balao');
   if (!wrap || !balao) return;
-  wrap.classList.remove('mascote-pendente', 'mascote-grana');
-  if (pendentes > 0) {
-    balao.textContent = 'da baixa nos atendimentos pourra!!';
-    wrap.classList.add('mascote-pendente');
+
+  const { pagos, semVagas } = _mascoteEstado;
+  let pool;
+  if (semVagas.length) {
+    const quem = semVagas.join(' e ');
+    pool = [
+      `só no bem bom né ${quem}!!?`,
+      `só no bem bom né ${quem}!???!!`,
+      `${quem} só no bem bom hein!??`,
+      `cadê o batente ${quem}!??`,
+      ..._MASCOTE_NEUTRAS,
+    ];
   } else if (pagos >= 8) {
-    balao.textContent = 'ta com a grana né!! só de olho...';
-    wrap.classList.add('mascote-grana');
+    pool = [..._MASCOTE_GRANA, ..._MASCOTE_NEUTRAS];
   } else {
-    balao.textContent = 'estou de olho por aqui...';
+    pool = _MASCOTE_NEUTRAS;
   }
+
+  const frase = pool[Math.floor(Math.random() * pool.length)];
+  balao.textContent = frase;
+  wrap.classList.toggle('mascote-grana', _MASCOTE_GRANA.includes(frase));
+}
+
+// ============================================================
+// Mascote arrastável — o admin posiciona a bolinha onde quiser
+// e ela fica parada lá (posição salva no localStorage).
+// ============================================================
+function tornarMascoteArrastavel() {
+  const el = document.getElementById('mascote-chefe');
+  if (!el || el.dataset.dragReady === '1') return;
+  const handle = el.querySelector('.mascote-img');
+  if (!handle) return;
+  el.dataset.dragReady = '1';
+
+  const KEY = 'mascote_pos';
+  const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
+
+  function aplicarPos(left, top) {
+    const w = el.offsetWidth, h = el.offsetHeight;
+    left = clamp(left, 4, window.innerWidth  - w - 4);
+    top  = clamp(top,  4, window.innerHeight - h - 4);
+    el.style.left   = left + 'px';
+    el.style.top    = top + 'px';
+    el.style.right  = 'auto';
+    el.style.bottom = 'auto';
+  }
+
+  // Restaura posição salva (depois do layout calcular tamanhos)
+  try {
+    const saved = JSON.parse(localStorage.getItem(KEY) || 'null');
+    if (saved && Number.isFinite(saved.left)) {
+      requestAnimationFrame(() => aplicarPos(saved.left, saved.top));
+    }
+  } catch {}
+
+  let arrastando = false, startX = 0, startY = 0, baseLeft = 0, baseTop = 0;
+
+  handle.addEventListener('pointerdown', (e) => {
+    arrastando = true;
+    const r = el.getBoundingClientRect();
+    baseLeft = r.left; baseTop = r.top;
+    startX = e.clientX; startY = e.clientY;
+    aplicarPos(baseLeft, baseTop); // troca âncora right/bottom → left/top
+    try { handle.setPointerCapture(e.pointerId); } catch {}
+    el.classList.add('dragging');
+    e.preventDefault();
+  });
+
+  handle.addEventListener('pointermove', (e) => {
+    if (!arrastando) return;
+    aplicarPos(baseLeft + (e.clientX - startX), baseTop + (e.clientY - startY));
+  });
+
+  function fim(e) {
+    if (!arrastando) return;
+    arrastando = false;
+    el.classList.remove('dragging');
+    try { handle.releasePointerCapture(e.pointerId); } catch {}
+    const r = el.getBoundingClientRect();
+    try { localStorage.setItem(KEY, JSON.stringify({ left: r.left, top: r.top })); } catch {}
+  }
+  handle.addEventListener('pointerup', fim);
+  handle.addEventListener('pointercancel', fim);
+
+  // Se a janela encolher e o mascote ficar fora, traz de volta pra borda
+  window.addEventListener('resize', () => {
+    if (el.style.left) {
+      const r = el.getBoundingClientRect();
+      aplicarPos(r.left, r.top);
+    }
+  });
 }
 
 // ============================================================
@@ -695,4 +853,9 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('filtro-terapeuta')?.addEventListener('change', carregarAgendamentos);
   document.getElementById('filtro-metodo')?.addEventListener('change', carregarAgendamentos);
   document.getElementById('adm-logout-btn')?.addEventListener('click', _fazerLogout);
+  tornarMascoteArrastavel();
+  // Trocar de tela (qualquer link da nav) re-sorteia a fala do mascote.
+  document.querySelector('.adm-nav')?.addEventListener('click', (e) => {
+    if (e.target.closest('a')) setTimeout(falarMascote, 0);
+  });
 });

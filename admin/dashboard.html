@@ -63,12 +63,7 @@
       align-items: flex-end;
       gap: 10px;
       z-index: 40;
-      pointer-events: none;
-      animation: mascote-flutuar 4s ease-in-out infinite;
-    }
-    @keyframes mascote-flutuar {
-      0%,100% { transform: translateY(0); }
-      50%     { transform: translateY(-4px); }
+      pointer-events: none; /* balão não bloqueia cliques; a bolinha reativa abaixo */
     }
     .mascote-balao {
       background: #fff;
@@ -92,7 +87,13 @@
       object-position: center 45%;
       border: 3px solid #D4B254;
       box-shadow: 0 8px 22px rgba(0,0,0,.4);
+      pointer-events: auto;   /* a bolinha é arrastável */
+      cursor: grab;
+      touch-action: none;     /* arrastar no mobile sem rolar a página */
+      -webkit-user-drag: none;
+      user-select: none;
     }
+    .mascote-chefe.dragging .mascote-img { cursor: grabbing; }
     .mascote-pendente .mascote-balao {
       background: #fff1f1;
       border-color: #B91C1C;
@@ -361,7 +362,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="../js/supabase-config.js"></script>
 <script src="js/admin-shell.js?v=1"></script>
-<script src="js/admin-system.js?v=8"></script>
+<script src="js/admin-system.js?v=14"></script>
 <script src="js/vagas-admin.js?v=5"></script>
 <script src="js/vagas-especial-admin.js?v=2"></script>
 <script src="js/descontos-admin.js?v=2"></script>
