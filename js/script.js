@@ -288,6 +288,8 @@ function inicializarAnimacoesScroll() {
 function inicializarCarrosselDepoimentos() {
   document.querySelectorAll('[data-marquee]').forEach(track => {
     if (track.dataset.marqueeReady === '1') return;
+
+    // 1) Clona os cards uma vez para fechar o loop sem costura.
     const originais = Array.from(track.children);
     originais.forEach(card => {
       const clone = card.cloneNode(true);
@@ -296,6 +298,98 @@ function inicializarCarrosselDepoimentos() {
       track.appendChild(clone);
     });
     track.dataset.marqueeReady = '1';
+
+    // 2) Assume o controle do movimento via JS (substitui a animação CSS).
+    //    Se o JS não rodar, a animação CSS continua valendo (fallback).
+    track.classList.add('is-js');
+
+    const reduzido = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    let loopDist = 0;   // distância de um conjunto (px) — ponto de costura
+    let velocidade = 0; // px/s
+    let offset = 0;
+    let ultimo = performance.now();
+
+    let hoverPausa = false; // mouse em cima (desktop)
+    let tapPausa   = false; // tap pra ler (mobile)
+    let arrastando = false;
+    let startX = 0, startOffset = 0, movido = 0, pointerId = null;
+
+    function medir() {
+      const gap = parseFloat(getComputedStyle(track).gap) || 0;
+      const durRaw = getComputedStyle(track).getPropertyValue('--depo-duration');
+      const dur = parseFloat(durRaw) || 40; // segundos p/ percorrer 1 conjunto
+      loopDist = (track.scrollWidth + gap) / 2;
+      velocidade = loopDist > 0 ? loopDist / dur : 0;
+    }
+
+    function normalizar() {
+      if (loopDist <= 0) return;
+      while (offset <= -loopDist) offset += loopDist;
+      while (offset > 0)          offset -= loopDist;
+    }
+
+    function aplicar() {
+      track.style.transform = `translate3d(${offset}px, 0, 0)`;
+    }
+
+    function frame(agora) {
+      const dt = Math.min((agora - ultimo) / 1000, 0.05); // clamp p/ aba inativa
+      ultimo = agora;
+      const rodando = !hoverPausa && !tapPausa && !arrastando && !reduzido;
+      if (rodando && velocidade > 0) {
+        offset -= velocidade * dt;
+        normalizar();
+        aplicar();
+      }
+      requestAnimationFrame(frame);
+    }
+
+    // --- Pause no hover (desktop) ---
+    track.addEventListener('mouseenter', () => { hoverPausa = true; });
+    track.addEventListener('mouseleave', () => { hoverPausa = false; });
+
+    // --- Arrastar / deslizar (mouse + touch via Pointer Events) ---
+    track.addEventListener('pointerdown', (e) => {
+      arrastando = true;
+      movido = 0;
+      startX = e.clientX;
+      startOffset = offset;
+      pointerId = e.pointerId;
+      try { track.setPointerCapture(pointerId); } catch {}
+      track.classList.add('dragging');
+    });
+
+    track.addEventListener('pointermove', (e) => {
+      if (!arrastando) return;
+      const dx = e.clientX - startX;
+      movido = Math.max(movido, Math.abs(dx));
+      offset = startOffset + dx;
+      normalizar();
+      aplicar();
+    });
+
+    function fimArraste(e) {
+      if (!arrastando) return;
+      arrastando = false;
+      track.classList.remove('dragging');
+      try { track.releasePointerCapture(e.pointerId); } catch {}
+      // Tap curto (toque) → alterna pausa pra leitura no mobile.
+      if (e.pointerType === 'touch' && movido < 8) tapPausa = !tapPausa;
+    }
+    track.addEventListener('pointerup', fimArraste);
+    track.addEventListener('pointercancel', fimArraste);
+
+    // --- Recalcula em resize (largura dos cards é responsiva) ---
+    let resizeT;
+    window.addEventListener('resize', () => {
+      clearTimeout(resizeT);
+      resizeT = setTimeout(() => { medir(); normalizar(); aplicar(); }, 150);
+    });
+
+    medir();
+    aplicar();
+    requestAnimationFrame((t) => { ultimo = t; frame(t); });
   });
 }
 
