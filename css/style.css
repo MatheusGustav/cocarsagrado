@@ -1572,6 +1572,23 @@ body.cs-chat-active .nav-chat-btn { color: var(--color-gold); }
   object-fit: cover;
 }
 
+/* Quando o JS assume o movimento: desliga a animação CSS, permite
+   arrastar e mantém o scroll vertical da página no mobile (pan-y). */
+.depos-track.is-js {
+  animation: none;
+  cursor: grab;
+  touch-action: pan-y;
+  -webkit-user-select: none;
+          user-select: none;
+}
+.depos-track.is-js.dragging {
+  cursor: grabbing;
+}
+.depos-track.is-js img {
+  pointer-events: none;
+  -webkit-user-drag: none;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .depos-track { animation: none; }
 }
