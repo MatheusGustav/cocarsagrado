@@ -604,22 +604,51 @@ function _rotuloDivisor(dataIso) {
   return `${DIAS_SEMANA_PT[dt.getDay()]}, ${String(d).padStart(2,'0')}/${String(m).padStart(2,'0')}`;
 }
 
+function _agruparPorPedido(lista) {
+  // Conta quantos agendamentos compartilham cada pedido_id
+  const contagem = new Map();
+  for (const ag of lista) {
+    if (ag.pedido_id) contagem.set(ag.pedido_id, (contagem.get(ag.pedido_id) || 0) + 1);
+  }
+
+  const processados = new Set();
+  const resultado = [];
+
+  for (const ag of lista) {
+    if (!ag.pedido_id || contagem.get(ag.pedido_id) === 1) {
+      resultado.push({ tipo: 'single', ag, data_agendamento: ag.data_agendamento });
+      continue;
+    }
+    if (processados.has(ag.pedido_id)) continue;
+    processados.add(ag.pedido_id);
+    const ags = lista.filter(a => a.pedido_id === ag.pedido_id);
+    resultado.push({ tipo: 'grupo', pedido_id: ag.pedido_id, ags, data_agendamento: ag.data_agendamento });
+  }
+
+  return resultado;
+}
+
 function renderizarAgendamentos(lista, container) {
   if (!lista.length) {
     container.innerHTML = '<div class="ag-empty">Nenhum agendamento encontrado.</div>';
     return;
   }
   container.innerHTML = '';
+  const itens = _agruparPorPedido(lista);
   let dataAtual = null;
-  lista.forEach(ag => {
-    if (ag.data_agendamento !== dataAtual) {
-      dataAtual = ag.data_agendamento;
+  itens.forEach(item => {
+    if (item.data_agendamento !== dataAtual) {
+      dataAtual = item.data_agendamento;
       const divisor = document.createElement('div');
       divisor.className = 'adm-divisor-dia';
       divisor.innerHTML = `<span>${_esc(_rotuloDivisor(dataAtual))}</span>`;
       container.appendChild(divisor);
     }
-    container.appendChild(criarItemAgendamento(ag));
+    if (item.tipo === 'grupo') {
+      container.appendChild(criarItemGrupo(item));
+    } else {
+      container.appendChild(criarItemAgendamento(item.ag));
+    }
   });
 }
 
@@ -672,6 +701,99 @@ function criarItemAgendamento(ag) {
     </div>`;
 
   return item;
+}
+
+function criarItemGrupo(grupo) {
+  const { ags, pedido_id } = grupo;
+  const ref = ags[0];
+
+  const valorTotal = ags.reduce((s, a) => s + Number(a.valor_final || 0), 0);
+  const valorStr = `R$ ${valorTotal.toFixed(2).replace('.', ',')}`;
+
+  const ordemStatus = ['pendente', 'cancelado', 'pago', 'confirmado', 'atendido'];
+  const statusGrupo = ags.reduce((pior, a) => {
+    return ordemStatus.indexOf(a.status) < ordemStatus.indexOf(pior) ? a.status : pior;
+  }, 'atendido');
+
+  const badge      = `<span class="adm-badge adm-badge-${_esc(statusGrupo)}">${_esc(STATUS_LABELS[statusGrupo] || statusGrupo)}</span>`;
+  const badgeGrupo = `<span class="adm-badge adm-badge-grupo">${ags.length} leituras</span>`;
+
+  const leituras = ags.map(ag => {
+    const nomeTipo   = ag.tipos_leitura?.nome || '—';
+    const data       = formatarData(ag.data_agendamento);
+    const horaRaw    = ag.hora_agendamento?.slice(0, 5) || '';
+    const horaLabel  = (!horaRaw || horaRaw === '00:00') ? 'a combinar' : `até ${horaRaw}`;
+    const valor      = `R$ ${Number(ag.valor_final || 0).toFixed(2).replace('.', ',')}`;
+    const terapeuta  = ag.terapeuta === 'matheus' ? 'Matheus' : ag.terapeuta === 'camila' ? 'Camila' : ag.terapeuta || '—';
+    const badgeSt    = `<span class="adm-badge adm-badge-${_esc(ag.status)} adm-badge-sm">${_esc(STATUS_LABELS[ag.status] || ag.status)}</span>`;
+    return `<div class="adm-grupo-leitura">
+      <div class="adm-grupo-leitura-info">
+        <strong>${_esc(nomeTipo)}</strong>
+        <span>${_esc(data)} ${_esc(horaLabel)} · ${_esc(terapeuta)}</span>
+      </div>
+      <div class="adm-grupo-leitura-right">
+        <span>${_esc(valor)}</span>
+        ${badgeSt}
+      </div>
+    </div>`;
+  }).join('');
+
+  const item = document.createElement('div');
+  item.className = 'adm-item adm-item-grupo';
+  item.dataset.pedidoId = pedido_id;
+
+  item.innerHTML = `
+    <div class="adm-item-header" onclick="toggleDetalhes(this)">
+      <div class="adm-item-info">
+        <h4>${_esc(ref.cliente_nome)} ${badgeGrupo}</h4>
+        <p>Pedido · ${_esc(ref.chave_pedido || '—')}</p>
+      </div>
+      <div class="adm-item-right">
+        <span style="font-weight:700; color:var(--primary)">${_esc(valorStr)}</span>
+        ${badge}
+        <span style="font-size:1.1rem; color:var(--text-muted)">▾</span>
+      </div>
+    </div>
+    <div class="adm-item-details">
+      <div style="margin-bottom:14px;">
+        <div class="adm-grupo-label">Leituras do pedido</div>
+        <div class="adm-grupo-leituras">${leituras}</div>
+      </div>
+      <div class="adm-details-grid">
+        <div class="adm-detail-item"><label>WhatsApp</label><span>${_esc(ref.cliente_whatsapp || '—')}</span></div>
+        <div class="adm-detail-item"><label>Nascimento</label><span>${_esc(formatarData(ref.cliente_nascimento))}</span></div>
+        <div class="adm-detail-item"><label>Método pag.</label><span>${_esc(ref.metodo_pagamento || '—')}</span></div>
+        <div class="adm-detail-item"><label>Pago em</label><span>${ref.pago_em ? _esc(formatarDatetime(ref.pago_em)) : '—'}</span></div>
+      </div>
+      <div class="adm-item-actions">${montarAcoesGrupo(ags)}</div>
+    </div>`;
+
+  return item;
+}
+
+function montarAcoesGrupo(ags) {
+  const ids       = ags.map(a => a.id);
+  const temPendente = ags.some(a => a.status === 'pendente');
+  const temPago     = ags.some(a => ['pago', 'confirmado'].includes(a.status));
+  let html = '';
+
+  if (temPendente) {
+    html += `<button class="ag-btn ag-btn-primary ag-btn-sm" onclick="marcarGrupoComoPago(${JSON.stringify(ids)})">✅ Marcar todos como Pagos</button>`;
+  }
+  if (temPago) {
+    html += `<button class="ag-btn ag-btn-secondary ag-btn-sm" onclick="marcarGrupoComoAtendido(${JSON.stringify(ids)})">🌙 Marcar todos como Atendidos</button>`;
+  }
+
+  const comFone = ags.find(a => a.cliente_whatsapp?.replace(/\D/g, '').length >= 10);
+  if (comFone) {
+    const fone = comFone.cliente_whatsapp;
+    const nome = comFone.cliente_nome || '';
+    const qtd  = ags.length;
+    const data = formatarData(ags[0].data_agendamento);
+    html += `<button class="ag-btn ag-btn-whatsapp ag-btn-sm" onclick="abrirWhatsApp('${escapeAttr(fone)}','${escapeAttr(nome)}','pedido com ${qtd} leituras','${data}','')">📱 WhatsApp</button>`;
+  }
+
+  return html;
 }
 
 function montarAcoes(ag) {
@@ -741,6 +863,28 @@ async function cancelarAgendamento(id) {
   if (error) { _toastAdmin('Erro: ' + error.message, 'erro'); return; }
   await _devolverVagaEspecialSeAplicavel(ag);
   _toastAdmin('✅ Agendamento cancelado.', 'ok');
+  carregarAgendamentos();
+}
+
+async function marcarGrupoComoPago(ids) {
+  if (!_admAutenticado) { _mostrarLogin(); return; }
+  if (!confirm(`Marcar ${ids.length} agendamento(s) como pagos?`)) return;
+  const { error } = await supabase.from('agendamentos')
+    .update({ status: 'pago', pago_em: new Date().toISOString() })
+    .in('id', ids);
+  if (error) { _toastAdmin('Erro: ' + error.message, 'erro'); return; }
+  _toastAdmin('✅ Marcados como pagos!', 'ok');
+  carregarAgendamentos();
+}
+
+async function marcarGrupoComoAtendido(ids) {
+  if (!_admAutenticado) { _mostrarLogin(); return; }
+  if (!confirm(`Marcar ${ids.length} agendamento(s) como atendidos?`)) return;
+  const { error } = await supabase.from('agendamentos')
+    .update({ status: 'atendido', atendido_em: new Date().toISOString() })
+    .in('id', ids);
+  if (error) { _toastAdmin('Erro: ' + error.message, 'erro'); return; }
+  _toastAdmin('✅ Marcados como atendidos!', 'ok');
   carregarAgendamentos();
 }
 

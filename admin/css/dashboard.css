@@ -671,6 +671,79 @@ body {
   border: 1px solid rgba(185,28,28,0.15) !important;
 }
 
+.adm-badge-grupo {
+  background: #EAE5D8 !important;
+  color: #5A481A !important;
+  border: 1px solid rgba(184,146,62,0.3) !important;
+  font-size: .62rem !important;
+}
+
+.adm-badge-sm {
+  font-size: .6rem !important;
+  padding: 2px 7px !important;
+}
+
+/* ============================================================
+   AGRUPAMENTO POR PEDIDO
+   ============================================================ */
+.adm-item-grupo {
+  border-left: 3px solid #B8923E !important;
+}
+
+.adm-grupo-label {
+  font-size: .68rem;
+  color: #8C8478;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .07em;
+  margin-bottom: 8px;
+}
+
+.adm-grupo-leituras {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.adm-grupo-leitura {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  background: #F5F2E6;
+  border: 1px solid #EDE8D2;
+  border-radius: 8px;
+  padding: 8px 12px;
+}
+
+.adm-grupo-leitura-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.adm-grupo-leitura-info strong {
+  font-size: .85rem;
+  color: #2D4A2D;
+  font-weight: 600;
+}
+
+.adm-grupo-leitura-info span {
+  font-size: .75rem;
+  color: #8C8478;
+}
+
+.adm-grupo-leitura-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+  font-size: .82rem;
+  font-weight: 600;
+  color: #2D4A2D;
+}
+
 /* ============================================================
    BOTÕES
    ============================================================ */
