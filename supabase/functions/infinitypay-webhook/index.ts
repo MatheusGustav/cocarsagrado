@@ -36,18 +36,23 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
     )
 
-    const { data: ag, error: agErr } = await supabase
-      .from('agendamentos')
-      .select('valor_final, status')
+    // Busca o pedido pai por chave_pedido (order_nsu)
+    const { data: pedido, error: pedErr } = await supabase
+      .from('pedidos')
+      .select('id, valor_total, status')
       .eq('chave_pedido', chave)
       .maybeSingle()
 
-    if (agErr || !ag) {
-      return new Response(JSON.stringify({ error: 'agendamento not found' }), { status: 400 })
+    if (pedErr || !pedido) {
+      return new Response(JSON.stringify({ error: 'pedido not found' }), { status: 400 })
     }
 
-    // Valida usando amount (valor original, sem juros de parcelamento)
-    const esperado = Math.round(Number(ag.valor_final ?? 0) * 100)
+    if (pedido.status !== 'pendente') {
+      return new Response(JSON.stringify({ error: 'pedido already processed' }), { status: 400 })
+    }
+
+    // Valida amount contra pedido.valor_total
+    const esperado = Math.round(Number(pedido.valor_total ?? 0) * 100)
     const recebido = Number(check.amount ?? 0)
     if (Math.abs(recebido - esperado) > 1) {
       return new Response(
@@ -56,15 +61,18 @@ Deno.serve(async (req) => {
       )
     }
 
-    await supabase
-      .from('agendamentos')
-      .update({
-        status: 'pago',
-        pago_em: new Date().toISOString(),
-        metodo_pagamento: captureMethod,
-      })
-      .eq('chave_pedido', chave)
-      .eq('status', 'pendente')
+    // Atualização atômica do pai + filhos numa única transação (RPC).
+    // Evita o estado inconsistente "pedido pago / agendamentos pendentes".
+    const { error: rpcErr } = await supabase.rpc('confirmar_pedido_pago', {
+      p_chave:  chave,
+      p_metodo: captureMethod,
+    })
+    if (rpcErr) {
+      return new Response(
+        JSON.stringify({ error: 'update failed', detail: rpcErr.message }),
+        { status: 500 },
+      )
+    }
 
     return new Response(JSON.stringify({ success: true }), {
       headers: { 'Content-Type': 'application/json' },

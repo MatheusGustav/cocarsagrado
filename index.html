@@ -88,7 +88,7 @@
   </script>
   <link rel="stylesheet" href="css/style.css?v=12" />
   <link rel="stylesheet" href="css/agendamento-styles.css?v=9">
-  <link rel="stylesheet" href="css/modal-agendamento.css?v=12">
+  <link rel="stylesheet" href="css/modal-agendamento.css?v=14">
 </head>
 <body>
 
@@ -436,12 +436,12 @@
         <div class="modal-progress" role="navigation" aria-label="Etapas">
           <div class="modal-tela-step active" id="modal-step-1">
             <span class="t-num">1</span>
-            <span id="modal-title">Data</span>
+            <span id="modal-title">Dados</span>
           </div>
           <span class="modal-progress-sep" aria-hidden="true">›</span>
           <div class="modal-tela-step" id="modal-step-2">
             <span class="t-num">2</span>
-            <span>Dados</span>
+            <span>Leitura</span>
           </div>
           <span class="modal-progress-sep" aria-hidden="true">›</span>
           <div class="modal-tela-step" id="modal-step-3">
@@ -456,29 +456,12 @@
         <!-- TELA 1: AGENDAMENTO -->
         <div id="telaAgendamento" class="modal-screen active">
           <div class="ag-container" style="margin-top:20px;">
-            <section class="ag-section active" id="secao-1" aria-label="Escolha a data">
-              <h2 class="ag-section-title">Escolha a data</h2>
-              <div id="calendario">
-                <div class="ag-loading"><div class="ag-spinner"></div> Carregando...</div>
-              </div>
-            </section>
-            <section class="ag-section" id="secao-2" aria-label="Seus dados">
-              <div style="display:flex; align-items:center; gap:12px; margin-bottom:24px;">
-                <button class="ag-btn ag-btn-outline ag-btn-sm" onclick="irParaPasso(1)" aria-label="Voltar">← Voltar</button>
-                <h2 class="ag-section-title" style="margin:0">Finalize seu pedido</h2>
-              </div>
-              <div class="ag-resumo" role="region" aria-label="Resumo do pedido">
-                <h3>📋 Resumo do pedido</h3>
-                <div class="ag-resumo-row"><span>Leitura</span><span id="res-tipo">—</span></div>
-                <div class="ag-resumo-row"><span>Data</span><span id="res-data">—</span></div>
-                <div class="ag-resumo-row"><span>Horário</span><span id="res-hora">—</span></div>
-                <div class="ag-resumo-row"><span>Duração</span><span id="res-duracao">—</span></div>
-                <div class="ag-resumo-row" id="res-desconto-linha" style="display:none; color:#065f46;">
-                  <span>Desconto 10%</span><span id="res-desconto">—</span>
-                </div>
-                <div class="ag-resumo-total"><span>Total</span><span id="res-valor">—</span></div>
-              </div>
-              <form class="ag-form" id="form-dados" novalidate>
+
+            <!-- SEÇÃO 0: DADOS PESSOAIS (1× por pedido) -->
+            <section class="ag-section active" id="secao-0" data-passo="0" aria-label="Seus dados">
+              <h2 class="ag-section-title">Seus dados</h2>
+              <p style="margin-bottom:16px;color:var(--text-muted);">Preencha seus dados uma vez — eles valem para todas as leituras do pedido.</p>
+              <form class="ag-form" id="form-dados-pessoais" novalidate>
                 <div class="ag-form-row">
                   <div class="ag-form-group">
                     <label for="f-nome">Nome completo *</label>
@@ -518,15 +501,65 @@
                     <input type="tel" id="f-fone" name="fone" placeholder="(27) 99999-9999" required autocomplete="tel-national">
                   </div>
                 </div>
-                <div class="ag-form-group" id="f-obs-group">
-                  <label for="f-obs">Pergunta/Questão *</label>
-                  <textarea id="f-obs" name="obs" placeholder="Escreva sua pergunta ou questão para a leitura..." required></textarea>
-                </div>
-                <button type="submit" class="ag-btn ag-btn-primary" id="btn-pagar">
-                  💳 Continuar para Pagamento
+                <button type="button" class="ag-btn ag-btn-primary" onclick="confirmarDadosPessoais()">
+                  Continuar →
                 </button>
               </form>
             </section>
+
+            <!-- SEÇÃO 1: CALENDÁRIO (por leitura) -->
+            <section class="ag-section" id="secao-1" data-passo="1" aria-label="Escolha a data">
+              <h2 class="ag-section-title">Escolha a data</h2>
+              <p style="margin-bottom:12px;color:var(--text-muted);" id="secao1-sub">Selecione o dia para esta leitura</p>
+              <div id="calendario">
+                <div class="ag-loading"><div class="ag-spinner"></div> Carregando...</div>
+              </div>
+            </section>
+
+            <!-- SEÇÃO 2: PERGUNTAS + RESUMO + ADICIONAR AO CARRINHO -->
+            <section class="ag-section" id="secao-2" data-passo="2" aria-label="Perguntas e confirmação">
+              <div style="display:flex; align-items:center; gap:12px; margin-bottom:24px;">
+                <button class="ag-btn ag-btn-outline ag-btn-sm" onclick="irParaPasso(1)" aria-label="Voltar">← Voltar</button>
+                <h2 class="ag-section-title" style="margin:0">Finalize esta leitura</h2>
+              </div>
+              <div class="ag-resumo" role="region" aria-label="Resumo da leitura">
+                <h3>📋 Resumo</h3>
+                <div class="ag-resumo-row"><span>Leitura</span><span id="res-tipo">—</span></div>
+                <div class="ag-resumo-row"><span>Data</span><span id="res-data">—</span></div>
+                <div class="ag-resumo-row"><span>Horário</span><span id="res-hora">—</span></div>
+                <div class="ag-resumo-row"><span>Duração</span><span id="res-duracao">—</span></div>
+                <div class="ag-resumo-row" id="res-desconto-linha" style="display:none; color:#065f46;">
+                  <span>Desconto 10%</span><span id="res-desconto">—</span>
+                </div>
+                <div class="ag-resumo-total"><span>Valor</span><span id="res-valor">—</span></div>
+              </div>
+              <form class="ag-form" id="form-dados" novalidate>
+                <div class="ag-form-group" id="f-obs-group" style="display:none;">
+                  <!-- gerado dinamicamente por abrirModal -->
+                </div>
+                <button type="submit" class="ag-btn ag-btn-primary" id="btn-pagar">
+                  ➕ Adicionar ao pedido
+                </button>
+              </form>
+            </section>
+
+            <!-- SEÇÃO 3: REVISÃO DO CARRINHO -->
+            <section class="ag-section" id="secao-3" data-passo="3" aria-label="Revisão do carrinho">
+              <h2 class="ag-section-title">Seu pedido</h2>
+              <p style="margin-bottom:16px;color:var(--text-muted);" id="secao3-sub">Revise as leituras antes de ir para o pagamento.</p>
+              <div id="carrinho-lista">
+                <!-- renderizado por _renderizarCarrinho() -->
+              </div>
+              <div style="display:flex;flex-direction:column;gap:10px;margin-top:20px;">
+                <button class="ag-btn ag-btn-outline" id="btn-add-leitura" onclick="adicionarOutraLeitura()" style="width:100%;">
+                  ➕ Adicionar outra leitura
+                </button>
+                <button class="ag-btn ag-btn-primary" id="btn-ir-pagar" onclick="irParaPagamentoCarrinho()" style="width:100%;display:none;">
+                  💳 Ir para Pagamento
+                </button>
+              </div>
+            </section>
+
           </div>
         </div>
 
@@ -605,8 +638,8 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js" crossorigin="anonymous"></script>
   <script src="js/supabase-config.js?v=9"></script>
-  <script src="js/agendamento-system.js?v=24"></script>
-  <script src="js/modal-agendamento.js?v=17"></script>
+  <script src="js/agendamento-system.js?v=26"></script>
+  <script src="js/modal-agendamento.js?v=19"></script>
   <script src="js/discount-system.js?v=8"></script>
   <script src="js/script.js?v=9"></script>
   <script src="js/ai-chat.js?v=6"></script>

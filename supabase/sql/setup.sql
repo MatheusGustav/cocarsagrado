@@ -10,6 +10,7 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 DROP TRIGGER IF EXISTS trg_desconto_primeiro_cliente ON public.agendamentos;
 DROP FUNCTION IF EXISTS public.validar_desconto_primeiro_cliente();
 DROP TABLE IF EXISTS public.agendamentos             CASCADE;
+DROP TABLE IF EXISTS public.pedidos                  CASCADE;
 DROP TABLE IF EXISTS public.bloqueios_horario        CASCADE;
 DROP TABLE IF EXISTS public.disponibilidade_especial CASCADE;
 DROP TABLE IF EXISTS public.disponibilidade_override CASCADE;
@@ -226,11 +227,35 @@ CREATE POLICY "auth_admin_disp_override" ON public.disponibilidade_override
   FOR ALL TO authenticated USING (is_admin()) WITH CHECK (is_admin());
 
 -- ============================================================
--- 3) AGENDAMENTOS
+-- 3) PEDIDOS (pai — 1 pedido pode ter 1 a 4 leituras)
+-- ============================================================
+CREATE TABLE public.pedidos (
+  id                  BIGSERIAL PRIMARY KEY,
+  chave_pedido        TEXT NOT NULL UNIQUE,
+  cliente_nome        TEXT NOT NULL,
+  cliente_nascimento  DATE,
+  cliente_whatsapp    TEXT NOT NULL,
+  cliente_email       TEXT,
+  valor_total         NUMERIC(10,2) NOT NULL CHECK (valor_total >= 0),
+  aceitou_desconto_10 BOOLEAN NOT NULL DEFAULT FALSE,
+  status              TEXT NOT NULL DEFAULT 'pendente'
+                      CHECK (status IN ('pendente','pago','cancelado')),
+  metodo_pagamento    TEXT,
+  payment_id          TEXT,
+  pago_em             TIMESTAMPTZ,
+  criado_em           TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX idx_pedidos_chave     ON public.pedidos (chave_pedido);
+CREATE INDEX idx_pedidos_status    ON public.pedidos (status);
+CREATE INDEX idx_pedidos_whatsapp  ON public.pedidos (regexp_replace(cliente_whatsapp, '\D', '', 'g'));
+
+-- ============================================================
+-- 4) AGENDAMENTOS (filho — N por pedido)
 -- ============================================================
 CREATE TABLE public.agendamentos (
   id                  BIGSERIAL PRIMARY KEY,
-  chave_pedido        TEXT NOT NULL UNIQUE,
+  chave_pedido        TEXT NOT NULL,
+  pedido_id           BIGINT REFERENCES public.pedidos(id) ON DELETE CASCADE,
   tipo_leitura_id     BIGINT NOT NULL REFERENCES public.tipos_leitura(id) ON DELETE RESTRICT,
   terapeuta           TEXT CHECK (terapeuta IN ('matheus', 'camila')),
   cliente_nome        TEXT NOT NULL,
@@ -258,6 +283,7 @@ CREATE INDEX idx_agend_data_hora     ON public.agendamentos (data_agendamento, h
 CREATE INDEX idx_agend_status        ON public.agendamentos (status);
 CREATE INDEX idx_agend_terapeuta     ON public.agendamentos (terapeuta);
 CREATE INDEX idx_agend_chave         ON public.agendamentos (chave_pedido);
+CREATE INDEX idx_agend_pedido_id     ON public.agendamentos (pedido_id);
 CREATE INDEX idx_agend_whatsapp_norm ON public.agendamentos (regexp_replace(cliente_whatsapp, '\D', '', 'g'));
 
 -- ============================================================
@@ -364,6 +390,7 @@ GRANT EXECUTE ON FUNCTION public.cliente_elegivel_desconto(text) TO anon;
 --             Mutações sensíveis só via RPC security definer.
 --    admin -> authenticated ALL via is_admin() (e-mail do painel).
 -- ============================================================
+ALTER TABLE public.pedidos              ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.tipos_leitura         ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.horarios_disponiveis  ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.agendamentos          ENABLE ROW LEVEL SECURITY;
@@ -403,6 +430,8 @@ CREATE POLICY "auth_admin_agend" ON public.agendamentos
   FOR ALL TO authenticated USING (is_admin()) WITH CHECK (is_admin());
 
 -- RPCs públicas que substituem o SELECT direto
+
+-- chave_pedido_existe: verifica em pedidos (chave é gerada no pai)
 CREATE OR REPLACE FUNCTION public.chave_pedido_existe(p_chave text)
 RETURNS boolean
 LANGUAGE sql
@@ -411,8 +440,19 @@ SET search_path = public
 STABLE
 AS $$
   SELECT EXISTS (
-    SELECT 1 FROM public.agendamentos WHERE chave_pedido = p_chave
+    SELECT 1 FROM public.pedidos WHERE chave_pedido = p_chave
   );
+$$;
+
+-- pedido_status: retorna o status do pedido (usado pelo polling do frontend)
+CREATE OR REPLACE FUNCTION public.pedido_status(p_chave text)
+RETURNS text
+LANGUAGE sql
+SECURITY DEFINER
+SET search_path = public
+STABLE
+AS $$
+  SELECT status FROM public.pedidos WHERE chave_pedido = p_chave;
 $$;
 
 CREATE OR REPLACE FUNCTION public.contar_agendamentos_por_data(
@@ -435,10 +475,125 @@ AS $$
 $$;
 
 GRANT EXECUTE ON FUNCTION public.chave_pedido_existe(text) TO anon;
+GRANT EXECUTE ON FUNCTION public.pedido_status(text) TO anon;
 GRANT EXECUTE ON FUNCTION public.contar_agendamentos_por_data(text, date, date) TO anon;
 
+-- confirmar_pedido_pago: atualização atômica (pai + filhos) chamada pelo
+-- webhook da InfinitePay (service_role). NUNCA exposta ao anon.
+CREATE OR REPLACE FUNCTION public.confirmar_pedido_pago(p_chave text, p_metodo text)
+RETURNS integer
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_id bigint;
+BEGIN
+  SELECT id INTO v_id
+  FROM public.pedidos
+  WHERE chave_pedido = p_chave
+    AND status = 'pendente'
+  FOR UPDATE;
+
+  IF v_id IS NULL THEN
+    RETURN 0;
+  END IF;
+
+  UPDATE public.pedidos
+  SET status = 'pago', pago_em = NOW(), metodo_pagamento = p_metodo
+  WHERE id = v_id;
+
+  UPDATE public.agendamentos
+  SET status = 'pago', pago_em = NOW(), metodo_pagamento = p_metodo
+  WHERE pedido_id = v_id
+    AND status = 'pendente';
+
+  RETURN 1;
+END;
+$$;
+
+REVOKE ALL ON FUNCTION public.confirmar_pedido_pago(text, text) FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.confirmar_pedido_pago(text, text) FROM anon;
+GRANT EXECUTE ON FUNCTION public.confirmar_pedido_pago(text, text) TO service_role;
+
+-- criar_pedido: cria pedido pai + N agendamentos filhos numa transação só.
+-- SECURITY DEFINER porque anon não tem SELECT/DELETE em pedidos (LGPD).
+-- Triggers BEFORE INSERT de agendamentos rodam por linha; se algum RAISE,
+-- a transação inteira faz rollback.
+CREATE OR REPLACE FUNCTION public.criar_pedido(
+  p_chave               text,
+  p_nome                text,
+  p_nascimento          date,
+  p_whatsapp            text,
+  p_email               text,
+  p_valor_total         numeric,
+  p_aceitou_desconto_10 boolean,
+  p_itens               jsonb
+)
+RETURNS text
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_pedido_id bigint;
+  v_item      jsonb;
+BEGIN
+  INSERT INTO public.pedidos (
+    chave_pedido, cliente_nome, cliente_nascimento, cliente_whatsapp,
+    cliente_email, valor_total, aceitou_desconto_10, status
+  ) VALUES (
+    p_chave, p_nome, p_nascimento, p_whatsapp,
+    p_email, p_valor_total, p_aceitou_desconto_10, 'pendente'
+  )
+  RETURNING id INTO v_pedido_id;
+
+  FOR v_item IN SELECT * FROM jsonb_array_elements(p_itens)
+  LOOP
+    INSERT INTO public.agendamentos (
+      chave_pedido, pedido_id, tipo_leitura_id, terapeuta,
+      cliente_nome, cliente_nascimento, cliente_whatsapp, cliente_email,
+      cliente_observacoes, data_agendamento, hora_agendamento, duracao_minutos,
+      valor_original, desconto_aplicado, valor_final,
+      aceitou_desconto_10, agendamento_especial, status
+    ) VALUES (
+      p_chave,
+      v_pedido_id,
+      (v_item->>'tipo_leitura_id')::bigint,
+      v_item->>'terapeuta',
+      p_nome, p_nascimento, p_whatsapp, p_email,
+      v_item->>'observacoes',
+      (v_item->>'data')::date,
+      (v_item->>'horario')::time,
+      (v_item->>'duracao_minutos')::int,
+      (v_item->>'valor_original')::numeric,
+      (v_item->>'desconto_aplicado')::numeric,
+      (v_item->>'valor_final')::numeric,
+      COALESCE((v_item->>'aceitou_novo_cliente')::boolean, FALSE),
+      COALESCE((v_item->>'agendamento_especial')::boolean, FALSE),
+      'pendente'
+    );
+  END LOOP;
+
+  RETURN p_chave;
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION public.criar_pedido(text, text, date, text, text, numeric, boolean, jsonb) TO anon;
+
+-- pedidos — anon SÓ INSERT (criar pedido). SELECT bloqueado (LGPD).
+-- authenticated admin ALL via is_admin().
+DROP POLICY IF EXISTS "anon_insert_pedidos" ON public.pedidos;
+DROP POLICY IF EXISTS "auth_admin_pedidos" ON public.pedidos;
+
+CREATE POLICY "anon_insert_pedidos" ON public.pedidos
+  FOR INSERT TO anon WITH CHECK (TRUE);
+
+CREATE POLICY "auth_admin_pedidos" ON public.pedidos
+  FOR ALL TO authenticated USING (is_admin()) WITH CHECK (is_admin());
+
 -- ============================================================
--- 6) CONFIGURAÇÕES (descontos, flags, etc)
+-- 8) CONFIGURAÇÕES (descontos, flags, etc)
 -- ============================================================
 CREATE TABLE IF NOT EXISTS public.configuracoes (
   chave       TEXT    PRIMARY KEY,
@@ -460,7 +615,7 @@ CREATE POLICY "auth_admin_config" ON public.configuracoes
   FOR ALL TO authenticated USING (is_admin()) WITH CHECK (is_admin());
 
 -- ============================================================
--- 7) REALTIME — dashboard escuta a tabela agendamentos
+-- 9) REALTIME — dashboard escuta as tabelas agendamentos e pedidos
 --    Quando o webhook da InfinitePay muda pendente -> pago,
 --    o painel admin recebe o evento e atualiza na hora.
 --    REPLICA IDENTITY FULL garante que payload.old traga o
@@ -469,6 +624,8 @@ CREATE POLICY "auth_admin_config" ON public.configuracoes
 --    admin (auth_admin_agend / is_admin) recebe os eventos.
 -- ============================================================
 ALTER TABLE public.agendamentos REPLICA IDENTITY FULL;
+
+ALTER TABLE public.pedidos REPLICA IDENTITY FULL;
 
 DO $$
 BEGIN
@@ -479,5 +636,13 @@ BEGIN
       AND tablename = 'agendamentos'
   ) THEN
     ALTER PUBLICATION supabase_realtime ADD TABLE public.agendamentos;
+  END IF;
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_publication_tables
+    WHERE pubname = 'supabase_realtime'
+      AND schemaname = 'public'
+      AND tablename = 'pedidos'
+  ) THEN
+    ALTER PUBLICATION supabase_realtime ADD TABLE public.pedidos;
   END IF;
 END $$;

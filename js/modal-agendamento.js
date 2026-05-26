@@ -52,7 +52,11 @@ function abrirModal(tipo) {
   overlay.classList.add('open');
   document.body.classList.add('modal-aberto');
   overlay.querySelector('.modal-body')?.scrollTo({ top: 0 });
-  irParaPasso(1);
+
+  // Se já tem dados pessoais ou itens no carrinho, pula section 0
+  const passoInicial = (Estado.dadosPessoais.nome || Estado.carrinho.length > 0) ? 1 : 0;
+  irParaPasso(passoInicial);
+  _atualizarBotaoRetomar();
 }
 
 function fecharModal() {
@@ -63,12 +67,15 @@ function fecharModal() {
   const trigger = document.querySelector('[data-last-focus]');
   if (trigger) { trigger.focus(); trigger.removeAttribute('data-last-focus'); }
   setTimeout(_resetarModal, 360);
+  _atualizarBotaoRetomar();
 }
 
 function _resetarModal() {
   if (typeof Estado !== 'undefined') {
+    // Preserva carrinho e dadosPessoais entre aberturas (multi-leitura)
     Estado.tipoSelecionado = null;
     Estado.dataSelecionada = null;
+    Estado.horarioSelecionado = null;
   }
   _dadosPagamento = null;
   _calendarioOk   = false;
@@ -78,7 +85,13 @@ function _resetarModal() {
     .forEach(el => el.classList.remove('selected'));
 
   _mostrarTela(1, false);
-  _irParaPassoBase && _irParaPassoBase(1);
+
+  // Volta para o passo adequado
+  if (Estado?.dadosPessoais?.nome) {
+    _irParaPassoBase && _irParaPassoBase(1);
+  } else {
+    _irParaPassoBase && _irParaPassoBase(0);
+  }
 }
 
 // ============================================================
@@ -123,29 +136,73 @@ function _mostrarTela(num, animacao) {
 // ============================================================
 // Override: mostra tela 2 em vez de redirecionar
 // ============================================================
-window.redirecionarParaPagamento = function(chave) {
-  const tipo  = Estado.tipoSelecionado;
-  const { final } = calcularPrecoFinal(tipo.preco_original);
-  const [mY, mM, mD] = Estado.dataSelecionada.split('-').map(Number);
-  const d = new Date(mY, mM - 1, mD);
+window.redirecionarParaPagamento = function(chave, carrinhoSnap) {
+  // Usa o snapshot do carrinho (capturado ANTES de salvar/limpar). Fallback:
+  // estado atual e, por último, 1 item a partir de tipoSelecionado (legado).
+  let lista = (Array.isArray(carrinhoSnap) && carrinhoSnap.length)
+    ? carrinhoSnap
+    : (Estado.carrinho.length ? _aplicarDescontosCarrinho(Estado.carrinho) : null);
 
-  const nascRaw = document.getElementById('f-nasc')?.value || '';
+  if (!lista && Estado.tipoSelecionado) {
+    const tipo = Estado.tipoSelecionado;
+    const { final, desconto } = calcularPrecoFinal(tipo.preco_original);
+    lista = [{
+      tipo,
+      terapeuta: tipo.terapeuta || null,
+      data: Estado.dataSelecionada,
+      horario: Estado.horarioSelecionado || '00:00',
+      duracao_minutos: tipo.duracao_minutos,
+      observacoes: (typeof _coletarObservacoes === 'function' ? _coletarObservacoes(tipo) : null),
+      valor_original: tipo.preco_original,
+      desconto_aplicado: desconto,
+      valor_final: final,
+    }];
+  }
+  lista = lista || [];
+
+  const totalFinal   = lista.reduce((s, i) => s + (i.valor_final || 0), 0);
+  const duracaoTotal = lista.reduce((s, i) => s + (i.duracao_minutos || 0), 0);
+
+  const items = lista.map(item => ({
+    description: item.tipo.tier_label || item.tipo.nome,
+    price: (item.valor_final || 0).toFixed(2),
+  }));
+  const labelLeitura = items.map(i => i.description).join(' + ');
+
+  const nome = Estado.dadosPessoais.nome || document.getElementById('f-nome')?.value?.trim() || '';
+  const whatsapp = Estado.dadosPessoais.whatsapp || (typeof obterWhatsappCompleto === 'function' ? obterWhatsappCompleto() : '');
+  const nascRaw = Estado.dadosPessoais.nascimento || document.getElementById('f-nasc')?.value || '';
   const nascFmt = nascRaw
     ? (() => { const [y, m, dd] = nascRaw.split('-'); return `${dd}/${m}/${y}`; })()
     : '';
 
+  // Detalhe por leitura (usado na mensagem manual de WhatsApp / Wise)
+  const itensDetalhe = lista.map(item => {
+    const [y, m, dd] = String(item.data).split('-');
+    const dataFmt = (y && m && dd) ? `${dd}/${m}/${y}` : item.data;
+    const hora = (item.horario && item.horario !== '00:00') ? ` até ${item.horario.slice(0,5)}` : '';
+    const obsTxt = item.observacoes ? ` — ${String(item.observacoes).replace(/\n/g, ' | ')}` : '';
+    return `• ${item.tipo.tier_label || item.tipo.nome} (${dataFmt}${hora})${obsTxt}`;
+  }).join('\n');
+
+  const dataLabel = lista.length === 1
+    ? (() => { const [y, m, dd] = String(lista[0].data).split('-'); return `${parseInt(dd, 10)} de ${MESES_PT[parseInt(m, 10) - 1]} de ${y}`; })()
+    : `${lista.length} leituras`;
+
   _dadosPagamento = {
     chave,
-    tipo:      tipo.nome,
-    terapeuta: tipo.terapeuta || 'camila',
-    data:      `${d.getDate()} de ${MESES_PT[d.getMonth()]} de ${d.getFullYear()}`,
-    hora:      Estado.horarioSelecionado ? `até as ${Estado.horarioSelecionado.slice(0,5)}` : '',
-    duracao:   tipo.duracao_minutos,
-    valor:     final.toFixed(2).replace('.', ','),
-    nome:       document.getElementById('f-nome').value.trim(),
+    tipo:      labelLeitura,
+    items,
+    itensDetalhe,
+    terapeuta: lista[0]?.terapeuta || 'camila',
+    data:      dataLabel,
+    hora:      '',
+    duracao:   duracaoTotal,
+    valor:     totalFinal.toFixed(2).replace('.', ','),
+    nome,
     nascimento: nascFmt,
-    obs:        _coletarObservacoes(tipo) || '',
-    whatsapp:   (typeof obterWhatsappCompleto === 'function' ? obterWhatsappCompleto() : document.getElementById('f-fone').value.trim()),
+    obs: '',
+    whatsapp,
   };
 
   sessionStorage.setItem('agendamento', JSON.stringify(_dadosPagamento));
@@ -189,17 +246,16 @@ function _lerPedidoPendente() {
 
 function _limparPedidoPendente() {
   try { localStorage.removeItem(PENDENTE_KEY); } catch {}
+  if (typeof _atualizarBotaoRetomar === 'function') _atualizarBotaoRetomar();
 }
 
 async function _checarStatusPedido(chave) {
   if (typeof supabase === 'undefined' || !supabase) return null;
   try {
-    const { data } = await supabase
-      .from('agendamentos')
-      .select('status')
-      .eq('chave_pedido', chave)
-      .maybeSingle();
-    return data?.status || null;
+    const { data, error } = await supabase
+      .rpc('pedido_status', { p_chave: chave });
+    if (error) return null;
+    return data || null;
   } catch { return null; }
 }
 
@@ -228,7 +284,68 @@ function _retomarPedidoPendente() {
 }
 
 window.retomarPedidoPendente = _retomarPedidoPendente;
-window.descartarPedidoPendente = () => { _limparPedidoPendente(); mostrarAlerta('Pedido anterior descartado.', 'info'); };
+window.descartarPedidoPendente = () => { _limparPedidoPendente(); mostrarAlerta('Pedido anterior descartado.', 'info'); _atualizarBotaoRetomar(); };
+
+// ============================================================
+// Botão flutuante "retomar" — permite voltar ao modal (revisão do
+// carrinho OU tela de pagamento pendente) sem precisar escolher
+// outra leitura. Aparece só com o modal fechado E havendo algo a
+// retomar.
+// ============================================================
+function _abrirCarrinhoRevisao() {
+  const overlay = document.getElementById('modalAgendamento');
+  if (!overlay) return;
+  if (document.activeElement && document.activeElement !== document.body) {
+    document.activeElement.setAttribute('data-last-focus', '');
+  }
+  overlay.classList.add('open');
+  document.body.classList.add('modal-aberto');
+  _mostrarTela(1, false);
+  irParaPasso(3);
+  _atualizarBotaoRetomar();
+}
+
+function _atualizarBotaoRetomar() {
+  let btn = document.getElementById('btn-retomar-pedido');
+  const overlay = document.getElementById('modalAgendamento');
+  const modalAberto = overlay?.classList.contains('open');
+
+  const temPendente = !!_lerPedidoPendente();
+  const temCarrinho = (typeof Estado !== 'undefined') && Array.isArray(Estado.carrinho) && Estado.carrinho.length > 0;
+  const deveMostrar = !modalAberto && (temPendente || temCarrinho);
+
+  if (!deveMostrar) {
+    if (btn) btn.classList.remove('visivel');
+    return;
+  }
+
+  if (!btn) {
+    btn = document.createElement('button');
+    btn.id = 'btn-retomar-pedido';
+    btn.className = 'btn-retomar-pedido';
+    btn.type = 'button';
+    btn.addEventListener('click', () => {
+      if (_lerPedidoPendente()) {
+        _retomarPedidoPendente();
+      } else {
+        _abrirCarrinhoRevisao();
+      }
+      _atualizarBotaoRetomar();
+    });
+    document.body.appendChild(btn);
+  }
+
+  if (temPendente) {
+    btn.innerHTML = '💳 Retomar pagamento';
+  } else {
+    const n = Estado.carrinho.length;
+    btn.innerHTML = `🛒 Continuar pedido (${n})`;
+  }
+  btn.classList.add('visivel');
+}
+
+window._atualizarBotaoRetomar = _atualizarBotaoRetomar;
+document.addEventListener('DOMContentLoaded', _atualizarBotaoRetomar);
 
 function _ofereceRetomar(onContinuarNovo) {
   const pend = _lerPedidoPendente();
@@ -269,6 +386,14 @@ if (typeof window.abrirSeletor === 'function') {
     _ofereceRetomar(() => _abrirSeletorOrig(ref));
   };
 }
+
+// Adicionar outra leitura ao carrinho (fecha modal e reabre seletor)
+window.adicionarOutraLeitura = function() {
+  fecharModal();
+  _ofereceRetomar(() => {
+    document.getElementById('catalogo')?.scrollIntoView({ behavior: 'smooth' });
+  });
+};
 
 // ============================================================
 // Polling de status (detecta webhook de PIX/Cartão)
@@ -354,12 +479,15 @@ function _preencherTelaPagamento() {
 const _irParaPassoBase = window.irParaPasso;
 
 window.irParaPasso = function(num) {
+  // Carrega calendário ao entrar na section 1
   if (num === 1 && !_calendarioOk) {
     _calendarioOk = true;
     carregarCalendario();
   }
   _irParaPassoBase(num);
-  _syncOuterSteps(num);
+  // Mapeia inner passo → outer step
+  const outerStep = num === 0 ? 1 : (num <= 2 ? 2 : 3);
+  _syncOuterSteps(outerStep);
   document.querySelector('#modalAgendamento .modal-body')
     ?.scrollTo({ top: 0, behavior: 'smooth' });
 };
@@ -402,12 +530,14 @@ function avisarWhatsAppModal(metodo) {
   const ag = _dadosPagamento;
   if (!ag) return;
 
-  const infoCliente = `*Nome:* ${ag.nome}\n*Nascimento:* ${ag.nascimento}${ag.obs ? `\n*Pergunta/Questão:* ${ag.obs}` : ''}`;
-  const horaLinha = ag.hora ? `\n*Horário:* ${ag.hora}` : '';
+  const infoCliente = `*Nome:* ${ag.nome}\n*Nascimento:* ${ag.nascimento}`;
+  const leituraBloco = ag.itensDetalhe
+    ? `*Leituras:*\n${ag.itensDetalhe}`
+    : `*Leitura:* ${ag.tipo}\n*Data:* ${ag.data}${ag.hora ? `\n*Horário:* ${ag.hora}` : ''}`;
   const msgs = {
-    pix:    `Olá! 😊 Fiz o pagamento via *PIX*.\n\n*Pedido:* ${ag.chave}\n*Leitura:* ${ag.tipo}\n*Data:* ${ag.data}${horaLinha}\n*Valor:* R$ ${ag.valor}\n\n${infoCliente}\n\nPode confirmar o recebimento? Combinaremos o horário por aqui! 🙏`,
-    cartao: `Olá! 😊 Gostaria de pagar via *cartão* meu agendamento.\n\n*Pedido:* ${ag.chave}\n*Leitura:* ${ag.tipo}\n*Data:* ${ag.data}${horaLinha}\n*Valor:* R$ ${ag.valor}\n\n${infoCliente}\n\nPode me enviar o link de pagamento? Combinaremos o horário por aqui! 🙏`,
-    wise:   `Olá! 😊 Realizei a transferência via *Wise*.\n\n*Pedido:* ${ag.chave}\n*Leitura:* ${ag.tipo}\n*Data:* ${ag.data}${horaLinha}\n*Valor:* R$ ${ag.valor}\n\n${infoCliente}\n\nPode confirmar o recebimento? Combinaremos o horário por aqui! 🙏`,
+    pix:    `Olá! 😊 Fiz o pagamento via *PIX*.\n\n*Pedido:* ${ag.chave}\n${leituraBloco}\n*Valor:* R$ ${ag.valor}\n\n${infoCliente}\n\nPode confirmar o recebimento? Combinaremos o horário por aqui! 🙏`,
+    cartao: `Olá! 😊 Gostaria de pagar via *cartão* meu agendamento.\n\n*Pedido:* ${ag.chave}\n${leituraBloco}\n*Valor:* R$ ${ag.valor}\n\n${infoCliente}\n\nPode me enviar o link de pagamento? Combinaremos o horário por aqui! 🙏`,
+    wise:   `Olá! 😊 Realizei a transferência via *Wise*.\n\n*Pedido:* ${ag.chave}\n${leituraBloco}\n*Valor:* R$ ${ag.valor}\n\n${infoCliente}\n\nPode confirmar o recebimento? Combinaremos o horário por aqui! 🙏`,
   };
 
   const numero = WHATSAPP_TERAPEUTA[ag.terapeuta] || WHATSAPP_TERAPEUTA.camila;
@@ -438,64 +568,62 @@ document.addEventListener('DOMContentLoaded', () => {
 // ============================================================
 // InfinityPay — geração de link de pagamento por cartão
 // ============================================================
-async function gerarLinkCartao() {
+function _montarPayloadCheckout(metodo) {
+  const ag = _dadosPagamento;
+  if (!ag) return null;
+  const payload = {
+    chave: ag.chave,
+    nome: ag.nome,
+    whatsapp: ag.whatsapp,
+  };
+  // Se tem items array, usa multi-leitura
+  if (Array.isArray(ag.items) && ag.items.length > 0) {
+    payload.items = ag.items.map(i => ({
+      description: i.description,
+      price: parseFloat(String(i.price).replace(',', '.')),
+    }));
+  } else {
+    // Fallback compat: 1 leitura
+    payload.tipo = ag.tipo;
+    payload.valor = ag.valor;
+  }
+  if (metodo === 'pix') payload.methods = ['pix'];
+  return payload;
+}
+
+async function _gerarLink(metodo) {
   const ag = _dadosPagamento;
   if (!ag) return;
-  const btn     = document.getElementById('cartao-gerar-btn');
-  const linkBox = document.getElementById('cartao-link-box');
-  const erroBox = document.getElementById('cartao-erro-box');
+  const prefix = metodo;
+  const btn     = document.getElementById(`${prefix}-gerar-btn`);
+  const linkBox = document.getElementById(`${prefix}-link-box`);
+  const erroBox = document.getElementById(`${prefix}-erro-box`);
   btn.disabled = true;
   btn.textContent = '⏳ Gerando...';
   linkBox.style.display = 'none';
   erroBox.style.display = 'none';
   try {
+    const payload = _montarPayloadCheckout(metodo);
     const res = await fetch(_CHECKOUT_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ chave: ag.chave, tipo: ag.tipo, valor: ag.valor, nome: ag.nome, whatsapp: ag.whatsapp }),
+      body: JSON.stringify(payload),
     });
     const data = await res.json();
-    if (!res.ok || data.error) throw new Error();
-    document.getElementById('cartao-link-btn').href = data.url;
+    if (!res.ok || data.error) throw new Error(typeof data.error === 'string' ? data.error : 'falha');
+    document.getElementById(`${prefix}-link-btn`).href = data.url;
     linkBox.style.display = 'block';
     btn.textContent = '🔄 Gerar novo link';
     btn.disabled = false;
-  } catch {
-    erroBox.textContent = 'Não foi possível gerar o link. Tente novamente.';
-    erroBox.style.display = 'block';
-    btn.textContent = '🔗 Gerar link de pagamento';
-    btn.disabled = false;
-  }
-}
-window.gerarLinkCartao = gerarLinkCartao;
-
-async function gerarLinkPix() {
-  const ag = _dadosPagamento;
-  if (!ag) return;
-  const btn     = document.getElementById('pix-gerar-btn');
-  const linkBox = document.getElementById('pix-link-box');
-  const erroBox = document.getElementById('pix-erro-box');
-  btn.disabled = true;
-  btn.textContent = '⏳ Gerando...';
-  linkBox.style.display = 'none';
-  erroBox.style.display = 'none';
-  try {
-    const res = await fetch(_CHECKOUT_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ chave: ag.chave, tipo: ag.tipo, valor: ag.valor, nome: ag.nome, whatsapp: ag.whatsapp, methods: ['pix'] }),
-    });
-    const data = await res.json();
-    if (!res.ok || data.error) throw new Error(typeof data.error === 'string' ? data.error : (data.error?.message || 'falha'));
-    document.getElementById('pix-link-btn').href = data.url;
-    linkBox.style.display = 'block';
-    btn.textContent = '🔄 Gerar novo link PIX';
-    btn.disabled = false;
   } catch (e) {
-    erroBox.textContent = 'Não foi possível gerar o link PIX: ' + (e?.message || 'tente novamente.');
+    erroBox.textContent = 'Não foi possível gerar o link: ' + (e?.message || 'tente novamente.');
     erroBox.style.display = 'block';
-    btn.textContent = '🔗 Gerar link PIX';
+    btn.textContent = `🔗 Gerar link ${metodo === 'pix' ? 'PIX' : 'de pagamento'}`;
     btn.disabled = false;
   }
 }
+
+function gerarLinkCartao() { _gerarLink('cartao'); }
+function gerarLinkPix() { _gerarLink('pix'); }
+window.gerarLinkCartao = gerarLinkCartao;
 window.gerarLinkPix = gerarLinkPix;

@@ -364,3 +364,122 @@ body.modal-aberto { overflow: hidden; }
   border-color: #dc2626;
   color: #fca5a5;
 }
+
+/* ============================================================
+   Carrinho — Revisão de múltiplas leituras
+   ============================================================ */
+.cart-item {
+  background: var(--bg-card, #f9fafb);
+  border: 1px solid var(--border, #e5e7eb);
+  border-radius: 12px;
+  padding: 14px 16px;
+  margin-bottom: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.cart-item-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.cart-item-header strong {
+  font-size: .95rem;
+  color: var(--cor-texto, #1a1410);
+}
+.cart-item-remove {
+  background: none;
+  border: none;
+  color: #ef4444;
+  cursor: pointer;
+  font-size: 1.1rem;
+  padding: 2px 6px;
+  border-radius: 4px;
+  line-height: 1;
+}
+.cart-item-remove:hover {
+  background: #fee2e2;
+}
+.cart-item-details {
+  display: flex;
+  gap: 12px;
+  font-size: .85rem;
+  color: var(--text-muted, #6b7280);
+}
+.cart-item-price {
+  font-weight: 700;
+  font-size: .95rem;
+  color: var(--cor-texto, #1a1410);
+}
+.cart-total {
+  border-top: 2px solid var(--border, #e5e7eb);
+  padding-top: 12px;
+  margin-top: 6px;
+}
+.cart-total-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: .9rem;
+  padding: 4px 0;
+  color: var(--text-muted, #6b7280);
+}
+.cart-total-desc {
+  color: #065f46;
+}
+.cart-total-final {
+  font-weight: 700;
+  font-size: 1.05rem;
+  color: var(--cor-texto, #1a1410);
+  border-top: 1px solid var(--border, #e5e7eb);
+  padding-top: 8px;
+  margin-top: 4px;
+}
+[data-theme="dark"] .cart-item {
+  background: #2a2f2a;
+  border-color: #3a3f3a;
+}
+[data-theme="dark"] .cart-item-remove:hover {
+  background: #450a0a;
+}
+
+/* ============================================================
+   Botão flutuante "retomar pedido / continuar carrinho"
+   ============================================================ */
+.btn-retomar-pedido {
+  position: fixed;
+  right: 18px;
+  bottom: 18px;
+  z-index: 9998;
+  display: none;
+  align-items: center;
+  gap: 8px;
+  padding: 13px 20px;
+  border: none;
+  border-radius: 999px;
+  background: linear-gradient(135deg, var(--primary, #7c3aed), var(--secondary, #db2777));
+  color: #fff;
+  font-size: .95rem;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, .28);
+  animation: retomar-pop .28s ease;
+}
+.btn-retomar-pedido.visivel {
+  display: inline-flex;
+}
+.btn-retomar-pedido:hover {
+  filter: brightness(1.05);
+  transform: translateY(-2px);
+}
+@keyframes retomar-pop {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@media (max-width: 480px) {
+  .btn-retomar-pedido {
+    right: 12px;
+    bottom: 12px;
+    padding: 11px 16px;
+    font-size: .88rem;
+  }
+}
