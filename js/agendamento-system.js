@@ -7,6 +7,9 @@ const Estado = {
   dataSelecionada: null,
   horarioSelecionado: null,
   serviceId: null,
+  // Carrinho multi-leitura
+  carrinho: [],
+  dadosPessoais: { nome: '', nascimento: '', whatsapp: '', email: '' },
 };
 
 const DIAS_PT  = ['Domingo','Segunda','Terça','Quarta','Quinta','Sexta','Sábado'];
@@ -93,6 +96,44 @@ function calcularPrecoFinal(precoOriginal) {
     }
   }
   return { final: preco, desconto: 0 };
+}
+
+// Preço aplicando SOMENTE o desconto promocional do serviço (sem o 10% novo cliente).
+function _precoComPromoServico(precoOriginal, serviceId) {
+  const preco = parseFloat(precoOriginal) || 0;
+  if (serviceId && typeof _configCache !== 'undefined' && _configCache?.promocoes) {
+    const servico = _configCache.promocoes.find(p => p.id === serviceId);
+    if (servico?.descontoAtivo && servico.percentualDesconto > 0) {
+      return Math.round(preco * (100 - servico.percentualDesconto)) / 100;
+    }
+  }
+  return preco;
+}
+
+// Desconto de novo cliente (10%) vale para UMA leitura só: a de maior preço-base.
+// Recebe itens com { valor_original, preco_base } e devolve cada um com
+// valor_final / desconto_aplicado / aplicou_novo_cliente calculados.
+function _aplicarDescontosCarrinho(itens) {
+  const novoCliente = _lsGet('aceitouDesconto10') === 'true';
+  let idxDesc = -1;
+  if (novoCliente && itens.length) {
+    idxDesc = 0;
+    for (let i = 1; i < itens.length; i++) {
+      if ((itens[i].preco_base ?? 0) > (itens[idxDesc].preco_base ?? 0)) idxDesc = i;
+    }
+  }
+  return itens.map((it, i) => {
+    const original = parseFloat(it.valor_original) || 0;
+    const base     = it.preco_base ?? original;
+    const aplica   = i === idxDesc;
+    const final    = aplica ? Math.round(base * 90) / 100 : base;
+    return {
+      ...it,
+      valor_final: final,
+      desconto_aplicado: original - final,
+      aplicou_novo_cliente: aplica,
+    };
+  });
 }
 
 async function abrirSeletor(ref) {
@@ -265,6 +306,8 @@ function confirmarSeletor() {
   abrirModal(tipoFinal);
 }
 
+// adicionarOutraLeitura está em modal-agendamento.js (onde _ofereceRetomar reside)
+
 // ============================================================
 // STEP 1 — Calendário de Vagas
 // ============================================================
@@ -334,6 +377,34 @@ async function carregarCalendario() {
     cal.innerHTML = '<div class="ag-empty">Erro ao carregar disponibilidade. Tente novamente.</div>';
   }
 }
+
+async function irParaPagamentoCarrinho() {
+  if (Estado.carrinho.length === 0) {
+    mostrarAlerta('Adicione pelo menos uma leitura ao pedido.', 'error');
+    return;
+  }
+
+  const btn = document.getElementById('btn-ir-pagar');
+  if (btn) { btn.disabled = true; btn.textContent = 'Salvando...'; }
+
+  // Calcula os itens (com desconto distribuído) ANTES de salvar/limpar o carrinho.
+  // Esse mesmo snapshot alimenta a tela de pagamento.
+  const itens = _aplicarDescontosCarrinho(Estado.carrinho);
+
+  try {
+    const chave = await salvarMultiplosAgendamentos(itens);
+    Estado.carrinho = [];
+    _renderizarCarrinho();
+    if (chave) redirecionarParaPagamento(chave, itens);
+  } catch (err) {
+    console.error('irParaPagamentoCarrinho:', err);
+    const msg = err?.userMessage ? err.message : 'Erro ao salvar. Tente novamente.';
+    mostrarAlerta(msg, 'error');
+    if (btn) { btn.disabled = false; btn.textContent = '💳 Ir para Pagamento'; }
+  }
+}
+
+window.irParaPagamentoCarrinho = irParaPagamentoCarrinho;
 
 async function _buscarDiasComVagas(profissional, diasParaFrente) {
   const hoje = new Date();
@@ -435,7 +506,17 @@ function atualizarResumo() {
   const data = Estado.dataSelecionada;
   if (!tipo || !data) return;
 
-  const { final, desconto } = calcularPrecoFinal(tipo.preco_original);
+  // Simula esta leitura entrando no carrinho para refletir o desconto real
+  // (o 10% de novo cliente vai para a leitura de maior preço, não para todas).
+  const tentativa = {
+    valor_original: tipo.preco_original,
+    preco_base: _precoComPromoServico(tipo.preco_original, Estado.serviceId),
+  };
+  const simulado = _aplicarDescontosCarrinho([...Estado.carrinho, tentativa]);
+  const esta = simulado[simulado.length - 1];
+  const final = esta.valor_final;
+  const desconto = esta.desconto_aplicado;
+
   const [rY, rM, rD] = data.split('-').map(Number);
   const d = new Date(rY, rM - 1, rD);
 
@@ -456,18 +537,242 @@ function processarFormulario(e) {
   e.preventDefault();
   if (!validarFormulario()) return;
 
-  const btn = document.getElementById('btn-pagar');
-  if (btn?.disabled) return;
-  if (btn) { btn.disabled = true; btn.textContent = 'Salvando...'; }
+  adicionarAoCarrinho();
+}
 
-  salvarAgendamento()
-    .then(chave => { if (chave) redirecionarParaPagamento(chave); })
-    .catch(err => {
-      console.error('salvarAgendamento:', err);
-      const msg = err?.userMessage ? err.message : 'Erro ao salvar agendamento. Tente novamente.';
-      mostrarAlerta(msg, 'error');
-      if (btn) { btn.disabled = false; btn.textContent = 'Continuar para Pagamento'; }
+function adicionarAoCarrinho() {
+  const tipo = Estado.tipoSelecionado;
+  if (!tipo || !Estado.dataSelecionada) return;
+
+  const obs = _coletarObservacoes(tipo);
+
+  const item = {
+    tipo,
+    serviceId: Estado.serviceId,
+    terapeuta: tipo.terapeuta || null,
+    data: Estado.dataSelecionada,
+    horario: Estado.horarioSelecionado || '00:00',
+    duracao_minutos: tipo.duracao_minutos,
+    observacoes: obs,
+    valor_original: tipo.preco_original,
+    preco_base: _precoComPromoServico(tipo.preco_original, Estado.serviceId),
+    agendamento_especial: !!tipo.especial,
+    num_perguntas: _numeroDePerguntas(tipo),
+  };
+
+  Estado.carrinho.push(item);
+  Estado.tipoSelecionado = null;
+  Estado.dataSelecionada = null;
+  Estado.horarioSelecionado = null;
+
+  // Limpa campos de pergunta para evitar colisão de IDs na próxima leitura
+  const obsGroup = document.getElementById('f-obs-group');
+  if (obsGroup) {
+    const textareas = obsGroup.querySelectorAll('textarea');
+    textareas.forEach(ta => ta.value = '');
+  }
+
+  _renderizarCarrinho();
+  irParaPasso(3);
+}
+
+function _renderizarCarrinho() {
+  const container = document.getElementById('carrinho-lista');
+  if (!container) return;
+
+  if (Estado.carrinho.length === 0) {
+    container.innerHTML = '<p class="ag-empty" style="padding:16px;">Nenhuma leitura adicionada ainda.</p>';
+    _atualizarBotoesCarrinho();
+    return;
+  }
+
+  const itens = _aplicarDescontosCarrinho(Estado.carrinho);
+  const totalOriginal = itens.reduce((s, i) => s + (parseFloat(i.valor_original) || 0), 0);
+  const totalDesconto = itens.reduce((s, i) => s + i.desconto_aplicado, 0);
+  const totalFinal    = itens.reduce((s, i) => s + i.valor_final, 0);
+
+  let html = '';
+  itens.forEach((item, idx) => {
+    const dataStr = item.data;
+    const [aY, aM, aD] = dataStr.split('-').map(Number);
+    const d = new Date(aY, aM - 1, aD);
+    const nome = item.tipo.tier_label || item.tipo.nome;
+    const horaLabel = item.horario && item.horario !== '00:00' ? `até ${item.horario.slice(0,5)}` : '';
+    html += `
+      <div class="cart-item">
+        <div class="cart-item-header">
+          <strong>${_escCat(nome)}</strong>
+          <button class="cart-item-remove" data-idx="${idx}" aria-label="Remover leitura" type="button">✕</button>
+        </div>
+        <div class="cart-item-details">
+          <span>${d.getDate()} de ${MESES_PT[d.getMonth()]} ${horaLabel}</span>
+          <span>${_formatarDuracao(item.duracao_minutos)}</span>
+        </div>
+        <div class="cart-item-price">R$ ${item.valor_final.toFixed(2).replace('.',',')}</div>
+      </div>`;
+  });
+
+  html += `<div class="cart-total">
+    <div class="cart-total-row">
+      <span>Subtotal</span><span>R$ ${totalOriginal.toFixed(2).replace('.',',')}</span>
+    </div>`;
+  if (totalDesconto > 0) {
+    html += `<div class="cart-total-row cart-total-desc">
+      <span>Desconto</span><span>- R$ ${totalDesconto.toFixed(2).replace('.',',')}</span>
+    </div>`;
+  }
+  html += `<div class="cart-total-row cart-total-final">
+      <span>Total</span><span>R$ ${totalFinal.toFixed(2).replace('.',',')}</span>
+    </div>
+  </div>`;
+
+  container.innerHTML = html;
+
+  // Eventos de remover
+  container.querySelectorAll('.cart-item-remove').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const idx = parseInt(btn.dataset.idx, 10);
+      Estado.carrinho.splice(idx, 1);
+      _renderizarCarrinho();
+      _atualizarBotoesCarrinho();
+      if (Estado.carrinho.length === 0) irParaPasso(1);
     });
+  });
+
+  _atualizarBotoesCarrinho();
+}
+
+function _atualizarBotoesCarrinho() {
+  const addBtn = document.getElementById('btn-add-leitura');
+  const payBtn = document.getElementById('btn-ir-pagar');
+  if (addBtn) addBtn.disabled = Estado.carrinho.length >= 4;
+  if (payBtn) payBtn.style.display = Estado.carrinho.length > 0 ? '' : 'none';
+  if (typeof window._atualizarBotaoRetomar === 'function') window._atualizarBotaoRetomar();
+}
+
+function _prepararDadosPessoais() {
+  Estado.dadosPessoais = {
+    nome: (document.getElementById('f-nome')?.value || '').trim(),
+    nascimento: document.getElementById('f-nasc')?.value || '',
+    whatsapp: obterWhatsappCompleto(),
+    email: document.getElementById('f-email')?.value || '',
+  };
+}
+
+function validarDadosPessoais() {
+  let ok = true;
+  const campos = [
+    { id: 'f-nome', minLen: 3, msg: 'Nome deve ter pelo menos 3 caracteres.' },
+    { id: 'f-nasc', date: true, msg: 'Data de nascimento inválida.' },
+    { id: 'f-fone', minLen: 6, msg: 'Número inválido.' },
+  ];
+  campos.forEach(({ id, minLen, date, msg }) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.classList.remove('error');
+    const val = el.value.trim();
+    const invalido = date
+      ? (() => {
+          if (!val) return true;
+          const d = new Date(val);
+          if (isNaN(d.getTime())) return true;
+          const hoje = new Date();
+          const minData = new Date(hoje.getFullYear() - 120, hoje.getMonth(), hoje.getDate());
+          const maxData = new Date(hoje.getFullYear() - 10, hoje.getMonth(), hoje.getDate());
+          return d > hoje || d > maxData || d < minData;
+        })()
+      : val.length < minLen;
+    if (invalido) { el.classList.add('error'); mostrarErroField(el, msg); ok = false; }
+  });
+  return ok;
+}
+
+function confirmarDadosPessoais() {
+  if (!validarDadosPessoais()) return;
+  _prepararDadosPessoais();
+  irParaPasso(1);
+}
+
+function irParaRevisao() {
+  irParaPasso(3);
+}
+
+async function salvarMultiplosAgendamentos(itensPre) {
+  const aceitouDesconto = _lsGet('aceitouDesconto10') === 'true';
+  const whatsapp = Estado.dadosPessoais.whatsapp;
+
+  // Pré-valida elegibilidade do desconto de novo cliente
+  if (aceitouDesconto) {
+    const { data: elegivel, error: errElig } = await supabase
+      .rpc('cliente_elegivel_desconto', { p_whatsapp: whatsapp });
+    if (errElig) throw errElig;
+    if (elegivel === false) {
+      localStorage.setItem('aceitouDesconto10', 'false');
+      _renderizarCarrinho(); // recalcula sem o 10%
+      const err = new Error('Você já tem agendamento conosco — o desconto de novo cliente não se aplica. Os valores foram atualizados, revise antes de continuar.');
+      err.userMessage = true;
+      throw err;
+    }
+  }
+
+  // Itens já com desconto distribuído (a leitura mais cara recebe o 10%).
+  const itens = itensPre || _aplicarDescontosCarrinho(Estado.carrinho);
+  const chave = await gerarChavePedido();
+  const totalFinal = itens.reduce((s, i) => s + i.valor_final, 0);
+  const usouNovoCliente = itens.some(i => i.aplicou_novo_cliente);
+  const nome = Estado.dadosPessoais.nome;
+  const nascimento = Estado.dadosPessoais.nascimento || null;
+
+  // Monta os itens para a RPC. A RPC criar_pedido (SECURITY DEFINER) insere o
+  // pedido pai + N agendamentos numa única transação. Necessária porque anon
+  // não tem SELECT em pedidos (LGPD), então .insert().select() falharia. Se
+  // um trigger BEFORE INSERT der RAISE (sem vaga / desconto inválido), a
+  // transação inteira faz rollback automático.
+  const payloadItens = itens.map((item) => ({
+    tipo_leitura_id: item.tipo.id,
+    terapeuta: item.terapeuta,
+    observacoes: item.observacoes,
+    data: item.data,
+    horario: item.horario,
+    duracao_minutos: item.duracao_minutos,
+    valor_original: item.valor_original,
+    desconto_aplicado: item.desconto_aplicado,
+    valor_final: item.valor_final,
+    aceitou_novo_cliente: item.aplicou_novo_cliente,
+    agendamento_especial: item.agendamento_especial,
+  }));
+
+  const { error: rpcErr } = await supabase.rpc('criar_pedido', {
+    p_chave: chave,
+    p_nome: nome,
+    p_nascimento: nascimento,
+    p_whatsapp: whatsapp,
+    p_email: Estado.dadosPessoais.email || null,
+    p_valor_total: totalFinal,
+    p_aceitou_desconto_10: usouNovoCliente,
+    p_itens: payloadItens,
+  });
+
+  if (rpcErr) {
+    if (/sem vagas/i.test(rpcErr.message)) {
+      const err = new Error('Uma das leituras ficou sem vagas para a data escolhida. Nenhum agendamento foi criado — escolha outra data e tente de novo.');
+      err.userMessage = true;
+      throw err;
+    }
+    if (/desconto_novo_cliente_invalido/i.test(rpcErr.message)) {
+      localStorage.setItem('aceitouDesconto10', 'false');
+      _renderizarCarrinho();
+      const err = new Error('Desconto de novo cliente não se aplica. Os valores foram atualizados — revise antes de continuar.');
+      err.userMessage = true;
+      throw err;
+    }
+    throw rpcErr;
+  }
+
+  // Limpa carrinho
+  Estado.carrinho = [];
+
+  return chave;
 }
 
 function validarFormulario() {
@@ -485,41 +790,21 @@ function validarFormulario() {
   }
 
   let ok = true;
-  const campos = [
-    { id: 'f-nome', minLen: 3,  msg: 'Nome deve ter pelo menos 3 caracteres.' },
-    { id: 'f-nasc', date: true, msg: 'Data de nascimento inválida.' },
-    { id: 'f-fone', minLen: 6,  msg: 'Número inválido.' },
-  ];
+  // Só valida perguntas aqui (dados pessoais são validados em section 0)
   if (Estado.tipoSelecionado?.requerPergunta) {
     const n = _numeroDePerguntas(Estado.tipoSelecionado);
     for (let i = 1; i <= n; i++) {
-      campos.push({
-        id: `f-obs-${i}`,
-        minLen: 3,
-        msg: n > 1 ? `Descreva a pergunta ${i}.` : 'Descreva sua pergunta/questão.',
-      });
+      const el = document.getElementById(`f-obs-${i}`);
+      if (!el) continue;
+      el.classList.remove('error');
+      const val = el.value.trim();
+      if (val.length < 3) {
+        el.classList.add('error');
+        mostrarErroField(el, n > 1 ? `Descreva a pergunta ${i}.` : 'Descreva sua pergunta/questão.');
+        ok = false;
+      }
     }
   }
-  campos.forEach(({ id, minLen, date, msg }) => {
-    const el = document.getElementById(id);
-    if (!el) return;
-    el.classList.remove('error');
-    const val = el.value.trim();
-    const invalido = date
-      ? (() => {
-          if (!val) return true;
-          const d = new Date(val);
-          if (isNaN(d.getTime())) return true;
-          const hoje = new Date();
-          const minData = new Date(hoje.getFullYear() - 120, hoje.getMonth(), hoje.getDate());
-          const maxData = new Date(hoje.getFullYear() - 10,  hoje.getMonth(), hoje.getDate());
-          return d > hoje || d > maxData || d < minData;
-        })()
-      : id === 'f-fone'
-        ? val.replace(/\D/g,'').length < minLen
-        : val.length < minLen;
-    if (invalido) { el.classList.add('error'); mostrarErroField(el, msg); ok = false; }
-  });
   return ok;
 }
 
@@ -534,65 +819,8 @@ function mostrarErroField(input, msg) {
   setTimeout(() => { if (span) span.remove(); }, 3000);
 }
 
-async function salvarAgendamento() {
-  const tipo = Estado.tipoSelecionado;
-  const whatsapp = obterWhatsappCompleto();
-  const aceitouDesconto = _lsGet('aceitouDesconto10') === 'true';
-
-  if (aceitouDesconto) {
-    const { data: elegivel, error: errElig } = await supabase
-      .rpc('cliente_elegivel_desconto', { p_whatsapp: whatsapp });
-    if (errElig) throw errElig;
-    if (elegivel === false) {
-      localStorage.setItem('aceitouDesconto10', 'false');
-      atualizarResumo();
-      const err = new Error('Você já tem agendamento conosco — o desconto de novo cliente não se aplica. Os valores foram atualizados, revise antes de continuar.');
-      err.userMessage = true;
-      throw err;
-    }
-  }
-
-  const { final, desconto } = calcularPrecoFinal(tipo.preco_original);
-  const chave = await gerarChavePedido();
-
-  const payload = {
-    chave_pedido:        chave,
-    tipo_leitura_id:     tipo.id,
-    terapeuta:           tipo.terapeuta || null,
-    cliente_nome:        document.getElementById('f-nome').value.trim(),
-    cliente_nascimento:  document.getElementById('f-nasc')?.value || null,
-    cliente_whatsapp:    whatsapp,
-    cliente_observacoes: _coletarObservacoes(Estado.tipoSelecionado),
-    data_agendamento:    Estado.dataSelecionada,
-    hora_agendamento:    Estado.horarioSelecionado || '00:00',
-    duracao_minutos:     tipo.duracao_minutos,
-    valor_original:      tipo.preco_original,
-    desconto_aplicado:   desconto,
-    valor_final:         final,
-    aceitou_desconto_10:  aceitouDesconto,
-    agendamento_especial: !!(Estado.tipoSelecionado?.especial),
-    status:               'pendente',
-  };
-
-  const { error } = await supabase.from('agendamentos').insert(payload);
-  if (error) {
-    if (payload.agendamento_especial && /sem vagas/i.test(error.message)) {
-      const err = new Error('A última vaga acabou de ser preenchida. Escolha outra data.');
-      err.userMessage = true;
-      throw err;
-    }
-    if (/desconto_novo_cliente_invalido/i.test(error.message)) {
-      localStorage.setItem('aceitouDesconto10', 'false');
-      atualizarResumo();
-      const err = new Error('Você já tem agendamento conosco — o desconto de novo cliente não se aplica. Os valores foram atualizados, revise antes de continuar.');
-      err.userMessage = true;
-      throw err;
-    }
-    throw error;
-  }
-
-  return chave;
-}
+// (Removida a antiga salvarAgendamento de 1 leitura: o fluxo agora é sempre
+//  via carrinho → pedido pai + agendamentos filhos em salvarMultiplosAgendamentos.)
 
 async function gerarChavePedido(tentativas = 0) {
   if (tentativas > 5) throw new Error('Falha ao gerar chave única');
@@ -621,16 +849,22 @@ function redirecionarParaPagamento(chave) {
 // Navegação entre passos (1=Data, 2=Dados)
 // ============================================================
 function irParaPasso(num) {
-  document.querySelectorAll('.ag-section').forEach((s, i) => {
-    s.classList.toggle('active', i + 1 === num);
+  // num 0 = dados pessoais, 1 = calendário, 2 = perguntas/resumo, 3 = revisão carrinho
+  document.querySelectorAll('.ag-section').forEach((s) => {
+    const idx = parseInt(s.dataset.passo, 10);
+    s.classList.toggle('active', idx === num);
   });
+
+  // Mapeia inner step → outer progress step (3 passos: Dados, Leituras, Pagamento)
+  const outerStep = num === 0 ? 1 : (num <= 2 ? 2 : 3);
   document.querySelectorAll('.ag-step').forEach((s, i) => {
     s.classList.remove('active','done');
-    if (i + 1 === num) s.classList.add('active');
-    if (i + 1 < num)   s.classList.add('done');
+    if (i + 1 === outerStep) s.classList.add('active');
+    if (i + 1 < outerStep)   s.classList.add('done');
   });
 
   if (num === 2) atualizarResumo();
+  if (num === 3 && typeof _renderizarCarrinho === 'function') _renderizarCarrinho();
 
   document.querySelector('.ag-container')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
@@ -813,10 +1047,19 @@ document.addEventListener('DOMContentLoaded', () => {
   const form = document.getElementById('form-dados');
   if (form) form.addEventListener('submit', processarFormulario);
 
+  const formPessoais = document.getElementById('form-dados-pessoais');
+  if (formPessoais) formPessoais.addEventListener('submit', (e) => { e.preventDefault(); confirmarDadosPessoais(); });
+
   const seletorOverlay = document.getElementById('seletor-overlay');
   if (seletorOverlay) {
     seletorOverlay.addEventListener('click', e => {
       if (e.target === seletorOverlay) fecharSeletor();
     });
   }
+
+  // Oculta sections 0 e 3 inicialmente (mostra só section 0 como active)
+  document.querySelectorAll('.ag-section').forEach(s => {
+    const passo = parseInt(s.dataset.passo, 10);
+    s.classList.toggle('active', passo === 0);
+  });
 });
