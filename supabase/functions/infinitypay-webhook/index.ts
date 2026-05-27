@@ -74,6 +74,37 @@ Deno.serve(async (req) => {
       )
     }
 
+    // Busca dados completos para notificação
+    const { data: agendamentos } = await supabase
+      .from('agendamentos')
+      .select('data_agendamento, hora_inicio, tipo_leitura, terapeuta, valor_cobrado')
+      .eq('chave_pedido', chave)
+
+    const { data: pedidoCompleto } = await supabase
+      .from('pedidos')
+      .select('nome_cliente, whatsapp_cliente, valor_total, metodo_pagamento')
+      .eq('chave_pedido', chave)
+      .maybeSingle()
+
+    if (pedidoCompleto && agendamentos) {
+      const linhasLeituras = agendamentos.map((a: any, i: number) => {
+        const data = new Date(a.data_agendamento).toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' })
+        return `  ${i + 1}. ${a.tipo_leitura} — ${data} às ${a.hora_inicio.slice(0,5)} (${a.terapeuta}) — R$ ${Number(a.valor_cobrado).toFixed(2)}`
+      }).join('\n')
+
+      const msg = `🔔 *Novo pedido confirmado!*\n\n👤 ${pedidoCompleto.nome_cliente}\n📱 ${pedidoCompleto.whatsapp_cliente}\n\n📋 *Leituras:*\n${linhasLeituras}\n\n💰 *Total: R$ ${Number(pedidoCompleto.valor_total).toFixed(2)}*\n💳 ${captureMethod}`
+
+      await fetch(`https://api.telegram.org/bot${Deno.env.get('TELEGRAM_BOT_TOKEN')}/sendMessage`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          chat_id: Deno.env.get('TELEGRAM_CHAT_ID'),
+          text: msg,
+          parse_mode: 'Markdown',
+        }),
+      })
+    }
+
     return new Response(JSON.stringify({ success: true }), {
       headers: { 'Content-Type': 'application/json' },
     })
