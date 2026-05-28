@@ -585,8 +585,9 @@
               </div>
             </div>
             <div class="pag-tabs" role="tablist" aria-label="Métodos de pagamento">
-              <button class="pag-tab active" id="modal-tab-pix"  onclick="trocarAbaPagamento('pix')"  role="tab" aria-selected="true"  aria-controls="modal-painel-pix">💰 PIX</button>
-              <button class="pag-tab"        id="modal-tab-wise" onclick="trocarAbaPagamento('wise')" role="tab" aria-selected="false" aria-controls="modal-painel-wise">🌍 Wise</button>
+              <button class="pag-tab active" id="modal-tab-pix"    onclick="trocarAbaPagamento('pix')"    role="tab" aria-selected="true"  aria-controls="modal-painel-pix">💰 PIX</button>
+              <button class="pag-tab"        id="modal-tab-cartao" onclick="trocarAbaPagamento('cartao')" role="tab" aria-selected="false" aria-controls="modal-painel-cartao">💳 Cartão</button>
+              <button class="pag-tab"        id="modal-tab-wise"   onclick="trocarAbaPagamento('wise')"   role="tab" aria-selected="false" aria-controls="modal-painel-wise">🌍 Wise</button>
             </div>
             <div class="pag-panel active pag-metodo-box" id="modal-painel-pix" role="tabpanel" aria-labelledby="modal-tab-pix">
               <h3>💰 Pagamento via PIX</h3>
@@ -598,6 +599,20 @@
               <div class="pag-btns">
                 <button id="pix-gerar-btn" class="ag-btn ag-btn-primary" onclick="gerarLinkPix()">🔗 Gerar QR Code PIX</button>
                 <button class="ag-btn ag-btn-whatsapp" onclick="avisarWhatsAppModal('pix')">📱 Avisar que paguei via PIX</button>
+              </div>
+            </div>
+            <div class="pag-panel pag-metodo-box" id="modal-painel-cartao" role="tabpanel" aria-labelledby="modal-tab-cartao">
+              <h3>💳 Pagamento via Cartão de Crédito</h3>
+              <p style="color:var(--text-muted);margin-bottom:16px;font-size:.9rem;">Gere o link, pague pelo checkout que abrir e pronto — a confirmação chega automaticamente.</p>
+              <p style="text-align:center;font-size:1.05rem;margin-bottom:20px;">Valor: <strong id="modal-valor-cartao">—</strong></p>
+              <div id="cartao-link-box" style="display:none;text-align:center;margin-bottom:16px;">
+                <a id="cartao-link-btn" href="#" target="_blank" rel="noopener noreferrer" class="ag-btn ag-btn-primary" style="display:inline-flex;align-items:center;gap:8px;text-decoration:none;">💳 Abrir checkout para pagar</a>
+              </div>
+              <div id="cartao-erro-box" class="ag-alert ag-alert-error" style="display:none;margin-bottom:16px;"></div>
+              <div id="cartao-status-box" class="ag-alert ag-alert-success" style="display:none;margin-bottom:16px;">✅ Pagamento confirmado! Combinaremos o horário no WhatsApp.</div>
+              <div class="pag-btns">
+                <button id="cartao-gerar-btn" class="ag-btn ag-btn-primary" onclick="gerarLinkCartao()">🔗 Gerar link de pagamento</button>
+                <button class="ag-btn ag-btn-whatsapp" onclick="avisarWhatsAppModal('cartao')">📱 Avisar que paguei no cartão</button>
               </div>
             </div>
             <div class="pag-panel pag-metodo-box" id="modal-painel-wise" role="tabpanel" aria-labelledby="modal-tab-wise">

@@ -4,7 +4,8 @@
    _garantirTipos, carregarCalendario, MESES_PT)
    ============================================================ */
 
-const MODAL_WISE = 'cocarsagrado@gmail.com';
+const MODAL_WISE        = 'cocarsagrado@gmail.com';
+const _IP_CHECKOUT_URL  = 'https://demxedudbislzausvhwx.supabase.co/functions/v1/infinitypay-checkout';
 
 let _dadosPagamento = null;
 let _calendarioOk   = false;
@@ -433,8 +434,10 @@ function _onVisibilityCheck() {
 }
 
 function _mostrarPagamentoConfirmado() {
-  const sb = document.getElementById('pix-status-box');
-  if (sb) sb.style.display = 'block';
+  ['pix', 'cartao'].forEach(m => {
+    const sb = document.getElementById(`${m}-status-box`);
+    if (sb) sb.style.display = 'block';
+  });
   _limparPedidoPendente();
   mostrarAlerta('✅ Pagamento confirmado!', 'success');
 }
@@ -450,7 +453,7 @@ function _preencherTelaPagamento() {
   set('modal-r-duracao',    `${ag.duracao} min`);
   set('modal-r-valor',      `R$ ${ag.valor}`);
 
-  ['pix', 'wise'].forEach(m => set(`modal-valor-${m}`, `R$ ${ag.valor}`));
+  ['pix', 'cartao', 'wise'].forEach(m => set(`modal-valor-${m}`, `R$ ${ag.valor}`));
   // Reset Pix
   const pixQrBox = document.getElementById('pix-qr-box');
   const pixErr   = document.getElementById('pix-erro-box');
@@ -460,6 +463,15 @@ function _preencherTelaPagamento() {
   if (pixErr)   pixErr.style.display = 'none';
   if (pixSt)    pixSt.style.display = 'none';
   if (pixBtn)   { pixBtn.disabled = false; pixBtn.textContent = '🔗 Gerar QR Code PIX'; }
+  // Reset Cartão
+  const cardLinkBox = document.getElementById('cartao-link-box');
+  const cardErr     = document.getElementById('cartao-erro-box');
+  const cardSt      = document.getElementById('cartao-status-box');
+  const cardBtn     = document.getElementById('cartao-gerar-btn');
+  if (cardLinkBox) cardLinkBox.style.display = 'none';
+  if (cardErr)     cardErr.style.display = 'none';
+  if (cardSt)      cardSt.style.display = 'none';
+  if (cardBtn)     { cardBtn.disabled = false; cardBtn.textContent = '🔗 Gerar link de pagamento'; }
   set('modal-email-wise', MODAL_WISE);
 
   trocarAbaPagamento('pix');
@@ -489,7 +501,7 @@ window.irParaPasso = function(num) {
 // Funções de pagamento
 // ============================================================
 function trocarAbaPagamento(metodo) {
-  ['pix', 'wise'].forEach(m => {
+  ['pix', 'cartao', 'wise'].forEach(m => {
     const tab    = document.getElementById(`modal-tab-${m}`);
     const painel = document.getElementById(`modal-painel-${m}`);
     const ativo  = m === metodo;
@@ -504,8 +516,9 @@ function _atualizarPantero(metodo) {
   const balao = document.getElementById('pag-pantero-balao');
   if (!balao) return;
   const msgs = {
-    pix:  'Gere o QR Code, pague pelo app do seu banco e depois avise no WhatsApp — confirmaremos o recebimento 🖤',
-    wise: 'Depois de fazer a transferência, volte para esta página e clique em <strong>"Avisar sobre pagamento Wise"</strong>.',
+    pix:    'Gere o QR Code, pague pelo app do seu banco e depois avise no WhatsApp — confirmaremos o recebimento 🖤',
+    cartao: 'Gere o link, pague pelo checkout que abrir e pronto — a confirmação chega automaticamente 🖤',
+    wise:   'Depois de fazer a transferência, volte para esta página e clique em <strong>"Avisar sobre pagamento Wise"</strong>.',
   };
   balao.innerHTML = msgs[metodo] || msgs.pix;
 }
@@ -528,8 +541,9 @@ function avisarWhatsAppModal(metodo) {
     : `*Leitura:* ${ag.tipo}\n*Data:* ${ag.data}${ag.hora ? `\n*Horário:* ${ag.hora}` : ''}`;
   const txidLine = ag.txid ? `\n*ID PIX:* ${ag.txid}` : '';
   const msgs = {
-    pix:  `Olá! 😊 Fiz o pagamento via *PIX*.\n\n*Pedido:* ${ag.chave}${txidLine}\n${leituraBloco}\n*Valor:* R$ ${ag.valor}\n\n${infoCliente}\n\nPode confirmar o recebimento? Combinaremos o horário por aqui! 🙏`,
-    wise: `Olá! 😊 Realizei a transferência via *Wise*.\n\n*Pedido:* ${ag.chave}\n${leituraBloco}\n*Valor:* R$ ${ag.valor}\n\n${infoCliente}\n\nPode confirmar o recebimento? Combinaremos o horário por aqui! 🙏`,
+    pix:    `Olá! 😊 Fiz o pagamento via *PIX*.\n\n*Pedido:* ${ag.chave}${txidLine}\n${leituraBloco}\n*Valor:* R$ ${ag.valor}\n\n${infoCliente}\n\nPode confirmar o recebimento? Combinaremos o horário por aqui! 🙏`,
+    cartao: `Olá! 😊 Realizei o pagamento via *cartão de crédito*.\n\n*Pedido:* ${ag.chave}\n${leituraBloco}\n*Valor:* R$ ${ag.valor}\n\n${infoCliente}\n\nCombinaremos o horário por aqui! 🙏`,
+    wise:   `Olá! 😊 Realizei a transferência via *Wise*.\n\n*Pedido:* ${ag.chave}\n${leituraBloco}\n*Valor:* R$ ${ag.valor}\n\n${infoCliente}\n\nPode confirmar o recebimento? Combinaremos o horário por aqui! 🙏`,
   };
 
   const numero = WHATSAPP_TERAPEUTA[ag.terapeuta] || WHATSAPP_TERAPEUTA.camila;
@@ -678,3 +692,41 @@ function copiarPixCodigo() {
 }
 window.copiarPixCodigo = copiarPixCodigo;
 window.gerarLinkPix    = gerarLinkPix;
+
+// ============================================================
+// InfinitePay — link de checkout (cartão de crédito)
+// ============================================================
+async function gerarLinkCartao() {
+  const ag = _dadosPagamento;
+  if (!ag) return;
+  const btn     = document.getElementById('cartao-gerar-btn');
+  const linkBox = document.getElementById('cartao-link-box');
+  const err     = document.getElementById('cartao-erro-box');
+  btn.disabled     = true;
+  btn.textContent  = '⏳ Gerando...';
+  linkBox.style.display = 'none';
+  err.style.display     = 'none';
+  try {
+    const items = Array.isArray(ag.items) && ag.items.length
+      ? ag.items.map(i => ({ description: i.description, price: parseFloat(String(i.price).replace(',', '.')) }))
+      : [{ description: ag.tipo, price: parseFloat(String(ag.valor).replace(',', '.')) }];
+
+    const res = await fetch(_IP_CHECKOUT_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ chave: ag.chave, nome: ag.nome, whatsapp: ag.whatsapp, items }),
+    });
+    const data = await res.json();
+    if (!res.ok || data.error) throw new Error(typeof data.error === 'string' ? data.error : 'falha ao gerar link');
+    document.getElementById('cartao-link-btn').href = data.url;
+    linkBox.style.display = 'block';
+    btn.textContent = '🔄 Gerar novo link';
+    btn.disabled    = false;
+  } catch (e) {
+    err.textContent  = 'Não foi possível gerar o link: ' + (e?.message || 'tente novamente.');
+    err.style.display = 'block';
+    btn.textContent  = '🔗 Gerar link de pagamento';
+    btn.disabled     = false;
+  }
+}
+window.gerarLinkCartao = gerarLinkCartao;
