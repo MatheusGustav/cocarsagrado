@@ -925,6 +925,16 @@ textarea { resize: vertical; min-height: 90px; }
 [data-theme="dark"] .pag-instrucoes li        { color: #C8BC8A; }
 [data-theme="dark"] .pag-instrucoes li strong { color: #E8E2CC; }
 
+/* Tabs inativos: sobrescreve o fundo branco padrão do <button> */
+[data-theme="dark"] .pag-tab:not(.active) { background: transparent; }
+
+/* Textarea do código PIX tem background inline hardcoded */
+[data-theme="dark"] #pix-qr-code {
+  background: #0F1A0F !important;
+  color: #C8BC8A !important;
+  border-color: #2A3A28 !important;
+}
+
 /* Alerts mantêm cor própria mas com bg mais escuro para contraste */
 [data-theme="dark"] .ag-alert-success {
   background: rgba(16,185,129,.12); color: #6ee7b7; border-color: rgba(16,185,129,.35);

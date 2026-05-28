@@ -312,51 +312,51 @@ body.modal-aberto { overflow: hidden; }
 
 /* Dark mode — modal container */
 [data-theme="dark"] .modal-container {
-  background: #1f2937;
+  background: #162016;
 }
 [data-theme="dark"] .modal-header {
-  background: #1f2937;
-  border-color: #374151;
+  background: #162016;
+  border-color: #2A3A28;
 }
 [data-theme="dark"] .modal-drag-handle {
-  background: #4b5563;
+  background: #2A3A28;
 }
 [data-theme="dark"] .modal-close-btn {
-  background: #374151;
-  border-color: #4b5563;
-  color: #9ca3af;
+  background: #1a2a1a;
+  border-color: #2A3A28;
+  color: #8A8260;
 }
 [data-theme="dark"] .modal-tela-step {
-  background: #374151;
-  border-color: #4b5563;
-  color: #9ca3af;
+  background: #1a2a1a;
+  border-color: #2A3A28;
+  color: #8A8260;
 }
 [data-theme="dark"] .pag-voltar-btn {
-  border-color: #4b5563;
-  color: #9ca3af;
+  border-color: #2A3A28;
+  color: #8A8260;
 }
 [data-theme="dark"] .pag-voltar-btn:hover {
-  border-color: #818cf8;
-  color: #818cf8;
+  border-color: #D4B254;
+  color: #D4B254;
 }
 [data-theme="dark"] .modal-overlay {
   background: rgba(0,0,0,0.75);
 }
 [data-theme="dark"] .modal-tela-step .t-num {
-  background: #4b5563;
-  color: #9ca3af;
+  background: #2A3A28;
+  color: #8A8260;
 }
 [data-theme="dark"] .modal-tela-step.active {
-  background: #1e1b4b;
-  color: #a5b4fc;
-  border-color: #6366f1;
+  background: #1a2a10;
+  color: #E8C97E;
+  border-color: #D4B254;
 }
 [data-theme="dark"] .modal-tela-step.active .t-num {
-  background: #6366f1;
-  color: #fff;
+  background: #D4B254;
+  color: #0F1A0F;
 }
 [data-theme="dark"] .modal-tela-step.done {
-  background: #052e16;
+  background: #0a1a0a;
   color: #6ee7b7;
   border-color: #10b981;
 }
@@ -365,7 +365,7 @@ body.modal-aberto { overflow: hidden; }
   color: #fff;
 }
 [data-theme="dark"] .modal-progress-sep {
-  color: #4b5563;
+  color: #2A3A28;
 }
 [data-theme="dark"] .modal-close-btn:hover {
   background: #450a0a;
