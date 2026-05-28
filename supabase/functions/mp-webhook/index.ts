@@ -113,7 +113,7 @@ Deno.serve(async (req) => {
 
     const { data: pc } = await supabase
       .from('pedidos')
-      .select('nome_cliente, whatsapp_cliente, valor_total, metodo_pagamento')
+      .select('cliente_nome, cliente_whatsapp, valor_total, metodo_pagamento')
       .eq('chave_pedido', chave)
       .maybeSingle()
 
@@ -122,7 +122,7 @@ Deno.serve(async (req) => {
         const d = new Date(a.data_agendamento).toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' })
         return `  ${i + 1}. ${a.tipo_leitura} — ${d} às ${a.hora_inicio.slice(0,5)} (${a.terapeuta}) — R$ ${Number(a.valor_cobrado).toFixed(2)}`
       }).join('\n')
-      const msg = `🔔 *Novo pedido confirmado!*\n\n👤 ${pc.nome_cliente}\n📱 ${pc.whatsapp_cliente}\n\n📋 *Leituras:*\n${linhas}\n\n💰 *Total: R$ ${Number(pc.valor_total).toFixed(2)}*\n💳 ${metodo}`
+      const msg = `🔔 *Novo pedido confirmado!*\n\n👤 ${pc.cliente_nome}\n📱 ${pc.cliente_whatsapp}\n\n📋 *Leituras:*\n${linhas}\n\n💰 *Total: R$ ${Number(pc.valor_total).toFixed(2)}*\n💳 ${metodo}`
       const tg = await fetch(`https://api.telegram.org/bot${TG_BOT}/sendMessage`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
