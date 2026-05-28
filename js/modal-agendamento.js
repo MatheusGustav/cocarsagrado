@@ -559,6 +559,23 @@ document.addEventListener('DOMContentLoaded', () => {
     if (e.target === overlay) fecharModal();
   });
 
+  // Focus trap: mantém Tab/Shift+Tab dentro do modal aberto
+  const FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+  overlay.addEventListener('keydown', e => {
+    if (e.key !== 'Tab' || !overlay.classList.contains('open')) return;
+    const seçãoAtiva = overlay.querySelector('.modal-screen.active') || overlay;
+    const focaveis = Array.from(seçãoAtiva.querySelectorAll(FOCUSABLE))
+      .filter(el => el.offsetParent !== null && !el.hasAttribute('aria-hidden'));
+    if (!focaveis.length) return;
+    const primeiro = focaveis[0];
+    const ultimo   = focaveis[focaveis.length - 1];
+    if (e.shiftKey && document.activeElement === primeiro) {
+      e.preventDefault(); ultimo.focus();
+    } else if (!e.shiftKey && document.activeElement === ultimo) {
+      e.preventDefault(); primeiro.focus();
+    }
+  });
+
   // Checa pedido pendente ao carregar (atualiza se foi pago via webhook)
   setTimeout(_verificarPedidoPendenteAoCarregar, 1500);
 });
