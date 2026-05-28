@@ -12,7 +12,7 @@ Desenvolvi uma solução completa pra resolver isso: um site com catálogo de se
 
 - Catálogo com todos os serviços e valores
 - Agendamento online com escolha de consultor, data e horário
-- Pagamento via InfinityPay com confirmação automática
+- Pagamento via Mercado Pago (Pix instantâneo + cartão até 12x) com confirmação automática
 - Desconto de 10% pra novos clientes
 - Chat com IA pra tirar dúvidas sobre os serviços
 - Tema claro/escuro automático pelo horário do dia
@@ -30,7 +30,7 @@ Separado do site principal, o painel dá controle total sobre:
 
 - HTML, CSS e JS puro no front
 - Supabase pro banco e Edge Functions
-- InfinityPay pra pagamentos
+- Mercado Pago pra pagamentos (Checkout API + Bricks)
 - Groq API no chat de atendimento
 - Deploy no Cloudflare Pages
 
@@ -47,8 +47,8 @@ cocarsagrado/
 └── supabase/
     ├── functions/
     │   ├── ai-chat/
-    │   ├── infinitypay-checkout/
-    │   └── infinitypay-webhook/
+    │   ├── mp-create-payment/
+    │   └── mp-webhook/
     └── sql/
 ```
 

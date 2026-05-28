@@ -4,7 +4,8 @@
    _garantirTipos, carregarCalendario, MESES_PT)
    ============================================================ */
 
-const _CHECKOUT_URL  = 'https://demxedudbislzausvhwx.supabase.co/functions/v1/infinitypay-checkout';
+const _MP_CREATE_URL = 'https://demxedudbislzausvhwx.supabase.co/functions/v1/mp-create-payment';
+const _MP_SDK_URL    = 'https://sdk.mercadopago.com/js/v2';
 const MODAL_WISE     = 'cocarsagrado@gmail.com';
 
 let _dadosPagamento = null;
@@ -454,19 +455,25 @@ function _preencherTelaPagamento() {
   set('modal-r-valor',      `R$ ${ag.valor}`);
 
   ['pix', 'cartao', 'wise'].forEach(m => set(`modal-valor-${m}`, `R$ ${ag.valor}`));
-  ['cartao', 'pix'].forEach(m => {
-    const lb = document.getElementById(`${m}-link-box`);
-    const eb = document.getElementById(`${m}-erro-box`);
-    const sb = document.getElementById(`${m}-status-box`);
-    const gb = document.getElementById(`${m}-gerar-btn`);
-    if (lb) lb.style.display = 'none';
-    if (eb) eb.style.display = 'none';
-    if (sb) sb.style.display = 'none';
-    if (gb) {
-      gb.disabled = false;
-      gb.textContent = m === 'pix' ? '🔗 Gerar link PIX' : '🔗 Gerar link de pagamento';
-    }
-  });
+  // Reset Pix
+  const pixQrBox = document.getElementById('pix-qr-box');
+  const pixErr   = document.getElementById('pix-erro-box');
+  const pixSt    = document.getElementById('pix-status-box');
+  const pixBtn   = document.getElementById('pix-gerar-btn');
+  if (pixQrBox) pixQrBox.style.display = 'none';
+  if (pixErr)   pixErr.style.display = 'none';
+  if (pixSt)    pixSt.style.display = 'none';
+  if (pixBtn)   { pixBtn.disabled = false; pixBtn.textContent = '🔗 Gerar QR Code PIX'; }
+  // Reset Cartão
+  const cardErr  = document.getElementById('cartao-erro-box');
+  const cardSt   = document.getElementById('cartao-status-box');
+  const cardBtns = document.getElementById('cartao-btns-box');
+  const cardCont = document.getElementById('cartao-brick-container');
+  if (cardErr)  cardErr.style.display = 'none';
+  if (cardSt)   cardSt.style.display = 'none';
+  if (cardBtns) cardBtns.style.display = '';
+  if (cardCont) cardCont.innerHTML = '';
+  if (window._mpBrick) { try { window._mpBrick.unmount(); } catch {} window._mpBrick = null; }
   set('modal-email-wise', MODAL_WISE);
 
   trocarAbaPagamento('pix');
@@ -511,8 +518,8 @@ function _atualizarPantero(metodo) {
   const balao = document.getElementById('pag-pantero-balao');
   if (!balao) return;
   const msgs = {
-    pix:    'Gere o link PIX, pague pelo seu banco e pronto — a confirmação chega automaticamente pra gente 🖤',
-    cartao: 'Pague pelo checkout que abrir e pronto — a confirmação chega automaticamente pra gente 🖤',
+    pix:    'Gere o QR Code, pague pelo app do seu banco e pronto — a confirmação chega automaticamente pra gente 🖤',
+    cartao: 'Preencha os dados do cartão, escolha em quantas vezes parcelar e pronto 🖤',
     wise:   'Depois de fazer a transferência, volte para esta página e clique em <strong>"Avisar sobre pagamento Wise"</strong>.',
   };
   balao.innerHTML = msgs[metodo] || msgs.pix;
@@ -566,64 +573,157 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // ============================================================
-// InfinityPay — geração de link de pagamento por cartão
+// Mercado Pago — Pix (QR direto) e Cartão (Brick embutido)
 // ============================================================
-function _montarPayloadCheckout(metodo) {
+function _payloadBase() {
   const ag = _dadosPagamento;
   if (!ag) return null;
-  const payload = {
-    chave: ag.chave,
-    nome: ag.nome,
-    whatsapp: ag.whatsapp,
-  };
-  // Se tem items array, usa multi-leitura
+  const payload = { chave: ag.chave, nome: ag.nome, whatsapp: ag.whatsapp };
   if (Array.isArray(ag.items) && ag.items.length > 0) {
     payload.items = ag.items.map(i => ({
       description: i.description,
       price: parseFloat(String(i.price).replace(',', '.')),
     }));
   } else {
-    // Fallback compat: 1 leitura
-    payload.tipo = ag.tipo;
+    payload.tipo_leitura = ag.tipo;
     payload.valor = ag.valor;
   }
-  if (metodo === 'pix') payload.methods = ['pix'];
   return payload;
 }
 
-async function _gerarLink(metodo) {
+async function gerarLinkPix() {
   const ag = _dadosPagamento;
   if (!ag) return;
-  const prefix = metodo;
-  const btn     = document.getElementById(`${prefix}-gerar-btn`);
-  const linkBox = document.getElementById(`${prefix}-link-box`);
-  const erroBox = document.getElementById(`${prefix}-erro-box`);
+  const btn  = document.getElementById('pix-gerar-btn');
+  const qr   = document.getElementById('pix-qr-box');
+  const err  = document.getElementById('pix-erro-box');
   btn.disabled = true;
   btn.textContent = '⏳ Gerando...';
-  linkBox.style.display = 'none';
-  erroBox.style.display = 'none';
+  qr.style.display = 'none';
+  err.style.display = 'none';
   try {
-    const payload = _montarPayloadCheckout(metodo);
-    const res = await fetch(_CHECKOUT_URL, {
+    const payload = { ..._payloadBase(), tipo: 'pix' };
+    const res = await fetch(_MP_CREATE_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
     });
     const data = await res.json();
     if (!res.ok || data.error) throw new Error(typeof data.error === 'string' ? data.error : 'falha');
-    document.getElementById(`${prefix}-link-btn`).href = data.url;
-    linkBox.style.display = 'block';
-    btn.textContent = '🔄 Gerar novo link';
+    document.getElementById('pix-qr-img').src = `data:image/png;base64,${data.qr_code_base64}`;
+    document.getElementById('pix-qr-code').value = data.qr_code || '';
+    qr.style.display = 'block';
+    btn.textContent = '🔄 Gerar novo QR Code';
     btn.disabled = false;
   } catch (e) {
-    erroBox.textContent = 'Não foi possível gerar o link: ' + (e?.message || 'tente novamente.');
-    erroBox.style.display = 'block';
-    btn.textContent = `🔗 Gerar link ${metodo === 'pix' ? 'PIX' : 'de pagamento'}`;
+    err.textContent = 'Não foi possível gerar o PIX: ' + (e?.message || 'tente novamente.');
+    err.style.display = 'block';
+    btn.textContent = '🔗 Gerar QR Code PIX';
     btn.disabled = false;
   }
 }
 
-function gerarLinkCartao() { _gerarLink('cartao'); }
-function gerarLinkPix() { _gerarLink('pix'); }
+function copiarPixCodigo() {
+  const ta = document.getElementById('pix-qr-code');
+  if (!ta?.value) return;
+  _copiarTexto(ta.value, '✅ Código PIX copiado!');
+}
+window.copiarPixCodigo = copiarPixCodigo;
+
+function _carregarSdkMp() {
+  if (window.MercadoPago) return Promise.resolve();
+  if (window._mpSdkPromise) return window._mpSdkPromise;
+  window._mpSdkPromise = new Promise((resolve, reject) => {
+    const s = document.createElement('script');
+    s.src = _MP_SDK_URL;
+    s.onload = () => resolve();
+    s.onerror = () => reject(new Error('falha ao carregar SDK Mercado Pago'));
+    document.head.appendChild(s);
+  });
+  return window._mpSdkPromise;
+}
+
+async function gerarLinkCartao() {
+  const ag = _dadosPagamento;
+  if (!ag) return;
+  const btn   = document.getElementById('cartao-gerar-btn');
+  const err   = document.getElementById('cartao-erro-box');
+  const btns  = document.getElementById('cartao-btns-box');
+  err.style.display = 'none';
+  btn.disabled = true;
+  btn.textContent = '⏳ Carregando...';
+
+  try {
+    await _carregarSdkMp();
+    if (!window.MP_PUBLIC_KEY && typeof MP_PUBLIC_KEY === 'undefined') {
+      throw new Error('MP_PUBLIC_KEY não configurada');
+    }
+    const mp = new window.MercadoPago(MP_PUBLIC_KEY, { locale: 'pt-BR' });
+    const bricksBuilder = mp.bricks();
+
+    const valor = parseFloat(String(ag.valor).replace(',', '.')) || 0;
+
+    if (window._mpBrick) { try { window._mpBrick.unmount(); } catch {} window._mpBrick = null; }
+
+    window._mpBrick = await bricksBuilder.create('cardPayment', 'cartao-brick-container', {
+      initialization: {
+        amount: valor,
+        payer: { email: `wpp${(ag.whatsapp || '').replace(/\D/g, '')}@cocarsagrado.com.br` },
+      },
+      customization: {
+        paymentMethods: { maxInstallments: 12 },
+        visual: { style: { theme: 'default' } },
+      },
+      callbacks: {
+        onReady: () => { btns.style.display = 'none'; },
+        onError: (e) => {
+          console.error('Brick error:', e);
+          err.textContent = 'Erro no formulário: ' + (e?.message || 'tente novamente.');
+          err.style.display = 'block';
+        },
+        onSubmit: async ({ formData }) => {
+          err.style.display = 'none';
+          try {
+            const payload = {
+              ..._payloadBase(),
+              tipo: 'cartao',
+              token: formData.token,
+              installments: formData.installments,
+              payment_method_id: formData.payment_method_id,
+              issuer_id: formData.issuer_id,
+              payer: formData.payer,
+            };
+            const res = await fetch(_MP_CREATE_URL, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(payload),
+            });
+            const data = await res.json();
+            if (!res.ok || data.error) {
+              throw new Error(typeof data.error === 'string' ? data.error : 'falha no pagamento');
+            }
+            if (data.status === 'approved') {
+              _mostrarPagamentoConfirmado();
+            } else if (data.status === 'in_process' || data.status === 'pending') {
+              mostrarAlerta('⏳ Pagamento em análise. Avisaremos assim que aprovar.', 'info');
+            } else {
+              throw new Error('Pagamento ' + (data.status_detail || data.status || 'recusado'));
+            }
+          } catch (e) {
+            err.textContent = 'Não foi possível processar: ' + (e?.message || 'tente outro cartão.');
+            err.style.display = 'block';
+            throw e;
+          }
+        },
+      },
+    });
+  } catch (e) {
+    err.textContent = 'Não foi possível carregar o formulário: ' + (e?.message || 'tente novamente.');
+    err.style.display = 'block';
+    btn.disabled = false;
+    btn.textContent = '💳 Carregar formulário do cartão';
+  }
+}
+
 window.gerarLinkCartao = gerarLinkCartao;
 window.gerarLinkPix = gerarLinkPix;
