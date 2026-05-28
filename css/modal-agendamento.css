@@ -442,12 +442,53 @@ body.modal-aberto { overflow: hidden; }
   padding-top: 8px;
   margin-top: 4px;
 }
+.cart-item-badge-desc {
+  display: inline-block;
+  align-self: flex-start;
+  background: #d1fae5;
+  color: #065f46;
+  font-size: .72rem;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 999px;
+  letter-spacing: .02em;
+}
+.cart-entrega-aviso {
+  margin-top: 14px;
+  font-size: .85rem;
+  color: var(--text-muted, #6b7280);
+  text-align: center;
+  line-height: 1.4;
+}
+.ag-entrega-aviso {
+  margin: -6px 0 16px;
+  font-size: .82rem;
+  color: var(--text-muted, #6b7280);
+  text-align: center;
+  line-height: 1.4;
+}
+.ag-btn-spinner {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border: 2px solid currentColor;
+  border-top-color: transparent;
+  border-radius: 50%;
+  vertical-align: -2px;
+  margin-right: 6px;
+  animation: ag-btn-spin .8s linear infinite;
+}
+@keyframes ag-btn-spin { to { transform: rotate(360deg); } }
 [data-theme="dark"] .cart-item {
   background: #2a2f2a;
   border-color: #3a3f3a;
 }
 [data-theme="dark"] .cart-item-remove:hover {
   background: #450a0a;
+}
+[data-theme="dark"] .cart-item-badge-desc {
+  background: #064e3b;
+  color: #a7f3d0;
 }
 
 /* ============================================================

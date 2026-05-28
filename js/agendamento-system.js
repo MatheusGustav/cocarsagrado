@@ -28,6 +28,9 @@ const WHATSAPP_TERAPEUTA = {
   camila:  '5527998528483',
 };
 
+// Fecha o dia atual N minutos antes do ate_horario para dar tempo de processar/entregar
+const CUTOFF_BUFFER_MIN = 60;
+
 async function _garantirTipos(forcar) {
   if (_tiposCache && !forcar) return _tiposCache;
   if (typeof supabase === 'undefined' || !supabase) {
@@ -228,7 +231,6 @@ function _abrirSeletorGrupo(grupoSlug, tiers) {
     opt.innerHTML = `
       <span class="tier-label">${_escCat(tier.tier_label || tier.nome)}</span>
       <div class="tier-info">
-        <span class="tier-duracao">⏱ ${tier.duracao_minutos} min</span>
         <span class="tier-preco">R$ ${final.toFixed(0)}</span>
       </div>`;
     opt.addEventListener('click', () => {
@@ -332,7 +334,7 @@ async function carregarCalendario() {
       const numero = WHATSAPP_TERAPEUTA[profissional] || '';
       cal.innerHTML = `
         <div class="ag-empty ag-empty-vagas">
-          <p>Sem vagas disponíveis no momento.</p>
+          <p>Sem leituras disponíveis no momento.</p>
           <p style="font-size:.85rem; margin-top:4px; color:var(--text-muted);">Nossa agenda está temporariamente cheia. Entre em contato pelo WhatsApp para verificar próximas disponibilidades.</p>
           ${numero ? `<a href="https://wa.me/${numero}" target="_blank" rel="noopener" class="ag-btn ag-btn-whatsapp" style="margin-top:14px; display:inline-flex;">💬 Verificar disponibilidade</a>` : ''}
         </div>`;
@@ -348,8 +350,8 @@ async function carregarCalendario() {
       const card = document.createElement('div');
       card.className = 'ag-vagas-card';
 
-      const horarioLabel = ate_horario ? `até as ${ate_horario.slice(0, 5)}` : '';
-      const vagasText    = vagas === 1 ? '1 vaga disponível' : `${vagas} vagas disponíveis`;
+      const horarioLabel = ate_horario ? `entrega até ${ate_horario.slice(0, 5)}` : '';
+      const vagasText    = vagas === 1 ? '1 leitura disponível' : `${vagas} leituras disponíveis`;
       const cls          = vagas <= 2 ? 'vagas-poucas' : 'vagas-ok';
 
       card.innerHTML = `
@@ -385,7 +387,10 @@ async function irParaPagamentoCarrinho() {
   }
 
   const btn = document.getElementById('btn-ir-pagar');
-  if (btn) { btn.disabled = true; btn.textContent = 'Salvando...'; }
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = '<span class="ag-btn-spinner" aria-hidden="true"></span> Salvando seu pedido…';
+  }
 
   // Calcula os itens (com desconto distribuído) ANTES de salvar/limpar o carrinho.
   // Esse mesmo snapshot alimenta a tela de pagamento.
@@ -400,7 +405,7 @@ async function irParaPagamentoCarrinho() {
     console.error('irParaPagamentoCarrinho:', err);
     const msg = err?.userMessage ? err.message : 'Erro ao salvar. Tente novamente.';
     mostrarAlerta(msg, 'error');
-    if (btn) { btn.disabled = false; btn.textContent = '💳 Ir para Pagamento'; }
+    if (btn) { btn.disabled = false; _atualizarBotoesCarrinho(); }
   }
 }
 
@@ -447,6 +452,7 @@ async function _buscarDiasComVagas(profissional, diasParaFrente) {
           const ateH = ov.ate_horario || '18:00';
           const [h, m] = ateH.split(':').map(Number);
           const limite = new Date(); limite.setHours(h, m, 0, 0);
+          limite.setMinutes(limite.getMinutes() - CUTOFF_BUFFER_MIN);
           if (new Date() >= limite) continue;
         }
         dias.push({ data: str, vagas: restantes, ate_horario: ov.ate_horario });
@@ -478,6 +484,7 @@ async function _buscarDiasEspeciais(profissional, diasParaFrente) {
     if (e.data === hojeStr && e.ate_horario) {
       const [h, m] = e.ate_horario.split(':').map(Number);
       const limite = new Date(); limite.setHours(h, m, 0, 0);
+      limite.setMinutes(limite.getMinutes() - CUTOFF_BUFFER_MIN);
       if (agora >= limite) return false;
     }
     return true;
@@ -525,9 +532,8 @@ function atualizarResumo() {
   const set = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
   set('res-tipo',    tipo.nome);
   set('res-data',    `${d.getDate()} de ${MESES_PT[d.getMonth()]} de ${d.getFullYear()}`);
-  const horaLabel = Estado.horarioSelecionado ? `até as ${Estado.horarioSelecionado.slice(0,5)}` : '';
+  const horaLabel = Estado.horarioSelecionado ? `até as ${Estado.horarioSelecionado.slice(0,5)}` : 'no dia';
   set('res-hora',    horaLabel);
-  set('res-duracao', _formatarDuracao(tipo.duracao_minutos));
   set('res-valor',   `R$ ${final.toFixed(2).replace('.', ',')}`);
 
   const linhaDesc = document.getElementById('res-desconto-linha');
@@ -599,7 +605,12 @@ function _renderizarCarrinho() {
     const [aY, aM, aD] = dataStr.split('-').map(Number);
     const d = new Date(aY, aM - 1, aD);
     const nome = item.tipo.tier_label || item.tipo.nome;
-    const horaLabel = item.horario && item.horario !== '00:00' ? `até ${item.horario.slice(0,5)}` : '';
+    const entregaLabel = item.horario && item.horario !== '00:00'
+      ? `Entrega até ${item.horario.slice(0,5)}`
+      : 'Entrega no dia';
+    const badgeDesc = item.aplicou_novo_cliente
+      ? '<span class="cart-item-badge-desc">Desconto 10% aplicado</span>'
+      : '';
     html += `
       <div class="cart-item">
         <div class="cart-item-header">
@@ -607,9 +618,10 @@ function _renderizarCarrinho() {
           <button class="cart-item-remove" data-idx="${idx}" aria-label="Remover leitura" type="button">✕</button>
         </div>
         <div class="cart-item-details">
-          <span>${d.getDate()} de ${MESES_PT[d.getMonth()]} ${horaLabel}</span>
-          <span>${_formatarDuracao(item.duracao_minutos)}</span>
+          <span>${d.getDate()} de ${MESES_PT[d.getMonth()]}</span>
+          <span>${entregaLabel}</span>
         </div>
+        ${badgeDesc}
         <div class="cart-item-price">R$ ${item.valor_final.toFixed(2).replace('.',',')}</div>
       </div>`;
   });
@@ -626,7 +638,8 @@ function _renderizarCarrinho() {
   html += `<div class="cart-total-row cart-total-final">
       <span>Total</span><span>R$ ${totalFinal.toFixed(2).replace('.',',')}</span>
     </div>
-  </div>`;
+  </div>
+  <p class="cart-entrega-aviso">📲 Sua leitura será enviada por WhatsApp até o horário indicado em cada item.</p>`;
 
   container.innerHTML = html;
 
@@ -648,7 +661,18 @@ function _atualizarBotoesCarrinho() {
   const addBtn = document.getElementById('btn-add-leitura');
   const payBtn = document.getElementById('btn-ir-pagar');
   if (addBtn) addBtn.disabled = Estado.carrinho.length >= 4;
-  if (payBtn) payBtn.style.display = Estado.carrinho.length > 0 ? '' : 'none';
+  if (payBtn) {
+    if (Estado.carrinho.length > 0) {
+      const itens = _aplicarDescontosCarrinho(Estado.carrinho);
+      const total = itens.reduce((s, i) => s + i.valor_final, 0);
+      const n = Estado.carrinho.length;
+      const label = n === 1 ? '1 leitura' : `${n} leituras`;
+      payBtn.style.display = '';
+      payBtn.innerHTML = `💳 Pagar R$ ${total.toFixed(2).replace('.', ',')} (${label})`;
+    } else {
+      payBtn.style.display = 'none';
+    }
+  }
   if (typeof window._atualizarBotaoRetomar === 'function') window._atualizarBotaoRetomar();
 }
 
@@ -671,7 +695,7 @@ function validarDadosPessoais() {
   campos.forEach(({ id, minLen, date, msg }) => {
     const el = document.getElementById(id);
     if (!el) return;
-    el.classList.remove('error');
+    _limparErroField(el);
     const val = el.value.trim();
     const invalido = date
       ? (() => {
@@ -798,7 +822,7 @@ function validarFormulario() {
     for (let i = 1; i <= n; i++) {
       const el = document.getElementById(`f-obs-${i}`);
       if (!el) continue;
-      el.classList.remove('error');
+      _limparErroField(el);
       const val = el.value.trim();
       if (val.length < 3) {
         el.classList.add('error');
@@ -815,10 +839,24 @@ function mostrarErroField(input, msg) {
   if (!span || !span.classList.contains('ag-error-msg')) {
     span = document.createElement('span');
     span.className = 'ag-error-msg';
+    span.setAttribute('role', 'alert');
+    span.setAttribute('aria-live', 'polite');
     input.parentNode.insertBefore(span, input.nextSibling);
   }
   span.textContent = msg;
-  setTimeout(() => { if (span) span.remove(); }, 3000);
+  // Limpa ao começar a digitar/corrigir
+  if (!input.dataset.errClearBound) {
+    input.dataset.errClearBound = '1';
+    const limpar = () => _limparErroField(input);
+    input.addEventListener('input', limpar);
+    input.addEventListener('change', limpar);
+  }
+}
+
+function _limparErroField(input) {
+  input.classList.remove('error');
+  const span = input.nextElementSibling;
+  if (span && span.classList.contains('ag-error-msg')) span.remove();
 }
 
 // (Removida a antiga salvarAgendamento de 1 leitura: o fluxo agora é sempre
