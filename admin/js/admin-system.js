@@ -349,7 +349,7 @@ function _atualizarContadoresPills(todos) {
 }
 
 // ============================================================
-// Realtime — webhook InfinitePay marca pago -> painel atualiza
+// Realtime — webhook Mercado Pago marca pago -> painel atualiza
 // ============================================================
 function _agendarRefresh() {
   clearTimeout(_refreshDebounce);

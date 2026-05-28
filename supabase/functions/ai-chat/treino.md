@@ -96,7 +96,7 @@ Feedback 4
 **R:** depende de caso para caso, por sinal eu trabalho com ebós e adoçamentos.
 
 **P:** Aceitam Pix? Parcelado? Cartão?
-**R:** sim, aceitamos pix, credito parcelado em até 12x com taxa de juros da infinity pay.
+**R:** sim, aceitamos pix, credito parcelado em até 12x com juros do emissor do cartão.
 
 **P:** Fazem para crianças / adolescentes?
 **R:** somente mediante a autorização do responsavel

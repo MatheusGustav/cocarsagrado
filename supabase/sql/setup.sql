@@ -479,7 +479,7 @@ GRANT EXECUTE ON FUNCTION public.pedido_status(text) TO anon;
 GRANT EXECUTE ON FUNCTION public.contar_agendamentos_por_data(text, date, date) TO anon;
 
 -- confirmar_pedido_pago: atualização atômica (pai + filhos) chamada pelo
--- webhook da InfinitePay (service_role). NUNCA exposta ao anon.
+-- webhook do Mercado Pago (service_role). NUNCA exposta ao anon.
 CREATE OR REPLACE FUNCTION public.confirmar_pedido_pago(p_chave text, p_metodo text)
 RETURNS integer
 LANGUAGE plpgsql
@@ -616,7 +616,7 @@ CREATE POLICY "auth_admin_config" ON public.configuracoes
 
 -- ============================================================
 -- 9) REALTIME — dashboard escuta as tabelas agendamentos e pedidos
---    Quando o webhook da InfinitePay muda pendente -> pago,
+--    Quando o webhook do Mercado Pago muda pendente -> pago,
 --    o painel admin recebe o evento e atualiza na hora.
 --    REPLICA IDENTITY FULL garante que payload.old traga o
 --    status anterior (necessário para detectar pendente->pago).

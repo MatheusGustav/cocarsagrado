@@ -43,7 +43,7 @@ const SYSTEM_PROMPT = `Você é o Pantero, assistente virtual do Cocar Sagrado, 
 Os tempos de cada serviço são estimativas aproximadas. Uma consulta pode durar mais ou menos dependendo do fluxo da leitura. Nunca afirme um tempo exato — use "em torno de", "aproximadamente" ou "costuma durar".
 
 # PAGAMENTO
-Pix e cartão de crédito parcelado em até 12x (taxa de juros da InfinityPay).
+Pix e cartão de crédito parcelado em até 12x (juros do emissor do cartão).
 
 # EXPERIÊNCIA / PROVAS SOCIAIS (use com parcimônia, só se perguntarem)
 - Mais de 7 mil atendimentos realizados (estimativa).
