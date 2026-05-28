@@ -585,35 +585,19 @@
               </div>
             </div>
             <div class="pag-tabs" role="tablist" aria-label="Métodos de pagamento">
-              <button class="pag-tab active" id="modal-tab-pix"    onclick="trocarAbaPagamento('pix')"    role="tab" aria-selected="true"  aria-controls="modal-painel-pix">💰 PIX</button>
-              <button class="pag-tab"        id="modal-tab-cartao" onclick="trocarAbaPagamento('cartao')" role="tab" aria-selected="false" aria-controls="modal-painel-cartao">💳 Cartão</button>
-              <button class="pag-tab"        id="modal-tab-wise"   onclick="trocarAbaPagamento('wise')"   role="tab" aria-selected="false" aria-controls="modal-painel-wise">🌍 Wise</button>
+              <button class="pag-tab active" id="modal-tab-pix"  onclick="trocarAbaPagamento('pix')"  role="tab" aria-selected="true"  aria-controls="modal-painel-pix">💰 PIX</button>
+              <button class="pag-tab"        id="modal-tab-wise" onclick="trocarAbaPagamento('wise')" role="tab" aria-selected="false" aria-controls="modal-painel-wise">🌍 Wise</button>
             </div>
             <div class="pag-panel active pag-metodo-box" id="modal-painel-pix" role="tabpanel" aria-labelledby="modal-tab-pix">
               <h3>💰 Pagamento via PIX</h3>
-              <p style="color:var(--text-muted);margin-bottom:16px;font-size:.9rem;">Clique em gerar e pague pelo app do seu banco — a confirmação chega automaticamente.</p>
+              <p style="color:var(--text-muted);margin-bottom:16px;font-size:.9rem;">Gere o QR Code, pague pelo app do seu banco e avise no WhatsApp — confirmaremos manualmente.</p>
               <p style="text-align:center;font-size:1.05rem;margin-bottom:20px;">Valor: <strong id="modal-valor-pix">—</strong></p>
-              <div id="pix-qr-box" style="display:none;text-align:center;margin-bottom:16px;">
-                <img id="pix-qr-img" alt="QR Code PIX" style="display:block;margin:0 auto;width:220px;height:220px;object-fit:contain;border:1px solid var(--border);border-radius:8px;padding:8px;background:#fff;" />
-                <p style="font-size:.85rem;color:var(--text-muted);margin:10px 0 6px;">Ou copie o código abaixo:</p>
-                <textarea id="pix-qr-code" readonly style="width:100%;font-size:.75rem;font-family:monospace;padding:8px;border:1px solid var(--border);border-radius:6px;resize:none;height:60px;background:#f8f8f8;"></textarea>
-                <button class="ag-btn ag-btn-copy ag-btn-sm" onclick="copiarPixCodigo()" style="margin-top:8px;">📋 Copiar código PIX</button>
-              </div>
+              <div id="pix-qr-box" style="display:none;margin-bottom:16px;"></div>
               <div id="pix-erro-box" class="ag-alert ag-alert-error" style="display:none;margin-bottom:16px;"></div>
               <div id="pix-status-box" class="ag-alert ag-alert-success" style="display:none;margin-bottom:16px;">✅ Pagamento confirmado! Combinaremos o horário no WhatsApp.</div>
               <div class="pag-btns">
                 <button id="pix-gerar-btn" class="ag-btn ag-btn-primary" onclick="gerarLinkPix()">🔗 Gerar QR Code PIX</button>
-              </div>
-            </div>
-            <div class="pag-panel pag-metodo-box" id="modal-painel-cartao" role="tabpanel" aria-labelledby="modal-tab-cartao">
-              <h3>💳 Pagamento via Cartão</h3>
-              <p style="color:var(--text-muted);margin-bottom:16px;font-size:.9rem;">Preencha os dados do cartão e escolha em quantas vezes deseja parcelar (até 12x).</p>
-              <p style="text-align:center;font-size:1.05rem;margin-bottom:20px;">Valor: <strong id="modal-valor-cartao">—</strong></p>
-              <div id="cartao-brick-container" style="margin-bottom:16px;"></div>
-              <div id="cartao-erro-box" class="ag-alert ag-alert-error" style="display:none;margin-bottom:16px;"></div>
-              <div id="cartao-status-box" class="ag-alert ag-alert-success" style="display:none;margin-bottom:16px;">✅ Pagamento confirmado! Combinaremos o horário no WhatsApp.</div>
-              <div class="pag-btns" id="cartao-btns-box">
-                <button id="cartao-gerar-btn" class="ag-btn ag-btn-primary" onclick="gerarLinkCartao()">💳 Carregar formulário do cartão</button>
+                <button class="ag-btn ag-btn-whatsapp" onclick="avisarWhatsAppModal('pix')">📱 Avisar que paguei via PIX</button>
               </div>
             </div>
             <div class="pag-panel pag-metodo-box" id="modal-painel-wise" role="tabpanel" aria-labelledby="modal-tab-wise">
@@ -639,6 +623,7 @@
     </div>
   </div>
 
+  <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js" crossorigin="anonymous"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js" crossorigin="anonymous"></script>
   <script src="js/supabase-config.js?v=10"></script>
   <script src="js/agendamento-system.js?v=26"></script>

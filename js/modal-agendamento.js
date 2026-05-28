@@ -4,9 +4,7 @@
    _garantirTipos, carregarCalendario, MESES_PT)
    ============================================================ */
 
-const _MP_CREATE_URL = 'https://demxedudbislzausvhwx.supabase.co/functions/v1/mp-create-payment';
-const _MP_SDK_URL    = 'https://sdk.mercadopago.com/js/v2';
-const MODAL_WISE     = 'cocarsagrado@gmail.com';
+const MODAL_WISE = 'cocarsagrado@gmail.com';
 
 let _dadosPagamento = null;
 let _calendarioOk   = false;
@@ -435,10 +433,8 @@ function _onVisibilityCheck() {
 }
 
 function _mostrarPagamentoConfirmado() {
-  ['pix', 'cartao'].forEach(m => {
-    const sb = document.getElementById(`${m}-status-box`);
-    if (sb) sb.style.display = 'block';
-  });
+  const sb = document.getElementById('pix-status-box');
+  if (sb) sb.style.display = 'block';
   _limparPedidoPendente();
   mostrarAlerta('✅ Pagamento confirmado!', 'success');
 }
@@ -454,26 +450,16 @@ function _preencherTelaPagamento() {
   set('modal-r-duracao',    `${ag.duracao} min`);
   set('modal-r-valor',      `R$ ${ag.valor}`);
 
-  ['pix', 'cartao', 'wise'].forEach(m => set(`modal-valor-${m}`, `R$ ${ag.valor}`));
+  ['pix', 'wise'].forEach(m => set(`modal-valor-${m}`, `R$ ${ag.valor}`));
   // Reset Pix
   const pixQrBox = document.getElementById('pix-qr-box');
   const pixErr   = document.getElementById('pix-erro-box');
   const pixSt    = document.getElementById('pix-status-box');
   const pixBtn   = document.getElementById('pix-gerar-btn');
-  if (pixQrBox) pixQrBox.style.display = 'none';
+  if (pixQrBox) { pixQrBox.style.display = 'none'; pixQrBox.innerHTML = ''; }
   if (pixErr)   pixErr.style.display = 'none';
   if (pixSt)    pixSt.style.display = 'none';
   if (pixBtn)   { pixBtn.disabled = false; pixBtn.textContent = '🔗 Gerar QR Code PIX'; }
-  // Reset Cartão
-  const cardErr  = document.getElementById('cartao-erro-box');
-  const cardSt   = document.getElementById('cartao-status-box');
-  const cardBtns = document.getElementById('cartao-btns-box');
-  const cardCont = document.getElementById('cartao-brick-container');
-  if (cardErr)  cardErr.style.display = 'none';
-  if (cardSt)   cardSt.style.display = 'none';
-  if (cardBtns) cardBtns.style.display = '';
-  if (cardCont) cardCont.innerHTML = '';
-  if (window._mpBrick) { try { window._mpBrick.unmount(); } catch {} window._mpBrick = null; }
   set('modal-email-wise', MODAL_WISE);
 
   trocarAbaPagamento('pix');
@@ -503,7 +489,7 @@ window.irParaPasso = function(num) {
 // Funções de pagamento
 // ============================================================
 function trocarAbaPagamento(metodo) {
-  ['pix', 'cartao', 'wise'].forEach(m => {
+  ['pix', 'wise'].forEach(m => {
     const tab    = document.getElementById(`modal-tab-${m}`);
     const painel = document.getElementById(`modal-painel-${m}`);
     const ativo  = m === metodo;
@@ -518,9 +504,8 @@ function _atualizarPantero(metodo) {
   const balao = document.getElementById('pag-pantero-balao');
   if (!balao) return;
   const msgs = {
-    pix:    'Gere o QR Code, pague pelo app do seu banco e pronto — a confirmação chega automaticamente pra gente 🖤',
-    cartao: 'Preencha os dados do cartão, escolha em quantas vezes parcelar e pronto 🖤',
-    wise:   'Depois de fazer a transferência, volte para esta página e clique em <strong>"Avisar sobre pagamento Wise"</strong>.',
+    pix:  'Gere o QR Code, pague pelo app do seu banco e depois avise no WhatsApp — confirmaremos o recebimento 🖤',
+    wise: 'Depois de fazer a transferência, volte para esta página e clique em <strong>"Avisar sobre pagamento Wise"</strong>.',
   };
   balao.innerHTML = msgs[metodo] || msgs.pix;
 }
@@ -541,10 +526,10 @@ function avisarWhatsAppModal(metodo) {
   const leituraBloco = ag.itensDetalhe
     ? `*Leituras:*\n${ag.itensDetalhe}`
     : `*Leitura:* ${ag.tipo}\n*Data:* ${ag.data}${ag.hora ? `\n*Horário:* ${ag.hora}` : ''}`;
+  const txidLine = ag.txid ? `\n*ID PIX:* ${ag.txid}` : '';
   const msgs = {
-    pix:    `Olá! 😊 Fiz o pagamento via *PIX*.\n\n*Pedido:* ${ag.chave}\n${leituraBloco}\n*Valor:* R$ ${ag.valor}\n\n${infoCliente}\n\nPode confirmar o recebimento? Combinaremos o horário por aqui! 🙏`,
-    cartao: `Olá! 😊 Gostaria de pagar via *cartão* meu agendamento.\n\n*Pedido:* ${ag.chave}\n${leituraBloco}\n*Valor:* R$ ${ag.valor}\n\n${infoCliente}\n\nPode me enviar o link de pagamento? Combinaremos o horário por aqui! 🙏`,
-    wise:   `Olá! 😊 Realizei a transferência via *Wise*.\n\n*Pedido:* ${ag.chave}\n${leituraBloco}\n*Valor:* R$ ${ag.valor}\n\n${infoCliente}\n\nPode confirmar o recebimento? Combinaremos o horário por aqui! 🙏`,
+    pix:  `Olá! 😊 Fiz o pagamento via *PIX*.\n\n*Pedido:* ${ag.chave}${txidLine}\n${leituraBloco}\n*Valor:* R$ ${ag.valor}\n\n${infoCliente}\n\nPode confirmar o recebimento? Combinaremos o horário por aqui! 🙏`,
+    wise: `Olá! 😊 Realizei a transferência via *Wise*.\n\n*Pedido:* ${ag.chave}\n${leituraBloco}\n*Valor:* R$ ${ag.valor}\n\n${infoCliente}\n\nPode confirmar o recebimento? Combinaremos o horário por aqui! 🙏`,
   };
 
   const numero = WHATSAPP_TERAPEUTA[ag.terapeuta] || WHATSAPP_TERAPEUTA.camila;
@@ -573,53 +558,116 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // ============================================================
-// Mercado Pago — Pix (QR direto) e Cartão (Brick embutido)
+// PIX — txid local + BR Code (EMV)
 // ============================================================
-function _payloadBase() {
-  const ag = _dadosPagamento;
-  if (!ag) return null;
-  const payload = { chave: ag.chave, nome: ag.nome, whatsapp: ag.whatsapp };
-  if (Array.isArray(ag.items) && ag.items.length > 0) {
-    payload.items = ag.items.map(i => ({
-      description: i.description,
-      price: parseFloat(String(i.price).replace(',', '.')),
-    }));
-  } else {
-    payload.tipo_leitura = ag.tipo;
-    payload.valor = ag.valor;
+function _crc16(str) {
+  let crc = 0xFFFF;
+  for (let i = 0; i < str.length; i++) {
+    crc ^= str.charCodeAt(i) << 8;
+    for (let j = 0; j < 8; j++) {
+      crc = (crc & 0x8000) ? ((crc << 1) ^ 0x1021) : (crc << 1);
+      crc &= 0xFFFF;
+    }
   }
-  return payload;
+  return crc;
 }
 
-async function gerarLinkPix() {
+function _gerarBrCode(chave, nome, cidade, valorStr, txid) {
+  const emv = (id, val) => id + String(val.length).padStart(2, '0') + val;
+  const merchantInfo =
+    emv('00', 'br.gov.bcb.pix') +
+    emv('01', chave) +
+    emv('05', txid.substring(0, 25));
+  const payload =
+    emv('00', '01') +
+    emv('26', merchantInfo) +
+    emv('52', '0000') +
+    emv('53', '986') +
+    emv('54', valorStr) +
+    emv('58', 'BR') +
+    emv('59', nome.substring(0, 25)) +
+    emv('60', cidade.substring(0, 15)) +
+    emv('62', emv('05', txid.substring(0, 25))) +
+    '6304';
+  const crc = _crc16(payload).toString(16).toUpperCase().padStart(4, '0');
+  return payload + crc;
+}
+
+function _gerarTxid(chave) {
+  const suffix = chave.replace(/[^a-zA-Z0-9]/g, '').slice(-6).toUpperCase();
+  const ts = Date.now().toString(36).toUpperCase().slice(-7);
+  return ('COCAR' + suffix + ts).substring(0, 35);
+}
+
+function gerarLinkPix() {
   const ag = _dadosPagamento;
   if (!ag) return;
-  const btn  = document.getElementById('pix-gerar-btn');
-  const qr   = document.getElementById('pix-qr-box');
-  const err  = document.getElementById('pix-erro-box');
-  btn.disabled = true;
-  btn.textContent = '⏳ Gerando...';
-  qr.style.display = 'none';
+  const btn = document.getElementById('pix-gerar-btn');
+  const qr  = document.getElementById('pix-qr-box');
+  const err = document.getElementById('pix-erro-box');
   err.style.display = 'none';
+  qr.style.display  = 'none';
+  qr.innerHTML      = '';
+  btn.disabled      = true;
+  btn.textContent   = '⏳ Gerando...';
+
   try {
-    const payload = { ..._payloadBase(), tipo: 'pix' };
-    const res = await fetch(_MP_CREATE_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    });
-    const data = await res.json();
-    if (!res.ok || data.error) throw new Error(typeof data.error === 'string' ? data.error : 'falha');
-    document.getElementById('pix-qr-img').src = `data:image/png;base64,${data.qr_code_base64}`;
-    document.getElementById('pix-qr-code').value = data.qr_code || '';
+    const txid      = _gerarTxid(ag.chave);
+    const valorNum  = parseFloat(String(ag.valor).replace(',', '.')) || 0;
+    const valorStr  = valorNum.toFixed(2);
+    const brCode    = _gerarBrCode(PIX_CHAVE, PIX_NOME, PIX_CIDADE, valorStr, txid);
+
+    ag.txid = txid;
+    sessionStorage.setItem('agendamento', JSON.stringify(ag));
+
+    // QR Code
+    const qrDiv = document.createElement('div');
+    qrDiv.style.cssText = 'display:flex;justify-content:center;margin-bottom:12px;';
+    const qrInner = document.createElement('div');
+    qrInner.style.cssText = 'border:1px solid var(--border);border-radius:8px;padding:8px;background:#fff;';
+    qrDiv.appendChild(qrInner);
+
+    if (window.QRCode) {
+      new window.QRCode(qrInner, { text: brCode, width: 220, height: 220, correctLevel: window.QRCode.CorrectLevel.M });
+    } else {
+      qrInner.textContent = 'Biblioteca QR não carregada';
+    }
+
+    // Código copia-e-cola
+    const label = document.createElement('p');
+    label.style.cssText = 'font-size:.85rem;color:var(--text-muted);margin:10px 0 6px;text-align:center;';
+    label.textContent = 'Ou copie o código abaixo:';
+
+    const ta = document.createElement('textarea');
+    ta.id        = 'pix-qr-code';
+    ta.readOnly  = true;
+    ta.value     = brCode;
+    ta.style.cssText = 'width:100%;font-size:.75rem;font-family:monospace;padding:8px;border:1px solid var(--border);border-radius:6px;resize:none;height:60px;background:#f8f8f8;box-sizing:border-box;';
+
+    const copyBtn = document.createElement('button');
+    copyBtn.className   = 'ag-btn ag-btn-copy ag-btn-sm';
+    copyBtn.style.cssText = 'display:block;margin:8px auto 0;';
+    copyBtn.textContent = '📋 Copiar código PIX';
+    copyBtn.onclick     = copiarPixCodigo;
+
+    const txidNote = document.createElement('p');
+    txidNote.style.cssText = 'font-size:.78rem;color:var(--text-muted);margin-top:10px;text-align:center;';
+    txidNote.innerHTML = `ID da transação: <strong>${txid}</strong>`;
+
+    qr.appendChild(qrDiv);
+    qr.appendChild(label);
+    qr.appendChild(ta);
+    qr.appendChild(copyBtn);
+    qr.appendChild(txidNote);
     qr.style.display = 'block';
+
     btn.textContent = '🔄 Gerar novo QR Code';
-    btn.disabled = false;
+    btn.disabled    = false;
   } catch (e) {
-    err.textContent = 'Não foi possível gerar o PIX: ' + (e?.message || 'tente novamente.');
+    err.textContent  = 'Não foi possível gerar o PIX: ' + (e?.message || 'tente novamente.');
     err.style.display = 'block';
-    btn.textContent = '🔗 Gerar QR Code PIX';
-    btn.disabled = false;
+    btn.textContent  = '🔗 Gerar QR Code PIX';
+    btn.disabled     = false;
   }
 }
 
@@ -629,101 +677,4 @@ function copiarPixCodigo() {
   _copiarTexto(ta.value, '✅ Código PIX copiado!');
 }
 window.copiarPixCodigo = copiarPixCodigo;
-
-function _carregarSdkMp() {
-  if (window.MercadoPago) return Promise.resolve();
-  if (window._mpSdkPromise) return window._mpSdkPromise;
-  window._mpSdkPromise = new Promise((resolve, reject) => {
-    const s = document.createElement('script');
-    s.src = _MP_SDK_URL;
-    s.onload = () => resolve();
-    s.onerror = () => reject(new Error('falha ao carregar SDK Mercado Pago'));
-    document.head.appendChild(s);
-  });
-  return window._mpSdkPromise;
-}
-
-async function gerarLinkCartao() {
-  const ag = _dadosPagamento;
-  if (!ag) return;
-  const btn   = document.getElementById('cartao-gerar-btn');
-  const err   = document.getElementById('cartao-erro-box');
-  const btns  = document.getElementById('cartao-btns-box');
-  err.style.display = 'none';
-  btn.disabled = true;
-  btn.textContent = '⏳ Carregando...';
-
-  try {
-    await _carregarSdkMp();
-    if (!window.MP_PUBLIC_KEY && typeof MP_PUBLIC_KEY === 'undefined') {
-      throw new Error('MP_PUBLIC_KEY não configurada');
-    }
-    const mp = new window.MercadoPago(MP_PUBLIC_KEY, { locale: 'pt-BR' });
-    const bricksBuilder = mp.bricks();
-
-    const valor = parseFloat(String(ag.valor).replace(',', '.')) || 0;
-
-    if (window._mpBrick) { try { window._mpBrick.unmount(); } catch {} window._mpBrick = null; }
-
-    window._mpBrick = await bricksBuilder.create('cardPayment', 'cartao-brick-container', {
-      initialization: {
-        amount: valor,
-        payer: { email: `wpp${(ag.whatsapp || '').replace(/\D/g, '')}@cocarsagrado.com.br` },
-      },
-      customization: {
-        paymentMethods: { maxInstallments: 12 },
-        visual: { style: { theme: 'default' } },
-      },
-      callbacks: {
-        onReady: () => { btns.style.display = 'none'; },
-        onError: (e) => {
-          console.error('Brick error:', e);
-          err.textContent = 'Erro no formulário: ' + (e?.message || 'tente novamente.');
-          err.style.display = 'block';
-        },
-        onSubmit: async ({ formData }) => {
-          err.style.display = 'none';
-          try {
-            const payload = {
-              ..._payloadBase(),
-              tipo: 'cartao',
-              token: formData.token,
-              installments: formData.installments,
-              payment_method_id: formData.payment_method_id,
-              issuer_id: formData.issuer_id,
-              payer: formData.payer,
-            };
-            const res = await fetch(_MP_CREATE_URL, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify(payload),
-            });
-            const data = await res.json();
-            if (!res.ok || data.error) {
-              throw new Error(typeof data.error === 'string' ? data.error : 'falha no pagamento');
-            }
-            if (data.status === 'approved') {
-              _mostrarPagamentoConfirmado();
-            } else if (data.status === 'in_process' || data.status === 'pending') {
-              mostrarAlerta('⏳ Pagamento em análise. Avisaremos assim que aprovar.', 'info');
-            } else {
-              throw new Error('Pagamento ' + (data.status_detail || data.status || 'recusado'));
-            }
-          } catch (e) {
-            err.textContent = 'Não foi possível processar: ' + (e?.message || 'tente outro cartão.');
-            err.style.display = 'block';
-            throw e;
-          }
-        },
-      },
-    });
-  } catch (e) {
-    err.textContent = 'Não foi possível carregar o formulário: ' + (e?.message || 'tente novamente.');
-    err.style.display = 'block';
-    btn.disabled = false;
-    btn.textContent = '💳 Carregar formulário do cartão';
-  }
-}
-
-window.gerarLinkCartao = gerarLinkCartao;
-window.gerarLinkPix = gerarLinkPix;
+window.gerarLinkPix    = gerarLinkPix;

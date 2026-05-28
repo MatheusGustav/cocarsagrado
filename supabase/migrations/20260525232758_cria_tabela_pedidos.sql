@@ -18,7 +18,7 @@ CREATE TABLE IF NOT EXISTS public.pedidos (
   status              TEXT NOT NULL DEFAULT 'pendente'
                       CHECK (status IN ('pendente','pago','cancelado')),
   metodo_pagamento    TEXT,
-  payment_id          TEXT,
+  txid                TEXT,
   pago_em             TIMESTAMPTZ,
   criado_em           TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
