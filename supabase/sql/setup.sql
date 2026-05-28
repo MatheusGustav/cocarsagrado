@@ -55,7 +55,6 @@ CREATE TABLE public.tipos_leitura (
   nome            TEXT    NOT NULL,
   descricao       TEXT,
   preco_original  NUMERIC(10,2) NOT NULL CHECK (preco_original >= 0),
-  duracao_minutos INTEGER NOT NULL CHECK (duracao_minutos > 0),
   imagem_url      TEXT,
   slug            TEXT,
   grupo_slug      TEXT,
@@ -71,27 +70,27 @@ CREATE TABLE public.tipos_leitura (
 );
 CREATE UNIQUE INDEX idx_tipos_leitura_slug ON public.tipos_leitura (slug) WHERE slug IS NOT NULL;
 
-INSERT INTO public.tipos_leitura (nome, descricao, preco_original, duracao_minutos) VALUES
-  ('Conselho',                          'Conselho geral em relação aos caminhos do consulente com aprofundamento breve.',                                     20.00, 20),
-  ('Amarração de Igbo – 1 pergunta',    'Jogo de búzios focado em uma questão específica para cada pergunta, com orientação direta e precisa dos orixás.', 30.00, 20),
-  ('Amarração de Igbo – 2 perguntas',   'Jogo de búzios focado em uma questão específica para cada pergunta, com orientação direta e precisa dos orixás.', 50.00, 30),
-  ('Amarração de Igbo – 3 perguntas',   'Jogo de búzios focado em uma questão específica para cada pergunta, com orientação direta e precisa dos orixás.', 70.00, 40),
-  ('Combo + 10',                        'Leitura feita com aprofundamento máximo nas questões apresentadas pelo consulente.',                                150.00, 60),
-  ('Mesa Cigana Avulsa – 1 pergunta',  'Consulta pelo baralho cigano, com respostas e orientação para determinadas questões de sua vida.',                  30.00, 20),
-  ('Mesa Cigana Avulsa – 2 perguntas', 'Consulta pelo baralho cigano, com respostas e orientação para determinadas questões de sua vida.',                  50.00, 30),
-  ('Mesa Cigana Avulsa – 3 perguntas', 'Consulta pelo baralho cigano, com respostas e orientação para determinadas questões de sua vida.',                  70.00, 40),
-  ('Consulta Ao Vivo',                 'Sessão ao vivo por videochamada com duração de uma hora. Espaço aberto para o consulente explorar todas as questões em tempo real.', 200.00, 60),
-  ('Mesa Cigana Completa',             'Consulta feita através do baralho cigano te orientando em todos as áreas da sua vida.',                             150.00, 60),
-  ('Confirmação de Orixás',            'Identificação de seus orixás + explicação detalhada sobre os conceitos e como cada orixá age em sua vida.',         50.00, 20),
-  ('Confirmação de Exu',               'Confirmação de Exu ou pombagira, com orientação detalhada por escrito atraves de documento + audio explicativo. Atenção: caso a entidade não queira responder o valor é extronado.', 70.00, 40),
-  ('Cabala de Odu',                    'Leitura cabalística dos odus vão falar sobre sua personalidade, pontos de atenção na area da saude, por onde ganha na vida, por onde perde, quais condutas evitar, quizilias e assim por diante.', 50.00, 30),
-  ('Águas de Oxum',                    'Leitura com enfoque completo no amoroso. São vistos: pensamentos, sentimentos, intenções e caminhos.',              50.00, 30),
-  ('Rosa de Vênus',                    'Leitura com enfoque no autoconhecimento. São vistos: caminhos de forma ampla e como melhora-los.',                  55.00, 30),
-  ('Leitura dos Mentores',             'Descrição do guia mais próximo de você e dos seus caminhos com mensagens dele(a).',                                 50.00, 30),
-  ('Mesa Mediúnica',                   'Leitura do seu campo espiritual, apontando suas mediunidade e parapsiquismos.',                                     70.00, 30),
-  ('Mesa Radiônica',                   'Leitura do seu campo espiritual completa. Utilização de ressonâncias para fins de equilibrio dos campos sutis. Esta leitura conta com documento com orientações por escrito + audio explicativo.', 222.00, 210),
-  ('Registros Akáshicos',              'Acesso aos registros da alma para compreender padrões, missão de vida e bloqueios energéticos profundos.',          188.00, 120),
-  ('Theta Healing',                    'Técnica de meditação profunda para reprogramar crenças limitantes e acessar o estado theta de cura.',               150.00, 120);
+INSERT INTO public.tipos_leitura (nome, descricao, preco_original) VALUES
+  ('Conselho',                          'Conselho geral em relação aos caminhos do consulente com aprofundamento breve.',                                     20.00),
+  ('Amarração de Igbo – 1 pergunta',    'Jogo de búzios focado em uma questão específica para cada pergunta, com orientação direta e precisa dos orixás.', 30.00),
+  ('Amarração de Igbo – 2 perguntas',   'Jogo de búzios focado em uma questão específica para cada pergunta, com orientação direta e precisa dos orixás.', 50.00),
+  ('Amarração de Igbo – 3 perguntas',   'Jogo de búzios focado em uma questão específica para cada pergunta, com orientação direta e precisa dos orixás.', 70.00),
+  ('Combo + 10',                        'Leitura feita com aprofundamento máximo nas questões apresentadas pelo consulente.',                                150.00),
+  ('Mesa Cigana Avulsa – 1 pergunta',  'Consulta pelo baralho cigano, com respostas e orientação para determinadas questões de sua vida.',                  30.00),
+  ('Mesa Cigana Avulsa – 2 perguntas', 'Consulta pelo baralho cigano, com respostas e orientação para determinadas questões de sua vida.',                  50.00),
+  ('Mesa Cigana Avulsa – 3 perguntas', 'Consulta pelo baralho cigano, com respostas e orientação para determinadas questões de sua vida.',                  70.00),
+  ('Consulta Ao Vivo',                 'Sessão ao vivo por videochamada com duração de uma hora. Espaço aberto para o consulente explorar todas as questões em tempo real.', 200.00),
+  ('Mesa Cigana Completa',             'Consulta feita através do baralho cigano te orientando em todos as áreas da sua vida.',                             150.00),
+  ('Confirmação de Orixás',            'Identificação de seus orixás + explicação detalhada sobre os conceitos e como cada orixá age em sua vida.',         50.00),
+  ('Confirmação de Exu',               'Confirmação de Exu ou pombagira, com orientação detalhada por escrito atraves de documento + audio explicativo. Atenção: caso a entidade não queira responder o valor é extronado.', 70.00),
+  ('Cabala de Odu',                    'Leitura cabalística dos odus vão falar sobre sua personalidade, pontos de atenção na area da saude, por onde ganha na vida, por onde perde, quais condutas evitar, quizilias e assim por diante.', 50.00),
+  ('Águas de Oxum',                    'Leitura com enfoque completo no amoroso. São vistos: pensamentos, sentimentos, intenções e caminhos.',              50.00),
+  ('Rosa de Vênus',                    'Leitura com enfoque no autoconhecimento. São vistos: caminhos de forma ampla e como melhora-los.',                  55.00),
+  ('Leitura dos Mentores',             'Descrição do guia mais próximo de você e dos seus caminhos com mensagens dele(a).',                                 50.00),
+  ('Mesa Mediúnica',                   'Leitura do seu campo espiritual, apontando suas mediunidade e parapsiquismos.',                                     70.00),
+  ('Mesa Radiônica',                   'Leitura do seu campo espiritual completa. Utilização de ressonâncias para fins de equilibrio dos campos sutis. Esta leitura conta com documento com orientações por escrito + audio explicativo.', 222.00),
+  ('Registros Akáshicos',              'Acesso aos registros da alma para compreender padrões, missão de vida e bloqueios energéticos profundos.',          188.00),
+  ('Theta Healing',                    'Técnica de meditação profunda para reprogramar crenças limitantes e acessar o estado theta de cura.',               150.00);
 
 -- ============================================================
 -- 2) HORÁRIOS DISPONÍVEIS (agenda por terapeuta + dia da semana)
@@ -265,7 +264,6 @@ CREATE TABLE public.agendamentos (
   cliente_observacoes TEXT,
   data_agendamento    DATE NOT NULL,
   hora_agendamento    TIME NOT NULL,
-  duracao_minutos     INTEGER NOT NULL CHECK (duracao_minutos > 0),
   valor_original      NUMERIC(10,2) NOT NULL CHECK (valor_original >= 0),
   desconto_aplicado   NUMERIC(10,2) NOT NULL DEFAULT 0 CHECK (desconto_aplicado >= 0),
   valor_final         NUMERIC(10,2) NOT NULL CHECK (valor_final >= 0),
@@ -553,7 +551,7 @@ BEGIN
     INSERT INTO public.agendamentos (
       chave_pedido, pedido_id, tipo_leitura_id, terapeuta,
       cliente_nome, cliente_nascimento, cliente_whatsapp, cliente_email,
-      cliente_observacoes, data_agendamento, hora_agendamento, duracao_minutos,
+      cliente_observacoes, data_agendamento, hora_agendamento,
       valor_original, desconto_aplicado, valor_final,
       aceitou_desconto_10, agendamento_especial, status
     ) VALUES (
@@ -565,7 +563,6 @@ BEGIN
       v_item->>'observacoes',
       (v_item->>'data')::date,
       (v_item->>'horario')::time,
-      (v_item->>'duracao_minutos')::int,
       (v_item->>'valor_original')::numeric,
       (v_item->>'desconto_aplicado')::numeric,
       (v_item->>'valor_final')::numeric,
