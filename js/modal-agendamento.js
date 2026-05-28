@@ -4,7 +4,7 @@
    _garantirTipos, carregarCalendario, MESES_PT)
    ============================================================ */
 
-const MODAL_WISE        = 'cocarsagrado@gmail.com';
+const MODAL_WISE        = 'matheus7gustav@gmail.com';
 const _IP_CHECKOUT_URL  = 'https://demxedudbislzausvhwx.supabase.co/functions/v1/infinitypay-checkout';
 
 let _dadosPagamento = null;
