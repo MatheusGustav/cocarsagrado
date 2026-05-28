@@ -94,7 +94,7 @@ Deno.serve(async (req) => {
 
       const msg = `🔔 *Novo pedido confirmado!*\n\n👤 ${pedidoCompleto.nome_cliente}\n📱 ${pedidoCompleto.whatsapp_cliente}\n\n📋 *Leituras:*\n${linhasLeituras}\n\n💰 *Total: R$ ${Number(pedidoCompleto.valor_total).toFixed(2)}*\n💳 ${captureMethod}`
 
-      await fetch(`https://api.telegram.org/bot${Deno.env.get('TELEGRAM_BOT_TOKEN')}/sendMessage`, {
+      const tgRes = await fetch(`https://api.telegram.org/bot${Deno.env.get('TELEGRAM_BOT_TOKEN')}/sendMessage`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -103,6 +103,10 @@ Deno.serve(async (req) => {
           parse_mode: 'Markdown',
         }),
       })
+      if (!tgRes.ok) {
+        const tgErr = await tgRes.text()
+        console.error('Telegram error:', tgRes.status, tgErr)
+      }
     }
 
     return new Response(JSON.stringify({ success: true }), {
