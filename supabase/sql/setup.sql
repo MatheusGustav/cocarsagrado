@@ -241,7 +241,7 @@ CREATE TABLE public.pedidos (
   status              TEXT NOT NULL DEFAULT 'pendente'
                       CHECK (status IN ('pendente','pago','cancelado')),
   metodo_pagamento    TEXT,
-  payment_id          TEXT,
+  txid                TEXT,
   pago_em             TIMESTAMPTZ,
   criado_em           TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
@@ -272,7 +272,7 @@ CREATE TABLE public.agendamentos (
   aceitou_desconto_10 BOOLEAN NOT NULL DEFAULT FALSE,
   status              TEXT NOT NULL DEFAULT 'pendente'
                       CHECK (status IN ('pendente','pago','confirmado','atendido','cancelado')),
-  payment_id          TEXT,
+  txid                TEXT,
   metodo_pagamento    TEXT,
   agendamento_especial BOOLEAN NOT NULL DEFAULT FALSE,
   pago_em             TIMESTAMPTZ,

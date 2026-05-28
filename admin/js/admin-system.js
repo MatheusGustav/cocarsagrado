@@ -807,7 +807,7 @@ function montarAcoes(ag) {
   let html = '';
 
   if (ag.status === 'pendente') {
-    html += `<button class="ag-btn ag-btn-primary ag-btn-sm" onclick="marcarComoPago('${id}')">✅ Marcar como Pago</button>`;
+    html += `<button class="ag-btn ag-btn-primary ag-btn-sm" onclick="marcarComoPago('${id}','${escapeAttr(ag.chave_pedido||'')}')">✅ Marcar como Pago</button>`;
     html += `<button class="ag-btn ag-btn-danger ag-btn-sm" onclick="apagarAgendamento('${id}')">🗑 Apagar</button>`;
   }
   if (['pago','confirmado'].includes(ag.status)) {
@@ -827,12 +827,21 @@ function montarAcoes(ag) {
 // ============================================================
 // Ações de status
 // ============================================================
-async function marcarComoPago(id) {
+async function marcarComoPago(id, chavePedido) {
   if (!_admAutenticado) { _mostrarLogin(); return; }
-  if (!confirm('Marcar agendamento como pago?')) return;
-  const { error } = await supabase.from('agendamentos').update({ status: 'pago', pago_em: new Date().toISOString() }).eq('id', id);
-  if (error) { _toastAdmin('Erro: ' + error.message, 'erro'); return; }
-  _toastAdmin('✅ Marcado como pago!', 'ok');
+  if (!confirm('Marcar pedido como pago?')) return;
+  const agora = new Date().toISOString();
+  const { error: errAg } = await supabase
+    .from('agendamentos')
+    .update({ status: 'pago', pago_em: agora })
+    .eq('chave_pedido', chavePedido);
+  if (errAg) { _toastAdmin('Erro: ' + errAg.message, 'erro'); return; }
+  const { error: errPed } = await supabase
+    .from('pedidos')
+    .update({ status: 'pago', pago_em: agora, metodo_pagamento: 'pix' })
+    .eq('chave_pedido', chavePedido);
+  if (errPed) { _toastAdmin('Erro ao atualizar pedido: ' + errPed.message, 'erro'); return; }
+  _toastAdmin('✅ Pedido marcado como pago!', 'ok');
   carregarAgendamentos();
 }
 
