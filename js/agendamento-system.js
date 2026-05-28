@@ -332,9 +332,9 @@ async function carregarCalendario() {
       const numero = WHATSAPP_TERAPEUTA[profissional] || '';
       cal.innerHTML = `
         <div class="ag-empty ag-empty-vagas">
-          <p>Nenhuma data disponível nos próximos 7 dias.</p>
-          <p style="font-size:.85rem; margin-top:4px;">Entre em contato para verificar disponibilidade especial.</p>
-          ${numero ? `<a href="https://wa.me/${numero}" target="_blank" rel="noopener" class="ag-btn ag-btn-whatsapp" style="margin-top:14px; display:inline-flex;">💬 Falar no WhatsApp</a>` : ''}
+          <p>Sem vagas disponíveis no momento.</p>
+          <p style="font-size:.85rem; margin-top:4px; color:var(--text-muted);">Nossa agenda está temporariamente cheia. Entre em contato pelo WhatsApp para verificar próximas disponibilidades.</p>
+          ${numero ? `<a href="https://wa.me/${numero}" target="_blank" rel="noopener" class="ag-btn ag-btn-whatsapp" style="margin-top:14px; display:inline-flex;">💬 Verificar disponibilidade</a>` : ''}
         </div>`;
       return;
     }
@@ -495,7 +495,9 @@ function selecionarData(dataStr, ateHorario, cardEl) {
   cardEl.classList.add('selected');
   Estado.dataSelecionada = dataStr;
   Estado.horarioSelecionado = ateHorario || null;
-  setTimeout(() => irParaPasso(2), 250);
+  // Se dados pessoais já preenchidos (2ª leitura do carrinho), pula direto para perguntas
+  const proximoPasso = Estado.dadosPessoais.nome ? 2 : 0;
+  setTimeout(() => irParaPasso(proximoPasso), 250);
 }
 
 // ============================================================
@@ -690,7 +692,7 @@ function validarDadosPessoais() {
 function confirmarDadosPessoais() {
   if (!validarDadosPessoais()) return;
   _prepararDadosPessoais();
-  irParaPasso(1);
+  irParaPasso(2);
 }
 
 function irParaRevisao() {
@@ -849,14 +851,14 @@ function redirecionarParaPagamento(chave) {
 // Navegação entre passos (1=Data, 2=Dados)
 // ============================================================
 function irParaPasso(num) {
-  // num 0 = dados pessoais, 1 = calendário, 2 = perguntas/resumo, 3 = revisão carrinho
+  // num 1 = calendário (primeiro), 0 = dados pessoais, 2 = perguntas/resumo, 3 = revisão carrinho
   document.querySelectorAll('.ag-section').forEach((s) => {
     const idx = parseInt(s.dataset.passo, 10);
     s.classList.toggle('active', idx === num);
   });
 
   // Mapeia inner step → outer progress step (3 passos: Dados, Leituras, Pagamento)
-  const outerStep = num === 0 ? 1 : (num <= 2 ? 2 : 3);
+  const outerStep = num === 1 ? 1 : (num === 0 || num === 2 ? 2 : 3);
   document.querySelectorAll('.ag-step').forEach((s, i) => {
     s.classList.remove('active','done');
     if (i + 1 === outerStep) s.classList.add('active');
@@ -1057,9 +1059,9 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Oculta sections 0 e 3 inicialmente (mostra só section 0 como active)
+  // Abre no calendário (passo 1) por padrão
   document.querySelectorAll('.ag-section').forEach(s => {
     const passo = parseInt(s.dataset.passo, 10);
-    s.classList.toggle('active', passo === 0);
+    s.classList.toggle('active', passo === 1);
   });
 });
