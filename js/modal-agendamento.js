@@ -53,9 +53,7 @@ function abrirModal(tipo) {
   document.body.classList.add('modal-aberto');
   overlay.querySelector('.modal-body')?.scrollTo({ top: 0 });
 
-  // Se já tem dados pessoais ou itens no carrinho, pula section 0
-  const passoInicial = (Estado.dadosPessoais.nome || Estado.carrinho.length > 0) ? 1 : 0;
-  irParaPasso(passoInicial);
+  irParaPasso(1);
   _atualizarBotaoRetomar();
 }
 
@@ -85,13 +83,7 @@ function _resetarModal() {
     .forEach(el => el.classList.remove('selected'));
 
   _mostrarTela(1, false);
-
-  // Volta para o passo adequado
-  if (Estado?.dadosPessoais?.nome) {
-    _irParaPassoBase && _irParaPassoBase(1);
-  } else {
-    _irParaPassoBase && _irParaPassoBase(0);
-  }
+  _irParaPassoBase && _irParaPassoBase(1);
 }
 
 // ============================================================
