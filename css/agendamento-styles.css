@@ -2,28 +2,27 @@
    COCAR SAGRADO — Estilos do Sistema de Agendamento
    ============================================================ */
 
-/* ---- Variáveis ---- */
+/* ---- Variáveis (alinhadas à paleta do site) ---- */
 :root {
-  --primary:   #6366f1;
-  --secondary: #10b981;
-  --accent:    #fbbf24;
-  --bg:        #f9fafb;
-  --surface:   #ffffff;
-  --text:      #1f2937;
-  --text-muted:#6b7280;
-  --border:    #e5e7eb;
-  --danger:    #ef4444;
+  --primary:   #2D4A2D;
+  --secondary: #B8923E;
+  --accent:    #D4B254;
+  --bg:        #F5F2E6;
+  --surface:   #FFFCF2;
+  --text:      #1A2818;
+  --text-muted:#7A8678;
+  --border:    #DDD5C8;
+  --danger:    #8B3A1E;
   --radius:    12px;
-  --shadow:    0 2px 8px rgba(0,0,0,.08);
-  --shadow-lg: 0 8px 24px rgba(0,0,0,.12);
+  --shadow:    0 2px 8px rgba(31, 51, 31, .08);
+  --shadow-lg: 0 8px 24px rgba(31, 51, 31, .14);
 }
 
 /* ---- Reset base ---- */
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+*, *::before, *::after { box-sizing: border-box; }
 
 body {
-  font-family: 'Segoe UI', system-ui, sans-serif;
-  background: var(--bg);
+  font-family: 'DM Sans', 'Segoe UI', system-ui, sans-serif;
   color: var(--text);
   min-height: 100vh;
 }
@@ -42,10 +41,12 @@ a { color: var(--primary); text-decoration: none; }
 .ag-section.active { display: block; }
 
 .ag-section-title {
-  font-size: 1.1rem;
-  font-weight: 700;
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-size: 1.5rem;
+  font-weight: 600;
   margin-bottom: 20px;
-  color: var(--text);
+  color: var(--primary);
+  letter-spacing: .005em;
 }
 
 /* ---- Formulário ---- */
@@ -55,20 +56,23 @@ a { color: var(--primary); text-decoration: none; }
 
 label { font-size: .875rem; font-weight: 600; }
 
-input, textarea, select {
-  border: 2px solid var(--border);
+.ag-form input, .ag-form textarea, .ag-form select,
+.pag-container input, .pag-container textarea, .pag-container select {
+  border: 1.5px solid var(--border);
   border-radius: 10px;
-  padding: 10px 14px;
+  padding: 11px 14px;
   font-size: .95rem;
   font-family: inherit;
   color: var(--text);
   background: var(--surface);
-  transition: border-color .2s;
+  transition: border-color .2s, box-shadow .2s;
   width: 100%;
 }
-input:focus, textarea:focus, select:focus {
+.ag-form input:focus, .ag-form textarea:focus, .ag-form select:focus,
+.pag-container input:focus, .pag-container textarea:focus, .pag-container select:focus {
   outline: none;
-  border-color: var(--primary);
+  border-color: var(--secondary);
+  box-shadow: 0 0 0 3px rgba(184, 146, 62, .15);
 }
 input.error, textarea.error, select.error { border-color: var(--danger); }
 
@@ -82,30 +86,39 @@ textarea { resize: vertical; min-height: 90px; }
 
 /* ---- Resumo do pedido ---- */
 .ag-resumo {
-  background: linear-gradient(135deg, #eef2ff, #f0fdf4);
-  border: 2px solid var(--primary);
+  background: linear-gradient(135deg, rgba(184, 146, 62, .08), rgba(45, 74, 45, .06));
+  border: 1px solid rgba(184, 146, 62, .35);
   border-radius: var(--radius);
   padding: 20px;
   margin-bottom: 20px;
 }
-.ag-resumo h3 { font-size: 1rem; font-weight: 700; margin-bottom: 14px; color: var(--primary); }
+.ag-resumo h3 {
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-size: 1.15rem;
+  font-weight: 600;
+  margin-bottom: 14px;
+  color: var(--primary);
+  letter-spacing: .01em;
+}
 .ag-resumo-row {
   display: flex;
   justify-content: space-between;
   font-size: .9rem;
-  padding: 5px 0;
-  border-bottom: 1px solid rgba(99,102,241,.12);
+  padding: 7px 0;
+  border-bottom: 1px solid rgba(184, 146, 62, .15);
 }
 .ag-resumo-row:last-child { border-bottom: none; }
-.ag-resumo-row span:last-child { font-weight: 600; }
+.ag-resumo-row span:first-child { color: var(--text-muted); }
+.ag-resumo-row span:last-child { font-weight: 600; color: var(--text); }
 .ag-resumo-total {
   display: flex;
   justify-content: space-between;
-  font-size: 1.05rem;
+  font-size: 1.1rem;
   font-weight: 700;
   padding-top: 12px;
   margin-top: 6px;
-  color: var(--primary);
+  color: var(--secondary);
+  border-top: 1px solid rgba(184, 146, 62, .25);
 }
 
 /* ---- Botões ---- */
@@ -126,15 +139,19 @@ textarea { resize: vertical; min-height: 90px; }
 .ag-btn:disabled { opacity: .5; cursor: not-allowed; transform: none; }
 
 .ag-btn-primary {
-  background: linear-gradient(135deg, var(--primary), var(--secondary));
-  color: #fff;
+  background: linear-gradient(135deg, var(--secondary), #8A6E28);
+  color: #FFFCF2;
   width: 100%;
+  letter-spacing: .03em;
+  box-shadow: 0 4px 14px rgba(184, 146, 62, .25);
 }
+.ag-btn-primary:hover { box-shadow: 0 6px 18px rgba(184, 146, 62, .38); }
 .ag-btn-outline {
   background: transparent;
-  border: 2px solid var(--primary);
+  border: 1.5px solid var(--primary);
   color: var(--primary);
 }
+.ag-btn-outline:hover { background: var(--primary); color: #F0E8C8; opacity: 1; }
 .ag-btn-whatsapp { background: #25d366; color: #fff; }
 .ag-btn-copy     { background: var(--accent); color: var(--text); }
 .ag-btn-danger   { background: var(--danger); color: #fff; }
@@ -175,7 +192,7 @@ textarea { resize: vertical; min-height: 90px; }
 }
 .ag-alert-success { background: #d1fae5; color: #065f46; border: 1px solid #6ee7b7; }
 .ag-alert-error   { background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; }
-.ag-alert-info    { background: #dbeafe; color: #1e40af; border: 1px solid #93c5fd; }
+.ag-alert-info    { background: rgba(184, 146, 62, .1); color: #5A481A; border: 1px solid rgba(184, 146, 62, .35); }
 
 /* ============================================================
    PÁGINA DE PAGAMENTO
@@ -184,12 +201,20 @@ textarea { resize: vertical; min-height: 90px; }
 
 .pag-resumo-box {
   background: var(--surface);
-  border: 2px solid var(--border);
+  border: 1px solid rgba(184, 146, 62, .25);
   border-radius: var(--radius);
   padding: 20px;
   margin-bottom: 24px;
+  box-shadow: 0 1px 3px rgba(31, 51, 31, .04);
 }
-.pag-resumo-box h3 { font-size: .95rem; font-weight: 700; margin-bottom: 12px; }
+.pag-resumo-box h3 {
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-size: 1.15rem;
+  font-weight: 600;
+  margin-bottom: 14px;
+  color: var(--primary);
+  letter-spacing: .01em;
+}
 .pag-resumo-linha {
   display: flex;
   justify-content: space-between;
@@ -220,29 +245,37 @@ textarea { resize: vertical; min-height: 90px; }
   transition: background .2s, color .2s;
   color: var(--text-muted);
 }
-.pag-tab.active { background: var(--primary); color: #fff; }
+.pag-tab.active { background: var(--secondary); color: #1F331F; box-shadow: 0 1px 4px rgba(184, 146, 62, .3); }
+.pag-tab:hover:not(.active) { color: var(--primary); }
 
 .pag-panel { display: none; }
 .pag-panel.active { display: block; }
 
 .pag-metodo-box {
   background: var(--surface);
-  border: 2px solid var(--border);
+  border: 1px solid rgba(184, 146, 62, .25);
   border-radius: var(--radius);
   padding: 24px;
+  box-shadow: 0 1px 3px rgba(31, 51, 31, .04);
 }
-.pag-metodo-box h3 { font-size: 1rem; font-weight: 700; margin-bottom: 16px; }
+.pag-metodo-box h3 {
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-bottom: 16px;
+  color: var(--primary);
+}
 
 .pag-pix-chave {
-  background: var(--bg);
-  border: 2px dashed var(--border);
+  background: rgba(184, 146, 62, .06);
+  border: 1.5px dashed rgba(184, 146, 62, .45);
   border-radius: 10px;
   padding: 14px;
   text-align: center;
   font-size: 1rem;
   font-weight: 700;
-  font-family: monospace;
-  color: var(--primary);
+  font-family: 'JetBrains Mono', 'Courier New', monospace;
+  color: var(--secondary);
   margin-bottom: 12px;
   word-break: break-all;
 }
@@ -255,12 +288,13 @@ textarea { resize: vertical; min-height: 90px; }
 }
 .pag-instrucoes .step-num {
   min-width: 24px; height: 24px;
-  background: var(--primary);
-  color: #fff;
+  background: var(--secondary);
+  color: #1F331F;
   border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
   font-size: .75rem;
-  font-weight: 700;
+  font-weight: 800;
+  flex-shrink: 0;
 }
 .pag-qrcode {
   display: flex;
@@ -557,7 +591,6 @@ textarea { resize: vertical; min-height: 90px; }
   align-items: flex-end;
   gap: 2px;
 }
-.tier-duracao { font-size: 0.72rem; color: #6b7280; }
 .tier-preco   { font-size: 1rem; font-weight: 700; color: #8A6E28; }
 
 /* Quantity stepper */
@@ -608,8 +641,6 @@ textarea { resize: vertical; min-height: 90px; }
   margin-bottom: 22px;
 }
 .seletor-resumo-preco { font-size: 1.15rem; font-weight: 700; color: #8A6E28; }
-.seletor-resumo-sep   { color: #9ca3af; }
-.seletor-resumo-dur   { font-size: 0.85rem; color: #6b7280; font-weight: 500; }
 
 /* Actions */
 .seletor-actions { display: flex; gap: 10px; }
@@ -771,13 +802,28 @@ textarea { resize: vertical; min-height: 90px; }
 }
 
 /* ============================================================
+   DARK MODE — herda paleta do site (verde-esverdeado do hero)
+   ============================================================ */
+[data-theme="dark"] {
+  --primary:   #9DBF94;
+  --secondary: #D4B254;
+  --accent:    #E8C97E;
+  --bg:        #0F1A0F;
+  --surface:   #1A2818;
+  --text:      #E8E2CC;
+  --text-muted:#8A8260;
+  --border:    #2A3A28;
+  --danger:    #E07856;
+}
+
+/* ============================================================
    DARK MODE — Seletor de quantidade/tier + Vagas
    ============================================================ */
 [data-theme="dark"] .seletor-overlay {
   background: rgba(0,0,0,0.78);
 }
 [data-theme="dark"] .seletor-card {
-  background: #162016;
+  background: #1A2818;
   border-color: rgba(212, 178, 84, 0.3);
   box-shadow: 0 24px 64px rgba(0,0,0,0.6);
 }
@@ -809,9 +855,6 @@ textarea { resize: vertical; min-height: 90px; }
 [data-theme="dark"] .tier-label {
   color: #C8BC8A;
 }
-[data-theme="dark"] .tier-duracao {
-  color: #8A8260;
-}
 [data-theme="dark"] .tier-preco {
   color: #D4B254;
 }
@@ -832,12 +875,6 @@ textarea { resize: vertical; min-height: 90px; }
 [data-theme="dark"] .seletor-resumo-preco {
   color: #D4B254;
 }
-[data-theme="dark"] .seletor-resumo-sep {
-  color: #4a4a3a;
-}
-[data-theme="dark"] .seletor-resumo-dur {
-  color: #8A8260;
-}
 [data-theme="dark"] .seletor-btn-cancel {
   border-color: rgba(212, 178, 84, 0.2);
   color: #8A8260;
@@ -855,7 +892,7 @@ textarea { resize: vertical; min-height: 90px; }
 }
 /* Vagas cards */
 [data-theme="dark"] .ag-vagas-card {
-  background: #162016;
+  background: #1A2818;
   border-color: #2a3a2a;
 }
 [data-theme="dark"] .ag-vagas-card:hover {
@@ -864,7 +901,7 @@ textarea { resize: vertical; min-height: 90px; }
 }
 [data-theme="dark"] .ag-vagas-card.selected {
   border-color: #D4B254;
-  background: linear-gradient(135deg, #162016 80%, rgba(212, 178, 84, 0.06) 100%);
+  background: linear-gradient(135deg, #1A2818 80%, rgba(212, 178, 84, 0.06) 100%);
   box-shadow: 0 4px 18px rgba(212, 178, 84, 0.1);
 }
 [data-theme="dark"] .ag-vagas-dia-num {
@@ -887,7 +924,7 @@ textarea { resize: vertical; min-height: 90px; }
 [data-theme="dark"] input,
 [data-theme="dark"] textarea,
 [data-theme="dark"] select {
-  background: #162016;
+  background: #1A2818;
   border-color: #2A3A28;
   color: #E8E2CC;
 }
@@ -899,7 +936,7 @@ textarea { resize: vertical; min-height: 90px; }
 
 [data-theme="dark"] .pag-resumo-box,
 [data-theme="dark"] .pag-metodo-box {
-  background: #162016;
+  background: #1A2818;
   border-color: #2A3A28;
   color: #E8E2CC;
 }

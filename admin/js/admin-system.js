@@ -692,7 +692,6 @@ function criarItemAgendamento(ag) {
         <div class="adm-detail-item"><label>Nascimento</label><span>${_esc(formatarData(ag.cliente_nascimento))}</span></div>
         <div class="adm-detail-item"><label>Valor original</label><span>R$ ${Number(ag.valor_original||0).toFixed(2).replace('.', ',')}</span></div>
         <div class="adm-detail-item"><label>Desconto</label><span>R$ ${Number(ag.desconto_aplicado||0).toFixed(2).replace('.', ',')}${ag.aceitou_desconto_10 ? ' <span title="Desconto novo cliente" style="color:var(--primary);font-size:.75rem;">(10% novo cliente)</span>' : ''}</span></div>
-        <div class="adm-detail-item"><label>Duração</label><span>${_esc(String(ag.duracao_minutos))} min</span></div>
         <div class="adm-detail-item"><label>Método pag.</label><span>${_esc(ag.metodo_pagamento || '—')}</span></div>
         <div class="adm-detail-item"><label>Pago em</label><span>${ag.pago_em ? _esc(formatarDatetime(ag.pago_em)) : '—'}</span></div>
         ${ag.cliente_observacoes ? `<div class="adm-detail-item" style="grid-column:1/-1"><label>Observações</label><span style="white-space:pre-wrap">${_esc(ag.cliente_observacoes)}</span></div>` : ''}
@@ -933,7 +932,7 @@ async function exportarRelatorio() {
 
   if (error || !data) { _toastAdmin('Erro ao exportar relatório.', 'erro'); return; }
 
-  const cols = ['Chave', 'Cliente', 'Nascimento', 'WhatsApp', 'Tipo', 'Data', 'Hora', 'Duração', 'Valor Original', 'Desconto', 'Valor Final', 'Status', 'Método Pag.', 'Pago em', 'Atendido em', 'Criado em'];
+  const cols = ['Chave', 'Cliente', 'Nascimento', 'WhatsApp', 'Tipo', 'Data', 'Hora', 'Valor Original', 'Desconto', 'Valor Final', 'Status', 'Método Pag.', 'Pago em', 'Atendido em', 'Criado em'];
   const rows = data.map(a => [
     a.chave_pedido,
     a.cliente_nome,
@@ -942,7 +941,6 @@ async function exportarRelatorio() {
     a.tipos_leitura?.nome || '',
     a.data_agendamento,
     a.hora_agendamento?.slice(0,5) || '',
-    a.duracao_minutos,
     a.valor_original,
     a.desconto_aplicado,
     a.valor_final,

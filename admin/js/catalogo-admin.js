@@ -51,7 +51,6 @@ const _CAT_BADGE_LABEL = { buzios: 'Búzios', cartas: 'Cartas', radiestesia: 'Ra
 
 function _catCard(t) {
   const preco    = `R$ ${Number(t.preco_original || 0).toFixed(2).replace('.', ',')}`;
-  const duracao  = `${t.duracao_minutos} min`;
   const inativo  = t.ativo === false;
   const terapeutaTag = t.terapeuta
     ? `<span class="cat-card-terapeuta">${_CAT_TERAPEUTA_LABEL[t.terapeuta] || t.terapeuta}</span>`
@@ -79,7 +78,6 @@ function _catCard(t) {
         <div class="cat-card-nome">${_catEsc(t.nome)} ${inativoTag}</div>
         <div class="cat-card-meta">
           <span class="cat-card-preco">${preco}</span>
-          <span class="cat-card-dur">${duracao}</span>
         </div>
         ${badgeTag}
         ${terapeutaTag}
@@ -96,7 +94,7 @@ function cat_abrirFormNovo() {
   _catArquivoNovo    = null;
   _catImagemRemovida = false;
   _catRenderForm({
-    nome: '', descricao: '', preco_original: '', duracao_minutos: '',
+    nome: '', descricao: '', preco_original: '',
     imagem_url: '', terapeuta: '', especial: false, requer_pergunta: false,
   });
 }
@@ -152,15 +150,9 @@ function _catRenderForm(t) {
           <textarea id="cat-desc" rows="3">${_catEsc(t.descricao || '')}</textarea>
         </div>
 
-        <div class="cat-form-row">
-          <div class="ag-form-group">
-            <label for="cat-preco">Preço (R$)</label>
-            <input type="number" id="cat-preco" value="${t.preco_original ?? ''}" min="0" step="0.01">
-          </div>
-          <div class="ag-form-group">
-            <label for="cat-dur">Duração (min)</label>
-            <input type="number" id="cat-dur" value="${t.duracao_minutos ?? ''}" min="1" step="1">
-          </div>
+        <div class="ag-form-group">
+          <label for="cat-preco">Preço (R$)</label>
+          <input type="number" id="cat-preco" value="${t.preco_original ?? ''}" min="0" step="0.01">
         </div>
 
         <div class="cat-form-row">
@@ -379,7 +371,6 @@ async function _catSalvar() {
   const nome      = document.getElementById('cat-nome')?.value?.trim();
   const desc      = document.getElementById('cat-desc')?.value?.trim() || null;
   const preco     = parseFloat(document.getElementById('cat-preco')?.value);
-  const duracao   = parseInt(document.getElementById('cat-dur')?.value, 10);
   const terapeuta = document.getElementById('cat-terapeuta')?.value || null;
   const posicao   = parseInt(document.getElementById('cat-ordem')?.value, 10);
   const especial  = document.querySelector('input[name="cat-agenda"]:checked')?.value === 'especial';
@@ -390,7 +381,6 @@ async function _catSalvar() {
 
   if (!nome)                          { _toastAdmin('Informe o nome.', 'erro'); return; }
   if (isNaN(preco) || preco < 0)      { _toastAdmin('Preço inválido.', 'erro'); return; }
-  if (isNaN(duracao) || duracao <= 0) { _toastAdmin('Duração inválida.', 'erro'); return; }
   if (!terapeuta)                     { _toastAdmin('Selecione um terapeuta.', 'erro'); return; }
   if (isNaN(posicao) || posicao < 1)  { _toastAdmin('Selecione uma posição.', 'erro'); return; }
 
@@ -424,7 +414,6 @@ async function _catSalvar() {
       nome,
       descricao:       desc,
       preco_original:  preco,
-      duracao_minutos: duracao,
       imagem_url,
       slug,
       terapeuta,

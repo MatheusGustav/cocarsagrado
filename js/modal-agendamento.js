@@ -99,6 +99,19 @@ function _syncOuterSteps(num) {
   });
 }
 
+// Mapeia o passo interno (0..3) ou a tela de pagamento ao indicador externo
+// (1=Data, 2=Leitura, 3=Pagamento). Fluxo atual:
+//   passo 1 = calendário          → "Data"
+//   passo 0 = dados pessoais      → "Leitura"
+//   passo 2 = perguntas           → "Leitura"
+//   passo 3 = revisão do carrinho → "Leitura"
+//   tela 2  = pagamento           → "Pagamento"
+function _passoToOuter(passo) {
+  if (passo === 1) return 1;
+  if (passo === 0 || passo === 2 || passo === 3) return 2;
+  return 1;
+}
+
 function _mostrarTela(num, animacao) {
   if (animacao === undefined) animacao = true;
 
@@ -112,10 +125,10 @@ function _mostrarTela(num, animacao) {
   if (num === 1) {
     if (animacao) t1.classList.add('slide-esquerda');
     t1.classList.add('active');
-    // Sync outer step to whichever inner section is currently active
-    const innerIdx = Array.from(document.querySelectorAll('.ag-section'))
-      .findIndex(s => s.classList.contains('active'));
-    _syncOuterSteps(innerIdx >= 0 ? innerIdx + 1 : 1);
+    // Descobre o passo interno ativo (lê data-passo, não o índice na NodeList)
+    const ativo = document.querySelector('.ag-section.active');
+    const passo = ativo ? Number(ativo.dataset.passo) : 1;
+    _syncOuterSteps(_passoToOuter(passo));
   } else {
     t2.classList.add('active');
     _syncOuterSteps(3);
@@ -143,7 +156,6 @@ window.redirecionarParaPagamento = function(chave, carrinhoSnap) {
       terapeuta: tipo.terapeuta || null,
       data: Estado.dataSelecionada,
       horario: Estado.horarioSelecionado || '00:00',
-      duracao_minutos: tipo.duracao_minutos,
       observacoes: (typeof _coletarObservacoes === 'function' ? _coletarObservacoes(tipo) : null),
       valor_original: tipo.preco_original,
       desconto_aplicado: desconto,
@@ -152,8 +164,7 @@ window.redirecionarParaPagamento = function(chave, carrinhoSnap) {
   }
   lista = lista || [];
 
-  const totalFinal   = lista.reduce((s, i) => s + (i.valor_final || 0), 0);
-  const duracaoTotal = lista.reduce((s, i) => s + (i.duracao_minutos || 0), 0);
+  const totalFinal = lista.reduce((s, i) => s + (i.valor_final || 0), 0);
 
   const items = lista.map(item => ({
     description: item.tipo.tier_label || item.tipo.nome,
@@ -189,7 +200,6 @@ window.redirecionarParaPagamento = function(chave, carrinhoSnap) {
     terapeuta: lista[0]?.terapeuta || 'camila',
     data:      dataLabel,
     hora:      '',
-    duracao:   duracaoTotal,
     valor:     totalFinal.toFixed(2).replace('.', ','),
     nome,
     nascimento: nascFmt,
@@ -442,7 +452,6 @@ function _preencherTelaPagamento() {
   set('modal-r-tipo',       ag.tipo);
   set('modal-r-data',       ag.data);
   set('modal-r-hora',       ag.hora);
-  set('modal-r-duracao',    `${ag.duracao} min`);
   set('modal-r-valor',      `R$ ${ag.valor}`);
 
   ['pix', 'cartao', 'wise'].forEach(m => set(`modal-valor-${m}`, `R$ ${ag.valor}`));
@@ -482,9 +491,7 @@ window.irParaPasso = function(num) {
     carregarCalendario();
   }
   _irParaPassoBase(num);
-  // Mapeia inner passo → outer step
-  const outerStep = num === 0 ? 1 : (num <= 2 ? 2 : 3);
-  _syncOuterSteps(outerStep);
+  _syncOuterSteps(_passoToOuter(num));
   document.querySelector('#modalAgendamento .modal-body')
     ?.scrollTo({ top: 0, behavior: 'smooth' });
 };

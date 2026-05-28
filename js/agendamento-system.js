@@ -260,20 +260,11 @@ function _abrirSeletorGrupo(grupoSlug, tiers) {
 function _atualizarResumoSeletor() {
   const tipo = _seletorTipo;
   if (!tipo) return;
-  const total    = tipo.preco_original  * _seletorQty;
-  const durTotal = tipo.duracao_minutos * _seletorQty;
+  const total    = tipo.preco_original * _seletorQty;
   const { final } = calcularPrecoFinal(total);
 
-  document.getElementById('seletor-qty').textContent     = _seletorQty;
-  document.getElementById('seletor-preco').textContent   = `R$ ${final.toFixed(0)}`;
-  document.getElementById('seletor-duracao').textContent = _formatarDuracao(durTotal);
-}
-
-function _formatarDuracao(min) {
-  if (min < 60) return `${min} min`;
-  const h = Math.floor(min / 60);
-  const m = min % 60;
-  return m ? `${h}h${m}min` : `${h}h`;
+  document.getElementById('seletor-qty').textContent   = _seletorQty;
+  document.getElementById('seletor-preco').textContent = `R$ ${final.toFixed(0)}`;
 }
 
 function alterarQty(delta) {
@@ -299,8 +290,7 @@ function confirmarSeletor() {
     terapeuta:       t.terapeuta,
     especial:        !!t.especial,
     requerPergunta:  !!t.requer_pergunta,
-    preco_original:  t.preco_original  * _seletorQty,
-    duracao_minutos: t.duracao_minutos * _seletorQty,
+    preco_original:  t.preco_original * _seletorQty,
     nome: _seletorQty > 1 ? `${t.nome} (×${_seletorQty})` : t.nome,
   };
 
@@ -560,7 +550,6 @@ function adicionarAoCarrinho() {
     terapeuta: tipo.terapeuta || null,
     data: Estado.dataSelecionada,
     horario: Estado.horarioSelecionado || '00:00',
-    duracao_minutos: tipo.duracao_minutos,
     observacoes: obs,
     valor_original: tipo.preco_original,
     preco_base: _precoComPromoServico(tipo.preco_original, Estado.serviceId),
@@ -760,7 +749,6 @@ async function salvarMultiplosAgendamentos(itensPre) {
     observacoes: item.observacoes,
     data: item.data,
     horario: item.horario,
-    duracao_minutos: item.duracao_minutos,
     valor_original: item.valor_original,
     desconto_aplicado: item.desconto_aplicado,
     valor_final: item.valor_final,
