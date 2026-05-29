@@ -78,9 +78,9 @@ input.error, textarea.error, select.error { border-color: var(--danger); }
 
 .ag-error-msg { font-size: .8rem; color: var(--danger); }
 
-.ag-phone-row { display: flex; gap: 8px; }
-.ag-ddi-select { width: auto; min-width: 108px; flex-shrink: 0; padding-right: 8px; }
-.ag-phone-row input { flex: 1; }
+.ag-phone-row { display: flex; gap: 8px; align-items: stretch; }
+.ag-ddi-select { width: 108px; min-width: 108px; max-width: 120px; flex: 0 0 108px; padding-right: 8px; }
+.ag-phone-row input { flex: 1; min-width: 0; }
 
 textarea { resize: vertical; min-height: 90px; }
 
