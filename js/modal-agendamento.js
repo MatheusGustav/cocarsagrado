@@ -606,8 +606,7 @@ function _gerarBrCode(chave, nome, cidade, valorStr, txid) {
   const emv = (id, val) => id + String(val.length).padStart(2, '0') + val;
   const merchantInfo =
     emv('00', 'br.gov.bcb.pix') +
-    emv('01', chave) +
-    emv('05', txid.substring(0, 25));
+    emv('01', chave);
   const payload =
     emv('00', '01') +
     emv('26', merchantInfo) +
