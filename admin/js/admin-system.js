@@ -443,52 +443,18 @@ async function calcularEstatisticas(todos) {
   set('stat-pagos',   pagos);
   set('stat-total',   `R$ ${totalMes.toFixed(2).replace('.', ',')}`);
 
-  let semVagas = [];
-  try { semVagas = await _terapeutasSemVagasHoje(todos); } catch (_) { /* não trava stats */ }
-  atualizarMascote(pendentes, pagos, semVagas);
-}
-
-// Quem está com 0 vagas hoje (folga ou lotado). Vagas = override (vagas_total
-// menos os agendamentos do dia) + especiais (vagas_restantes). Sem linha de
-// disponibilidade = 0 vagas.
-async function _terapeutasSemVagasHoje(todos) {
-  const hoje  = _dataLocalISO();
-  const profs = ['camila', 'matheus'];
-  const nomes = { camila: 'Camila', matheus: 'Matheus' };
-
-  const [{ data: ovs }, { data: esps }] = await Promise.all([
-    supabase.from('disponibilidade_override')
-      .select('profissional, vagas_total, ativo').eq('data', hoje),
-    supabase.from('disponibilidade_especial')
-      .select('profissional, vagas_restantes, ativo').eq('data', hoje),
-  ]);
-
-  const semVagas = [];
-  for (const p of profs) {
-    const ocupadas = todos.filter(a =>
-      a.data_agendamento === hoje && a.terapeuta === p && a.status !== 'cancelado'
-    ).length;
-
-    let vagas = 0;
-    (ovs  || []).filter(o => o.profissional === p && o.ativo)
-      .forEach(o => { vagas += Math.max(0, (o.vagas_total || 0) - ocupadas); });
-    (esps || []).filter(e => e.profissional === p && e.ativo)
-      .forEach(e => { vagas += Math.max(0, e.vagas_restantes || 0); });
-
-    if (vagas <= 0) semVagas.push(nomes[p]);
-  }
-  return semVagas;
+  atualizarMascote(pendentes, pagos);
 }
 
 // Estado mais recente (alimenta o sorteio de frases ao trocar de tela).
-let _mascoteEstado = { pagos: 0, semVagas: [] };
+let _mascoteEstado = { pagos: 0 };
 
 const _MASCOTE_NEUTRAS = ['estou de olho por aqui...', 'só peidanno por aqui...'];
 const _MASCOTE_GRANA   = ['ta com a grana né!! só de olho...', 'a grana ta entrando hein!'];
 
 // Guarda o estado e fala. Chamado quando as estatísticas atualizam.
-function atualizarMascote(pendentes, pagos, semVagas = []) {
-  _mascoteEstado = { pagos, semVagas };
+function atualizarMascote(pendentes, pagos) {
+  _mascoteEstado = { pagos };
   falarMascote();
 }
 
@@ -500,22 +466,8 @@ function falarMascote() {
   const balao = document.getElementById('mascote-balao');
   if (!wrap || !balao) return;
 
-  const { pagos, semVagas } = _mascoteEstado;
-  let pool;
-  if (semVagas.length) {
-    const quem = semVagas.join(' e ');
-    pool = [
-      `só no bem bom né ${quem}!!?`,
-      `só no bem bom né ${quem}!???!!`,
-      `${quem} só no bem bom hein!??`,
-      `cadê o batente ${quem}!??`,
-      ..._MASCOTE_NEUTRAS,
-    ];
-  } else if (pagos >= 8) {
-    pool = [..._MASCOTE_GRANA, ..._MASCOTE_NEUTRAS];
-  } else {
-    pool = _MASCOTE_NEUTRAS;
-  }
+  const { pagos } = _mascoteEstado;
+  const pool = pagos >= 8 ? [..._MASCOTE_GRANA, ..._MASCOTE_NEUTRAS] : _MASCOTE_NEUTRAS;
 
   const frase = pool[Math.floor(Math.random() * pool.length)];
   balao.textContent = frase;
@@ -534,36 +486,87 @@ function tornarMascoteArrastavel() {
   el.dataset.dragReady = '1';
 
   const KEY = 'mascote_pos';
+  const MARGEM = 12;
   const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
 
+  // Área útil da tela: desconta a sidebar fixa (desktop) e a topbar (mobile).
+  // No mobile a sidebar vira drawer (position: fixed) e não ocupa a lateral.
+  function areaUtil() {
+    let minLeft = 0, minTop = 0;
+    const sb = document.querySelector('.adm-sidebar');
+    if (sb) {
+      const cs = getComputedStyle(sb);
+      if (cs.position !== 'fixed' && cs.display !== 'none') {
+        minLeft = Math.max(0, sb.getBoundingClientRect().right);
+      }
+    }
+    const tb = document.querySelector('.adm-topbar');
+    if (tb && getComputedStyle(tb).display !== 'none') {
+      minTop = Math.max(0, tb.getBoundingClientRect().bottom);
+    }
+    return { minLeft, minTop, maxRight: window.innerWidth, maxBottom: window.innerHeight };
+  }
+
+  // Durante o arrasto o limite é a área útil (sem sidebar/topbar). O clamp
+  // é pela bolinha, não pelo wrap — o balão invisível não cria barreira e a
+  // bolinha encosta na borda da área verde sem entrar nela.
   function aplicarPos(left, top) {
-    const w = el.offsetWidth, h = el.offsetHeight;
-    left = clamp(left, 4, window.innerWidth  - w - 4);
-    top  = clamp(top,  4, window.innerHeight - h - 4);
+    const a = areaUtil();
+    const offX = handle.offsetLeft, offY = handle.offsetTop;
+    const iw = handle.offsetWidth, ih = handle.offsetHeight;
+    left = clamp(left, a.minLeft + 4 - offX, a.maxRight  - offX - iw - 4);
+    top  = clamp(top,  a.minTop  + 4 - offY, a.maxBottom - offY - ih - 4);
     el.style.left   = left + 'px';
     el.style.top    = top + 'px';
     el.style.right  = 'auto';
     el.style.bottom = 'auto';
   }
 
-  // Restaura posição salva (depois do layout calcular tamanhos)
+  // Canto mais próximo do centro da bolinha: 'tl' | 'tr' | 'bl' | 'br'
+  function cantoMaisProximo() {
+    const a = areaUtil();
+    const r = handle.getBoundingClientRect();
+    const cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+    const v = (cy - a.minTop)  < (a.maxBottom - cy) ? 't' : 'b';
+    const h = (cx - a.minLeft) < (a.maxRight  - cx) ? 'l' : 'r';
+    return v + h;
+  }
+
+  // Fixa o mascote num canto. Âncoras right/bottom nos cantos direito/baixo
+  // pra acompanhar mudanças de tamanho do balão sem vazar da tela.
+  function fixarCanto(canto) {
+    const a = areaUtil();
+    const esq = canto[1] === 'l', topo = canto[0] === 't';
+    el.style.left   = esq  ? (a.minLeft + MARGEM) + 'px' : 'auto';
+    el.style.right  = esq  ? 'auto' : MARGEM + 'px';
+    el.style.top    = topo ? (a.minTop + MARGEM) + 'px'  : 'auto';
+    el.style.bottom = topo ? 'auto' : MARGEM + 'px';
+    // Nos cantos esquerdos a bolinha fica no canto e o balão abre pra direita
+    el.classList.toggle('mascote-esquerda', esq);
+  }
+
+  let cantoAtual = 'br';
+
+  // Restaura canto salvo (depois do layout calcular tamanhos)
   try {
     const saved = JSON.parse(localStorage.getItem(KEY) || 'null');
-    if (saved && Number.isFinite(saved.left)) {
-      requestAnimationFrame(() => aplicarPos(saved.left, saved.top));
-    }
+    if (saved && /^[tb][lr]$/.test(saved.canto || '')) cantoAtual = saved.canto;
   } catch {}
+  requestAnimationFrame(() => fixarCanto(cantoAtual));
 
-  let arrastando = false, startX = 0, startY = 0, baseLeft = 0, baseTop = 0;
+  let arrastando = false, startX = 0, startY = 0, baseLeft = 0, baseTop = 0, snapTimer = 0;
 
   handle.addEventListener('pointerdown', (e) => {
     arrastando = true;
+    clearTimeout(snapTimer);
+    el.classList.remove('snapping');
     const r = el.getBoundingClientRect();
     baseLeft = r.left; baseTop = r.top;
     startX = e.clientX; startY = e.clientY;
     aplicarPos(baseLeft, baseTop); // troca âncora right/bottom → left/top
     try { handle.setPointerCapture(e.pointerId); } catch {}
     el.classList.add('dragging');
+    el.classList.add('balao-oculto'); // balão some durante o arrasto
     e.preventDefault();
   });
 
@@ -577,18 +580,30 @@ function tornarMascoteArrastavel() {
     arrastando = false;
     el.classList.remove('dragging');
     try { handle.releasePointerCapture(e.pointerId); } catch {}
-    const r = el.getBoundingClientRect();
-    try { localStorage.setItem(KEY, JSON.stringify({ left: r.left, top: r.top })); } catch {}
+
+    // Puxa pro canto mais próximo, com animação. O lado do balão já troca
+    // aqui — invisível (balao-oculto), então sem pulo visual.
+    cantoAtual = cantoMaisProximo();
+    el.classList.toggle('mascote-esquerda', cantoAtual[1] === 'l');
+    const a = areaUtil();
+    const w = el.offsetWidth, h = el.offsetHeight;
+    const left = cantoAtual[1] === 'l' ? a.minLeft + MARGEM : a.maxRight  - w - MARGEM;
+    const top  = cantoAtual[0] === 't' ? a.minTop  + MARGEM : a.maxBottom - h - MARGEM;
+    el.classList.add('snapping');
+    requestAnimationFrame(() => { el.style.left = left + 'px'; el.style.top = top + 'px'; });
+    snapTimer = setTimeout(() => {
+      el.classList.remove('snapping');
+      fixarCanto(cantoAtual);
+      el.classList.remove('balao-oculto'); // balão reaparece já do lado certo
+    }, 320);
+    try { localStorage.setItem(KEY, JSON.stringify({ canto: cantoAtual })); } catch {}
   }
   handle.addEventListener('pointerup', fim);
   handle.addEventListener('pointercancel', fim);
 
-  // Se a janela encolher e o mascote ficar fora, traz de volta pra borda
+  // Reposiciona no canto quando a tela muda (resize / rotação / breakpoint)
   window.addEventListener('resize', () => {
-    if (el.style.left) {
-      const r = el.getBoundingClientRect();
-      aplicarPos(r.left, r.top);
-    }
+    if (!arrastando) fixarCanto(cantoAtual);
   });
 }
 
