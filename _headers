@@ -17,6 +17,11 @@
   Cache-Control: no-cache, must-revalidate
 
 
+# Imagens mudam raramente — 7 dias (necessário com Browser Cache TTL
+# da zona em "Respect Existing Headers", senão ficariam sem cache)
+/images/*
+  Cache-Control: public, max-age=604800
+
 /images/logo3-192.png
   Cache-Control: public, max-age=31536000, immutable
 
