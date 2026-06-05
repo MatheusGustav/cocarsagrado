@@ -457,24 +457,17 @@ function _preencherTelaPagamento() {
   set('modal-r-valor',      `R$ ${ag.valor}`);
 
   ['pix', 'cartao', 'wise'].forEach(m => set(`modal-valor-${m}`, `R$ ${ag.valor}`));
-  // Reset Pix
-  const pixQrBox = document.getElementById('pix-qr-box');
-  const pixErr   = document.getElementById('pix-erro-box');
-  const pixSt    = document.getElementById('pix-status-box');
-  const pixBtn   = document.getElementById('pix-gerar-btn');
-  if (pixQrBox) { pixQrBox.style.display = 'none'; pixQrBox.innerHTML = ''; }
-  if (pixErr)   pixErr.style.display = 'none';
-  if (pixSt)    pixSt.style.display = 'none';
-  if (pixBtn)   { pixBtn.disabled = false; pixBtn.textContent = '🔗 Gerar QR Code PIX'; }
-  // Reset Cartão
-  const cardLinkBox = document.getElementById('cartao-link-box');
-  const cardErr     = document.getElementById('cartao-erro-box');
-  const cardSt      = document.getElementById('cartao-status-box');
-  const cardBtn     = document.getElementById('cartao-gerar-btn');
-  if (cardLinkBox) cardLinkBox.style.display = 'none';
-  if (cardErr)     cardErr.style.display = 'none';
-  if (cardSt)      cardSt.style.display = 'none';
-  if (cardBtn)     { cardBtn.disabled = false; cardBtn.textContent = '🔗 Gerar link de pagamento'; }
+  // Reset PIX e Cartão (checkout InfinitePay)
+  ['pix', 'cartao'].forEach(m => {
+    const linkBox = document.getElementById(`${m}-link-box`);
+    const errBox  = document.getElementById(`${m}-erro-box`);
+    const stBox   = document.getElementById(`${m}-status-box`);
+    const genBtn  = document.getElementById(`${m}-gerar-btn`);
+    if (linkBox) linkBox.style.display = 'none';
+    if (errBox)  errBox.style.display = 'none';
+    if (stBox)   stBox.style.display = 'none';
+    if (genBtn)  { genBtn.disabled = false; genBtn.textContent = '🔗 Gerar link de pagamento'; }
+  });
   set('modal-email-wise', MODAL_WISE);
 
   trocarAbaPagamento('pix');
@@ -517,7 +510,7 @@ function _atualizarPantero(metodo) {
   const balao = document.getElementById('pag-pantero-balao');
   if (!balao) return;
   const msgs = {
-    pix:    'Gere o QR Code, pague pelo app do seu banco e depois avise no WhatsApp — confirmaremos o recebimento 🖤',
+    pix:    'Gere o link, pague o PIX pelo checkout que abrir e pronto — a confirmação chega automaticamente 🖤',
     cartao: 'Gere o link, pague pelo checkout que abrir e pronto — a confirmação chega automaticamente 🖤',
     wise:   'Depois de fazer a transferência, volte para esta página e clique em <strong>"Avisar sobre pagamento Wise"</strong>.',
   };
@@ -540,9 +533,8 @@ function avisarWhatsAppModal(metodo) {
   const leituraBloco = ag.itensDetalhe
     ? `*Leituras:*\n${ag.itensDetalhe}`
     : `*Leitura:* ${ag.tipo}\n*Data:* ${ag.data}${ag.hora ? `\n*Horário:* ${ag.hora}` : ''}`;
-  const txidLine = ag.txid ? `\n*ID PIX:* ${ag.txid}` : '';
   const msgs = {
-    pix:    `Olá! 😊 Fiz o pagamento via *PIX*.\n\n*Pedido:* ${ag.chave}${txidLine}\n${leituraBloco}\n*Valor:* R$ ${ag.valor}\n\n${infoCliente}\n\nPode confirmar o recebimento? Combinaremos o horário por aqui! 🙏`,
+    pix:    `Olá! 😊 Fiz o pagamento via *PIX*.\n\n*Pedido:* ${ag.chave}\n${leituraBloco}\n*Valor:* R$ ${ag.valor}\n\n${infoCliente}\n\nPode confirmar o recebimento? Combinaremos o horário por aqui! 🙏`,
     cartao: `Olá! 😊 Realizei o pagamento via *cartão de crédito*.\n\n*Pedido:* ${ag.chave}\n${leituraBloco}\n*Valor:* R$ ${ag.valor}\n\n${infoCliente}\n\nCombinaremos o horário por aqui! 🙏`,
     wise:   `Olá! 😊 Realizei a transferência via *Wise*.\n\n*Pedido:* ${ag.chave}\n${leituraBloco}\n*Valor:* R$ ${ag.valor}\n\n${infoCliente}\n\nPode confirmar o recebimento? Combinaremos o horário por aqui! 🙏`,
   };
@@ -590,135 +582,14 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // ============================================================
-// PIX — txid local + BR Code (EMV)
+// InfinitePay — link de checkout (PIX e cartão de crédito)
 // ============================================================
-function _crc16(str) {
-  let crc = 0xFFFF;
-  for (let i = 0; i < str.length; i++) {
-    crc ^= str.charCodeAt(i) << 8;
-    for (let j = 0; j < 8; j++) {
-      crc = (crc & 0x8000) ? ((crc << 1) ^ 0x1021) : (crc << 1);
-      crc &= 0xFFFF;
-    }
-  }
-  return crc;
-}
-
-function _gerarBrCode(chave, nome, cidade, valorStr, txid) {
-  const emv = (id, val) => id + String(val.length).padStart(2, '0') + val;
-  const merchantInfo =
-    emv('00', 'br.gov.bcb.pix') +
-    emv('01', chave);
-  const payload =
-    emv('00', '01') +
-    emv('26', merchantInfo) +
-    emv('52', '0000') +
-    emv('53', '986') +
-    emv('54', valorStr) +
-    emv('58', 'BR') +
-    emv('59', nome.substring(0, 25)) +
-    emv('60', cidade.substring(0, 15)) +
-    emv('62', emv('05', txid.substring(0, 25))) +
-    '6304';
-  const crc = _crc16(payload).toString(16).toUpperCase().padStart(4, '0');
-  return payload + crc;
-}
-
-function _gerarTxid(chave) {
-  const suffix = chave.replace(/[^a-zA-Z0-9]/g, '').slice(-6).toUpperCase();
-  const ts = Date.now().toString(36).toUpperCase().slice(-7);
-  return ('COCAR' + suffix + ts).substring(0, 35);
-}
-
-function gerarLinkPix() {
+async function _gerarLinkCheckout(metodo) {
   const ag = _dadosPagamento;
   if (!ag) return;
-  const btn = document.getElementById('pix-gerar-btn');
-  const qr  = document.getElementById('pix-qr-box');
-  const err = document.getElementById('pix-erro-box');
-  err.style.display = 'none';
-  qr.style.display  = 'none';
-  qr.innerHTML      = '';
-  btn.disabled      = true;
-  btn.textContent   = '⏳ Gerando...';
-
-  try {
-    const txid      = _gerarTxid(ag.chave);
-    const valorNum  = parseFloat(String(ag.valor).replace(',', '.')) || 0;
-    const valorStr  = valorNum.toFixed(2);
-    const brCode    = _gerarBrCode(PIX_CHAVE, PIX_NOME, PIX_CIDADE, valorStr, txid);
-
-    ag.txid = txid;
-    sessionStorage.setItem('agendamento', JSON.stringify(ag));
-
-    // QR Code
-    const qrDiv = document.createElement('div');
-    qrDiv.style.cssText = 'display:flex;justify-content:center;margin-bottom:12px;';
-    const qrInner = document.createElement('div');
-    qrInner.style.cssText = 'border:1px solid var(--border);border-radius:8px;padding:8px;background:#fff;';
-    qrDiv.appendChild(qrInner);
-
-    if (window.QRCode) {
-      new window.QRCode(qrInner, { text: brCode, width: 220, height: 220, correctLevel: window.QRCode.CorrectLevel.M });
-    } else {
-      qrInner.textContent = 'Biblioteca QR não carregada';
-    }
-
-    // Código copia-e-cola
-    const label = document.createElement('p');
-    label.style.cssText = 'font-size:.85rem;color:var(--text-muted);margin:10px 0 6px;text-align:center;';
-    label.textContent = 'Ou copie o código abaixo:';
-
-    const ta = document.createElement('textarea');
-    ta.id        = 'pix-qr-code';
-    ta.readOnly  = true;
-    ta.value     = brCode;
-    ta.style.cssText = 'width:100%;font-size:.75rem;font-family:monospace;padding:8px;border:1px solid var(--border);border-radius:6px;resize:none;height:60px;background:#f8f8f8;box-sizing:border-box;';
-
-    const copyBtn = document.createElement('button');
-    copyBtn.className   = 'ag-btn ag-btn-copy ag-btn-sm';
-    copyBtn.style.cssText = 'display:block;margin:8px auto 0;';
-    copyBtn.textContent = '📋 Copiar código PIX';
-    copyBtn.onclick     = copiarPixCodigo;
-
-    const txidNote = document.createElement('p');
-    txidNote.style.cssText = 'font-size:.78rem;color:var(--text-muted);margin-top:10px;text-align:center;';
-    txidNote.innerHTML = `ID da transação: <strong>${txid}</strong>`;
-
-    qr.appendChild(qrDiv);
-    qr.appendChild(label);
-    qr.appendChild(ta);
-    qr.appendChild(copyBtn);
-    qr.appendChild(txidNote);
-    qr.style.display = 'block';
-
-    btn.textContent = '🔄 Gerar novo QR Code';
-    btn.disabled    = false;
-  } catch (e) {
-    err.textContent  = 'Não foi possível gerar o PIX: ' + (e?.message || 'tente novamente.');
-    err.style.display = 'block';
-    btn.textContent  = '🔗 Gerar QR Code PIX';
-    btn.disabled     = false;
-  }
-}
-
-function copiarPixCodigo() {
-  const ta = document.getElementById('pix-qr-code');
-  if (!ta?.value) return;
-  _copiarTexto(ta.value, '✅ Código PIX copiado!');
-}
-window.copiarPixCodigo = copiarPixCodigo;
-window.gerarLinkPix    = gerarLinkPix;
-
-// ============================================================
-// InfinitePay — link de checkout (cartão de crédito)
-// ============================================================
-async function gerarLinkCartao() {
-  const ag = _dadosPagamento;
-  if (!ag) return;
-  const btn     = document.getElementById('cartao-gerar-btn');
-  const linkBox = document.getElementById('cartao-link-box');
-  const err     = document.getElementById('cartao-erro-box');
+  const btn     = document.getElementById(`${metodo}-gerar-btn`);
+  const linkBox = document.getElementById(`${metodo}-link-box`);
+  const err     = document.getElementById(`${metodo}-erro-box`);
   btn.disabled     = true;
   btn.textContent  = '⏳ Gerando...';
   linkBox.style.display = 'none';
@@ -731,11 +602,11 @@ async function gerarLinkCartao() {
     const res = await fetch(_IP_CHECKOUT_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ chave: ag.chave, nome: ag.nome, whatsapp: ag.whatsapp, items }),
+      body: JSON.stringify({ chave: ag.chave, nome: ag.nome, whatsapp: ag.whatsapp, metodo, items }),
     });
     const data = await res.json();
     if (!res.ok || data.error) throw new Error(typeof data.error === 'string' ? data.error : 'falha ao gerar link');
-    document.getElementById('cartao-link-btn').href = data.url;
+    document.getElementById(`${metodo}-link-btn`).href = data.url;
     linkBox.style.display = 'block';
     btn.textContent = '🔄 Gerar novo link';
     btn.disabled    = false;
@@ -746,4 +617,5 @@ async function gerarLinkCartao() {
     btn.disabled     = false;
   }
 }
-window.gerarLinkCartao = gerarLinkCartao;
+window.gerarLinkPix    = () => _gerarLinkCheckout('pix');
+window.gerarLinkCartao = () => _gerarLinkCheckout('cartao');
