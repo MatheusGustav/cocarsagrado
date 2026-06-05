@@ -106,7 +106,7 @@ function _renderEspecial() {
       </div>
       <div class="esp-card-acoes">
         <button class="ag-btn ag-btn-primary ag-btn-sm esp-btn-salvar" title="Salvar">💾 Salvar</button>
-        <button class="ag-btn ag-btn-outline ag-btn-sm esp-btn-del" style="color:#c00" title="Remover">✕</button>
+        <button class="ag-btn ag-btn-outline ag-btn-sm esp-btn-del" style="color:var(--t-danger)" title="Remover">✕</button>
       </div>`;
 
     const chk = card.querySelector('.esp-chk-ativo');

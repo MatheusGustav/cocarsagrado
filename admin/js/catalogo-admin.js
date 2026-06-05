@@ -136,7 +136,7 @@ function _catRenderForm(t) {
               ${t.imagem_url ? 'Trocar foto' : 'Escolher foto'}
               <input type="file" id="cat-input-foto" accept="image/*" hidden>
             </label>
-            ${t.imagem_url ? `<button class="ag-btn ag-btn-outline ag-btn-sm" type="button" onclick="cat_removerFoto()" style="color:#B91C1C">Remover</button>` : ''}
+            ${t.imagem_url ? `<button class="ag-btn ag-btn-outline ag-btn-sm" type="button" onclick="cat_removerFoto()" style="color:var(--t-danger)">Remover</button>` : ''}
           </div>
         </div>
 
