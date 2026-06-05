@@ -4,14 +4,17 @@
 /
   Cache-Control: no-cache, must-revalidate
 
+# no-cache (e não max-age=0): o Browser Cache TTL da zona Cloudflare (4h)
+# sobrepõe qualquer max-age menor, mas respeita no-cache — o navegador
+# revalida via ETag a cada visita (304 se não mudou). Dispensa bump de ?v=.
 /*.css
-  Cache-Control: public, max-age=0, must-revalidate
+  Cache-Control: no-cache, must-revalidate
 
 /*.js
-  Cache-Control: public, max-age=0, must-revalidate
+  Cache-Control: no-cache, must-revalidate
 
 /data/*
-  Cache-Control: public, max-age=0, must-revalidate
+  Cache-Control: no-cache, must-revalidate
 
 
 /images/logo3-192.png
