@@ -84,19 +84,24 @@ function _lsSet(key, val) {
   try { localStorage.setItem(key, val); } catch { /* private browsing */ }
 }
 
+// Localiza a promoção do serviço. O admin salva grupos com id sem prefixo
+// ('amarracao'), mas o site usa 'grupo:amarracao' — aceita os dois formatos.
+function _promoDoServico(serviceId) {
+  if (!serviceId || typeof _configCache === 'undefined' || !_configCache?.promocoes) return null;
+  return _configCache.promocoes.find(p => p.id === serviceId || `grupo:${p.id}` === serviceId) || null;
+}
+
 function calcularPrecoFinal(precoOriginal) {
   const preco = parseFloat(precoOriginal) || 0;
   if (_lsGet('aceitouDesconto10') === 'true') {
     const final = Math.round(preco * 90) / 100;
     return { final, desconto: preco - final };
   }
-  if (Estado.serviceId && typeof _configCache !== 'undefined' && _configCache?.promocoes) {
-    const servico = _configCache.promocoes.find(p => p.id === Estado.serviceId);
-    if (servico?.descontoAtivo && servico.percentualDesconto > 0) {
-      const pct   = servico.percentualDesconto;
-      const final = Math.round(preco * (100 - pct)) / 100;
-      return { final, desconto: preco - final };
-    }
+  const servico = _promoDoServico(Estado.serviceId);
+  if (servico?.descontoAtivo && servico.percentualDesconto > 0) {
+    const pct   = servico.percentualDesconto;
+    const final = Math.round(preco * (100 - pct)) / 100;
+    return { final, desconto: preco - final };
   }
   return { final: preco, desconto: 0 };
 }
@@ -104,11 +109,9 @@ function calcularPrecoFinal(precoOriginal) {
 // Preço aplicando SOMENTE o desconto promocional do serviço (sem o 10% novo cliente).
 function _precoComPromoServico(precoOriginal, serviceId) {
   const preco = parseFloat(precoOriginal) || 0;
-  if (serviceId && typeof _configCache !== 'undefined' && _configCache?.promocoes) {
-    const servico = _configCache.promocoes.find(p => p.id === serviceId);
-    if (servico?.descontoAtivo && servico.percentualDesconto > 0) {
-      return Math.round(preco * (100 - servico.percentualDesconto)) / 100;
-    }
+  const servico = _promoDoServico(serviceId);
+  if (servico?.descontoAtivo && servico.percentualDesconto > 0) {
+    return Math.round(preco * (100 - servico.percentualDesconto)) / 100;
   }
   return preco;
 }
@@ -128,8 +131,12 @@ function _aplicarDescontosCarrinho(itens) {
   return itens.map((it, i) => {
     const original = parseFloat(it.valor_original) || 0;
     const base     = it.preco_base ?? original;
-    const aplica   = i === idxDesc;
-    const final    = aplica ? Math.round(base * 90) / 100 : base;
+    // 10% incide sobre o preço ORIGINAL e NÃO acumula com promoção (mesma
+    // regra da vitrine). Se a promoção for melhor, prevalece a promoção e o
+    // cliente preserva a elegibilidade do desconto de novo cliente.
+    const com10    = Math.round(original * 90) / 100;
+    const aplica   = i === idxDesc && com10 < base;
+    const final    = aplica ? com10 : base;
     return {
       ...it,
       valor_final: final,
@@ -199,11 +206,8 @@ async function abrirSeletor(ref) {
   document.getElementById('seletor-overlay').classList.add('open');
   document.body.classList.add('seletor-aberto');
 
-  // Fecha com Escape
-  const _escSeletor = (e) => {
-    if (e.key === 'Escape') { fecharSeletor(); document.removeEventListener('keydown', _escSeletor); }
-  };
-  document.addEventListener('keydown', _escSeletor);
+  // Fecha com Escape (handler único; removido em fecharSeletor)
+  document.addEventListener('keydown', _escSeletorHandler);
 }
 
 function _abrirSeletorGrupo(grupoSlug, tiers) {
@@ -250,11 +254,8 @@ function _abrirSeletorGrupo(grupoSlug, tiers) {
   document.getElementById('seletor-overlay').classList.add('open');
   document.body.classList.add('seletor-aberto');
 
-  // Fecha com Escape
-  const _escGrupo = (e) => {
-    if (e.key === 'Escape') { fecharSeletor(); document.removeEventListener('keydown', _escGrupo); }
-  };
-  document.addEventListener('keydown', _escGrupo);
+  // Fecha com Escape (handler único; removido em fecharSeletor)
+  document.addEventListener('keydown', _escSeletorHandler);
 }
 
 function _atualizarResumoSeletor() {
@@ -273,7 +274,12 @@ function alterarQty(delta) {
   _atualizarResumoSeletor();
 }
 
+function _escSeletorHandler(e) {
+  if (e.key === 'Escape') fecharSeletor();
+}
+
 function fecharSeletor() {
+  document.removeEventListener('keydown', _escSeletorHandler);
   document.getElementById('seletor-overlay')?.classList.remove('open');
   document.body.classList.remove('seletor-aberto');
   // Restaura foco pro gatilho
@@ -542,6 +548,14 @@ function adicionarAoCarrinho() {
   const tipo = Estado.tipoSelecionado;
   if (!tipo || !Estado.dataSelecionada) return;
 
+  // Limite de 4 leituras por pedido (o botão do catálogo não passa pelo
+  // btn-add-leitura desabilitado, então o guard precisa ficar aqui também)
+  if (Estado.carrinho.length >= 4) {
+    mostrarAlerta('Máximo de 4 leituras por pedido. Finalize este pedido antes de adicionar mais.', 'error');
+    irParaPasso(3);
+    return;
+  }
+
   const obs = _coletarObservacoes(tipo);
 
   const item = {
@@ -657,6 +671,7 @@ function _atualizarBotoesCarrinho() {
       const n = Estado.carrinho.length;
       const label = n === 1 ? '1 leitura' : `${n} leituras`;
       payBtn.style.display = '';
+      payBtn.disabled = false; // reabilita após um pedido anterior ter deixado o botão travado
       payBtn.innerHTML = `💳 Pagar R$ ${total.toFixed(2).replace('.', ',')} (${label})`;
     } else {
       payBtn.style.display = 'none';

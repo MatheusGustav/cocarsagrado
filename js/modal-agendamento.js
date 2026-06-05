@@ -251,14 +251,16 @@ function _limparPedidoPendente() {
   if (typeof _atualizarBotaoRetomar === 'function') _atualizarBotaoRetomar();
 }
 
+// Retorna: status (string) | null = pedido não existe | undefined = erro de
+// rede/RPC (inconclusivo — não descartar o pedido pendente nesse caso).
 async function _checarStatusPedido(chave) {
-  if (typeof supabase === 'undefined' || !supabase) return null;
+  if (typeof supabase === 'undefined' || !supabase) return undefined;
   try {
     const { data, error } = await supabase
       .rpc('pedido_status', { p_chave: chave });
-    if (error) return null;
+    if (error) return undefined;
     return data || null;
-  } catch { return null; }
+  } catch { return undefined; }
 }
 
 async function _verificarPedidoPendenteAoCarregar() {

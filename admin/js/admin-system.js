@@ -777,7 +777,7 @@ function montarAcoesGrupo(ags) {
   let html = '';
 
   if (temPendente) {
-    html += `<button class="ag-btn ag-btn-primary ag-btn-sm" onclick="marcarGrupoComoPago(${JSON.stringify(ids)})">✅ Marcar todos como Pagos</button>`;
+    html += `<button class="ag-btn ag-btn-primary ag-btn-sm" onclick="marcarGrupoComoPago(${JSON.stringify(ids)},'${escapeAttr(ags[0].chave_pedido || '')}')">✅ Marcar todos como Pagos</button>`;
   }
   if (temPago) {
     html += `<button class="ag-btn ag-btn-secondary ag-btn-sm" onclick="marcarGrupoComoAtendido(${JSON.stringify(ids)})">🌙 Marcar todos como Atendidos</button>`;
@@ -833,12 +833,14 @@ async function marcarComoPago(id, chavePedido) {
   const { error: errAg } = await supabase
     .from('agendamentos')
     .update({ status: 'pago', pago_em: agora })
-    .eq('chave_pedido', chavePedido);
+    .eq('chave_pedido', chavePedido)
+    .eq('status', 'pendente'); // não reativa leituras canceladas/atendidas do mesmo pedido
   if (errAg) { _toastAdmin('Erro: ' + errAg.message, 'erro'); return; }
   const { error: errPed } = await supabase
     .from('pedidos')
     .update({ status: 'pago', pago_em: agora, metodo_pagamento: 'pix' })
-    .eq('chave_pedido', chavePedido);
+    .eq('chave_pedido', chavePedido)
+    .eq('status', 'pendente');
   if (errPed) { _toastAdmin('Erro ao atualizar pedido: ' + errPed.message, 'erro'); return; }
   _toastAdmin('✅ Pedido marcado como pago!', 'ok');
   carregarAgendamentos();
@@ -874,13 +876,23 @@ async function cancelarAgendamento(id) {
   carregarAgendamentos();
 }
 
-async function marcarGrupoComoPago(ids) {
+async function marcarGrupoComoPago(ids, chavePedido) {
   if (!_admAutenticado) { _mostrarLogin(); return; }
   if (!confirm(`Marcar ${ids.length} agendamento(s) como pagos?`)) return;
+  const agora = new Date().toISOString();
   const { error } = await supabase.from('agendamentos')
-    .update({ status: 'pago', pago_em: new Date().toISOString() })
-    .in('id', ids);
+    .update({ status: 'pago', pago_em: agora })
+    .in('id', ids)
+    .eq('status', 'pendente');
   if (error) { _toastAdmin('Erro: ' + error.message, 'erro'); return; }
+  // Atualiza também o pedido pai (senão o polling do cliente nunca confirma)
+  if (chavePedido) {
+    const { error: errPed } = await supabase.from('pedidos')
+      .update({ status: 'pago', pago_em: agora, metodo_pagamento: 'pix' })
+      .eq('chave_pedido', chavePedido)
+      .eq('status', 'pendente');
+    if (errPed) { _toastAdmin('Erro ao atualizar pedido: ' + errPed.message, 'erro'); return; }
+  }
   _toastAdmin('✅ Marcados como pagos!', 'ok');
   carregarAgendamentos();
 }
@@ -996,6 +1008,7 @@ function escapeAttr(s) {
 // ============================================================
 document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('btn-atualizar')?.addEventListener('click', () => {
+    clearInterval(_autoRefreshTimer); // sem isso cada clique acumulava um interval extra
     _autoRefreshTimer = null;
     carregarAgendamentos();
   });
