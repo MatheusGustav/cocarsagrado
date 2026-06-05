@@ -21,7 +21,7 @@ jobs:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
         run: |
           FILENAME="backup-$(date +'%Y-%m-%d_%H-%M-%S').sql"
-          pg_dump "$DATABASE_URL" \
+          /usr/lib/postgresql/17/bin/pg_dump "$DATABASE_URL" \
             --no-owner \
             --no-acl \
             --format=plain \
