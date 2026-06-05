@@ -225,7 +225,8 @@ async function salvarDiaData(str, btn) {
       profissional:    prof,
       data:            str,
       vagas_total:     qty,
-      vagas_restantes: Math.min(_overrideCache[`${prof}_${str}`]?.vagas_restantes ?? qty, qty),
+      // Recalcula restantes pelas ocupadas reais: aumentar o total reabre vagas
+      vagas_restantes: Math.max(0, qty - (_ocupadasCache[`${prof}_${str}`] ?? 0)),
       ate_horario:     selHor?.value || '18:00',
       ativo:           chk.checked,
       updated_at:      new Date().toISOString(),

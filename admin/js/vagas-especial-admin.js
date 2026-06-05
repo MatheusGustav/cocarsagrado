@@ -193,9 +193,14 @@ async function _salvarEspecial(data, card) {
   btn.disabled    = true;
   btn.textContent = 'Salvando...';
 
+  // Recalcula restantes a partir das vagas já ocupadas,
+  // para que aumentar o total reabra vagas corretamente.
   const rec = _especialCache.find(r => r.data === data);
-  let restantes = rec?.vagas_restantes ?? vagas;
-  if (restantes > vagas) restantes = vagas;
+  let restantes = vagas;
+  if (rec) {
+    const ocupadas = Math.max(0, (rec.vagas_total ?? 0) - (rec.vagas_restantes ?? 0));
+    restantes = Math.max(0, vagas - ocupadas);
+  }
 
   const { error } = await supabase
     .from('disponibilidade_especial')
@@ -215,6 +220,14 @@ async function _salvarEspecial(data, card) {
     setTimeout(() => { btn.textContent = orig; }, 2000);
     _toastEsp('❌ ' + error.message);
     return;
+  }
+
+  // Sincroniza cache e label de restantes
+  if (rec) {
+    rec.vagas_total     = vagas;
+    rec.vagas_restantes = restantes;
+    const lbl = card.querySelector('.esp-restantes');
+    if (lbl) lbl.textContent = `${restantes} vaga${restantes !== 1 ? 's' : ''} restante${restantes !== 1 ? 's' : ''}`;
   }
 
   btn.textContent = '✓ Salvo';
