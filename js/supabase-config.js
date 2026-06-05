@@ -6,10 +6,6 @@ const SUPABASE_CONFIG = {
   anonKey: 'sb_publishable_rfGhG8zjFnRgwzIBEN2Glw_vCWMBqeG'
 };
 
-const PIX_CHAVE  = 'cocarsagrado@gmail.com';
-const PIX_NOME   = 'Cocar Sagrado';
-const PIX_CIDADE = 'Guarapari';
-
 if (window.supabase && typeof window.supabase.createClient === 'function') {
   window.supabase = window.supabase.createClient(SUPABASE_CONFIG.url, SUPABASE_CONFIG.anonKey);
 } else {

@@ -587,13 +587,15 @@
             </div>
             <div class="pag-panel active pag-metodo-box" id="modal-painel-pix" role="tabpanel" aria-labelledby="modal-tab-pix">
               <h3>Pagamento via PIX</h3>
-              <p style="color:var(--text-muted);margin-bottom:16px;font-size:.9rem;">Gere o QR Code, pague pelo app do seu banco e avise no WhatsApp — confirmaremos manualmente.</p>
+              <p style="color:var(--text-muted);margin-bottom:16px;font-size:.9rem;">Gere o link, pague o PIX pelo checkout que abrir e pronto — a confirmação chega automaticamente.</p>
               <p style="text-align:center;font-size:1.05rem;margin-bottom:20px;">Valor: <strong id="modal-valor-pix">—</strong></p>
-              <div id="pix-qr-box" style="display:none;margin-bottom:16px;"></div>
+              <div id="pix-link-box" style="display:none;text-align:center;margin-bottom:16px;">
+                <a id="pix-link-btn" href="#" target="_blank" rel="noopener noreferrer" class="ag-btn ag-btn-primary" style="display:inline-flex;align-items:center;gap:8px;text-decoration:none;">💠 Abrir checkout para pagar</a>
+              </div>
               <div id="pix-erro-box" class="ag-alert ag-alert-error" style="display:none;margin-bottom:16px;"></div>
               <div id="pix-status-box" class="ag-alert ag-alert-success" style="display:none;margin-bottom:16px;">✅ Pagamento confirmado! Combinaremos o horário no WhatsApp.</div>
               <div class="pag-btns">
-                <button id="pix-gerar-btn" class="ag-btn ag-btn-primary" onclick="gerarLinkPix()">🔗 Gerar QR Code PIX</button>
+                <button id="pix-gerar-btn" class="ag-btn ag-btn-primary" onclick="gerarLinkPix()">🔗 Gerar link de pagamento</button>
                 <button class="ag-btn ag-btn-whatsapp" onclick="avisarWhatsAppModal('pix')">📱 Avisar que paguei via PIX</button>
               </div>
             </div>
@@ -634,7 +636,6 @@
     </div>
   </div>
 
-  <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js" crossorigin="anonymous"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js" crossorigin="anonymous"></script>
   <script src="js/supabase-config.js"></script>
   <script src="js/agendamento-system.js"></script>
