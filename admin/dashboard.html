@@ -7,6 +7,34 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
+  <script>
+    // Tema automático por horário (mesma regra do site: escuro antes das 6h e a partir das 18h).
+    // Sem toggle — troca no segundo exato do cruzamento (6h/18h) e reagenda o próximo.
+    (function() {
+      var timer = null;
+      function aplicarTemaPorHorario() {
+        var agora = new Date();
+        var h = agora.getHours();
+        var escuro = h < 6 || h >= 18;
+        document.documentElement.setAttribute('data-theme', escuro ? 'dark' : 'light');
+
+        // Próximo cruzamento: 6h ou 18h de hoje, senão 6h de amanhã
+        var proximo = new Date(agora);
+        proximo.setMinutes(0, 0, 0);
+        if (h < 6)       proximo.setHours(6);
+        else if (h < 18) proximo.setHours(18);
+        else { proximo.setDate(proximo.getDate() + 1); proximo.setHours(6); }
+
+        clearTimeout(timer);
+        timer = setTimeout(aplicarTemaPorHorario, proximo - agora + 1000); // +1s de folga
+      }
+      aplicarTemaPorHorario();
+      // Aba em background atrasa timers — ao voltar à aba, corrige na hora
+      document.addEventListener('visibilitychange', function() {
+        if (!document.hidden) aplicarTemaPorHorario();
+      });
+    })();
+  </script>
   <link rel="stylesheet" href="../css/agendamento-styles.css">
   <link rel="stylesheet" href="css/dashboard.css">
   <style>
@@ -109,6 +137,23 @@
       background: #fff4d6;
       border-color: #B8923E;
       color: #6b5118;
+    }
+
+    /* Modo escuro do mascote (tema automático por horário) */
+    [data-theme="dark"] .mascote-balao {
+      background: #1A2818;
+      color: #E8E2CC;
+      border-color: #2A3A28;
+    }
+    [data-theme="dark"] .mascote-pendente .mascote-balao {
+      background: #3A1717;
+      border-color: #B91C1C;
+      color: #FCA5A5;
+    }
+    [data-theme="dark"] .mascote-grana .mascote-balao {
+      background: #2A2310;
+      border-color: #B8923E;
+      color: #E8C97E;
     }
 
     @media (max-width: 700px) {
