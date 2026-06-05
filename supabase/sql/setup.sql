@@ -35,6 +35,10 @@ AS $$
   );
 $$;
 
+-- Só authenticated executa (policies RLS rodam como o role consultante)
+REVOKE ALL ON FUNCTION public.is_admin() FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.is_admin() TO authenticated;
+
 -- Atualiza updated_at em UPDATE (disponibilidade_especial/override).
 CREATE OR REPLACE FUNCTION public.update_updated_at_column()
 RETURNS trigger
@@ -46,6 +50,8 @@ BEGIN
   RETURN NEW;
 END;
 $$;
+
+REVOKE ALL ON FUNCTION public.update_updated_at_column() FROM PUBLIC, anon, authenticated;
 
 -- ============================================================
 -- 1) TIPOS DE LEITURA (catálogo de serviços)
@@ -179,6 +185,7 @@ CREATE POLICY "auth_admin_disp_especial" ON public.disponibilidade_especial
 
 -- Devolve 1 vaga (até o total) ao cancelar/apagar um agendamento
 -- especial. Chamada pelo painel admin (admin-system.js).
+-- Só authenticated executa (anon revogado — segurança).
 CREATE OR REPLACE FUNCTION public.incrementar_vagas_restantes(p_profissional text, p_data date)
 RETURNS void
 LANGUAGE plpgsql
@@ -191,6 +198,10 @@ BEGIN
     AND data = p_data;
 END;
 $$;
+
+REVOKE ALL ON FUNCTION public.incrementar_vagas_restantes(text, date) FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.incrementar_vagas_restantes(text, date) FROM anon;
+GRANT EXECUTE ON FUNCTION public.incrementar_vagas_restantes(text, date) TO authenticated;
 
 -- ============================================================
 -- 2.3) DISPONIBILIDADE OVERRIDE (ajuste de vagas que sobrepõe o padrão)
@@ -313,6 +324,9 @@ CREATE TRIGGER trg_desconto_primeiro_cliente
   FOR EACH ROW
   EXECUTE FUNCTION public.validar_desconto_primeiro_cliente();
 
+-- Função de trigger: não é endpoint REST (EXECUTE só checado na criação do trigger)
+REVOKE ALL ON FUNCTION public.validar_desconto_primeiro_cliente() FROM PUBLIC, anon, authenticated;
+
 -- Agendamento especial: decrementa vaga em disponibilidade_especial de
 -- forma atômica (FOR UPDATE) e bloqueia o INSERT se não houver vaga.
 CREATE OR REPLACE FUNCTION public.decrementar_vaga_especial_trigger()
@@ -361,6 +375,63 @@ CREATE TRIGGER trg_decrementar_vaga_especial
   BEFORE INSERT ON public.agendamentos
   FOR EACH ROW
   EXECUTE FUNCTION public.decrementar_vaga_especial_trigger();
+
+REVOKE ALL ON FUNCTION public.decrementar_vaga_especial_trigger() FROM PUBLIC, anon, authenticated;
+
+-- Agendamento normal (não especial): valida vagas de disponibilidade_override
+-- de forma atômica (FOR UPDATE serializa INSERTs concorrentes) — anti-overbooking.
+CREATE OR REPLACE FUNCTION public.validar_vaga_normal_trigger()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_total  INTEGER;
+  v_ativo  BOOLEAN;
+  v_usadas INTEGER;
+BEGIN
+  IF NEW.agendamento_especial IS TRUE THEN
+    RETURN NEW;
+  END IF;
+
+  IF NEW.terapeuta IS NULL OR NEW.data_agendamento IS NULL THEN
+    RETURN NEW;
+  END IF;
+
+  SELECT vagas_total, ativo INTO v_total, v_ativo
+  FROM public.disponibilidade_override
+  WHERE profissional = NEW.terapeuta
+    AND data = NEW.data_agendamento
+  FOR UPDATE;
+
+  IF v_total IS NULL OR v_ativo IS NOT TRUE THEN
+    RAISE EXCEPTION 'Sem vagas disponíveis para % em %',
+      NEW.terapeuta, NEW.data_agendamento;
+  END IF;
+
+  SELECT count(*) INTO v_usadas
+  FROM public.agendamentos
+  WHERE terapeuta = NEW.terapeuta
+    AND data_agendamento = NEW.data_agendamento
+    AND agendamento_especial IS NOT TRUE
+    AND status IN ('pendente', 'pago', 'confirmado', 'atendido');
+
+  IF v_usadas >= v_total THEN
+    RAISE EXCEPTION 'Sem vagas disponíveis para % em %',
+      NEW.terapeuta, NEW.data_agendamento;
+  END IF;
+
+  RETURN NEW;
+END;
+$$;
+
+CREATE TRIGGER trg_validar_vaga_normal
+  BEFORE INSERT ON public.agendamentos
+  FOR EACH ROW
+  EXECUTE FUNCTION public.validar_vaga_normal_trigger();
+
+REVOKE ALL ON FUNCTION public.validar_vaga_normal_trigger() FROM PUBLIC, anon, authenticated;
 
 -- RPC consultada pelo frontend antes do INSERT
 CREATE OR REPLACE FUNCTION public.cliente_elegivel_desconto(p_whatsapp text)
@@ -512,12 +583,17 @@ $$;
 
 REVOKE ALL ON FUNCTION public.confirmar_pedido_pago(text, text) FROM PUBLIC;
 REVOKE ALL ON FUNCTION public.confirmar_pedido_pago(text, text) FROM anon;
+REVOKE ALL ON FUNCTION public.confirmar_pedido_pago(text, text) FROM authenticated;
 GRANT EXECUTE ON FUNCTION public.confirmar_pedido_pago(text, text) TO service_role;
 
 -- criar_pedido: cria pedido pai + N agendamentos filhos numa transação só.
 -- SECURITY DEFINER porque anon não tem SELECT/DELETE em pedidos (LGPD).
 -- Triggers BEFORE INSERT de agendamentos rodam por linha; se algum RAISE,
 -- a transação inteira faz rollback.
+-- Validações server-side: 1–4 itens; tipo ativo + terapeuta confere;
+-- valor_original = preco_original × qty (1–5; especial = 1); desconto
+-- máximo = maior entre promoção ativa e 10% novo cliente (não acumulam);
+-- valor_total = soma dos valor_final.
 CREATE OR REPLACE FUNCTION public.criar_pedido(
   p_chave               text,
   p_nome                text,
@@ -534,9 +610,27 @@ SECURITY DEFINER
 SET search_path = public
 AS $$
 DECLARE
-  v_pedido_id bigint;
-  v_item      jsonb;
+  v_pedido_id      bigint;
+  v_item           jsonb;
+  v_n              integer;
+  v_tipo           public.tipos_leitura%ROWTYPE;
+  v_valor_original numeric;
+  v_desconto       numeric;
+  v_valor_final    numeric;
+  v_qty            numeric;
+  v_promo_pct      numeric;
+  v_max_pct        numeric;
+  v_min_final      numeric;
+  v_soma           numeric := 0;
+  v_cfg            jsonb;
 BEGIN
+  v_n := COALESCE(jsonb_array_length(p_itens), 0);
+  IF v_n < 1 OR v_n > 4 THEN
+    RAISE EXCEPTION 'pedido_invalido: o pedido deve ter entre 1 e 4 leituras';
+  END IF;
+
+  SELECT valor INTO v_cfg FROM public.configuracoes WHERE chave = 'descontos';
+
   INSERT INTO public.pedidos (
     chave_pedido, cliente_nome, cliente_nascimento, cliente_whatsapp,
     cliente_email, valor_total, aceitou_desconto_10, status
@@ -548,6 +642,58 @@ BEGIN
 
   FOR v_item IN SELECT * FROM jsonb_array_elements(p_itens)
   LOOP
+    SELECT * INTO v_tipo
+    FROM public.tipos_leitura
+    WHERE id = (v_item->>'tipo_leitura_id')::bigint
+      AND ativo = TRUE;
+    IF NOT FOUND THEN
+      RAISE EXCEPTION 'pedido_invalido: leitura inexistente ou inativa';
+    END IF;
+    IF v_tipo.terapeuta IS DISTINCT FROM (v_item->>'terapeuta') THEN
+      RAISE EXCEPTION 'pedido_invalido: terapeuta não confere com o catálogo';
+    END IF;
+
+    v_valor_original := COALESCE((v_item->>'valor_original')::numeric, -1);
+    v_desconto       := COALESCE((v_item->>'desconto_aplicado')::numeric, 0);
+    v_valor_final    := COALESCE((v_item->>'valor_final')::numeric, -1);
+
+    -- valor_original deve ser múltiplo do preço do catálogo (qty 1–5; especial = 1)
+    IF v_tipo.preco_original = 0 THEN
+      IF v_valor_original <> 0 THEN
+        RAISE EXCEPTION 'pedido_invalido: valor não confere com o catálogo';
+      END IF;
+    ELSE
+      v_qty := v_valor_original / v_tipo.preco_original;
+      IF v_qty <> trunc(v_qty) OR v_qty < 1 OR v_qty > 5
+         OR (v_tipo.especial AND v_qty <> 1) THEN
+        RAISE EXCEPTION 'pedido_invalido: valor não confere com o catálogo';
+      END IF;
+    END IF;
+
+    -- Percentual de promoção ativa do serviço (id salvo = slug ou grupo_slug)
+    v_promo_pct := 0;
+    IF v_cfg IS NOT NULL THEN
+      SELECT COALESCE(max((p->>'percentualDesconto')::numeric), 0) INTO v_promo_pct
+      FROM jsonb_array_elements(COALESCE(v_cfg->'promocoes', '[]'::jsonb)) AS p
+      WHERE COALESCE((p->>'descontoAtivo')::boolean, FALSE)
+        AND p->>'id' IN (v_tipo.slug, v_tipo.grupo_slug);
+    END IF;
+
+    -- Desconto máximo: promoção OU 10% de novo cliente (não acumulam).
+    -- Os 10% só valem se o item carrega a flag aceitou_novo_cliente — assim
+    -- o trigger validar_desconto_primeiro_cliente sempre confere a elegibilidade.
+    v_max_pct   := greatest(v_promo_pct,
+      CASE WHEN COALESCE((v_item->>'aceitou_novo_cliente')::boolean, FALSE) THEN 10 ELSE 0 END);
+    v_min_final := round(v_valor_original * (100 - v_max_pct) / 100, 2);
+
+    IF v_valor_final < v_min_final - 0.01
+       OR v_valor_final > v_valor_original
+       OR abs(v_valor_final - (v_valor_original - v_desconto)) > 0.01 THEN
+      RAISE EXCEPTION 'pedido_invalido: desconto acima do permitido';
+    END IF;
+
+    v_soma := v_soma + v_valor_final;
+
     INSERT INTO public.agendamentos (
       chave_pedido, pedido_id, tipo_leitura_id, terapeuta,
       cliente_nome, cliente_nascimento, cliente_whatsapp, cliente_email,
@@ -557,20 +703,24 @@ BEGIN
     ) VALUES (
       p_chave,
       v_pedido_id,
-      (v_item->>'tipo_leitura_id')::bigint,
+      v_tipo.id,
       v_item->>'terapeuta',
       p_nome, p_nascimento, p_whatsapp, p_email,
       v_item->>'observacoes',
       (v_item->>'data')::date,
       (v_item->>'horario')::time,
-      (v_item->>'valor_original')::numeric,
-      (v_item->>'desconto_aplicado')::numeric,
-      (v_item->>'valor_final')::numeric,
+      v_valor_original,
+      v_desconto,
+      v_valor_final,
       COALESCE((v_item->>'aceitou_novo_cliente')::boolean, FALSE),
-      COALESCE((v_item->>'agendamento_especial')::boolean, FALSE),
+      v_tipo.especial,  -- vem do catálogo, não do cliente (impede burlar a trava de vagas)
       'pendente'
     );
   END LOOP;
+
+  IF abs(p_valor_total - v_soma) > 0.05 THEN
+    RAISE EXCEPTION 'pedido_invalido: total não confere com a soma das leituras';
+  END IF;
 
   RETURN p_chave;
 END;

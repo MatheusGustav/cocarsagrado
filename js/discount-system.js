@@ -142,7 +142,8 @@ async function renderizarDescontos() {
 
   document.querySelectorAll('.cat-card[data-service-id]').forEach(card => {
     const serviceId = card.dataset.serviceId;
-    const servico   = promocoes.find(p => p.id === serviceId) || null;
+    // Grupos: o admin salva o id sem prefixo ('amarracao'); o card usa 'grupo:amarracao'
+    const servico   = promocoes.find(p => p.id === serviceId || `grupo:${p.id}` === serviceId) || null;
     const resultado = calcularResultado(servico, aceitou10);
     const footer    = card.querySelector('.cat-footer');
     if (!footer) return;

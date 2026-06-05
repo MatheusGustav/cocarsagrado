@@ -46,22 +46,11 @@ CREATE POLICY "auth_all_disp_especial"
   WITH CHECK (true);
 
 -- ============================================================
--- Funções para controle de vagas restantes
+-- Função para devolver vaga (cancelamento pelo painel admin)
+-- decrementar_vagas_restantes foi REMOVIDA: o decremento é feito
+-- exclusivamente pelo trigger trg_decrementar_vaga_especial.
+-- anon NÃO executa (revogado — segurança).
 -- ============================================================
-CREATE OR REPLACE FUNCTION public.decrementar_vagas_restantes(
-  p_profissional text,
-  p_data date
-)
-RETURNS void AS $$
-BEGIN
-  UPDATE public.disponibilidade_especial
-  SET vagas_restantes = vagas_restantes - 1
-  WHERE profissional = p_profissional
-    AND data = p_data
-    AND vagas_restantes > 0;
-END;
-$$ LANGUAGE plpgsql;
-
 CREATE OR REPLACE FUNCTION public.incrementar_vagas_restantes(
   p_profissional text,
   p_data date
@@ -75,10 +64,9 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-GRANT EXECUTE ON FUNCTION public.decrementar_vagas_restantes TO anon;
-GRANT EXECUTE ON FUNCTION public.incrementar_vagas_restantes TO anon;
-GRANT EXECUTE ON FUNCTION public.decrementar_vagas_restantes TO authenticated;
-GRANT EXECUTE ON FUNCTION public.incrementar_vagas_restantes TO authenticated;
+REVOKE ALL ON FUNCTION public.incrementar_vagas_restantes(text, date) FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.incrementar_vagas_restantes(text, date) FROM anon;
+GRANT EXECUTE ON FUNCTION public.incrementar_vagas_restantes(text, date) TO authenticated;
 
 -- ============================================================
 -- Trigger atômico (BEFORE INSERT) — previne overbooking
