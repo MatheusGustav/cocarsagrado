@@ -122,6 +122,12 @@
       user-select: none;
     }
     .mascote-chefe.dragging .mascote-img { cursor: grabbing; }
+    .mascote-chefe.snapping { transition: left .3s cubic-bezier(.2,.8,.3,1.1), top .3s cubic-bezier(.2,.8,.3,1.1); }
+    /* Cantos esquerdos: bolinha no canto, balão abre pra direita */
+    .mascote-chefe.mascote-esquerda { flex-direction: row-reverse; }
+    /* Balão some durante o arrasto e reaparece suave no lado certo */
+    .mascote-balao { transition: opacity .18s ease, transform .18s ease; }
+    .mascote-chefe.balao-oculto .mascote-balao { opacity: 0; transform: scale(.85); }
     .mascote-pendente .mascote-balao {
       background: #fff1f1;
       border-color: #B91C1C;
