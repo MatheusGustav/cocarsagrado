@@ -62,134 +62,6 @@ function aplicarDescontoAutomatico() {
 }
 
 
-/* ============================================================
-   2. OVERLAY DE PRIMEIRA VISITA
-   ============================================================
-   Usa localStorage para detectar se o usuário já visitou o site.
-   Na primeira visita: exibe overlay + blur na página.
-   Nas visitas seguintes: não exibe nada.
-
-   Para resetar e testar a primeira visita novamente:
-   Abra o console do navegador e execute:
-   localStorage.removeItem('cocarsagrado_visitou')
-   ============================================================ */
-
-const CHAVE_LOCALSTORAGE = 'cocarsagrado_visitou'; // Nome da chave salva no localStorage
-
-function _lsGet(key) {
-  try { return localStorage.getItem(key); } catch { return null; }
-}
-function _lsSet(key, val) {
-  try { localStorage.setItem(key, val); } catch { /* private browsing */ }
-}
-
-/**
- * Verifica se é a primeira visita e exibe o overlay se necessário.
- */
-async function inicializarOverlay() {
-  const overlayBackdrop = document.getElementById('overlayBackdrop');
-  if (!overlayBackdrop) return;
-
-  // Verifica se o usuário já visitou ou já fez uma compra
-  const jaVisitou  = _lsGet(CHAVE_LOCALSTORAGE);
-  const jaComprou  = _lsGet('cocarsagrado_comprou');
-
-  if (jaVisitou || jaComprou) return;
-
-  // Verifica se o admin habilitou o popup de 10%
-  try {
-    if (typeof carregarConfig === 'function') {
-      const cfg = await carregarConfig();
-      if (!cfg.desconto10Habilitado) return;
-    }
-  } catch {}
-
-  // Primeira visita — mostra o overlay e aplica blur na página
-  overlayBackdrop.classList.remove('overlay--hidden');
-  document.body.classList.add('overlay-active');
-  // Move foco pro overlay
-  const overlayEnter = document.getElementById('overlayEnter');
-  if (overlayEnter) setTimeout(() => overlayEnter.focus(), 100);
-
-  // Botão principal: "Garantir meu desconto"
-  const btnEntrar = document.getElementById('overlayEnter');
-  if (btnEntrar) {
-    btnEntrar.addEventListener('click', () => {
-      _lsSet('aceitouDesconto10', 'true');
-      fecharOverlay();
-      // Rola suavemente até o catálogo
-      setTimeout(() => {
-        const catalogo = document.getElementById('catalogo');
-        if (catalogo) catalogo.scrollIntoView({ behavior: 'smooth' });
-      }, 300);
-    });
-  }
-
-  // Botão secundário: "Recusar o desconto"
-  const btnPular = document.getElementById('overlaySkip');
-  if (btnPular) {
-    btnPular.addEventListener('click', () => {
-      _lsSet('aceitouDesconto10', 'false');
-      fecharOverlay();
-    });
-  }
-
-  // Botão X de fechar (tratado como recusa)
-  const btnFechar = document.getElementById('overlayClose');
-  if (btnFechar) {
-    btnFechar.addEventListener('click', () => {
-      _lsSet('aceitouDesconto10', 'false');
-      fecharOverlay();
-    });
-  }
-
-  // Helper: só age enquanto o overlay estiver realmente visível.
-  const overlayVisivel = () => !overlayBackdrop.classList.contains('overlay--hidden');
-
-  // Fecha ao clicar fora do card (tratado como recusa)
-  overlayBackdrop.addEventListener('click', (e) => {
-    if (overlayVisivel() && e.target === overlayBackdrop) {
-      _lsSet('aceitouDesconto10', 'false');
-      fecharOverlay();
-    }
-  });
-
-  // Fecha ao pressionar ESC (tratado como recusa) — só se o overlay estiver aberto
-  document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' && overlayVisivel()) {
-      _lsSet('aceitouDesconto10', 'false');
-      fecharOverlay();
-    }
-  });
-}
-
-/**
- * Fecha o overlay, remove o blur e salva no localStorage.
- */
-function fecharOverlay() {
-  const overlayBackdrop = document.getElementById('overlayBackdrop');
-  if (!overlayBackdrop) return;
-
-  // Animação de saída suave
-  overlayBackdrop.style.opacity = '0';
-  overlayBackdrop.style.transition = 'opacity 0.3s ease';
-
-  setTimeout(() => {
-    overlayBackdrop.classList.add('overlay--hidden');
-    document.body.classList.remove('overlay-active');
-    // Restaura foco pro header
-    document.querySelector('[data-last-focus]')?.removeAttribute('data-last-focus');
-  }, 300);
-
-  // Salva no localStorage que o usuário já visitou
-  _lsSet(CHAVE_LOCALSTORAGE, 'true');
-
-  // Atualiza preços do catálogo com base na escolha do usuário
-  if (typeof renderizarDescontos === 'function') {
-    renderizarDescontos();
-  }
-}
-
 
 /* ============================================================
    3. HEADER — SCROLL SHADOW + MENU MOBILE
@@ -567,9 +439,8 @@ document.addEventListener('DOMContentLoaded', () => {
   // 1. Banner de desconto (só aparece se DESCONTO_CONFIG.ATIVO = true)
   aplicarDescontoAutomatico();
 
-  // 2. Overlay de primeira visita (sequencial ao modal in-app)
-  const inAppAtivo = inicializarModalInApp();
-  if (!inAppAtivo) inicializarOverlay();
+  // 2. Modal de navegador in-app (Instagram / TikTok)
+  inicializarModalInApp();
 
   // 3. Header com shadow e menu mobile
   inicializarHeader();

@@ -2597,39 +2597,6 @@ body.modal-aberto { overflow: hidden; }
   margin-bottom: 12px;
 }
 
-.desc-bv-card {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 14px;
-  padding: 20px 22px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 20px;
-  box-shadow: 0 2px 8px rgba(1,55,24,0.06);
-}
-
-.desc-bv-info {
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-}
-
-.desc-bv-info strong {
-  font-family: 'DM Sans', system-ui, sans-serif;
-  font-size: .9rem;
-  font-weight: 600;
-  color: var(--text);
-}
-
-.desc-bv-info span {
-  font-family: 'DM Sans', system-ui, sans-serif;
-  font-size: .78rem;
-  color: var(--text-muted);
-  line-height: 1.55;
-  max-width: 500px;
-}
-
 /* Grade de serviços */
 .desc-grid {
   display: grid;
@@ -2845,7 +2812,6 @@ body.modal-aberto { overflow: hidden; }
 
 @media (max-width: 640px) {
   .desc-grid { grid-template-columns: 1fr; }
-  .desc-bv-card { flex-direction: column; align-items: flex-start; }
 }
 
 /* ============================================================

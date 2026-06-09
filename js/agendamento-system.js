@@ -93,10 +93,6 @@ function _promoDoServico(serviceId) {
 
 function calcularPrecoFinal(precoOriginal) {
   const preco = parseFloat(precoOriginal) || 0;
-  if (_lsGet('aceitouDesconto10') === 'true') {
-    const final = Math.round(preco * 90) / 100;
-    return { final, desconto: preco - final };
-  }
   const servico = _promoDoServico(Estado.serviceId);
   if (servico?.descontoAtivo && servico.percentualDesconto > 0) {
     const pct   = servico.percentualDesconto;
@@ -106,7 +102,7 @@ function calcularPrecoFinal(precoOriginal) {
   return { final: preco, desconto: 0 };
 }
 
-// Preço aplicando SOMENTE o desconto promocional do serviço (sem o 10% novo cliente).
+// Preço aplicando o desconto promocional do serviço, se houver.
 function _precoComPromoServico(precoOriginal, serviceId) {
   const preco = parseFloat(precoOriginal) || 0;
   const servico = _promoDoServico(serviceId);
@@ -116,32 +112,17 @@ function _precoComPromoServico(precoOriginal, serviceId) {
   return preco;
 }
 
-// Desconto de novo cliente (10%) vale para UMA leitura só: a de maior preço-base.
 // Recebe itens com { valor_original, preco_base } e devolve cada um com
-// valor_final / desconto_aplicado / aplicou_novo_cliente calculados.
+// valor_final / desconto_aplicado calculados. O preço já vem com a promoção
+// do serviço aplicada (preco_base), então aqui é só consolidar os valores.
 function _aplicarDescontosCarrinho(itens) {
-  const novoCliente = _lsGet('aceitouDesconto10') === 'true';
-  let idxDesc = -1;
-  if (novoCliente && itens.length) {
-    idxDesc = 0;
-    for (let i = 1; i < itens.length; i++) {
-      if ((itens[i].preco_base ?? 0) > (itens[idxDesc].preco_base ?? 0)) idxDesc = i;
-    }
-  }
-  return itens.map((it, i) => {
+  return itens.map((it) => {
     const original = parseFloat(it.valor_original) || 0;
-    const base     = it.preco_base ?? original;
-    // 10% incide sobre o preço ORIGINAL e NÃO acumula com promoção (mesma
-    // regra da vitrine). Se a promoção for melhor, prevalece a promoção e o
-    // cliente preserva a elegibilidade do desconto de novo cliente.
-    const com10    = Math.round(original * 90) / 100;
-    const aplica   = i === idxDesc && com10 < base;
-    const final    = aplica ? com10 : base;
+    const final    = it.preco_base ?? original;
     return {
       ...it,
       valor_final: final,
       desconto_aplicado: original - final,
-      aplicou_novo_cliente: aplica,
     };
   });
 }
@@ -511,8 +492,7 @@ function atualizarResumo() {
   const data = Estado.dataSelecionada;
   if (!tipo || !data) return;
 
-  // Simula esta leitura entrando no carrinho para refletir o desconto real
-  // (o 10% de novo cliente vai para a leitura de maior preço, não para todas).
+  // Simula esta leitura entrando no carrinho para refletir o preço real.
   const tentativa = {
     valor_original: tipo.preco_original,
     preco_base: _precoComPromoServico(tipo.preco_original, Estado.serviceId),
@@ -611,9 +591,6 @@ function _renderizarCarrinho() {
     const entregaLabel = item.horario && item.horario !== '00:00'
       ? `Entrega até ${item.horario.slice(0,5)}`
       : 'Entrega no dia';
-    const badgeDesc = item.aplicou_novo_cliente
-      ? '<span class="cart-item-badge-desc">Desconto 10% aplicado</span>'
-      : '';
     html += `
       <div class="cart-item">
         <div class="cart-item-header">
@@ -624,7 +601,6 @@ function _renderizarCarrinho() {
           <span>${d.getDate()} de ${MESES_PT[d.getMonth()]}</span>
           <span>${entregaLabel}</span>
         </div>
-        ${badgeDesc}
         <div class="cart-item-price">R$ ${item.valor_final.toFixed(2).replace('.',',')}</div>
       </div>`;
   });
@@ -728,36 +704,20 @@ function irParaRevisao() {
 }
 
 async function salvarMultiplosAgendamentos(itensPre) {
-  const aceitouDesconto = _lsGet('aceitouDesconto10') === 'true';
   const whatsapp = Estado.dadosPessoais.whatsapp;
 
-  // Pré-valida elegibilidade do desconto de novo cliente
-  if (aceitouDesconto) {
-    const { data: elegivel, error: errElig } = await supabase
-      .rpc('cliente_elegivel_desconto', { p_whatsapp: whatsapp });
-    if (errElig) throw errElig;
-    if (elegivel === false) {
-      localStorage.setItem('aceitouDesconto10', 'false');
-      _renderizarCarrinho(); // recalcula sem o 10%
-      const err = new Error('Você já tem agendamento conosco — o desconto de novo cliente não se aplica. Os valores foram atualizados, revise antes de continuar.');
-      err.userMessage = true;
-      throw err;
-    }
-  }
-
-  // Itens já com desconto distribuído (a leitura mais cara recebe o 10%).
+  // Itens já com a promoção do serviço aplicada.
   const itens = itensPre || _aplicarDescontosCarrinho(Estado.carrinho);
   const chave = await gerarChavePedido();
   const totalFinal = itens.reduce((s, i) => s + i.valor_final, 0);
-  const usouNovoCliente = itens.some(i => i.aplicou_novo_cliente);
   const nome = Estado.dadosPessoais.nome;
   const nascimento = Estado.dadosPessoais.nascimento || null;
 
   // Monta os itens para a RPC. A RPC criar_pedido (SECURITY DEFINER) insere o
   // pedido pai + N agendamentos numa única transação. Necessária porque anon
   // não tem SELECT em pedidos (LGPD), então .insert().select() falharia. Se
-  // um trigger BEFORE INSERT der RAISE (sem vaga / desconto inválido), a
-  // transação inteira faz rollback automático.
+  // um trigger BEFORE INSERT der RAISE (sem vaga), a transação inteira faz
+  // rollback automático.
   const payloadItens = itens.map((item) => ({
     tipo_leitura_id: item.tipo.id,
     terapeuta: item.terapeuta,
@@ -767,7 +727,6 @@ async function salvarMultiplosAgendamentos(itensPre) {
     valor_original: item.valor_original,
     desconto_aplicado: item.desconto_aplicado,
     valor_final: item.valor_final,
-    aceitou_novo_cliente: item.aplicou_novo_cliente,
     agendamento_especial: item.agendamento_especial,
   }));
 
@@ -778,20 +737,17 @@ async function salvarMultiplosAgendamentos(itensPre) {
     p_whatsapp: whatsapp,
     p_email: Estado.dadosPessoais.email || null,
     p_valor_total: totalFinal,
-    p_aceitou_desconto_10: usouNovoCliente,
+    // O desconto de 10% de novo cliente foi descontinuado. Mantemos o
+    // parâmetro (sempre false) só para casar com a assinatura atual da RPC
+    // criar_pedido (8 args), evitando quebra de checkout com JS em cache.
+    // TODO(limpeza): remover quando a RPC for enxugada p/ 7 args — ver CLAUDE.md.
+    p_aceitou_desconto_10: false,
     p_itens: payloadItens,
   });
 
   if (rpcErr) {
     if (/sem vagas/i.test(rpcErr.message)) {
       const err = new Error('Uma das leituras ficou sem vagas para a data escolhida. Nenhum agendamento foi criado — escolha outra data e tente de novo.');
-      err.userMessage = true;
-      throw err;
-    }
-    if (/desconto_novo_cliente_invalido/i.test(rpcErr.message)) {
-      localStorage.setItem('aceitouDesconto10', 'false');
-      _renderizarCarrinho();
-      const err = new Error('Desconto de novo cliente não se aplica. Os valores foram atualizados — revise antes de continuar.');
       err.userMessage = true;
       throw err;
     }

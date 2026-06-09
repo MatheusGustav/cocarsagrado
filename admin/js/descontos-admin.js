@@ -26,11 +26,11 @@ async function inicializarDescontos() {
 
     if (leiturasResp.error) throw leiturasResp.error;
 
-    const valor = configResp?.data?.valor || { desconto10Habilitado: true, promocoes: [] };
+    const valor = configResp?.data?.valor || { promocoes: [] };
     _descConfig = _descMergeComMeta(leiturasResp.data || [], valor);
   } catch (e) {
     console.error('Erro ao carregar descontos:', e);
-    _descConfig = _descMergeComMeta([], { desconto10Habilitado: true, promocoes: [] });
+    _descConfig = _descMergeComMeta([], { promocoes: [] });
   }
 
   _descRenderizar();
@@ -105,10 +105,7 @@ function _descMergeComMeta(linhas, valor) {
     badge:              salvoMap[meta.id]?.badge              ?? '',
   }));
 
-  return {
-    desconto10Habilitado: valor.desconto10Habilitado ?? true,
-    promocoes,
-  };
+  return { promocoes };
 }
 
 function _descFmt(preco, pct) {
@@ -131,24 +128,9 @@ function _descRenderizar() {
   const container = document.getElementById('descontos-container');
   if (!container || !_descConfig) return;
 
-  const { desconto10Habilitado, promocoes } = _descConfig;
+  const { promocoes } = _descConfig;
 
   container.innerHTML = `
-    <div class="desc-bloco">
-      <div class="desc-bloco-titulo">Desconto de Boas-Vindas</div>
-      <div class="desc-bv-card">
-        <div class="desc-bv-info">
-          <strong>10% OFF para novos visitantes</strong>
-          <span>Exibe popup na primeira visita convidando o cliente a garantir 10% em todos os serviços. Desativado, o popup não aparece e nenhum cliente novo recebe o desconto.</span>
-        </div>
-        <label class="desc-toggle-wrap">
-          <input type="checkbox" id="desc-toggle-10off" ${desconto10Habilitado ? 'checked' : ''}>
-          <span class="desc-toggle-track"><span class="desc-toggle-thumb"></span></span>
-          <span class="desc-toggle-txt" id="desc-label-10off">${desconto10Habilitado ? 'Ativo' : 'Inativo'}</span>
-        </label>
-      </div>
-    </div>
-
     <div class="desc-bloco">
       <div class="desc-bloco-titulo">Promoções por Serviço</div>
       <div class="desc-grid">
@@ -162,10 +144,6 @@ function _descRenderizar() {
       </button>
     </div>
   `;
-
-  document.getElementById('desc-toggle-10off').addEventListener('change', function () {
-    document.getElementById('desc-label-10off').textContent = this.checked ? 'Ativo' : 'Inativo';
-  });
 }
 
 function _descEsc(s) {
@@ -249,8 +227,6 @@ async function salvarDescontos() {
   btn.disabled = true;
   btn.textContent = 'Salvando...';
 
-  const desconto10Habilitado = document.getElementById('desc-toggle-10off')?.checked ?? true;
-
   const promocoes = (_descConfig?.promocoes || []).map(s => {
     const card = document.querySelector(`.desc-card[data-id="${s.id}"]`);
     if (!card) return s;
@@ -263,9 +239,9 @@ async function salvarDescontos() {
   try {
     const { error } = await supabase
       .from('configuracoes')
-      .upsert({ chave: 'descontos', valor: { desconto10Habilitado, promocoes } }, { onConflict: 'chave' });
+      .upsert({ chave: 'descontos', valor: { promocoes } }, { onConflict: 'chave' });
     if (error) throw error;
-    _descConfig = { desconto10Habilitado, promocoes };
+    _descConfig = { promocoes };
     _toastAdmin('✅ Descontos salvos com sucesso!', 'ok');
   } catch (e) {
     _toastAdmin('Erro ao salvar: ' + (e.message || e), 'erro');
