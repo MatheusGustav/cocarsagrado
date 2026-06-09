@@ -1,12 +1,9 @@
 /* ============================================================
    SISTEMA DE DESCONTOS — COCAR SAGRADO
-   Prioridade:
-   1. Usuário aceitou 10% → mostra 10% em TUDO (ignora promoções)
-   2. Usuário recusou → verifica promoções por serviço
-   3. Sem promoção → preço normal
+   Apenas promoções por serviço (configuracoes.descontos):
+   - Serviço com promoção ativa → mostra o preço com desconto
+   - Sem promoção → preço normal
    ============================================================ */
-
-const DESCONTO_10_KEY = 'aceitouDesconto10';
 
 let _configCache = null;
 
@@ -19,12 +16,9 @@ async function carregarConfig() {
       .eq('chave', 'descontos')
       .single();
     if (error) throw error;
-    _configCache = {
-      desconto10Habilitado: data.valor.desconto10Habilitado ?? true,
-      promocoes:            data.valor.promocoes            || [],
-    };
+    _configCache = { promocoes: data.valor.promocoes || [] };
   } catch {
-    _configCache = { desconto10Habilitado: true, promocoes: [] };
+    _configCache = { promocoes: [] };
   }
   return _configCache;
 }
@@ -34,14 +28,7 @@ async function carregarPromocoes() {
   return cfg.promocoes;
 }
 
-function verificarStatusDesconto10() {
-  return localStorage.getItem(DESCONTO_10_KEY) === 'true';
-}
-
-function calcularResultado(servico, aceitou10) {
-  if (aceitou10) {
-    return { tipo: '10off', percentual: 10, badge: '10% OFF' };
-  }
+function calcularResultado(servico) {
   if (servico && servico.descontoAtivo && servico.percentualDesconto > 0) {
     return {
       tipo:       'promocao',
@@ -68,9 +55,8 @@ function inserirBadgeNoIcone(card, resultado) {
   if (!imgEl) return;
   imgEl.querySelector('.cat-badge-img')?.remove();
   if (!resultado.badge) return;
-  const badgeClass = resultado.tipo === '10off' ? 'cat-badge--10off' : 'cat-badge--promo';
   const badgeEl = document.createElement('span');
-  badgeEl.className = `cat-badge cat-badge-img ${badgeClass}`;
+  badgeEl.className = 'cat-badge cat-badge-img cat-badge--promo';
   badgeEl.textContent = resultado.badge;
   imgEl.appendChild(badgeEl);
 }
@@ -137,14 +123,13 @@ function renderizarPrecoTiers(footer, tiers, resultado) {
 }
 
 async function renderizarDescontos() {
-  const aceitou10 = verificarStatusDesconto10();
   const promocoes = await carregarPromocoes();
 
   document.querySelectorAll('.cat-card[data-service-id]').forEach(card => {
     const serviceId = card.dataset.serviceId;
     // Grupos: o admin salva o id sem prefixo ('amarracao'); o card usa 'grupo:amarracao'
     const servico   = promocoes.find(p => p.id === serviceId || `grupo:${p.id}` === serviceId) || null;
-    const resultado = calcularResultado(servico, aceitou10);
+    const resultado = calcularResultado(servico);
     const footer    = card.querySelector('.cat-footer');
     if (!footer) return;
 

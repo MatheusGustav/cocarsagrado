@@ -295,168 +295,6 @@ button:focus-visible,
 
 
 
-/* ============================================================
-   OVERLAY DE PRIMEIRA VISITA
-   ============================================================ */
-.overlay-backdrop {
-  position: fixed;
-  inset: 0;
-  background: rgba(2, 45, 19, 0.55); /* verde escuro semi-transparente */
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-  animation: fadeInOverlay 0.4s ease;
-}
-
-.overlay-backdrop.overlay--hidden {
-  display: none;
-}
-
-body.overlay-active .header,
-body.overlay-active main,
-body.overlay-active .footer {
-  filter: blur(4px);
-  pointer-events: none;
-  transition: filter 0.3s ease;
-}
-
-@keyframes fadeInOverlay {
-  from { opacity: 0; }
-  to   { opacity: 1; }
-}
-
-.overlay-card {
-  background: var(--color-bg-card);
-  border: 1px solid var(--color-gold-light);
-  border-radius: var(--raio-xl);
-  width: 90%;
-  max-width: 380px;
-  overflow: hidden;
-  position: relative;
-  box-shadow: 0 12px 40px rgba(1, 55, 24, 0.18);
-  animation: slideUpCard 0.4s ease;
-}
-
-@keyframes slideUpCard {
-  from { opacity: 0; transform: translateY(16px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-
-.overlay-close {
-  position: absolute;
-  top: 14px;
-  right: 16px;
-  font-size: 14px;
-  color: var(--color-text-muted);
-  background: none;
-  border: none;
-  cursor: pointer;
-  line-height: 1;
-  transition: color var(--transicao);
-  z-index: 2;
-}
-
-.overlay-close:hover {
-  color: var(--color-primary);
-}
-
-/* Topo do overlay — verde floresta com toque dourado */
-.overlay-top {
-  background: var(--color-bg-dark);
-  padding: 2.5rem 2rem 2rem;
-  text-align: center;
-  border-bottom: var(--borda-dourada-translucida);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 12px;
-}
-
-.overlay-ornament {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.overlay-ornament-logo {
-  width: 80px;
-  height: 80px;
-  object-fit: contain;
-}
-
-.overlay-eyebrow {
-  font-size: 10px;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--color-gold-light);
-  font-weight: 500;
-}
-
-.overlay-title {
-  font-family: var(--fonte-titulo);
-  font-size: clamp(22px, 4vw, 28px);
-  font-weight: 500;
-  color: var(--color-text-on-dark);
-  letter-spacing: 0.02em;
-  line-height: 1.25;
-}
-
-.overlay-body {
-  padding: 1.5rem 2rem;
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-}
-
-.overlay-text {
-  font-size: 13px;
-  color: var(--color-text-body);
-  line-height: 1.8;
-  text-align: center;
-}
-
-.overlay-divider {
-  height: 1px;
-  background: var(--color-neutral-stone);
-}
-
-.overlay-quote {
-  font-family: var(--fonte-titulo);
-  font-size: 15px;
-  font-style: italic;
-  color: var(--color-primary);
-  text-align: center;
-  line-height: 1.7;
-}
-
-.overlay-actions {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  padding: 0 2rem 2rem;
-}
-
-.btn-ghost-overlay {
-  display: block;
-  width: 100%;
-  padding: 10px;
-  font-size: 12px;
-  font-family: var(--fonte-corpo);
-  color: var(--color-text-muted);
-  background: transparent;
-  border: 1px solid var(--color-neutral-stone);
-  border-radius: var(--raio-md);
-  cursor: pointer;
-  transition: background var(--transicao), color var(--transicao);
-  text-align: center;
-}
-
-.btn-ghost-overlay:hover {
-  background: var(--color-bg-section-alt);
-  color: var(--color-text-body);
-}
-
 
 /* ============================================================
    HEADER / NAVEGAÇÃO
@@ -2074,7 +1912,6 @@ body.cs-chat-active .nav-chat-btn { color: var(--color-gold); }
 
 
 [data-theme="dark"] .hero-quote        { color: var(--color-gold); }
-[data-theme="dark"] .overlay-quote     { color: var(--color-gold); }
 [data-theme="dark"] .stat-num          { color: var(--color-gold-light); }
 
 [data-theme="dark"] .cat-card {
@@ -2105,16 +1942,6 @@ body.cs-chat-active .nav-chat-btn { color: var(--color-gold); }
   border-color: var(--color-primary);
 }
 
-[data-theme="dark"] .btn-ghost-overlay {
-  border-color: #333333;
-  color: var(--color-text-muted);
-}
-[data-theme="dark"] .btn-ghost-overlay:hover {
-  background: rgba(255, 255, 255, 0.05);
-  color: var(--color-text-body);
-}
-
-[data-theme="dark"] .overlay-backdrop  { background: rgba(0, 0, 0, 0.8); }
 [data-theme="dark"] .btn-fill          { box-shadow: 0 0 16px rgba(1, 55, 24, 0.3); }
 [data-theme="dark"] .cta-bar-title     { color: var(--color-text-primary); }
 [data-theme="dark"] .depo-card         { border-color: rgba(201, 168, 76, 0.15); }
@@ -2158,12 +1985,6 @@ body.cs-chat-active .nav-chat-btn { color: var(--color-gold); }
   border-radius: var(--raio-sm);
   line-height: 1;
   white-space: nowrap;
-}
-
-.cat-badge--10off {
-  background: var(--color-primary);
-  color: var(--color-gold-light);
-  border: 1px solid rgba(226, 201, 126, 0.4);
 }
 
 .cat-badge--promo {
@@ -2232,11 +2053,6 @@ body.cs-chat-active .nav-chat-btn { color: var(--color-gold); }
 }
 
 /* Modo escuro */
-[data-theme="dark"] .cat-badge--10off {
-  background: var(--color-primary-deep);
-  border-color: rgba(200, 188, 138, 0.3);
-}
-
 [data-theme="dark"] .cat-price-desconto,
 [data-theme="dark"] .cat-price-desconto-small {
   color: var(--color-gold-light);

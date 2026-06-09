@@ -210,7 +210,6 @@ window.redirecionarParaPagamento = function(chave, carrinhoSnap) {
   sessionStorage.setItem('agendamento', JSON.stringify(_dadosPagamento));
   _salvarPedidoPendente(_dadosPagamento);
 
-  try { localStorage.setItem('aceitouDesconto10', 'false'); } catch {}
   try { localStorage.setItem('cocarsagrado_comprou', 'true'); } catch {}
 
   _preencherTelaPagamento();
