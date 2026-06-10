@@ -71,6 +71,7 @@ CREATE TABLE public.tipos_leitura (
   num_perguntas   INTEGER NOT NULL DEFAULT 0 CHECK (num_perguntas >= 0 AND num_perguntas <= 20),
   especial        BOOLEAN NOT NULL DEFAULT FALSE,
   badge           TEXT    CHECK (badge IS NULL OR badge IN ('buzios', 'cartas', 'radiestesia')),
+  modalidade      TEXT    NOT NULL DEFAULT 'mensagem' CHECK (modalidade IN ('mensagem', 'video')),
   ativo           BOOLEAN NOT NULL DEFAULT TRUE,
   criado_em       TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
@@ -515,10 +516,32 @@ AS $$
   LIMIT 1;
 $$;
 
+-- catalogo_ranking: total histórico de agendamentos pagos por service_id.
+-- Ordena o catálogo por demanda e alimenta a prova social ("+N leituras").
+CREATE OR REPLACE FUNCTION public.catalogo_ranking()
+RETURNS TABLE (service_id text, total bigint)
+LANGUAGE sql
+SECURITY DEFINER
+SET search_path = public
+STABLE
+AS $$
+  SELECT CASE
+           WHEN t.grupo_slug IS NOT NULL THEN 'grupo:' || t.grupo_slug
+           WHEN t.slug IS NOT NULL THEN t.slug
+           ELSE 'id-' || t.id::text
+         END AS service_id,
+         count(*)::bigint AS total
+  FROM public.agendamentos a
+  JOIN public.tipos_leitura t ON t.id = a.tipo_leitura_id
+  WHERE a.status IN ('pago', 'confirmado', 'atendido')
+  GROUP BY service_id;
+$$;
+
 GRANT EXECUTE ON FUNCTION public.chave_pedido_existe(text) TO anon;
 GRANT EXECUTE ON FUNCTION public.pedido_status(text) TO anon;
 GRANT EXECUTE ON FUNCTION public.contar_agendamentos_por_data(text, date, date) TO anon;
 GRANT EXECUTE ON FUNCTION public.leitura_mais_procurada() TO anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.catalogo_ranking() TO anon, authenticated;
 
 -- confirmar_pedido_pago: atualização atômica (pai + filhos) chamada pelo
 -- webhook do Mercado Pago (service_role). NUNCA exposta ao anon.

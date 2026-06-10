@@ -225,11 +225,18 @@
           <button class="cat-filter active" data-filter="todos">Todos</button>
           <button class="cat-filter" data-filter="camila">Com Camila</button>
           <button class="cat-filter" data-filter="matheus">Com Matheus</button>
+          <button class="cat-filter" data-filter="video">📹 Vídeo-chamada</button>
+          <button class="cat-filter" data-filter="mensagem">💬 Mensagem</button>
+          <button class="cat-filter" data-filter="ate50">Até R$&nbsp;50</button>
         </div>
 
         <!-- Grade de serviços (renderizada dinamicamente por agendamento-system.js → renderizarCatalogoSite) -->
-        <div class="cat-grid" id="catGrid">
-          <div class="ag-loading" style="grid-column:1/-1;"><div class="ag-spinner"></div> Carregando leituras…</div>
+        <div class="cat-grid" id="catGrid" aria-busy="true">
+          <div class="cat-skel" aria-hidden="true"><div class="cat-skel-img"></div><div class="cat-skel-line"></div><div class="cat-skel-line cat-skel-line--short"></div><div class="cat-skel-btn"></div></div>
+          <div class="cat-skel" aria-hidden="true"><div class="cat-skel-img"></div><div class="cat-skel-line"></div><div class="cat-skel-line cat-skel-line--short"></div><div class="cat-skel-btn"></div></div>
+          <div class="cat-skel" aria-hidden="true"><div class="cat-skel-img"></div><div class="cat-skel-line"></div><div class="cat-skel-line cat-skel-line--short"></div><div class="cat-skel-btn"></div></div>
+          <div class="cat-skel" aria-hidden="true"><div class="cat-skel-img"></div><div class="cat-skel-line"></div><div class="cat-skel-line cat-skel-line--short"></div><div class="cat-skel-btn"></div></div>
+          <span class="sr-only" role="status">Carregando leituras…</span>
         </div><!-- /cat-grid -->
       </div>
     </section>
