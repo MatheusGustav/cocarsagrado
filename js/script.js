@@ -270,7 +270,7 @@ function aplicarBadgesModalidade() {
     const modalidade = card.dataset.modalidade;
     const body = card.querySelector('.cat-body');
     const desc = body && body.querySelector('.cat-desc');
-    if (!desc) return;
+    if (!desc || body.querySelector('.cat-badge-atendimento')) return;
 
     const badge = document.createElement('span');
     badge.className = modalidade === 'video'

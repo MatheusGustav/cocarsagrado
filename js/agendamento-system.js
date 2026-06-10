@@ -971,17 +971,45 @@ function _nomeGrupo(principal) {
   return sep > 0 ? principal.nome.slice(0, sep) : principal.nome;
 }
 
+// Ranking de demanda (agendamentos pagos) por service_id — ordena o
+// catálogo e alimenta a prova social. Falha → Map vazio (ordem do admin).
+async function _buscarRankingCatalogo() {
+  try {
+    const { data, error } = await supabase.rpc('catalogo_ranking');
+    if (error || !Array.isArray(data)) return new Map();
+    return new Map(data.map(r => [r.service_id, Number(r.total) || 0]));
+  } catch { return new Map(); }
+}
+
+const SOCIAL_MIN = 10; // só mostra "+N leituras" a partir deste volume
+
+function _socialHTML(total) {
+  return total >= SOCIAL_MIN
+    ? `<p class="cat-social">✦ ${total} leituras realizadas</p>`
+    : '';
+}
+
 async function renderizarCatalogoSite() {
   const grid = document.getElementById('catGrid');
   if (!grid) return;
 
-  const tipos = await _garantirTipos();
+  const [tipos, ranking] = await Promise.all([_garantirTipos(), _buscarRankingCatalogo()]);
   if (!tipos.length) {
     grid.innerHTML = '<div class="ag-empty">Nenhuma leitura disponível no momento.</div>';
     return;
   }
 
   const itens = _agruparCatalogo(tipos);
+
+  // Ordena por demanda real; empate preserva a ordem definida no admin
+  itens.forEach((item, i) => {
+    item._sid = item.kind === 'grupo'
+      ? `grupo:${item.grupo_slug}`
+      : (item.tipo.slug || `id-${item.tipo.id}`);
+    item._total = ranking.get(item._sid) || 0;
+    item._idx = i;
+  });
+  itens.sort((a, b) => (b._total - a._total) || (a._idx - b._idx));
 
   grid.innerHTML = itens.map(item => {
     if (item.kind === 'grupo') {
@@ -994,13 +1022,15 @@ async function renderizarCatalogoSite() {
       const tiers = item.tiers.map(t => `
         <span><span>${_escCat(t.tier_label || t.nome)}</span><strong>${_formatarPrecoCat(t.preco_original)}</strong></span>
       `).join('');
+      const bucket = Number(item.tiers[0].preco_original) <= 50 ? ' ate50' : '';
 
       return `
-        <article class="cat-card" data-category="${_escCat(p.terapeuta)}" data-service-id="grupo:${_escCat(item.grupo_slug)}">
+        <article class="cat-card" data-category="${_escCat(p.terapeuta)} ${_escCat(p.modalidade || 'mensagem')}${bucket}" data-modalidade="${_escCat(p.modalidade || 'mensagem')}" data-service-id="grupo:${_escCat(item.grupo_slug)}">
           <div class="cat-card-img">${img}</div>
           <div class="cat-body">
             <h3 class="cat-name">${_escCat(nome)}</h3>
             ${desc}
+            ${_socialHTML(item._total)}
           </div>
           <div class="cat-footer">
             <div class="cat-footer-tiers">${tiers}</div>
@@ -1017,13 +1047,15 @@ async function renderizarCatalogoSite() {
       : `<div class="cat-img cat-img--placeholder" aria-hidden="true">✦</div>`;
     const desc    = t.descricao ? `<p class="cat-desc">${_escDesc(t.descricao)}</p>` : '';
     const onclick = t.slug ? `abrirSeletor('${_escCat(slug)}')` : `abrirSeletor(${t.id})`;
+    const bucket  = Number(t.preco_original) <= 50 ? ' ate50' : '';
 
     return `
-      <article class="cat-card" data-category="${_escCat(t.terapeuta)}" data-service-id="${_escCat(slug)}">
+      <article class="cat-card" data-category="${_escCat(t.terapeuta)} ${_escCat(t.modalidade || 'mensagem')}${bucket}" data-modalidade="${_escCat(t.modalidade || 'mensagem')}" data-service-id="${_escCat(slug)}">
         <div class="cat-card-img">${img}</div>
         <div class="cat-body">
           <h3 class="cat-name">${_escCat(t.nome)}</h3>
           ${desc}
+          ${_socialHTML(item._total)}
         </div>
         <div class="cat-footer">
           <span class="cat-footer-price">${_formatarPrecoCat(t.preco_original)}</span>
@@ -1033,8 +1065,21 @@ async function renderizarCatalogoSite() {
     `;
   }).join('');
 
+  grid.removeAttribute('aria-busy');
+
+  // Card inteiro clicável (o botão Agendar segue sendo o caminho primário)
+  grid.querySelectorAll('.cat-card').forEach(card => {
+    card.addEventListener('click', (e) => {
+      if (e.target.closest('.cat-btn, a, button')) return;
+      const sid = card.dataset.serviceId;
+      if (!sid) return;
+      abrirSeletor(sid.startsWith('id-') ? Number(sid.slice(3)) : sid);
+    });
+  });
+
   if (typeof inicializarFiltrosCatalogo === 'function') inicializarFiltrosCatalogo();
   if (typeof renderizarDescontos === 'function') renderizarDescontos();
+  if (typeof aplicarBadgesModalidade === 'function') aplicarBadgesModalidade();
   _destacarMaisProcurada();
 }
 
