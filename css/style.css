@@ -201,13 +201,17 @@ button:focus-visible,
 /* === EYEBROW (texto pequeno acima dos títulos) === */
 .eyebrow {
   font-family: var(--fonte-corpo);
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 500;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: var(--color-gold-deep);
+  color: var(--color-gold-shadow); /* AA 4.5:1 sobre o off-white */
   margin-bottom: 0.5rem;
   display: block;
+}
+
+[data-theme="dark"] .eyebrow {
+  color: var(--color-gold);
 }
 
 .eyebrow--muted {
@@ -894,7 +898,7 @@ body.cs-chat-active .nav-chat-btn { color: var(--color-gold); }
 }
 
 .cat-desc {
-  font-size: 11px;
+  font-size: 12px;
   color: var(--color-text-body);
   line-height: 1.55;
   flex: 1;
@@ -976,7 +980,7 @@ body.cs-chat-active .nav-chat-btn { color: var(--color-gold); }
   display: flex;
   justify-content: space-between;
   gap: 12px;
-  font-size: 11px;
+  font-size: 12px;
   color: var(--color-text-muted);
 }
 
@@ -1417,8 +1421,12 @@ body.cs-chat-active .nav-chat-btn { color: var(--color-gold); }
 .depos-count {
   font-size: 12px;
   letter-spacing: 0.04em;
-  color: var(--color-gold-deep);
+  color: var(--color-gold-shadow);
   font-style: italic;
+}
+
+[data-theme="dark"] .depos-count {
+  color: var(--color-gold);
 }
 
 /* Carrossel infinito de depoimentos — esteira contínua com cards 4:5. */
@@ -1726,6 +1734,14 @@ body.cs-chat-active .nav-chat-btn { color: var(--color-gold); }
     gap: clamp(3rem, 6vw, 6rem);
   }
 
+  /* Stats voltam a empilhar na coluna direita (evita 2+1 desbalanceado) */
+  .sobre-stats {
+    flex-direction: column;
+  }
+  .sobre-stats .stat-card {
+    flex: initial;
+  }
+
   .cat-grid {
     grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 16px;
@@ -1839,8 +1855,8 @@ body.cs-chat-active .nav-chat-btn { color: var(--color-gold); }
   }
 
   .footer-brand {
-    color: var(--color-text-primary);
-    opacity: 0.85;
+    color: var(--color-text-on-dark);
+    opacity: 0.7;
   }
 }
 
@@ -2050,6 +2066,27 @@ body.cs-chat-active .nav-chat-btn { color: var(--color-gold); }
   background: #7A2E10;
   color: #fff;
   border: 1px solid rgba(255,255,255,0.15);
+}
+
+/* Badge "Mais procurada" — canto superior esquerdo do card */
+.cat-badge--top {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  background: var(--color-primary);
+  color: var(--color-gold-light);
+  border: 1px solid rgba(217, 183, 118, 0.4);
+}
+
+/* Card em destaque (leitura mais agendada) */
+.cat-card--destaque {
+  border-color: var(--color-gold);
+  box-shadow: 0 4px 18px rgba(201, 154, 78, 0.22);
+}
+
+[data-theme="dark"] .cat-card--destaque {
+  border-color: var(--color-gold);
+  box-shadow: 0 0 18px rgba(217, 183, 118, 0.14);
 }
 
 /* Wrapper de preço com desconto (cards simples) */

@@ -1035,6 +1035,26 @@ async function renderizarCatalogoSite() {
 
   if (typeof inicializarFiltrosCatalogo === 'function') inicializarFiltrosCatalogo();
   if (typeof renderizarDescontos === 'function') renderizarDescontos();
+  _destacarMaisProcurada();
+}
+
+// Destaca o card da leitura com mais agendamentos pagos (RPC agregada;
+// anon não lê agendamentos). Falha silenciosa: sem dado, sem badge.
+async function _destacarMaisProcurada() {
+  try {
+    const { data, error } = await supabase.rpc('leitura_mais_procurada');
+    if (error || !data) return;
+    const card = document.querySelector(`.cat-card[data-service-id="${CSS.escape(data)}"]`);
+    if (!card) return;
+    card.classList.add('cat-card--destaque');
+    const imgWrap = card.querySelector('.cat-card-img');
+    if (imgWrap && !imgWrap.querySelector('.cat-badge--top')) {
+      const b = document.createElement('span');
+      b.className = 'cat-badge cat-badge--top';
+      b.textContent = '✦ Mais procurada';
+      imgWrap.appendChild(b);
+    }
+  } catch { /* destaque é opcional */ }
 }
 
 // ============================================================

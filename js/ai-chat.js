@@ -38,20 +38,20 @@
     /* Painel — base comum */
     #cs-chat-panel {
       position: fixed; z-index: 9999;
-      background: #F5F2E6;
+      background: var(--color-bg-page, #F5F2E6);
       display: flex; flex-direction: column; overflow: hidden;
       will-change: transform;
     }
 
     /* Cabeçalho, mensagens, sugestões, WhatsApp bar, form — comuns a todas as telas */
     #cs-chat-header {
-      background: #2D4A2D; padding: 16px 18px;
+      background: var(--color-primary, #2D4A2D); padding: 16px 18px;
       display: flex; align-items: center; gap: 12px;
       flex-shrink: 0;
     }
     #cs-chat-header .cs-avatar {
       width: 38px; height: 38px; border-radius: 50%;
-      background: #B8923E; display: flex; align-items: center; justify-content: center;
+      background: var(--color-gold, #B8923E); display: flex; align-items: center; justify-content: center;
       flex-shrink: 0; overflow: hidden;
     }
     #cs-chat-header .cs-avatar img {
@@ -59,7 +59,7 @@
       transform: scale(1.28); transform-origin: center 35%;
     }
     #cs-chat-header .cs-title {
-      color: #F5F2E6; font-family: 'Cormorant Garamond', serif;
+      color: var(--color-text-on-dark, #F5F2E6); font-family: 'Cormorant Garamond', serif;
       font-size: 18px; font-weight: 600; line-height: 1.1;
     }
     #cs-chat-header .cs-sub { color: #A8C8B0; font-size: 12px; margin-top: 2px; }
@@ -95,7 +95,7 @@
       box-shadow: 0 1px 4px rgba(0,0,0,.07); align-self: flex-start;
     }
     .cs-msg--user {
-      background: #2D4A2D; color: #F5F2E6; border-bottom-right-radius: 4px;
+      background: var(--color-primary, #2D4A2D); color: var(--color-text-on-dark, #F5F2E6); border-bottom-right-radius: 4px;
       align-self: flex-end;
     }
     .cs-msg .cs-foto-pantero {
@@ -117,17 +117,17 @@
       flex-shrink: 0;
     }
     .cs-sug-btn {
-      background: none; border: 1px solid #B8923E; border-radius: 20px;
-      padding: 6px 12px; font-size: 12.5px; color: #5A481A;
+      background: none; border: 1px solid var(--color-gold, #B8923E); border-radius: 20px;
+      padding: 6px 12px; font-size: 12.5px; color: var(--color-gold-shadow, #5A481A);
       font-family: 'DM Sans', sans-serif; cursor: pointer;
       transition: background .15s, color .15s;
       text-align: left; line-height: 1.4;
     }
-    .cs-sug-btn:hover { background: #B8923E; color: #fff; }
+    .cs-sug-btn:hover { background: var(--color-gold, #B8923E); color: #fff; }
 
     #cs-wa-bar {
       display: flex; gap: 8px; padding: 8px 14px 0;
-      background: #F5F2E6;
+      background: var(--color-bg-page, #F5F2E6);
       flex-shrink: 0;
     }
     .cs-wa-btn {
@@ -143,7 +143,7 @@
     #cs-chat-form {
       display: flex; gap: 8px; padding: 12px 14px;
       padding-bottom: calc(12px + env(safe-area-inset-bottom));
-      border-top: 1px solid #EDE8D2; background: #F5F2E6;
+      border-top: 1px solid #EDE8D2; background: var(--color-bg-page, #F5F2E6);
       flex-shrink: 0;
     }
     #cs-chat-input {
@@ -152,14 +152,14 @@
       font-family: 'DM Sans', sans-serif; outline: none;
       color: #1A1410;
     }
-    #cs-chat-input:focus { border-color: #B8923E; }
+    #cs-chat-input:focus { border-color: var(--color-gold, #B8923E); }
     #cs-chat-send {
       width: 40px; height: 40px; border-radius: 50%; flex-shrink: 0;
-      background: #B8923E; border: none; cursor: pointer;
+      background: var(--color-gold, #B8923E); border: none; cursor: pointer;
       display: flex; align-items: center; justify-content: center;
       transition: background .2s;
     }
-    #cs-chat-send:hover { background: #8A6E28; }
+    #cs-chat-send:hover { background: var(--color-gold-deep, #8A6E28); }
     #cs-chat-send svg { width: 18px; height: 18px; fill: #fff; }
     #cs-chat-send:disabled { background: #C8C0B4; cursor: not-allowed; }
 
@@ -169,7 +169,7 @@
         flex-shrink: 0;
         display: flex; align-items: center; justify-content: center;
         height: 22px; cursor: grab; touch-action: none;
-        background: #F5F2E6;
+        background: var(--color-bg-page, #F5F2E6);
       }
       #cs-handle:active { cursor: grabbing; }
       #cs-handle::before {
