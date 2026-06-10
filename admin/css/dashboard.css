@@ -2997,6 +2997,13 @@ body.modal-aberto { overflow: hidden; }
   user-select: none;
 }
 .cat-badge-opt input[type=radio] { display: none; }
+/* Estado selecionado genérico (modalidade etc.); badges coloridos sobrescrevem abaixo */
+.cat-badge-opt:has(input:checked) {
+  border-color: var(--secondary, #C0954E);
+  background: rgba(201, 168, 76, 0.18);
+  color: var(--primary-ink);
+  font-weight: 700;
+}
 .cat-badge-opt--none  { background: var(--s-cream-6); color: var(--t-gray); border-color: var(--bd-gray-1); }
 .cat-badge-opt--none:has(input:checked)       { border-color: var(--bd-gray-2); background: var(--s-sand-3); }
 .cat-badge-opt--buzios { background: rgba(22,163,74,0.07); color: var(--t-success); border-color: rgba(22,163,74,0.3); }
