@@ -131,8 +131,9 @@ Deno.serve(async (req) => {
       return json({ error: 'missing order_nsu or transaction_nsu' }, 400)
     }
 
-    // Verifica pagamento na InfinitePay (exige handle + slug — sem eles a API responde 404)
-    const checkRes = await fetch('https://api.infinitepay.io/invoices/public/checkout/payment_check', {
+    // Verifica pagamento na InfinitePay (exige handle + slug — sem eles a API responde 404).
+    // URL nova do Checkout Integrado (a antiga api.infinitepay.io/invoices/... será desativada).
+    const checkRes = await fetch('https://api.checkout.infinitepay.io/payment_check', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
