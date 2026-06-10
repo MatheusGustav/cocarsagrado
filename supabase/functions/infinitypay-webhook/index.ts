@@ -5,6 +5,11 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 const TG_BOT  = Deno.env.get('TELEGRAM_BOT_TOKEN') || ''
 const TG_CHAT = Deno.env.get('TELEGRAM_CHAT_ID')   || ''
 
+// Escapa caracteres que quebram o parse_mode Markdown do Telegram
+function esc(s: unknown) {
+  return String(s ?? '').replace(/([_*`\[])/g, '\\$1')
+}
+
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
     status,
@@ -83,9 +88,9 @@ Deno.serve(async (req) => {
       if (pc && agendamentos) {
         const linhas = agendamentos.map((a: any, i: number) => {
           const d = new Date(a.data_agendamento).toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' })
-          return `  ${i + 1}. ${a.tipo_leitura} — ${d} às ${a.hora_inicio.slice(0, 5)} (${a.terapeuta}) — R$ ${Number(a.valor_cobrado).toFixed(2)}`
+          return `  ${i + 1}. ${esc(a.tipo_leitura)} — ${d} às ${a.hora_inicio.slice(0, 5)} (${esc(a.terapeuta)}) — R$ ${Number(a.valor_cobrado).toFixed(2)}`
         }).join('\n')
-        const msg = `🔔 *Novo pedido confirmado!*\n\n👤 ${pc.cliente_nome}\n📱 ${pc.cliente_whatsapp}\n\n📋 *Leituras:*\n${linhas}\n\n💰 *Total: R$ ${Number(pc.valor_total).toFixed(2)}*\n💳 ${captureMethod}`
+        const msg = `🔔 *Novo pedido confirmado!*\n\n👤 ${esc(pc.cliente_nome)}\n📱 ${esc(pc.cliente_whatsapp)}\n\n📋 *Leituras:*\n${linhas}\n\n💰 *Total: R$ ${Number(pc.valor_total).toFixed(2)}*\n💳 ${esc(captureMethod)}`
         const tg = await fetch(`https://api.telegram.org/bot${TG_BOT}/sendMessage`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
