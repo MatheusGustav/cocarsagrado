@@ -32,22 +32,92 @@ async function inicializarCatalogo() {
   _catRenderizar();
 }
 
+// Agrupa tiers (mesmo grupo_slug) num card só — espelha o site.
+// O banco continua com 1 linha por tier; só a exibição muda.
+function _catAgrupar(lista) {
+  const itens = [];
+  const grupos = new Map();
+  for (const t of lista) {
+    if (t.grupo_slug) {
+      if (!grupos.has(t.grupo_slug)) {
+        const g = { kind: 'grupo', slug: t.grupo_slug, tiers: [] };
+        grupos.set(t.grupo_slug, g);
+        itens.push(g);
+      }
+      grupos.get(t.grupo_slug).tiers.push(t);
+    } else {
+      itens.push({ kind: 'single', tipo: t });
+    }
+  }
+  for (const g of grupos.values()) {
+    g.tiers.sort((a, b) => Number(a.preco_original) - Number(b.preco_original));
+  }
+  return itens;
+}
+
 function _catRenderizar() {
   const container = document.getElementById('catalogo-container');
   if (!container) return;
 
+  const itens = _catAgrupar(_catCache);
+
   container.innerHTML = `
     <div class="cat-topbar">
       <button class="ag-btn ag-btn-primary ag-btn-sm" onclick="cat_abrirFormNovo()">+ Nova Leitura</button>
-      <span class="cat-count">${_catCache.length} leitura${_catCache.length === 1 ? '' : 's'}</span>
+      <span class="cat-count">${_catCache.length} leitura${_catCache.length === 1 ? '' : 's'} · ${itens.length} card${itens.length === 1 ? '' : 's'}</span>
     </div>
     <div class="cat-grid">
-      ${_catCache.map(_catCard).join('')}
+      ${itens.map(it => it.kind === 'grupo' ? _catCardGrupo(it) : _catCard(it.tipo)).join('')}
     </div>
   `;
 }
 
 const _CAT_BADGE_LABEL = { buzios: 'Búzios', cartas: 'Cartas', radiestesia: 'Radiestesia' };
+
+// Card de grupo: 1 card com as variações (tiers) listadas dentro,
+// cada uma com Editar/Excluir próprios.
+function _catCardGrupo(g) {
+  const p = g.tiers[0];
+  const sep  = p.nome.indexOf(' – ');
+  const nome = (p.tier_label && sep > 0) ? p.nome.slice(0, sep) : p.nome;
+  const todosInativos = g.tiers.every(t => t.ativo === false);
+
+  const terapeutaTag = p.terapeuta
+    ? `<span class="cat-card-terapeuta">${_CAT_TERAPEUTA_LABEL[p.terapeuta] || p.terapeuta}</span>`
+    : `<span class="cat-card-terapeuta cat-card-terapeuta--missing">sem terapeuta</span>`;
+  const img = p.imagem_url
+    ? `<img src="${_catEsc(p.imagem_url)}" alt="${_catEsc(nome)}" class="cat-card-foto">`
+    : `<div class="cat-card-foto cat-card-foto--placeholder">✦</div>`;
+
+  const tierRows = g.tiers.map(t => {
+    const inativo = t.ativo === false;
+    const label   = t.tier_label || t.nome;
+    const preco   = `R$ ${Number(t.preco_original || 0).toFixed(2).replace('.', ',')}`;
+    const acoes   = inativo
+      ? `<button class="cat-tier-btn" onclick="cat_reativar(${t.id})">Reativar</button>
+         <button class="cat-tier-btn cat-tier-btn--danger" onclick="cat_excluir(${t.id})">Excluir</button>`
+      : `<button class="cat-tier-btn" onclick="cat_abrirFormEditar(${t.id})">Editar</button>
+         <button class="cat-tier-btn cat-tier-btn--danger" onclick="cat_excluir(${t.id})">Excluir</button>`;
+    return `
+      <div class="cat-tier-row${inativo ? ' cat-tier-row--inativa' : ''}">
+        <span class="cat-tier-info">${_catEsc(label)}${inativo ? ' <span class="cat-card-inativo">inativa</span>' : ''}</span>
+        <span class="cat-tier-preco">${preco}</span>
+        <span class="cat-tier-acoes">${acoes}</span>
+      </div>`;
+  }).join('');
+
+  return `
+    <div class="cat-card${todosInativos ? ' cat-card--inativo' : ''}" data-grupo="${_catEsc(g.slug)}">
+      ${img}
+      <div class="cat-card-info">
+        <div class="cat-card-nome">${_catEsc(nome)}</div>
+        <span class="cat-card-grupo-tag">${g.tiers.length} variações</span>
+        ${terapeutaTag}
+      </div>
+      <div class="cat-tier-list">${tierRows}</div>
+    </div>
+  `;
+}
 
 function _catCard(t) {
   const preco    = `R$ ${Number(t.preco_original || 0).toFixed(2).replace('.', ',')}`;
