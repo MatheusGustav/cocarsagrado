@@ -88,7 +88,7 @@ INSERT INTO public.tipos_leitura (nome, descricao, preco_original) VALUES
   ('Consulta Ao Vivo',                 'Sessão ao vivo por videochamada com duração de uma hora. Espaço aberto para o consulente explorar todas as questões em tempo real.', 200.00),
   ('Mesa Cigana Completa',             'Consulta feita através do baralho cigano te orientando em todos as áreas da sua vida.',                             150.00),
   ('Confirmação de Orixás',            'Identificação de seus orixás + explicação detalhada sobre os conceitos e como cada orixá age em sua vida.',         50.00),
-  ('Confirmação de Exu',               'Confirmação de Exu ou pombagira, com orientação detalhada por escrito atraves de documento + audio explicativo. Atenção: caso a entidade não queira responder o valor é extronado.', 70.00),
+  ('Confirmação de Exu',               'Confirmação de Exu ou pombagira, com orientação detalhada por escrito através de documento + áudio explicativo. Atenção: caso a entidade não queira responder o valor é estornado.', 70.00),
   ('Cabala de Odu',                    'Leitura cabalística dos odus vão falar sobre sua personalidade, pontos de atenção na area da saude, por onde ganha na vida, por onde perde, quais condutas evitar, quizilias e assim por diante.', 50.00),
   ('Águas de Oxum',                    'Leitura com enfoque completo no amoroso. São vistos: pensamentos, sentimentos, intenções e caminhos.',              50.00),
   ('Rosa de Vênus',                    'Leitura com enfoque no autoconhecimento. São vistos: caminhos de forma ampla e como melhora-los.',                  55.00),
@@ -491,9 +491,34 @@ AS $$
   GROUP BY data_agendamento;
 $$;
 
+-- leitura_mais_procurada: service_id ('grupo:<slug>' | slug | 'id-<id>') da
+-- leitura com mais agendamentos pagos nos últimos 180 dias. Usada pelo site
+-- para o destaque "Mais procurada" no catálogo (só identificador agregado).
+CREATE OR REPLACE FUNCTION public.leitura_mais_procurada()
+RETURNS text
+LANGUAGE sql
+SECURITY DEFINER
+SET search_path = public
+STABLE
+AS $$
+  SELECT CASE
+           WHEN t.grupo_slug IS NOT NULL THEN 'grupo:' || t.grupo_slug
+           WHEN t.slug IS NOT NULL THEN t.slug
+           ELSE 'id-' || t.id::text
+         END AS service_id
+  FROM public.agendamentos a
+  JOIN public.tipos_leitura t ON t.id = a.tipo_leitura_id
+  WHERE a.status IN ('pago', 'confirmado', 'atendido')
+    AND a.criado_em >= now() - interval '180 days'
+  GROUP BY service_id
+  ORDER BY count(*) DESC, service_id
+  LIMIT 1;
+$$;
+
 GRANT EXECUTE ON FUNCTION public.chave_pedido_existe(text) TO anon;
 GRANT EXECUTE ON FUNCTION public.pedido_status(text) TO anon;
 GRANT EXECUTE ON FUNCTION public.contar_agendamentos_por_data(text, date, date) TO anon;
+GRANT EXECUTE ON FUNCTION public.leitura_mais_procurada() TO anon, authenticated;
 
 -- confirmar_pedido_pago: atualização atômica (pai + filhos) chamada pelo
 -- webhook do Mercado Pago (service_role). NUNCA exposta ao anon.
