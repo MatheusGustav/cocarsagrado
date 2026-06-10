@@ -7,7 +7,8 @@
 //   total); rejeita só pagamento A MENOR.
 // - Respostas não-2xx em condições transitórias para a InfinitePay
 //   reentregar o webhook.
-// - Falha na notificação Telegram nunca derruba a confirmação.
+// - Falha na notificação Telegram nunca derruba a confirmação,
+//   mas fica registrada em webhook_log (resultado 'telegram_erro').
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const TG_BOT  = Deno.env.get('TELEGRAM_BOT_TOKEN')  || ''
@@ -62,6 +63,7 @@ async function notificarTelegram(chave: string, captureMethod: string) {
 
     if (agErr || !pc || !agendamentos?.length) {
       console.error('Telegram: dados incompletos', agErr?.message)
+      await log(chave, 'telegram_erro', `dados incompletos: ${agErr?.message ?? 'pedido/agendamentos não encontrados'}`)
       return
     }
 
@@ -79,9 +81,14 @@ async function notificarTelegram(chave: string, captureMethod: string) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ chat_id: TG_CHAT, text: msg, parse_mode: 'Markdown' }),
     })
-    if (!tg.ok) console.error('Telegram error:', tg.status, await tg.text())
+    if (!tg.ok) {
+      const detalhe = await tg.text()
+      console.error('Telegram error:', tg.status, detalhe)
+      await log(chave, 'telegram_erro', `sendMessage HTTP ${tg.status}: ${detalhe.slice(0, 500)}`)
+    }
   } catch (e) {
     console.error('Telegram exception:', e)
+    await log(chave, 'telegram_erro', String(e))
   }
 }
 
