@@ -3654,3 +3654,5 @@ body.drawer-aberto { overflow: hidden; }
   background: rgba(185, 28, 28, 0.08);
   border-color: rgba(185, 28, 28, 0.35);
 }
+
+.fin-break-valor--neg { color: var(--t-danger); }

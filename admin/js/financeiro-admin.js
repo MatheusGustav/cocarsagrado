@@ -166,21 +166,23 @@ function _renderFinanceiro(cache, container) {
 
   // ---- Lançamentos do mês atual (lista com excluir) ----
   const lancDoMes = lancamentos.filter(l => _finMesKey(l.data) === mesAtual);
-  const rotuloCat = { trabalho: 'Trabalho espiritual', outro: 'Outro' };
+  const rotuloCat = { trabalho: 'Trabalho espiritual', outro: 'Outro', despesa: 'Despesa' };
   const lancHtml = `
     <div class="fin-break">
       <h3>Lançamentos manuais (mês atual)</h3>
       ${lancDoMes.length
         ? lancDoMes.map(l => `<div class="fin-break-row">
             <span class="fin-break-nome">${_esc(l.descricao)} <em class="fin-lanc-cat">${rotuloCat[l.categoria] || l.categoria}</em></span>
-            <span class="fin-break-valor">${_esc(_finBRL(l.valor))}</span>
+            <span class="fin-break-valor${Number(l.valor) < 0 ? ' fin-break-valor--neg' : ''}">${_esc(_finBRL(l.valor))}</span>
             <button class="fin-lanc-del" onclick="fin_excluirLancamento(${l.id})" aria-label="Excluir lançamento">✕</button>
           </div>`).join('')
         : '<div class="fin-break-row"><span class="fin-break-nome">Nenhum lançamento neste mês.</span></div>'}
     </div>`;
 
+  const entradas = lancDoMes.filter(l => Number(l.valor) > 0).reduce((s, l) => s + Number(l.valor), 0);
+  const despesas = lancDoMes.filter(l => Number(l.valor) < 0).reduce((s, l) => s + Number(l.valor), 0);
   const splitHtml = atual.totalLanc !== 0
-    ? `<span class="fin-card-delta">leituras ${_esc(_finBRL(atual.totalLeituras))} · avulsos ${_esc(_finBRL(atual.totalLanc))}</span>`
+    ? `<span class="fin-card-delta">leituras ${_esc(_finBRL(atual.totalLeituras))} · avulsos ${_esc(_finBRL(entradas))}${despesas !== 0 ? ` · despesas −${_esc(_finBRL(Math.abs(despesas)))}` : ''}</span>`
     : '';
 
   container.innerHTML = `
@@ -255,8 +257,9 @@ function fin_abrirLancamento() {
         <div class="ag-form-group">
           <label for="fin-lanc-cat">Categoria</label>
           <select id="fin-lanc-cat">
-            <option value="trabalho">Trabalho espiritual</option>
-            <option value="outro">Outro</option>
+            <option value="trabalho">Trabalho espiritual (entrada)</option>
+            <option value="outro">Outro (entrada)</option>
+            <option value="despesa">Despesa (sai do total)</option>
           </select>
         </div>
       </div>
@@ -290,9 +293,12 @@ async function fin_salvarLancamento() {
   const btn = document.getElementById('fin-lanc-salvar');
   if (btn) { btn.disabled = true; btn.textContent = 'Salvando…'; }
 
+  // Despesa entra negativa: subtrai do faturamento automaticamente
+  const valorFinal = categoria === 'despesa' ? -valor : valor;
+
   const { error } = await supabase
     .from('lancamentos_financeiros')
-    .insert({ descricao, valor, data, categoria });
+    .insert({ descricao, valor: valorFinal, data, categoria });
 
   if (error) {
     _toastAdmin('Erro ao salvar: ' + error.message, 'erro');
