@@ -9,7 +9,7 @@
   <link rel="canonical" href="https://cocarsagrado.com.br/" />
   <link rel="icon" type="image/webp" href="/images/favicon.webp?v=3" />
   <link rel="apple-touch-icon" href="/images/favicon.webp?v=3" />
-  <meta name="theme-color" content="#013718" />
+  <meta name="theme-color" content="#213D2C" />
   <meta property="og:type" content="website" />
   <meta property="og:url" content="https://cocarsagrado.com.br/" />
   <meta property="og:title" content="Cocar Sagrado — Camila &amp; Matheus" />
@@ -23,6 +23,8 @@
   <meta name="twitter:image" content="https://cocarsagrado.com.br/images/og-image.webp" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
+  <link rel="preconnect" href="https://demxedudbislzausvhwx.supabase.co" />
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
   <script>
     (function() {
@@ -92,11 +94,13 @@
 </head>
 <body>
 
+  <a href="#main" class="skip-link">Pular para o conteúdo</a>
+
   <!-- ============================
        MODAL NAVEGADOR IN-APP
        Instagram / TikTok browser
        ============================ -->
-  <div class="inapp-backdrop" id="inappBackdrop" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="inappTitle">
+  <div class="inapp-backdrop" id="inappBackdrop" role="dialog" aria-modal="true" aria-labelledby="inappTitle">
     <div class="inapp-card">
       <button class="inapp-close" id="inappClose" aria-label="Fechar">✕</button>
       <p class="inapp-text" id="inappTitle">
@@ -132,8 +136,8 @@
       </nav>
       <a href="#catalogo" class="btn-nav">Agendar consulta</a>
       <button class="theme-toggle theme-toggle--mobile" aria-label="Alternar tema">
-        <span class="icon-light">☀️</span>
-        <span class="icon-dark">🌙</span>
+        <span class="icon-light" aria-hidden="true">☀️</span>
+        <span class="icon-dark" aria-hidden="true">🌙</span>
       </button>
       <button class="nav-chat-btn nav-chat-btn--mobile" data-cs-open aria-label="Abrir chat">
         <svg class="nav-chat-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg>
@@ -144,7 +148,7 @@
     </div>
   </header>
 
-  <main>
+  <main id="main">
 
     <!-- ============================
          SEÇÃO HERO
@@ -158,7 +162,7 @@
           <p class="eyebrow">Atendimento holístico desde 2019</p>
           <h1 class="hero-title">Direcionamento, clareza<br>e conexão<br>espiritual</h1>
           <blockquote class="hero-quote">
-            "Tragam luz e clareza a quem procurar prontas respostas e prontas palavras, pois a clareza e calma são a chave da alma."<br>
+            “Tragam luz e clareza a quem procurar prontas respostas e prontas palavras, pois a clareza e calma são a chave da alma.”<br>
             - Caboclo Pena Branca
           </blockquote>
           <div class="hero-btns">
@@ -168,7 +172,7 @@
         </div>
 
         <div class="hero-right fade-in fade-in--delay">
-          <img src="images/Cobra.png" alt="Cocar Sagrado" class="hero-logo-circle">
+          <img src="images/Cobra.png" alt="Cocar Sagrado" class="hero-logo-circle" width="350" height="350" fetchpriority="high">
         </div><!-- /hero-right -->
       </div><!-- /hero-inner -->
     </section>
@@ -225,7 +229,7 @@
 
         <!-- Grade de serviços (renderizada dinamicamente por agendamento-system.js → renderizarCatalogoSite) -->
         <div class="cat-grid" id="catGrid">
-          <div class="ag-loading" style="grid-column:1/-1;"><div class="ag-spinner"></div> Carregando leituras...</div>
+          <div class="ag-loading" style="grid-column:1/-1;"><div class="ag-spinner"></div> Carregando leituras…</div>
         </div><!-- /cat-grid -->
       </div>
     </section>
@@ -246,13 +250,13 @@
 
             <div class="ig-posts-grid">
               <a href="https://www.instagram.com/cocarsagrado" target="_blank" rel="noopener" class="ig-post ig-post--main">
-                <img src="images/instagram1.webp" alt="Post Instagram Cocar Sagrado" loading="lazy">
+                <img src="images/instagram1.webp" alt="Post do Instagram do Cocar Sagrado (1)" width="1070" height="1337" loading="lazy">
               </a>
               <a href="https://www.instagram.com/cocarsagrado" target="_blank" rel="noopener" class="ig-post">
-                <img src="images/instagram2.webp" alt="Post Instagram Cocar Sagrado" loading="lazy">
+                <img src="images/instagram2.webp" alt="Post do Instagram do Cocar Sagrado (2)" width="1620" height="2025" loading="lazy">
               </a>
               <a href="https://www.instagram.com/cocarsagrado" target="_blank" rel="noopener" class="ig-post">
-                <img src="images/instagram3.webp" alt="Post Instagram Cocar Sagrado" loading="lazy">
+                <img src="images/instagram3.webp" alt="Post do Instagram do Cocar Sagrado (3)" width="1620" height="2025" loading="lazy">
               </a>
             </div>
 
@@ -272,7 +276,7 @@
 
               <div class="person-card">
                 <div class="person-avatar-wrap">
-                  <div class="person-avatar avatar-c"><img src="images/perfil-camila.webp" alt="Camila"></div>
+                  <div class="person-avatar avatar-c"><img src="images/perfil-camila.webp" alt="Camila" width="640" height="640" loading="lazy"></div>
                   <span class="person-status-dot" id="status-camila"></span>
                 </div>
                 <div class="person-info">
@@ -284,7 +288,7 @@
 
               <div class="person-card">
                 <div class="person-avatar-wrap">
-                  <div class="person-avatar avatar-m"><img src="images/perfil-matheus.webp" alt="Matheus"></div>
+                  <div class="person-avatar avatar-m"><img src="images/perfil-matheus.webp" alt="Matheus" width="720" height="1280" loading="lazy"></div>
                   <span class="person-status-dot" id="status-matheus"></span>
                 </div>
                 <div class="person-info">
@@ -327,12 +331,12 @@
 
         <div class="depos-carousel fade-in-scroll" aria-label="Carrossel de depoimentos">
           <div class="depos-track" data-marquee>
-            <article class="depo-card"><img src="images/feedback-1.webp" alt="Depoimento 1" loading="lazy"></article>
-            <article class="depo-card"><img src="images/feedback-2.webp" alt="Depoimento 2" loading="lazy"></article>
-            <article class="depo-card"><img src="images/feedback-3.webp" alt="Depoimento 3" loading="lazy"></article>
-            <article class="depo-card"><img src="images/feedback-4.webp" alt="Depoimento 4" loading="lazy"></article>
-            <article class="depo-card"><img src="images/feedback-5.webp?v=2" alt="Depoimento 5 (parte 1)" loading="lazy"></article>
-            <article class="depo-card"><img src="images/feedback-6.webp?v=2" alt="Depoimento 5 (parte 2)" loading="lazy"></article>
+            <article class="depo-card"><img src="images/feedback-1.webp" alt="Depoimento 1" width="1280" height="1600" loading="lazy"></article>
+            <article class="depo-card"><img src="images/feedback-2.webp" alt="Depoimento 2" width="1280" height="1600" loading="lazy"></article>
+            <article class="depo-card"><img src="images/feedback-3.webp" alt="Depoimento 3" width="1280" height="1600" loading="lazy"></article>
+            <article class="depo-card"><img src="images/feedback-4.webp" alt="Depoimento 4" width="1280" height="1600" loading="lazy"></article>
+            <article class="depo-card"><img src="images/feedback-5.webp?v=2" alt="Depoimento 5 (parte 1)" width="1620" height="2025" loading="lazy"></article>
+            <article class="depo-card"><img src="images/feedback-6.webp?v=2" alt="Depoimento 5 (parte 2)" width="1620" height="2025" loading="lazy"></article>
           </div>
         </div>
       </div>
@@ -373,7 +377,7 @@
 
   <!-- SELETOR DE QUANTIDADE -->
   <div id="seletor-overlay" class="seletor-overlay" role="dialog" aria-modal="true" aria-labelledby="seletor-nome">
-    <div class="seletor-card">
+    <div class="seletor-card" tabindex="-1">
       <button class="seletor-close" onclick="fecharSeletor()" aria-label="Fechar">✕</button>
       <div class="seletor-icone">🌿</div>
       <h3 class="seletor-nome" id="seletor-nome">—</h3>
@@ -381,7 +385,7 @@
       <div class="seletor-tiers" id="seletor-tiers"></div>
       <div class="seletor-qty-wrap" id="seletor-qty-wrap" style="display:none">
         <button class="seletor-qty-btn" onclick="alterarQty(-1)" aria-label="Diminuir">−</button>
-        <span class="seletor-qty-num" id="seletor-qty">1</span>
+        <span class="seletor-qty-num" id="seletor-qty" aria-live="polite">1</span>
         <button class="seletor-qty-btn" onclick="alterarQty(1)" aria-label="Aumentar">+</button>
       </div>
       <div class="seletor-resumo" id="seletor-resumo" style="display:none">
@@ -396,7 +400,7 @@
 
   <!-- MODAL DE AGENDAMENTO -->
   <div id="modalAgendamento" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="modal-title">
-    <div class="modal-container">
+    <div class="modal-container" tabindex="-1">
       <div class="modal-drag-handle" aria-hidden="true"></div>
       <div class="modal-header">
         <div class="modal-progress" role="navigation" aria-label="Etapas">
@@ -435,7 +439,7 @@
                   </div>
                   <div class="ag-form-group">
                     <label for="f-nasc">Data de nascimento *</label>
-                    <input type="date" id="f-nasc" name="nascimento" required>
+                    <input type="date" id="f-nasc" name="nascimento" required autocomplete="bday">
                   </div>
                 </div>
                 <div class="ag-form-group">
@@ -478,7 +482,7 @@
               <h2 class="ag-section-title">Escolha a data</h2>
               <p style="margin-bottom:12px;color:var(--text-muted);" id="secao1-sub">Selecione o dia para esta leitura</p>
               <div id="calendario">
-                <div class="ag-loading"><div class="ag-spinner"></div> Carregando...</div>
+                <div class="ag-loading"><div class="ag-spinner"></div> Carregando…</div>
               </div>
             </section>
 

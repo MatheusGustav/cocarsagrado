@@ -15,6 +15,9 @@ const Estado = {
 const DIAS_PT  = ['Domingo','Segunda','Terça','Quarta','Quinta','Sexta','Sábado'];
 const MESES_PT = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
 
+const _BRL = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
+function fmtBRL(v) { return _BRL.format(Number(v) || 0); }
+
 // ============================================================
 // SELETOR DE QUANTIDADE
 // ============================================================
@@ -186,6 +189,8 @@ async function abrirSeletor(ref) {
 
   document.getElementById('seletor-overlay').classList.add('open');
   document.body.classList.add('seletor-aberto');
+  // Move o foco para dentro do diálogo
+  setTimeout(() => document.querySelector('.seletor-card')?.focus(), 280);
 
   // Fecha com Escape (handler único; removido em fecharSeletor)
   document.addEventListener('keydown', _escSeletorHandler);
@@ -211,12 +216,13 @@ function _abrirSeletorGrupo(grupoSlug, tiers) {
   tiersEl.innerHTML = '';
   tiers.forEach(tier => {
     const { final } = calcularPrecoFinal(tier.preco_original);
-    const opt = document.createElement('div');
+    const opt = document.createElement('button');
+    opt.type = 'button';
     opt.className = 'seletor-tier-opt';
     opt.innerHTML = `
       <span class="tier-label">${_escCat(tier.tier_label || tier.nome)}</span>
       <div class="tier-info">
-        <span class="tier-preco">R$ ${final.toFixed(2).replace('.', ',')}</span>
+        <span class="tier-preco">${fmtBRL(final)}</span>
       </div>`;
     opt.addEventListener('click', () => {
       tiersEl.querySelectorAll('.seletor-tier-opt').forEach(o => o.classList.remove('selected'));
@@ -234,6 +240,8 @@ function _abrirSeletorGrupo(grupoSlug, tiers) {
 
   document.getElementById('seletor-overlay').classList.add('open');
   document.body.classList.add('seletor-aberto');
+  // Move o foco para dentro do diálogo
+  setTimeout(() => document.querySelector('.seletor-card')?.focus(), 280);
 
   // Fecha com Escape (handler único; removido em fecharSeletor)
   document.addEventListener('keydown', _escSeletorHandler);
@@ -246,7 +254,7 @@ function _atualizarResumoSeletor() {
   const { final } = calcularPrecoFinal(total);
 
   document.getElementById('seletor-qty').textContent   = _seletorQty;
-  document.getElementById('seletor-preco').textContent = `R$ ${final.toFixed(2).replace('.', ',')}`;
+  document.getElementById('seletor-preco').textContent = fmtBRL(final);
 }
 
 function alterarQty(delta) {
@@ -293,7 +301,7 @@ function confirmarSeletor() {
 async function carregarCalendario() {
   const cal = document.getElementById('calendario');
   if (!cal) return;
-  cal.innerHTML = '<div class="ag-loading"><div class="ag-spinner"></div> Carregando disponibilidade...</div>';
+  cal.innerHTML = '<div class="ag-loading"><div class="ag-spinner"></div> Carregando disponibilidade…</div>';
 
   const profissional = Estado.tipoSelecionado?.terapeuta;
   if (!profissional) {
@@ -510,11 +518,11 @@ function atualizarResumo() {
   set('res-data',    `${d.getDate()} de ${MESES_PT[d.getMonth()]} de ${d.getFullYear()}`);
   const horaLabel = Estado.horarioSelecionado ? `até as ${Estado.horarioSelecionado.slice(0,5)}` : 'no dia';
   set('res-hora',    horaLabel);
-  set('res-valor',   `R$ ${final.toFixed(2).replace('.', ',')}`);
+  set('res-valor',   fmtBRL(final));
 
   const linhaDesc = document.getElementById('res-desconto-linha');
   if (linhaDesc) linhaDesc.style.display = desconto > 0 ? 'flex' : 'none';
-  set('res-desconto', `- R$ ${desconto.toFixed(2).replace('.', ',')}`);
+  set('res-desconto', `- ${fmtBRL(desconto)}`);
 }
 
 function processarFormulario(e) {
@@ -601,21 +609,21 @@ function _renderizarCarrinho() {
           <span>${d.getDate()} de ${MESES_PT[d.getMonth()]}</span>
           <span>${entregaLabel}</span>
         </div>
-        <div class="cart-item-price">R$ ${item.valor_final.toFixed(2).replace('.',',')}</div>
+        <div class="cart-item-price">${fmtBRL(item.valor_final)}</div>
       </div>`;
   });
 
   html += `<div class="cart-total">
     <div class="cart-total-row">
-      <span>Subtotal</span><span>R$ ${totalOriginal.toFixed(2).replace('.',',')}</span>
+      <span>Subtotal</span><span>${fmtBRL(totalOriginal)}</span>
     </div>`;
   if (totalDesconto > 0) {
     html += `<div class="cart-total-row cart-total-desc">
-      <span>Desconto</span><span>- R$ ${totalDesconto.toFixed(2).replace('.',',')}</span>
+      <span>Desconto</span><span>- ${fmtBRL(totalDesconto)}</span>
     </div>`;
   }
   html += `<div class="cart-total-row cart-total-final">
-      <span>Total</span><span>R$ ${totalFinal.toFixed(2).replace('.',',')}</span>
+      <span>Total</span><span>${fmtBRL(totalFinal)}</span>
     </div>
   </div>
   <p class="cart-entrega-aviso">📲 Sua leitura será enviada por WhatsApp até o horário indicado em cada item.</p>`;
@@ -648,7 +656,7 @@ function _atualizarBotoesCarrinho() {
       const label = n === 1 ? '1 leitura' : `${n} leituras`;
       payBtn.style.display = '';
       payBtn.disabled = false; // reabilita após um pedido anterior ter deixado o botão travado
-      payBtn.innerHTML = `💳 Pagar R$ ${total.toFixed(2).replace('.', ',')} (${label})`;
+      payBtn.innerHTML = `💳 Pagar ${fmtBRL(total)} (${label})`;
     } else {
       payBtn.style.display = 'none';
     }
@@ -690,7 +698,12 @@ function validarDadosPessoais() {
       : val.length < minLen;
     if (invalido) { el.classList.add('error'); mostrarErroField(el, msg); ok = false; }
   });
+  if (!ok) _focarPrimeiroErro();
   return ok;
+}
+
+function _focarPrimeiroErro() {
+  document.querySelector('.ag-form input.error, .ag-form textarea.error, .ag-form select.error')?.focus();
 }
 
 function confirmarDadosPessoais() {
@@ -785,6 +798,7 @@ function validarFormulario() {
       }
     }
   }
+  if (!ok) _focarPrimeiroErro();
   return ok;
 }
 
@@ -864,6 +878,8 @@ function dataParaISO(d) {
 function mostrarAlerta(msg, tipo = 'info') {
   const div = document.createElement('div');
   div.className = `ag-alert ag-alert-${tipo}`;
+  div.setAttribute('role', tipo === 'error' ? 'alert' : 'status');
+  div.setAttribute('aria-live', 'polite');
   div.textContent = msg;
   const main = document.querySelector('.ag-container') || document.body;
   main.prepend(div);
@@ -1024,6 +1040,14 @@ async function renderizarCatalogoSite() {
 // ============================================================
 // Init
 // ============================================================
+// Avisa antes de sair com leituras não pagas no carrinho
+window.addEventListener('beforeunload', (e) => {
+  if (typeof Estado !== 'undefined' && Estado.carrinho.length > 0) {
+    e.preventDefault();
+    e.returnValue = '';
+  }
+});
+
 document.addEventListener('DOMContentLoaded', () => {
   renderizarCatalogoSite();
 

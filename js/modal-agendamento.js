@@ -41,8 +41,8 @@ function abrirModal(tipo) {
         ta.required    = true;
         ta.rows        = 3;
         ta.placeholder = n === 1
-          ? 'Escreva sua pergunta ou questão para a leitura...'
-          : `Escreva a pergunta ${i}...`;
+          ? 'Escreva sua pergunta ou questão para a leitura…'
+          : `Escreva a pergunta ${i}…`;
         obsGroup.appendChild(lbl);
         obsGroup.appendChild(ta);
       }
@@ -52,6 +52,8 @@ function abrirModal(tipo) {
   overlay.classList.add('open');
   document.body.classList.add('modal-aberto');
   overlay.querySelector('.modal-body')?.scrollTo({ top: 0 });
+  // Move o foco para dentro do modal (aguarda a animação de entrada)
+  setTimeout(() => overlay.querySelector('.modal-container')?.focus(), 380);
 
   irParaPasso(1);
   _atualizarBotaoRetomar();
@@ -576,6 +578,22 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
+  // Navegação por setas nas abas de pagamento (padrão ARIA tablist)
+  const tablist = overlay.querySelector('.pag-tabs');
+  if (tablist) {
+    const ordem = ['pix', 'cartao', 'wise'];
+    tablist.addEventListener('keydown', (e) => {
+      if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
+      const atual = ordem.findIndex(m => document.getElementById(`modal-tab-${m}`)?.classList.contains('active'));
+      if (atual < 0) return;
+      e.preventDefault();
+      const delta = e.key === 'ArrowRight' ? 1 : -1;
+      const prox = ordem[(atual + delta + ordem.length) % ordem.length];
+      trocarAbaPagamento(prox);
+      document.getElementById(`modal-tab-${prox}`)?.focus();
+    });
+  }
+
   // Checa pedido pendente ao carregar (atualiza se foi pago via webhook)
   setTimeout(_verificarPedidoPendenteAoCarregar, 1500);
 });
@@ -590,7 +608,7 @@ async function _gerarLinkCheckout(metodo) {
   const linkBox = document.getElementById(`${metodo}-link-box`);
   const err     = document.getElementById(`${metodo}-erro-box`);
   btn.disabled     = true;
-  btn.textContent  = '⏳ Gerando...';
+  btn.textContent  = '⏳ Gerando…';
   linkBox.style.display = 'none';
   err.style.display     = 'none';
   try {
