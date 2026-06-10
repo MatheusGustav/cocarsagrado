@@ -3542,3 +3542,62 @@ body.drawer-aberto { overflow: hidden; }
   .fin-grafico { height: 120px; }
   .fin-bar-valor { display: none; }
 }
+
+/* ============================================================
+   CATÁLOGO — card de grupo (tiers agrupados)
+   ============================================================ */
+.cat-card-grupo-tag {
+  display: inline-block;
+  margin-top: 2px;
+  margin-right: 6px;
+  padding: 3px 10px;
+  font-size: .72rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  background: rgba(107, 101, 91, 0.10);
+  border: 1px solid rgba(107, 101, 91, 0.25);
+  border-radius: 99px;
+  font-weight: 600;
+}
+
+.cat-tier-list {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  border-top: 1px solid var(--border);
+  margin-top: 4px;
+}
+
+.cat-tier-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 2px;
+  border-bottom: 1px solid var(--border);
+  font-size: .82rem;
+  text-align: left;
+}
+.cat-tier-row:last-child { border-bottom: none; }
+.cat-tier-row--inativa { opacity: 0.55; }
+
+.cat-tier-info  { flex: 1; min-width: 0; color: var(--primary-ink); font-weight: 600; }
+.cat-tier-preco { color: var(--primary-ink); font-weight: 600; white-space: nowrap; }
+
+.cat-tier-acoes { display: flex; gap: 6px; flex-shrink: 0; }
+
+.cat-tier-btn {
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  padding: 4px 10px;
+  font-size: .72rem;
+  font-weight: 600;
+  color: var(--primary-ink);
+  cursor: pointer;
+  font-family: inherit;
+  transition: border-color .15s, background .15s;
+}
+.cat-tier-btn:hover { border-color: var(--secondary, #C0954E); background: rgba(201, 168, 76, 0.10); }
+.cat-tier-btn--danger { color: var(--t-danger); }
+.cat-tier-btn--danger:hover { border-color: var(--t-danger); background: rgba(185, 28, 28, 0.08); }
