@@ -3616,3 +3616,41 @@ body.drawer-aberto { overflow: hidden; }
 .cat-tier-btn:hover { border-color: var(--secondary, #C0954E); background: rgba(201, 168, 76, 0.10); }
 .cat-tier-btn--danger { color: var(--t-danger); }
 .cat-tier-btn--danger:hover { border-color: var(--t-danger); background: rgba(185, 28, 28, 0.08); }
+
+/* ============================================================
+   FINANCEIRO — lançamentos manuais
+   ============================================================ */
+.fin-topbar {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 14px;
+}
+
+.fin-lanc-cat {
+  font-size: .68rem;
+  font-style: normal;
+  color: var(--text-muted);
+  background: rgba(107, 101, 91, 0.10);
+  border: 1px solid rgba(107, 101, 91, 0.22);
+  border-radius: 99px;
+  padding: 1px 8px;
+  margin-left: 6px;
+  white-space: nowrap;
+}
+
+.fin-lanc-del {
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  color: var(--t-danger);
+  cursor: pointer;
+  font-size: .8rem;
+  padding: 2px 7px;
+  margin-left: 6px;
+  flex-shrink: 0;
+  transition: background .15s, border-color .15s;
+}
+.fin-lanc-del:hover {
+  background: rgba(185, 28, 28, 0.08);
+  border-color: rgba(185, 28, 28, 0.35);
+}
