@@ -38,12 +38,20 @@ async function inicializarFinanceiro(forcar = false) {
   const inicio = new Date();
   inicio.setDate(1);
   inicio.setMonth(inicio.getMonth() - 11);
+  const inicioISO = _dataLocalISO(inicio);
 
-  const { data, error } = await supabase
-    .from('agendamentos')
-    .select('valor_final, data_agendamento, terapeuta, metodo_pagamento, status, tipos_leitura(nome)')
-    .in('status', FIN_STATUS_PAGOS)
-    .gte('data_agendamento', _dataLocalISO(inicio));
+  const [{ data, error }, { data: lanc, error: lancErr }] = await Promise.all([
+    supabase
+      .from('agendamentos')
+      .select('valor_final, data_agendamento, terapeuta, metodo_pagamento, status, tipos_leitura(nome)')
+      .in('status', FIN_STATUS_PAGOS)
+      .gte('data_agendamento', inicioISO),
+    supabase
+      .from('lancamentos_financeiros')
+      .select('*')
+      .gte('data', inicioISO)
+      .order('data', { ascending: false }),
+  ]);
 
   _finCarregando = false;
 
@@ -52,13 +60,16 @@ async function inicializarFinanceiro(forcar = false) {
     console.error(error);
     return;
   }
+  if (lancErr) console.error('lancamentos_financeiros:', lancErr);
 
-  _finCache   = data || [];
+  _finCache   = { registros: data || [], lancamentos: lanc || [] };
   _finCacheEm = Date.now();
   _renderFinanceiro(_finCache, container);
 }
 
-function _renderFinanceiro(registros, container) {
+function _renderFinanceiro(cache, container) {
+  const registros   = Array.isArray(cache) ? cache : (cache.registros || []);
+  const lancamentos = Array.isArray(cache) ? [] : (cache.lancamentos || []);
   const hoje     = new Date();
   const mesAtual = _finMesKey(_dataLocalISO(hoje));
 
@@ -70,6 +81,8 @@ function _renderFinanceiro(registros, container) {
       key:   `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`,
       rotulo: `${MESES_FIN[d.getMonth()]}${d.getMonth() === 0 || i === 11 ? '/' + String(d.getFullYear()).slice(2) : ''}`,
       total: 0,
+      totalLeituras: 0,
+      totalLanc: 0,
       qtd:   0,
     });
   }
@@ -78,14 +91,23 @@ function _renderFinanceiro(registros, container) {
   registros.forEach(r => {
     const m = porMes.get(_finMesKey(r.data_agendamento));
     if (!m) return;
-    m.total += Number(r.valor_final || 0);
-    m.qtd   += 1;
+    m.total         += Number(r.valor_final || 0);
+    m.totalLeituras += Number(r.valor_final || 0);
+    m.qtd           += 1;
+  });
+
+  // Lançamentos manuais (trabalhos espirituais e avulsos) entram no total
+  lancamentos.forEach(l => {
+    const m = porMes.get(_finMesKey(l.data));
+    if (!m) return;
+    m.total     += Number(l.valor || 0);
+    m.totalLanc += Number(l.valor || 0);
   });
 
   const atual    = meses[meses.length - 1];
   const anterior = meses[meses.length - 2];
   const total12  = meses.reduce((s, m) => s + m.total, 0);
-  const ticket   = atual.qtd ? atual.total / atual.qtd : 0;
+  const ticket   = atual.qtd ? atual.totalLeituras / atual.qtd : 0;
 
   let deltaHtml = '<span class="fin-card-delta">— sem base de comparação</span>';
   if (anterior.total > 0) {
@@ -142,12 +164,35 @@ function _renderFinanceiro(registros, container) {
         : '<div class="fin-break-row"><span class="fin-break-nome">Sem registros neste mês.</span></div>'}
     </div>`;
 
+  // ---- Lançamentos do mês atual (lista com excluir) ----
+  const lancDoMes = lancamentos.filter(l => _finMesKey(l.data) === mesAtual);
+  const rotuloCat = { trabalho: 'Trabalho espiritual', outro: 'Outro' };
+  const lancHtml = `
+    <div class="fin-break">
+      <h3>Lançamentos manuais (mês atual)</h3>
+      ${lancDoMes.length
+        ? lancDoMes.map(l => `<div class="fin-break-row">
+            <span class="fin-break-nome">${_esc(l.descricao)} <em class="fin-lanc-cat">${rotuloCat[l.categoria] || l.categoria}</em></span>
+            <span class="fin-break-valor">${_esc(_finBRL(l.valor))}</span>
+            <button class="fin-lanc-del" onclick="fin_excluirLancamento(${l.id})" aria-label="Excluir lançamento">✕</button>
+          </div>`).join('')
+        : '<div class="fin-break-row"><span class="fin-break-nome">Nenhum lançamento neste mês.</span></div>'}
+    </div>`;
+
+  const splitHtml = atual.totalLanc !== 0
+    ? `<span class="fin-card-delta">leituras ${_esc(_finBRL(atual.totalLeituras))} · avulsos ${_esc(_finBRL(atual.totalLanc))}</span>`
+    : '';
+
   container.innerHTML = `
+    <div class="fin-topbar">
+      <button class="ag-btn ag-btn-primary ag-btn-sm" onclick="fin_abrirLancamento()">+ Lançamento</button>
+    </div>
     <div class="fin-cards">
       <div class="fin-card">
         <div class="fin-card-label">Faturado este mês</div>
         <div class="fin-card-valor">${_esc(_finBRL(atual.total))}</div>
         ${deltaHtml}
+        ${splitHtml}
       </div>
       <div class="fin-card">
         <div class="fin-card-label">Mês anterior</div>
@@ -173,5 +218,100 @@ function _renderFinanceiro(registros, container) {
       ${breakHtml('Por terapeuta (mês atual)', porTerapeuta)}
       ${breakHtml('Por serviço (mês atual)', porServico)}
       ${breakHtml('Por método de pagamento (mês atual)', porMetodo)}
+      ${lancHtml}
     </div>`;
+}
+
+// ============================================================
+// Lançamentos manuais (trabalhos espirituais e avulsos)
+// ============================================================
+function fin_abrirLancamento() {
+  document.getElementById('fin-lanc-modal')?.remove();
+
+  const overlay = document.createElement('div');
+  overlay.id = 'fin-lanc-modal';
+  overlay.className = 'agenda-modal-overlay';
+  overlay.innerHTML = `
+    <div class="agenda-modal-container" role="dialog" aria-modal="true" aria-labelledby="fin-lanc-titulo">
+      <div class="agenda-modal-header">
+        <h3 class="agenda-modal-titulo" id="fin-lanc-titulo">Novo Lançamento</h3>
+        <button class="agenda-modal-fechar" type="button" onclick="fin_fecharLancamento()" aria-label="Fechar">×</button>
+      </div>
+      <div class="agenda-modal-body">
+        <div class="ag-form-group">
+          <label for="fin-lanc-desc">Descrição</label>
+          <input type="text" id="fin-lanc-desc" maxlength="120" placeholder="Ex.: Trabalho de abertura de caminhos…">
+        </div>
+        <div class="cat-form-row">
+          <div class="ag-form-group">
+            <label for="fin-lanc-valor">Valor (R$)</label>
+            <input type="number" id="fin-lanc-valor" min="0.01" step="0.01" inputmode="decimal" placeholder="0,00">
+          </div>
+          <div class="ag-form-group">
+            <label for="fin-lanc-data">Data</label>
+            <input type="date" id="fin-lanc-data" value="${_dataLocalISO()}">
+          </div>
+        </div>
+        <div class="ag-form-group">
+          <label for="fin-lanc-cat">Categoria</label>
+          <select id="fin-lanc-cat">
+            <option value="trabalho">Trabalho espiritual</option>
+            <option value="outro">Outro</option>
+          </select>
+        </div>
+      </div>
+      <div class="cat-form-actions">
+        <button class="ag-btn ag-btn-outline ag-btn-sm" type="button" onclick="fin_fecharLancamento()">Cancelar</button>
+        <button class="ag-btn ag-btn-primary ag-btn-sm" id="fin-lanc-salvar" type="button" onclick="fin_salvarLancamento()">Salvar</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+  requestAnimationFrame(() => overlay.classList.add('open'));
+  setTimeout(() => document.getElementById('fin-lanc-desc')?.focus(), 320);
+}
+
+function fin_fecharLancamento() {
+  const overlay = document.getElementById('fin-lanc-modal');
+  overlay?.classList.remove('open');
+  setTimeout(() => overlay?.remove(), 320);
+}
+
+async function fin_salvarLancamento() {
+  const descricao = document.getElementById('fin-lanc-desc')?.value?.trim();
+  const valor     = parseFloat(document.getElementById('fin-lanc-valor')?.value);
+  const data      = document.getElementById('fin-lanc-data')?.value;
+  const categoria = document.getElementById('fin-lanc-cat')?.value || 'trabalho';
+
+  if (!descricao)               { _toastAdmin('Informe a descrição.', 'erro'); return; }
+  if (isNaN(valor) || valor <= 0) { _toastAdmin('Valor inválido.', 'erro'); return; }
+  if (!data)                    { _toastAdmin('Informe a data.', 'erro'); return; }
+
+  const btn = document.getElementById('fin-lanc-salvar');
+  if (btn) { btn.disabled = true; btn.textContent = 'Salvando…'; }
+
+  const { error } = await supabase
+    .from('lancamentos_financeiros')
+    .insert({ descricao, valor, data, categoria });
+
+  if (error) {
+    _toastAdmin('Erro ao salvar: ' + error.message, 'erro');
+    if (btn) { btn.disabled = false; btn.textContent = 'Salvar'; }
+    return;
+  }
+
+  _toastAdmin('✅ Lançamento registrado!', 'ok');
+  fin_fecharLancamento();
+  inicializarFinanceiro(true);
+}
+
+async function fin_excluirLancamento(id) {
+  if (!confirm('Excluir este lançamento?')) return;
+  const { error } = await supabase
+    .from('lancamentos_financeiros')
+    .delete()
+    .eq('id', id);
+  if (error) { _toastAdmin('Erro ao excluir: ' + error.message, 'erro'); return; }
+  _toastAdmin('Lançamento excluído.', 'ok');
+  inicializarFinanceiro(true);
 }
