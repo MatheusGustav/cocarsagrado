@@ -3569,11 +3569,14 @@ body.drawer-aberto { overflow: hidden; }
   margin-top: 4px;
 }
 
+/* Linha do tier: nome + preço em cima, ações embaixo (card é estreito) */
 .cat-tier-row {
-  display: flex;
+  display: grid;
+  grid-template-columns: 1fr auto;
   align-items: center;
-  gap: 8px;
-  padding: 8px 2px;
+  row-gap: 7px;
+  column-gap: 8px;
+  padding: 10px 2px;
   border-bottom: 1px solid var(--border);
   font-size: .82rem;
   text-align: left;
@@ -3581,10 +3584,22 @@ body.drawer-aberto { overflow: hidden; }
 .cat-tier-row:last-child { border-bottom: none; }
 .cat-tier-row--inativa { opacity: 0.55; }
 
-.cat-tier-info  { flex: 1; min-width: 0; color: var(--primary-ink); font-weight: 600; }
-.cat-tier-preco { color: var(--primary-ink); font-weight: 600; white-space: nowrap; }
+.cat-tier-info {
+  min-width: 0;
+  color: var(--primary-ink);
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.cat-tier-preco { color: var(--primary-ink); font-weight: 600; white-space: nowrap; text-align: right; }
 
-.cat-tier-acoes { display: flex; gap: 6px; flex-shrink: 0; }
+.cat-tier-acoes {
+  grid-column: 1 / -1;
+  display: flex;
+  gap: 6px;
+  justify-content: flex-end;
+}
 
 .cat-tier-btn {
   background: transparent;
