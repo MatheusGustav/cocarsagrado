@@ -1217,6 +1217,46 @@ async function exportarRelatorio() {
   URL.revokeObjectURL(url);
 }
 
+// Exporta a agenda de contatos (nome + WhatsApp únicos) — backup dos
+// clientes. Dados de pedidos; dedup pelo número normalizado.
+async function exportarContatos() {
+  if (!_admAutenticado) { _mostrarLogin(); return; }
+  const { data, error } = await supabase
+    .from('pedidos')
+    .select('cliente_nome, cliente_whatsapp, criado_em')
+    .order('criado_em', { ascending: false });
+
+  if (error || !data) { _toastAdmin('Erro ao exportar contatos.', 'erro'); return; }
+
+  // Dedup pelo número (só dígitos); mantém o registro mais recente
+  const vistos = new Map();
+  data.forEach(p => {
+    const k = String(p.cliente_whatsapp || '').replace(/\D/g, '');
+    if (!k || vistos.has(k)) return;
+    vistos.set(k, p);
+  });
+
+  const contatos = [...vistos.values()]
+    .sort((a, b) => String(a.cliente_nome).localeCompare(String(b.cliente_nome), 'pt-BR'));
+
+  const cols = ['Nome', 'WhatsApp', 'Último pedido em'];
+  const rows = contatos.map(p => [
+    p.cliente_nome,
+    p.cliente_whatsapp,
+    (p.criado_em || '').slice(0, 10),
+  ].map(v => `"${String(v ?? '').replace(/"/g,'""')}"`).join(','));
+
+  const csv  = [cols.join(','), ...rows].join('\n');
+  const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href     = url;
+  a.download = `contatos_clientes_${_dataLocalISO()}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+  _toastAdmin(`✅ ${contatos.length} contato${contatos.length === 1 ? '' : 's'} exportado${contatos.length === 1 ? '' : 's'}!`, 'ok');
+}
+
 // ============================================================
 // UI helpers
 // ============================================================
@@ -1281,6 +1321,7 @@ let _buscaDebounce = null;
 document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('btn-atualizar')?.addEventListener('click', () => carregarAgendamentos());
   document.getElementById('btn-exportar')?.addEventListener('click', exportarRelatorio);
+  document.getElementById('btn-exportar-contatos')?.addEventListener('click', exportarContatos);
   document.getElementById('filtro-data')?.addEventListener('change', () => carregarAgendamentos());
   document.getElementById('filtro-terapeuta')?.addEventListener('change', () => carregarAgendamentos());
   document.getElementById('filtro-metodo')?.addEventListener('change', () => carregarAgendamentos());
