@@ -804,7 +804,7 @@ function montarAcoesGrupo(ags) {
     const nome = comFone.cliente_nome || '';
     const qtd  = ags.length;
     const data = formatarData(ags[0].data_agendamento);
-    html += `<button class="ag-btn ag-btn-whatsapp ag-btn-sm" onclick="abrirWhatsApp('${escapeAttr(fone)}','${escapeAttr(nome)}','pedido com ${qtd} leituras','${data}','')">📱 WhatsApp</button>`;
+    html += `<button class="ag-btn ag-btn-whatsapp ag-btn-sm" onclick="abrirWhatsApp('${escapeAttr(fone)}','${escapeAttr(nome)}','pedido com ${qtd} leituras','${escapeAttr(data)}','')">📱 WhatsApp</button>`;
   }
 
   return html;
@@ -832,7 +832,7 @@ function montarAcoes(ag) {
   }
 
   if (fone.replace(/\D/g,'').length >= 10) {
-    html += `<button class="ag-btn ag-btn-whatsapp ag-btn-sm" onclick="abrirWhatsApp('${escapeAttr(fone)}','${escapeAttr(nome)}','${escapeAttr(tipo)}','${data}','${escapeAttr(horaBtn)}')">📱 WhatsApp</button>`;
+    html += `<button class="ag-btn ag-btn-whatsapp ag-btn-sm" onclick="abrirWhatsApp('${escapeAttr(fone)}','${escapeAttr(nome)}','${escapeAttr(tipo)}','${escapeAttr(data)}','${escapeAttr(horaBtn)}')">📱 WhatsApp</button>`;
   }
 
   return html;
