@@ -759,7 +759,7 @@ CREATE TABLE IF NOT EXISTS public.lancamentos_financeiros (
   data      DATE NOT NULL DEFAULT CURRENT_DATE,
   descricao TEXT NOT NULL,
   valor     NUMERIC(10,2) NOT NULL CHECK (valor <> 0),
-  categoria TEXT NOT NULL DEFAULT 'trabalho' CHECK (categoria IN ('trabalho', 'outro')),
+  categoria TEXT NOT NULL DEFAULT 'trabalho' CHECK (categoria IN ('trabalho', 'outro', 'despesa')),
   criado_em TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
