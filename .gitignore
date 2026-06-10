@@ -3,3 +3,7 @@
 
 # Cache local do Supabase CLI
 supabase/.temp/
+
+# Skills de agentes de IA (ferramenta de dev, não faz parte do site)
+.agents/
+skills-lock.json
