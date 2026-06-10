@@ -16,39 +16,40 @@
 
 /* === VARIÁVEIS CSS — PALETA OFICIAL COCAR SAGRADO === */
 :root {
-  /* === PRIMÁRIAS (verde mata profunda) === */
-  --color-primary:          #213D2C;
-  --color-primary-hover:    #325441;
-  --color-primary-deep:     #15281C;
+  /* === PRIMÁRIAS (verde abeto dramático) === */
+  --color-primary:          #142E20;
+  --color-primary-hover:    #1F4530;
+  --color-primary-deep:     #0E2117;
   --color-primary-light:    #6E8F73;
   --color-primary-whisper:  #6E8F73;
 
-  /* === DOURADO DOCE DE LEITE (acento caramelo) === */
-  --color-gold:             #C99A4E;
-  --color-gold-deep:        #A67C32;
+  /* === DOURADO SÓBRIO (acento caramelo) === */
+  --color-gold:             #C0954E;
+  --color-gold-deep:        #9A742F;
   --color-gold-shadow:      #6B5526;
   --color-gold-light:       #D9B776;
   --color-gold-mist:        #EDDDB8;
 
-  /* === FUNDOS (off-white quente) === */
-  --color-bg-page:          #F6F1E5;
-  --color-bg-section-alt:   #EFE8D6;
-  --color-bg-card:          #FCF8EF;
-  --color-bg-dark:          #213D2C;
-  --color-bg-dark-deep:     #15281C;
+  /* === FUNDOS (off-white marfim) === */
+  --color-bg-page:          #FAF7F0;
+  --color-bg-section-alt:   #F2EDE2;
+  --color-bg-card:          #FFFDF8;
+  --color-cat-card:         #142E20;
+  --color-bg-dark:          #142E20;
+  --color-bg-dark-deep:     #0E2117;
 
   /* === TEXTO === */
-  --color-text-primary:     #1A2B1E;
-  --color-text-body:        #3A4A3C;
+  --color-text-primary:     #13251A;
+  --color-text-body:        #33473B;
   --color-text-muted:       #837B68;
-  --color-text-link:        #325441;
+  --color-text-link:        #1F4530;
   --color-text-on-dark:     #ECE3D0;
 
   /* === NEUTROS === */
-  --color-neutral-white:    #FCF8EF;
-  --color-neutral-ivory:    #F6F1E5;
-  --color-neutral-sand:     #EFE8D6;
-  --color-neutral-stone:    #D2C9B4;
+  --color-neutral-white:    #FFFDF8;
+  --color-neutral-ivory:    #FAF7F0;
+  --color-neutral-sand:     #F2EDE2;
+  --color-neutral-stone:    #D6CDBA;
   --color-neutral-driftwood:#837B68;
 
   /* === ESTADOS === */
@@ -838,20 +839,22 @@ body.cs-chat-active .nav-chat-btn { color: var(--color-gold); }
   gap: 12px;
 }
 
+/* Card invertido: verde primordial sobre a seção off-white —
+   o contraste verde/marfim vive dentro de cada card. */
 .cat-card {
-  background: var(--color-bg-card);
-  border: 1px solid rgba(201, 154, 78, 0.20);
+  background: var(--color-cat-card);
+  border: 1px solid rgba(192, 149, 78, 0.35);
   border-radius: 12px;
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  box-shadow: 0 2px 10px rgba(33, 61, 44, 0.06);
+  box-shadow: 0 2px 12px rgba(14, 33, 23, 0.18);
   transition: border-color var(--transicao), box-shadow var(--transicao), transform var(--transicao);
 }
 
 .cat-card:hover {
   border-color: var(--color-gold);
-  box-shadow: 0 4px 16px rgba(21, 40, 28, 0.1);
+  box-shadow: 0 6px 22px rgba(14, 33, 23, 0.28);
   transform: translateY(-2px);
 }
 
@@ -893,13 +896,14 @@ body.cs-chat-active .nav-chat-btn { color: var(--color-gold); }
   font-size: 15px;
   font-weight: 600;
   letter-spacing: 0.01em;
-  color: var(--color-primary);
+  color: var(--color-gold-light);
   min-width: 0;
 }
 
 .cat-desc {
   font-size: 12px;
-  color: var(--color-text-body);
+  color: var(--color-text-on-dark);
+  opacity: 0.82;
   line-height: 1.55;
   flex: 1;
 }
@@ -919,7 +923,7 @@ body.cs-chat-active .nav-chat-btn { color: var(--color-gold); }
   object-fit: cover;
   border-radius: 50%;
   display: block;
-  box-shadow: 0 4px 14px rgba(0,0,0,0.14), 0 0 0 2px var(--color-gold-mist);
+  box-shadow: 0 4px 14px rgba(0,0,0,0.3), 0 0 0 2px rgba(217, 183, 118, 0.45);
   transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
 
@@ -935,7 +939,7 @@ body.cs-chat-active .nav-chat-btn { color: var(--color-gold); }
 
 .cat-card:hover .cat-img {
   transform: scale(1.06);
-  box-shadow: 0 6px 20px rgba(0,0,0,0.26);
+  box-shadow: 0 6px 20px rgba(0,0,0,0.4), 0 0 0 2px var(--color-gold);
 }
 
 
@@ -945,14 +949,14 @@ body.cs-chat-active .nav-chat-btn { color: var(--color-gold); }
   align-items: stretch;
   gap: 10px;
   padding: 12px 12px;
-  border-top: 1px solid rgba(21, 40, 28, 0.12);
+  border-top: 1px solid rgba(217, 183, 118, 0.18);
   background: transparent;
 }
 
 .cat-footer-price {
   font-size: 18px;
   font-weight: 700;
-  color: var(--color-gold-deep);
+  color: var(--color-gold-light);
   text-align: center;
   font-variant-numeric: tabular-nums;
 }
@@ -981,12 +985,12 @@ body.cs-chat-active .nav-chat-btn { color: var(--color-gold); }
   justify-content: space-between;
   gap: 12px;
   font-size: 12px;
-  color: var(--color-text-muted);
+  color: rgba(236, 227, 208, 0.75);
 }
 
 .cat-footer-tiers strong {
   font-weight: 700;
-  color: var(--color-gold-deep);
+  color: var(--color-gold-light);
 }
 
 /* Botão Agendar — dourado cerimonial */
@@ -1955,6 +1959,7 @@ body.cs-chat-active .nav-chat-btn { color: var(--color-gold); }
   --color-bg-page:          #0E1A12;
   --color-bg-section-alt:   #152215;
   --color-bg-card:          #18271C;
+  --color-cat-card:         #18271C;
   --color-bg-dark:          #080F08;
   --color-bg-dark-deep:     #080F08;
   --color-text-primary:     #C8BC8A;
@@ -1986,12 +1991,20 @@ body.cs-chat-active .nav-chat-btn { color: var(--color-gold); }
 }
 
 
+/* Ritmo de seções no escuro: preto → verde → preto → verde.
+   O preto profundo abre no hero e emoldura o catálogo; os cards
+   (um degrau mais claro) saltam do fundo. */
+[data-theme="dark"] .hero     { background: var(--color-bg-dark-deep); }
+[data-theme="dark"] .sobre    { background: #152215; }
+[data-theme="dark"] .catalogo { background: var(--color-bg-dark-deep); }
+[data-theme="dark"] .conectar { background: #152215; }
+
 [data-theme="dark"] .hero-quote        { color: var(--color-gold); }
 [data-theme="dark"] .stat-num          { color: var(--color-gold-light); }
 
 [data-theme="dark"] .cat-card {
-  border-color: #2A2A2A;
-  box-shadow: 0 0 8px rgba(201, 154, 78, 0.06);
+  border-color: rgba(217, 183, 118, 0.28);
+  box-shadow: 0 0 12px rgba(201, 154, 78, 0.08);
 }
 [data-theme="dark"] .cat-card:hover {
   border-color: var(--color-gold);
@@ -2073,15 +2086,15 @@ body.cs-chat-active .nav-chat-btn { color: var(--color-gold); }
   position: absolute;
   top: 10px;
   left: 10px;
-  background: var(--color-primary);
-  color: var(--color-gold-light);
-  border: 1px solid rgba(217, 183, 118, 0.4);
+  background: var(--color-gold);
+  color: var(--color-primary-deep);
+  border: 1px solid rgba(14, 33, 23, 0.3);
 }
 
 /* Card em destaque (leitura mais agendada) */
 .cat-card--destaque {
-  border-color: var(--color-gold);
-  box-shadow: 0 4px 18px rgba(201, 154, 78, 0.22);
+  border-color: var(--color-gold-light);
+  box-shadow: 0 4px 20px rgba(192, 149, 78, 0.35);
 }
 
 [data-theme="dark"] .cat-card--destaque {
@@ -2105,7 +2118,7 @@ body.cs-chat-active .nav-chat-btn { color: var(--color-gold); }
 /* Preço original riscado */
 .cat-price-original {
   font-size: 11px;
-  color: var(--color-text-muted);
+  color: rgba(236, 227, 208, 0.55);
   text-decoration: line-through;
   line-height: 1.2;
 }
@@ -2114,7 +2127,7 @@ body.cs-chat-active .nav-chat-btn { color: var(--color-gold); }
 .cat-price-desconto {
   font-size: 18px;
   font-weight: 700;
-  color: var(--color-primary-light);
+  color: var(--color-gold-light);
   line-height: 1.2;
 }
 
@@ -2137,7 +2150,7 @@ body.cs-chat-active .nav-chat-btn { color: var(--color-gold); }
 /* Preço original para tiers */
 .cat-price-original-small {
   font-size: 9px;
-  color: var(--color-text-muted);
+  color: rgba(236, 227, 208, 0.55);
   text-decoration: line-through;
   line-height: 1;
 }
@@ -2145,7 +2158,7 @@ body.cs-chat-active .nav-chat-btn { color: var(--color-gold); }
 /* Preço com desconto para tiers */
 .cat-price-desconto-small {
   font-weight: 700;
-  color: var(--color-primary-light);
+  color: var(--color-gold-light);
 }
 
 /* Modo escuro */
@@ -2184,9 +2197,9 @@ body.cs-chat-active .nav-chat-btn { color: var(--color-gold); }
 }
 
 .cat-badge-atendimento--mensagem {
-  background: var(--color-primary);
+  background: rgba(217, 183, 118, 0.12);
   color: var(--color-gold-light);
-  border: 1px solid rgba(217, 183, 118, 0.3);
+  border: 1px solid rgba(217, 183, 118, 0.35);
 }
 
 [data-theme="dark"] .cat-badge-atendimento--video {

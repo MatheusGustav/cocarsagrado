@@ -396,7 +396,7 @@ function inicializarScrollSuave() {
 function sincronizarThemeColor() {
   const dark = document.documentElement.getAttribute('data-theme') === 'dark';
   document.querySelector('meta[name="theme-color"]')
-    ?.setAttribute('content', dark ? '#080F08' : '#213D2C');
+    ?.setAttribute('content', dark ? '#080F08' : '#142E20');
 }
 
 function inicializarToggleTema() {
