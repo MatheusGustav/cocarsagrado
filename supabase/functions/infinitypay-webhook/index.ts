@@ -10,8 +10,9 @@
 // - Falha na notificação Telegram nunca derruba a confirmação.
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
-const TG_BOT  = Deno.env.get('TELEGRAM_BOT_TOKEN') || ''
-const TG_CHAT = Deno.env.get('TELEGRAM_CHAT_ID')   || ''
+const TG_BOT  = Deno.env.get('TELEGRAM_BOT_TOKEN')  || ''
+const TG_CHAT = Deno.env.get('TELEGRAM_CHAT_ID')    || ''
+const HANDLE  = Deno.env.get('INFINITYPAY_HANDLE')  || ''
 
 const supabase = createClient(
   Deno.env.get('SUPABASE_URL')!,
@@ -98,11 +99,16 @@ Deno.serve(async (req) => {
       return json({ error: 'missing order_nsu or transaction_nsu' }, 400)
     }
 
-    // Verifica pagamento na InfinitePay
+    // Verifica pagamento na InfinitePay (exige handle + slug — sem eles a API responde 404)
     const checkRes = await fetch('https://api.infinitepay.io/invoices/public/checkout/payment_check', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ order_nsu: chave, transaction_nsu: transactionNsu }),
+      body: JSON.stringify({
+        handle: HANDLE,
+        order_nsu: chave,
+        transaction_nsu: transactionNsu,
+        ...(body.invoice_slug && { slug: body.invoice_slug }),
+      }),
     })
 
     if (!checkRes.ok) {
