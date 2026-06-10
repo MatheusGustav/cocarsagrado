@@ -971,22 +971,14 @@ function _nomeGrupo(principal) {
   return sep > 0 ? principal.nome.slice(0, sep) : principal.nome;
 }
 
-// Ranking de demanda (agendamentos pagos) por service_id — ordena o
-// catálogo e alimenta a prova social. Falha → Map vazio (ordem do admin).
+// Ranking de demanda (agendamentos pagos) por service_id — só a ordem,
+// sem totais (volume de vendas é dado interno). Falha → Map vazio.
 async function _buscarRankingCatalogo() {
   try {
     const { data, error } = await supabase.rpc('catalogo_ranking');
     if (error || !Array.isArray(data)) return new Map();
-    return new Map(data.map(r => [r.service_id, Number(r.total) || 0]));
+    return new Map(data.map((r, i) => [r.service_id, i]));
   } catch { return new Map(); }
-}
-
-const SOCIAL_MIN = 10; // só mostra "+N leituras" a partir deste volume
-
-function _socialHTML(total) {
-  return total >= SOCIAL_MIN
-    ? `<p class="cat-social">✦ ${total} leituras realizadas</p>`
-    : '';
 }
 
 async function renderizarCatalogoSite() {
@@ -1001,15 +993,15 @@ async function renderizarCatalogoSite() {
 
   const itens = _agruparCatalogo(tipos);
 
-  // Ordena por demanda real; empate preserva a ordem definida no admin
+  // Ordena por demanda real; sem ranking, preserva a ordem do admin
   itens.forEach((item, i) => {
     item._sid = item.kind === 'grupo'
       ? `grupo:${item.grupo_slug}`
       : (item.tipo.slug || `id-${item.tipo.id}`);
-    item._total = ranking.get(item._sid) || 0;
+    item._rank = ranking.has(item._sid) ? ranking.get(item._sid) : Infinity;
     item._idx = i;
   });
-  itens.sort((a, b) => (b._total - a._total) || (a._idx - b._idx));
+  itens.sort((a, b) => (a._rank - b._rank) || (a._idx - b._idx));
 
   grid.innerHTML = itens.map(item => {
     if (item.kind === 'grupo') {
@@ -1030,7 +1022,6 @@ async function renderizarCatalogoSite() {
           <div class="cat-body">
             <h3 class="cat-name">${_escCat(nome)}</h3>
             ${desc}
-            ${_socialHTML(item._total)}
           </div>
           <div class="cat-footer">
             <div class="cat-footer-tiers">${tiers}</div>
@@ -1055,7 +1046,6 @@ async function renderizarCatalogoSite() {
         <div class="cat-body">
           <h3 class="cat-name">${_escCat(t.nome)}</h3>
           ${desc}
-          ${_socialHTML(item._total)}
         </div>
         <div class="cat-footer">
           <span class="cat-footer-price">${_formatarPrecoCat(t.preco_original)}</span>

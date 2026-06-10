@@ -997,14 +997,6 @@ body.cs-chat-active .nav-chat-btn { color: var(--color-gold); }
   overflow: hidden;
 }
 
-/* Prova social — contagem real de leituras realizadas */
-.cat-social {
-  font-size: 10.5px;
-  font-weight: 600;
-  letter-spacing: 0.05em;
-  color: var(--color-gold-light);
-  opacity: 0.9;
-}
 
 .cat-card-img {
   display: flex;
