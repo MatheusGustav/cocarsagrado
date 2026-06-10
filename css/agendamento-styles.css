@@ -4,12 +4,12 @@
 
 /* ---- Variáveis (alinhadas à paleta do site) ---- */
 :root {
-  --primary:   #213D2C;
-  --secondary: #C99A4E;
+  --primary:   #142E20;
+  --secondary: #C0954E;
   --accent:    #D9B776;
-  --bg:        #F6F1E5;
-  --surface:   #FCF8EF;
-  --text:      #1A2B1E;
+  --bg:        #FAF7F0;
+  --surface:   #FFFDF8;
+  --text:      #13251A;
   --text-muted:#837B68;
   --border:    #E2DAC8;
   --danger:    #8B3A1E;
@@ -502,7 +502,7 @@ textarea { resize: vertical; min-height: 90px; }
 
 .seletor-card {
   position: relative;
-  background: #F8F5EE;
+  background: #FCFAF3;
   border: 1.5px solid rgba(201, 154, 78, 0.4);
   border-radius: 20px;
   padding: 36px 28px 28px;
