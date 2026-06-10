@@ -361,7 +361,7 @@ function _ofereceRetomar(onContinuarNovo) {
     <div class="modal-container" style="max-width:440px;">
       <div class="modal-body" style="padding:28px;">
         <h3 style="margin-top:0;">⏳ Você tem um pedido pendente</h3>
-        <p style="margin:12px 0;"><strong>Pedido:</strong> ${ag.chave}<br><strong>Leitura:</strong> ${ag.tipo}<br><strong>Valor:</strong> R$ ${ag.valor}</p>
+        <p style="margin:12px 0;"><strong>Pedido:</strong> ${_escCat(ag.chave)}<br><strong>Leitura:</strong> ${_escCat(ag.tipo)}<br><strong>Valor:</strong> R$ ${_escCat(ag.valor)}</p>
         <p style="font-size:.9rem;color:var(--cor-texto-suave);">Se você já fez o PIX ou está pagando, retome o pedido atual. Criar um novo vai gerar cobrança duplicada.</p>
         <div style="display:flex;flex-direction:column;gap:10px;margin-top:18px;">
           <button class="ag-btn ag-btn-primary" id="_retomarBtn">📲 Retomar pedido pendente</button>

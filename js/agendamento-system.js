@@ -216,7 +216,7 @@ function _abrirSeletorGrupo(grupoSlug, tiers) {
     opt.innerHTML = `
       <span class="tier-label">${_escCat(tier.tier_label || tier.nome)}</span>
       <div class="tier-info">
-        <span class="tier-preco">R$ ${final.toFixed(0)}</span>
+        <span class="tier-preco">R$ ${final.toFixed(2).replace('.', ',')}</span>
       </div>`;
     opt.addEventListener('click', () => {
       tiersEl.querySelectorAll('.seletor-tier-opt').forEach(o => o.classList.remove('selected'));
@@ -246,7 +246,7 @@ function _atualizarResumoSeletor() {
   const { final } = calcularPrecoFinal(total);
 
   document.getElementById('seletor-qty').textContent   = _seletorQty;
-  document.getElementById('seletor-preco').textContent = `R$ ${final.toFixed(0)}`;
+  document.getElementById('seletor-preco').textContent = `R$ ${final.toFixed(2).replace('.', ',')}`;
 }
 
 function alterarQty(delta) {
@@ -661,7 +661,7 @@ function _prepararDadosPessoais() {
     nome: (document.getElementById('f-nome')?.value || '').trim(),
     nascimento: document.getElementById('f-nasc')?.value || '',
     whatsapp: obterWhatsappCompleto(),
-    email: document.getElementById('f-email')?.value || '',
+    email: '', // não coletado no site; RPC criar_pedido recebe null
   };
 }
 
@@ -847,14 +847,6 @@ function irParaPasso(num) {
   document.querySelectorAll('.ag-section').forEach((s) => {
     const idx = parseInt(s.dataset.passo, 10);
     s.classList.toggle('active', idx === num);
-  });
-
-  // Mapeia inner step → outer progress step (3 passos: Dados, Leituras, Pagamento)
-  const outerStep = num === 1 ? 1 : (num === 0 || num === 2 ? 2 : 3);
-  document.querySelectorAll('.ag-step').forEach((s, i) => {
-    s.classList.remove('active','done');
-    if (i + 1 === outerStep) s.classList.add('active');
-    if (i + 1 < outerStep)   s.classList.add('done');
   });
 
   if (num === 2) atualizarResumo();
