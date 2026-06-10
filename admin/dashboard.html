@@ -4,170 +4,53 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>Admin — Cocar Sagrado</title>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#2D4A2D">
+  <link rel="icon" href="../images/favicon.webp" type="image/webp">
+  <link rel="apple-touch-icon" href="../images/logo-icone.webp">
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
   <script>
-    // Tema automático por horário (mesma regra do site: escuro antes das 6h e a partir das 18h).
-    // Sem toggle — troca no segundo exato do cruzamento (6h/18h) e reagenda o próximo.
+    // Tema: preferência manual (localStorage 'adm_tema': auto|claro|escuro).
+    // No modo auto segue o horário (escuro antes das 6h e a partir das 18h),
+    // trocando no segundo exato do cruzamento e reagendando o próximo.
     (function() {
       var timer = null;
-      function aplicarTemaPorHorario() {
-        var agora = new Date();
-        var h = agora.getHours();
-        var escuro = h < 6 || h >= 18;
+      function preferencia() {
+        try { return localStorage.getItem('adm_tema') || 'auto'; } catch (e) { return 'auto'; }
+      }
+      function aplicarTema() {
+        var modo = preferencia();
+        var escuro;
+        if (modo === 'claro')       escuro = false;
+        else if (modo === 'escuro') escuro = true;
+        else                        { var h = new Date().getHours(); escuro = h < 6 || h >= 18; }
         document.documentElement.setAttribute('data-theme', escuro ? 'dark' : 'light');
 
-        // Próximo cruzamento: 6h ou 18h de hoje, senão 6h de amanhã
-        var proximo = new Date(agora);
-        proximo.setMinutes(0, 0, 0);
-        if (h < 6)       proximo.setHours(6);
-        else if (h < 18) proximo.setHours(18);
-        else { proximo.setDate(proximo.getDate() + 1); proximo.setHours(6); }
-
         clearTimeout(timer);
-        timer = setTimeout(aplicarTemaPorHorario, proximo - agora + 1000); // +1s de folga
+        if (modo === 'auto') {
+          // Próximo cruzamento: 6h ou 18h de hoje, senão 6h de amanhã
+          var agora = new Date();
+          var h2 = agora.getHours();
+          var proximo = new Date(agora);
+          proximo.setMinutes(0, 0, 0);
+          if (h2 < 6)       proximo.setHours(6);
+          else if (h2 < 18) proximo.setHours(18);
+          else { proximo.setDate(proximo.getDate() + 1); proximo.setHours(6); }
+          timer = setTimeout(aplicarTema, proximo - agora + 1000); // +1s de folga
+        }
       }
-      aplicarTemaPorHorario();
+      aplicarTema();
+      window._aplicarTemaAdmin = aplicarTema;
       // Aba em background atrasa timers — ao voltar à aba, corrige na hora
       document.addEventListener('visibilitychange', function() {
-        if (!document.hidden) aplicarTemaPorHorario();
+        if (!document.hidden) aplicarTema();
       });
     })();
   </script>
   <link rel="stylesheet" href="../css/agendamento-styles.css">
   <link rel="stylesheet" href="css/dashboard.css">
-  <style>
-    .adm-login-screen {
-      display: flex; align-items: center; justify-content: center;
-      min-height: 100vh; padding: 24px;
-      background: linear-gradient(135deg, #0a0f0a 0%, #1a2a1a 100%);
-    }
-    .adm-login-card {
-      background: #162016; border: 1px solid #2a3a2a;
-      border-radius: 16px; padding: 40px 36px;
-      width: 100%; max-width: 400px;
-      box-shadow: 0 20px 60px rgba(0,0,0,.6);
-      text-align: center;
-    }
-    .adm-login-card h1 {
-      font-family: 'Cormorant Garamond', serif;
-      font-size: 1.8rem; color: #d4c9a8; margin-bottom: 4px;
-    }
-    .adm-login-card p {
-      color: #7a8a7a; font-size: .85rem; margin-bottom: 28px;
-    }
-    .adm-login-card .ag-form-group {
-      text-align: left; margin-bottom: 16px;
-    }
-    .adm-login-card label {
-      display: block; font-size: .8rem; color: #9a9a7a; margin-bottom: 4px;
-    }
-    .adm-login-card input {
-      width: 100%; padding: 10px 14px; border-radius: 8px;
-      border: 1px solid #2a3a2a; background: #1a261a;
-      color: #e0e0d0; font-size: .9rem; outline: none;
-    }
-    .adm-login-card input:focus { border-color: #d4c9a8; }
-    .adm-login-card .adm-login-btn {
-      width: 100%; margin-top: 8px; padding: 12px;
-      background: #d4c9a8; color: #0a0f0a; font-weight: 600;
-      border: none; border-radius: 8px; font-size: .95rem;
-      cursor: pointer; transition: .2s;
-    }
-    .adm-login-card .adm-login-btn:hover { background: #c4b98a; }
-    .adm-login-card .adm-login-btn:disabled { opacity: .5; cursor: not-allowed; }
-    .adm-login-error {
-      color: #e55; font-size: .82rem; margin-top: 12px; display: none;
-    }
-    #admin-content { display: none; }
-
-    /* Mascote chefe (meme interno) */
-    .mascote-chefe {
-      position: fixed;
-      right: 18px;
-      bottom: 18px;
-      display: flex;
-      align-items: flex-end;
-      gap: 10px;
-      z-index: 40;
-      pointer-events: none; /* balão não bloqueia cliques; a bolinha reativa abaixo */
-    }
-    .mascote-balao {
-      background: #fff;
-      color: #1A1410;
-      border: 1px solid #DDD5C8;
-      border-radius: 14px;
-      padding: 9px 13px;
-      font-size: .82rem;
-      line-height: 1.25;
-      max-width: 210px;
-      box-shadow: 0 8px 22px rgba(0,0,0,.22);
-      position: relative;
-      font-family: 'DM Sans', system-ui, sans-serif;
-      font-weight: 500;
-    }
-    .mascote-img {
-      width: 72px;
-      height: 72px;
-      border-radius: 50%;
-      object-fit: cover;
-      object-position: center 45%;
-      border: 3px solid #D4B254;
-      box-shadow: 0 8px 22px rgba(0,0,0,.4);
-      pointer-events: auto;   /* a bolinha é arrastável */
-      cursor: grab;
-      touch-action: none;     /* arrastar no mobile sem rolar a página */
-      -webkit-user-drag: none;
-      user-select: none;
-    }
-    .mascote-chefe.dragging .mascote-img { cursor: grabbing; }
-    .mascote-chefe.snapping { transition: left .3s cubic-bezier(.2,.8,.3,1.1), top .3s cubic-bezier(.2,.8,.3,1.1); }
-    /* Cantos esquerdos: bolinha no canto, balão abre pra direita */
-    .mascote-chefe.mascote-esquerda { flex-direction: row-reverse; }
-    /* Balão some durante o arrasto e reaparece suave no lado certo */
-    .mascote-balao { transition: opacity .18s ease, transform .18s ease; }
-    .mascote-chefe.balao-oculto .mascote-balao { opacity: 0; transform: scale(.85); }
-    .mascote-pendente .mascote-balao {
-      background: #fff1f1;
-      border-color: #B91C1C;
-      color: #B91C1C;
-    }
-    .mascote-pendente { animation: mascote-treme .4s ease-in-out infinite; }
-    @keyframes mascote-treme {
-      0%,100% { transform: translateX(0); }
-      25%     { transform: translateX(-2px); }
-      75%     { transform: translateX(2px); }
-    }
-    .mascote-grana .mascote-balao {
-      background: #fff4d6;
-      border-color: #B8923E;
-      color: #6b5118;
-    }
-
-    /* Modo escuro do mascote (tema automático por horário) */
-    [data-theme="dark"] .mascote-balao {
-      background: #1A2818;
-      color: #E8E2CC;
-      border-color: #2A3A28;
-    }
-    [data-theme="dark"] .mascote-pendente .mascote-balao {
-      background: #3A1717;
-      border-color: #B91C1C;
-      color: #FCA5A5;
-    }
-    [data-theme="dark"] .mascote-grana .mascote-balao {
-      background: #2A2310;
-      border-color: #B8923E;
-      color: #E8C97E;
-    }
-
-    @media (max-width: 700px) {
-      .mascote-chefe { right: 10px; bottom: 10px; gap: 6px; }
-      .mascote-img { width: 54px; height: 54px; border-width: 2px; }
-      .mascote-balao { font-size: .72rem; max-width: 150px; padding: 7px 10px; }
-    }
-  </style>
 </head>
 <body>
 
@@ -187,23 +70,33 @@
       <button type="submit" class="adm-login-btn" id="adm-login-btn">Entrar</button>
       <div class="adm-login-error" id="adm-login-error"></div>
     </form>
+    <button type="button" class="adm-login-link" id="adm-esqueci-senha">Esqueci minha senha</button>
+
+    <!-- Redefinição de senha (após clicar no link do e-mail de recuperação) -->
+    <div id="adm-reset" style="display:none; text-align:left;">
+      <p class="adm-mfa-texto">Defina sua nova senha de acesso.</p>
+      <div class="ag-form-group">
+        <label for="adm-reset-senha">Nova senha</label>
+        <input type="password" id="adm-reset-senha" autocomplete="new-password" placeholder="••••••••">
+      </div>
+      <button type="button" class="adm-login-btn" id="adm-reset-btn">Salvar nova senha</button>
+      <div class="adm-login-error" id="adm-reset-error"></div>
+    </div>
 
     <!-- Etapa MFA (2º fator) -->
     <div id="adm-mfa" style="display:none; text-align:left;">
       <div id="adm-mfa-enroll" style="display:none;">
-        <p style="color:#9a9a7a; font-size:.82rem; margin-bottom:12px;">
+        <p class="adm-mfa-texto">
           Configure a verificação em duas etapas. Escaneie o QR no seu app
           autenticador (Google Authenticator, Authy…) e digite o código gerado.
         </p>
-        <div id="adm-mfa-qr" style="display:flex; justify-content:center; margin-bottom:10px;"></div>
-        <p style="color:#7a8a7a; font-size:.72rem; word-break:break-all; margin-bottom:14px;">
-          Ou insira a chave manualmente:<br><code id="adm-mfa-secret" style="color:#d4c9a8;"></code>
+        <div id="adm-mfa-qr" class="adm-mfa-qr"></div>
+        <p class="adm-mfa-secret-wrap">
+          Ou insira a chave manualmente:<br><code id="adm-mfa-secret"></code>
         </p>
       </div>
       <div id="adm-mfa-challenge-text" style="display:none;">
-        <p style="color:#9a9a7a; font-size:.82rem; margin-bottom:12px;">
-          Digite o código de 6 dígitos do seu app autenticador.
-        </p>
+        <p class="adm-mfa-texto">Digite o código de 6 dígitos do seu app autenticador.</p>
       </div>
       <div class="ag-form-group">
         <label for="adm-mfa-code">Código de verificação</label>
@@ -211,10 +104,7 @@
                maxlength="6" placeholder="000000" style="letter-spacing:.3em; text-align:center;">
       </div>
       <button type="button" class="adm-login-btn" id="adm-mfa-btn">Verificar</button>
-      <button type="button" id="adm-mfa-cancel"
-              style="width:100%; margin-top:8px; padding:8px; background:transparent; color:#7a8a7a; border:1px solid #2a3a2a; border-radius:8px; font-size:.82rem; cursor:pointer;">
-        Cancelar e sair
-      </button>
+      <button type="button" class="adm-mfa-cancel" id="adm-mfa-cancel">Cancelar e sair</button>
       <div class="adm-login-error" id="adm-mfa-error"></div>
     </div>
   </div>
@@ -241,16 +131,18 @@
         <p>Painel Administrativo</p>
       </div>
       <nav class="adm-nav" aria-label="Menu admin">
-        <a href="#" class="active" id="nav-agendamentos">✦ Agendamentos</a>
-        <a href="#" id="nav-vagas">✦ Vagas</a>
-        <a href="#" id="nav-especial">✦ Agenda Especial</a>
-        <a href="#" id="nav-descontos">✦ Descontos</a>
-        <a href="#" id="nav-catalogo">✦ Catálogo</a>
+        <a href="#agendamentos" class="active" id="nav-agendamentos" data-secao="agendamentos">✦ Agendamentos</a>
+        <a href="#financeiro" id="nav-financeiro" data-secao="financeiro">✦ Financeiro</a>
+        <a href="#vagas" id="nav-vagas" data-secao="vagas">✦ Vagas</a>
+        <a href="#especial" id="nav-especial" data-secao="especial">✦ Agenda Especial</a>
+        <a href="#descontos" id="nav-descontos" data-secao="descontos">✦ Descontos</a>
+        <a href="#catalogo" id="nav-catalogo" data-secao="catalogo">✦ Catálogo</a>
         <a href="../index.html" target="_blank">✦ Ver site</a>
       </nav>
-      <div style="margin-top:auto;">
+      <div class="adm-sidebar-footer">
+        <button class="adm-tema-btn" id="adm-tema-btn" title="Alternar tema">🌗 Tema: auto</button>
         <button class="adm-logout-btn" id="adm-logout-btn">Sair</button>
-        <div style="margin-top:6px; font-size:.7rem; color:#5a5a4a;">v1.2.0</div>
+        <div class="adm-versao">v1.3.0</div>
       </div>
     </aside>
 
@@ -261,32 +153,40 @@
       <div id="secao-agendamentos">
         <header class="adm-main-header">
           <h1>Agendamentos</h1>
-          <div style="display:flex; gap:10px; flex-wrap:wrap;">
+          <div class="adm-header-actions">
+            <span class="adm-realtime" id="adm-realtime" title="Status da conexão em tempo real">
+              <span class="adm-realtime-dot"></span><span id="adm-realtime-txt">conectando…</span>
+            </span>
             <button class="ag-btn ag-btn-outline ag-btn-sm" id="btn-atualizar">🔄 Atualizar</button>
             <button class="ag-btn ag-btn-copy ag-btn-sm" id="btn-exportar">⬇ Exportar CSV</button>
           </div>
         </header>
 
         <div class="adm-stats" role="region" aria-label="Estatísticas">
-          <div class="adm-stat-card hoje">
+          <div class="adm-stat-card hoje" onclick="statCardHoje()" title="Filtrar pelos agendamentos de hoje">
             <div class="adm-stat-label">Agendamentos hoje</div>
             <div class="adm-stat-value" id="stat-hoje">—</div>
           </div>
-          <div class="adm-stat-card pendente">
+          <div class="adm-stat-card pendente" onclick="filtrarPorPill('pendente')" title="Ver pendentes">
             <div class="adm-stat-label">Pendentes</div>
             <div class="adm-stat-value" id="stat-pendente">—</div>
           </div>
-          <div class="adm-stat-card pagos">
+          <div class="adm-stat-card pagos" onclick="filtrarPorPill('pago')" title="Ver pagos">
             <div class="adm-stat-label">Pagos / Confirmados</div>
             <div class="adm-stat-value" id="stat-pagos">—</div>
           </div>
-          <div class="adm-stat-card total">
+          <div class="adm-stat-card total" onclick="mostrarSecao('financeiro')" title="Abrir financeiro">
             <div class="adm-stat-label">Faturado no mês</div>
             <div class="adm-stat-value" id="stat-total">—</div>
           </div>
         </div>
 
+        <div class="adm-semana-strip" id="adm-semana-strip" role="group" aria-label="Ocupação dos próximos dias"></div>
+
         <div class="adm-status-pills" role="group" aria-label="Filtro por status">
+          <button class="adm-pill adm-pill-todos" data-status="" onclick="filtrarPorPill('')">
+            Todos <span class="adm-pill-count" id="pill-count-todos">—</span>
+          </button>
           <button class="adm-pill adm-pill-pendente active" data-status="pendente" onclick="filtrarPorPill('pendente')">
             Pendente <span class="adm-pill-count" id="pill-count-pendente">—</span>
           </button>
@@ -302,20 +202,22 @@
         </div>
 
         <div class="adm-filters" role="search" aria-label="Filtros">
-          <div class="ag-form-group" style="margin:0">
-            <label for="filtro-data" style="font-size:.75rem">Data</label>
+          <div class="ag-form-group adm-filtro-busca">
+            <label for="filtro-busca">Buscar</label>
+            <input type="search" id="filtro-busca" placeholder="Nome, WhatsApp ou chave do pedido" autocomplete="off">
+          </div>
+          <div class="ag-form-group">
+            <label for="filtro-data">Data</label>
             <input type="date" id="filtro-data">
           </div>
-          <div class="ag-form-group" style="margin:0">
-            <label for="filtro-terapeuta" style="font-size:.75rem">Terapeuta</label>
+          <div class="ag-form-group">
+            <label for="filtro-terapeuta">Terapeuta</label>
             <select id="filtro-terapeuta">
               <option value="">Todos</option>
-              <option value="matheus">Matheus</option>
-              <option value="camila">Camila</option>
             </select>
           </div>
-          <div class="ag-form-group" style="margin:0">
-            <label for="filtro-metodo" style="font-size:.75rem">Método pag.</label>
+          <div class="ag-form-group">
+            <label for="filtro-metodo">Método pag.</label>
             <select id="filtro-metodo">
               <option value="">Todos</option>
               <option value="pix">PIX</option>
@@ -326,7 +228,22 @@
           </div>
         </div>
 
-        <div id="lista-agendamentos" class="adm-list" role="list" aria-label="Lista de agendamentos">
+        <div id="lista-agendamentos" class="adm-list" role="list" aria-label="Lista de agendamentos"></div>
+        <div class="adm-carregar-mais" id="adm-carregar-mais" style="display:none;">
+          <button class="ag-btn ag-btn-outline ag-btn-sm" id="btn-carregar-antigos">📜 Carregar mais antigos</button>
+        </div>
+        <div class="adm-janela-info" id="adm-janela-info"></div>
+      </div>
+
+      <!-- FINANCEIRO -->
+      <div id="secao-financeiro" style="display:none">
+        <header class="adm-main-header">
+          <h1>Financeiro</h1>
+          <div class="adm-header-actions">
+            <button class="ag-btn ag-btn-outline ag-btn-sm" id="btn-fin-atualizar" onclick="inicializarFinanceiro(true)">🔄 Atualizar</button>
+          </div>
+        </header>
+        <div id="financeiro-container">
           <div class="ag-loading"><div class="ag-spinner"></div> Carregando...</div>
         </div>
       </div>
@@ -346,20 +263,17 @@
         <header class="adm-main-header">
           <h1>Agenda Especial</h1>
         </header>
-        <div style="display:flex; gap:8px; margin-bottom:12px;">
-          <button class="ag-btn ag-btn-outline ag-btn-sm active" id="btn-esp-matheus" onclick="trocarProfEspecial('matheus')">Matheus</button>
-          <button class="ag-btn ag-btn-outline ag-btn-sm" id="btn-esp-camila" onclick="trocarProfEspecial('camila')">Camila</button>
-        </div>
-        <p style="font-size:.82rem; color:var(--text-muted,#888); margin-bottom:20px;">
+        <div class="esp-prof-btns" id="esp-prof-btns"></div>
+        <p class="esp-servicos-info">
           Serviços: <strong id="esp-servicos-info"></strong>
         </p>
         <div class="esp-add-form">
-          <div class="ag-form-group" style="margin:0">
-            <label style="font-size:.75rem">Data</label>
+          <div class="ag-form-group">
+            <label for="esp-nova-data">Data</label>
             <input type="date" id="esp-nova-data">
           </div>
-          <div class="ag-form-group" style="margin:0">
-            <label style="font-size:.75rem">Vagas</label>
+          <div class="ag-form-group">
+            <label for="esp-nova-vagas">Vagas</label>
             <select id="esp-nova-vagas">
               <option value="1">1</option>
               <option value="2">2</option>
@@ -368,11 +282,11 @@
               <option value="5">5</option>
             </select>
           </div>
-          <div class="ag-form-group" style="margin:0">
-            <label style="font-size:.75rem">Até</label>
+          <div class="ag-form-group">
+            <label for="esp-nova-hora">Até</label>
             <select id="esp-nova-hora"></select>
           </div>
-          <button class="ag-btn ag-btn-primary ag-btn-sm" id="esp-btn-adicionar" onclick="adicionarDataEspecial()" style="align-self:flex-end">
+          <button class="ag-btn ag-btn-primary ag-btn-sm esp-btn-add" id="esp-btn-adicionar" onclick="adicionarDataEspecial()">
             + Adicionar
           </button>
         </div>
@@ -414,80 +328,70 @@
 <script src="../js/supabase-config.js"></script>
 <script src="js/admin-shell.js"></script>
 <script src="js/admin-system.js"></script>
+<script src="js/financeiro-admin.js"></script>
 <script src="js/vagas-admin.js"></script>
 <script src="js/vagas-especial-admin.js"></script>
 <script src="js/descontos-admin.js"></script>
 <script src="js/catalogo-admin.js"></script>
 <script>
+  // ============================================================
+  // Navegação entre seções com rota por hash (#agendamentos, ...)
+  // ============================================================
+  const SECOES_ADMIN = {
+    agendamentos: { el: 'secao-agendamentos', init: () => carregarAgendamentos() },
+    financeiro:   { el: 'secao-financeiro',   init: () => inicializarFinanceiro() },
+    vagas:        { el: 'secao-vagas',        init: () => inicializarVagas() },
+    especial:     { el: 'secao-especial',     init: () => inicializarEspecial() },
+    descontos:    { el: 'secao-descontos',    init: () => inicializarDescontos() },
+    catalogo:     { el: 'secao-catalogo',     init: () => inicializarCatalogo() },
+  };
+
   let _navInit = false;
+  let _secaoAtual = null;
+
+  function mostrarSecao(nome, atualizarHash = true) {
+    const cfg = SECOES_ADMIN[nome];
+    if (!cfg || !_admAutenticado) return;
+    Object.entries(SECOES_ADMIN).forEach(([n, c]) => {
+      const sec = document.getElementById(c.el);
+      if (sec) sec.style.display = n === nome ? '' : 'none';
+      document.getElementById(`nav-${n}`)?.classList.toggle('active', n === nome);
+    });
+    _secaoAtual = nome;
+    if (atualizarHash && location.hash !== `#${nome}`) {
+      history.replaceState(null, '', `#${nome}`);
+    }
+    cfg.init();
+  }
+
+  function _secaoDoHash() {
+    const h = (location.hash || '').replace('#', '');
+    return SECOES_ADMIN[h] ? h : 'agendamentos';
+  }
+
   function _initAdminNav() {
     if (_navInit) return;
     _navInit = true;
-    const navAgendamentos = document.getElementById('nav-agendamentos');
-    const navVagas        = document.getElementById('nav-vagas');
-    const navEspecial     = document.getElementById('nav-especial');
-    const navDescontos    = document.getElementById('nav-descontos');
-    const navCatalogo     = document.getElementById('nav-catalogo');
-    const secAgendamentos = document.getElementById('secao-agendamentos');
-    const secVagas        = document.getElementById('secao-vagas');
-    const secEspecial     = document.getElementById('secao-especial');
-    const secDescontos    = document.getElementById('secao-descontos');
-    const secCatalogo     = document.getElementById('secao-catalogo');
-
-    const _todosNavs = [navAgendamentos, navVagas, navEspecial, navDescontos, navCatalogo];
-    const _todasSecs = [secAgendamentos, secVagas, secEspecial, secDescontos, secCatalogo];
-
-    function _ocultarTodas() {
-      _todasSecs.forEach(s => { s.style.display = 'none'; });
-      _todosNavs.forEach(n => n.classList.remove('active'));
-    }
-
-    navAgendamentos.addEventListener('click', e => {
-      e.preventDefault();
-      _ocultarTodas();
-      secAgendamentos.style.display = '';
-      navAgendamentos.classList.add('active');
-      carregarAgendamentos();
+    document.querySelectorAll('.adm-nav a[data-secao]').forEach(a => {
+      a.addEventListener('click', e => {
+        e.preventDefault();
+        mostrarSecao(a.dataset.secao);
+      });
     });
-
-    navVagas.addEventListener('click', e => {
-      e.preventDefault();
-      _ocultarTodas();
-      secVagas.style.display = '';
-      navVagas.classList.add('active');
-      inicializarVagas();
+    window.addEventListener('hashchange', () => {
+      const nome = _secaoDoHash();
+      if (nome !== _secaoAtual) mostrarSecao(nome, false);
     });
+  }
 
-    navEspecial.addEventListener('click', e => {
-      e.preventDefault();
-      _ocultarTodas();
-      secEspecial.style.display = '';
-      navEspecial.classList.add('active');
-      inicializarEspecial();
-    });
-
-    navDescontos.addEventListener('click', e => {
-      e.preventDefault();
-      _ocultarTodas();
-      secDescontos.style.display = '';
-      navDescontos.classList.add('active');
-      inicializarDescontos();
-    });
-
-    navCatalogo.addEventListener('click', e => {
-      e.preventDefault();
-      _ocultarTodas();
-      secCatalogo.style.display = '';
-      navCatalogo.classList.add('active');
-      inicializarCatalogo();
-    });
+  // Chamado por _entrarNoPainel() após autenticar: abre a seção da URL.
+  function _abrirSecaoInicial() {
+    _initAdminNav();
+    mostrarSecao(_secaoDoHash(), false);
   }
 
   document.addEventListener('DOMContentLoaded', async () => {
     await initAuth();
-    if (_admAutenticado) {
-      _initAdminNav();
-    }
   });
 </script>
 

@@ -1,0 +1,25 @@
+{
+  "name": "Cocar Sagrado — Admin",
+  "short_name": "Cocar Admin",
+  "description": "Painel administrativo da Cocar Sagrado",
+  "start_url": "./dashboard.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0a0f0a",
+  "theme_color": "#2D4A2D",
+  "icons": [
+    {
+      "src": "../images/favicon.webp",
+      "sizes": "512x512",
+      "type": "image/webp",
+      "purpose": "any"
+    },
+    {
+      "src": "../images/logo-icone.webp",
+      "sizes": "600x600",
+      "type": "image/webp",
+      "purpose": "maskable"
+    }
+  ]
+}
