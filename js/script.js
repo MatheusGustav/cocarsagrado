@@ -272,11 +272,10 @@ function aplicarBadgesModalidade() {
     const desc = body && body.querySelector('.cat-desc');
     if (!desc || body.querySelector('.cat-badge-atendimento')) return;
 
+    const rotulos = { video: 'Vídeo-chamada', audio: 'Áudio gravado', mensagem: 'Mensagem' };
     const badge = document.createElement('span');
-    badge.className = modalidade === 'video'
-      ? 'cat-badge-atendimento cat-badge-atendimento--video'
-      : 'cat-badge-atendimento cat-badge-atendimento--mensagem';
-    badge.textContent = modalidade === 'video' ? 'Vídeo-chamada' : 'Mensagem';
+    badge.className = `cat-badge-atendimento cat-badge-atendimento--${rotulos[modalidade] ? modalidade : 'mensagem'}`;
+    badge.textContent = rotulos[modalidade] || rotulos.mensagem;
 
     desc.insertAdjacentElement('afterend', badge);
   });

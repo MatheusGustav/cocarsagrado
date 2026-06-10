@@ -96,6 +96,7 @@ function cat_abrirFormNovo() {
   _catRenderForm({
     nome: '', descricao: '', preco_original: '',
     imagem_url: '', terapeuta: '', especial: false, requer_pergunta: false,
+    modalidade: 'mensagem',
   });
 }
 
@@ -188,6 +189,24 @@ function _catRenderForm(t) {
             <label class="cat-badge-opt cat-badge-opt--radiestesia">
               <input type="radio" name="cat-badge" value="radiestesia" ${t.badge === 'radiestesia' ? 'checked' : ''}>
               ● Radiestesia
+            </label>
+          </div>
+        </div>
+
+        <div class="ag-form-group">
+          <label>Modalidade de atendimento</label>
+          <div class="cat-badge-group">
+            <label class="cat-badge-opt">
+              <input type="radio" name="cat-modalidade" value="mensagem" ${(t.modalidade || 'mensagem') === 'mensagem' ? 'checked' : ''}>
+              💬 Mensagem
+            </label>
+            <label class="cat-badge-opt">
+              <input type="radio" name="cat-modalidade" value="audio" ${t.modalidade === 'audio' ? 'checked' : ''}>
+              🎙️ Áudio gravado
+            </label>
+            <label class="cat-badge-opt">
+              <input type="radio" name="cat-modalidade" value="video" ${t.modalidade === 'video' ? 'checked' : ''}>
+              📹 Vídeo-chamada
             </label>
           </div>
         </div>
@@ -375,6 +394,7 @@ async function _catSalvar() {
   const posicao   = parseInt(document.getElementById('cat-ordem')?.value, 10);
   const especial  = document.querySelector('input[name="cat-agenda"]:checked')?.value === 'especial';
   const badge     = document.querySelector('input[name="cat-badge"]:checked')?.value || null;
+  const modalidade = document.querySelector('input[name="cat-modalidade"]:checked')?.value || 'mensagem';
   const requer    = document.getElementById('cat-pergunta')?.checked || false;
   const numPergRaw = parseInt(document.getElementById('cat-num-perg')?.value, 10);
   const numPerg    = requer ? (Number.isFinite(numPergRaw) && numPergRaw > 0 ? Math.min(20, numPergRaw) : 1) : 0;
@@ -420,6 +440,7 @@ async function _catSalvar() {
       ordem:           posicao * 10,
       especial,
       badge:           badge || null,
+      modalidade,
       requer_pergunta: requer,
       num_perguntas:   numPerg,
     };
