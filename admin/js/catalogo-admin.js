@@ -55,16 +55,36 @@ function _catAgrupar(lista) {
   return itens;
 }
 
+// Inativas ficam ocultas por padrão; o botão da topbar revela
+// (continuam no banco — só saem da vista).
+let _catMostrarInativas = false;
+
+function cat_toggleInativas() {
+  _catMostrarInativas = !_catMostrarInativas;
+  _catRenderizar();
+}
+
 function _catRenderizar() {
   const container = document.getElementById('catalogo-container');
   if (!container) return;
 
-  const itens = _catAgrupar(_catCache);
+  const inativas = _catCache.filter(t => t.ativo === false).length;
+  const visiveis = _catMostrarInativas
+    ? _catCache
+    : _catCache.filter(t => t.ativo !== false);
+  const itens = _catAgrupar(visiveis);
+
+  const btnInativas = inativas > 0
+    ? `<button class="ag-btn ag-btn-outline ag-btn-sm" onclick="cat_toggleInativas()">
+         ${_catMostrarInativas ? 'Ocultar inativas' : `Mostrar inativas (${inativas})`}
+       </button>`
+    : '';
 
   container.innerHTML = `
     <div class="cat-topbar">
       <button class="ag-btn ag-btn-primary ag-btn-sm" onclick="cat_abrirFormNovo()">+ Nova Leitura</button>
-      <span class="cat-count">${_catCache.length} leitura${_catCache.length === 1 ? '' : 's'} · ${itens.length} card${itens.length === 1 ? '' : 's'}</span>
+      ${btnInativas}
+      <span class="cat-count">${visiveis.length} leitura${visiveis.length === 1 ? '' : 's'} · ${itens.length} card${itens.length === 1 ? '' : 's'}</span>
     </div>
     <div class="cat-grid">
       ${itens.map(it => it.kind === 'grupo' ? _catCardGrupo(it) : _catCard(it.tipo)).join('')}
