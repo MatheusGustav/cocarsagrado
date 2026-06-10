@@ -516,10 +516,10 @@ AS $$
   LIMIT 1;
 $$;
 
--- catalogo_ranking: total histórico de agendamentos pagos por service_id.
--- Ordena o catálogo por demanda e alimenta a prova social ("+N leituras").
+-- catalogo_ranking: ordem dos serviços por demanda (agendamentos pagos),
+-- SEM totais — volume de vendas é dado interno; anon só vê a ordem.
 CREATE OR REPLACE FUNCTION public.catalogo_ranking()
-RETURNS TABLE (service_id text, total bigint)
+RETURNS TABLE (service_id text)
 LANGUAGE sql
 SECURITY DEFINER
 SET search_path = public
@@ -529,12 +529,12 @@ AS $$
            WHEN t.grupo_slug IS NOT NULL THEN 'grupo:' || t.grupo_slug
            WHEN t.slug IS NOT NULL THEN t.slug
            ELSE 'id-' || t.id::text
-         END AS service_id,
-         count(*)::bigint AS total
+         END AS service_id
   FROM public.agendamentos a
   JOIN public.tipos_leitura t ON t.id = a.tipo_leitura_id
   WHERE a.status IN ('pago', 'confirmado', 'atendido')
-  GROUP BY service_id;
+  GROUP BY service_id
+  ORDER BY count(*) DESC, service_id;
 $$;
 
 GRANT EXECUTE ON FUNCTION public.chave_pedido_existe(text) TO anon;
