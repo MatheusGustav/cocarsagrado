@@ -2,34 +2,69 @@
    COCAR SAGRADO — Admin: Agenda Especial
    ============================================================ */
 
-const SERVICOS_ESPECIAIS_INFO = {
-  matheus: ['Combo + 10', 'Consulta Ao Vivo'],
-  camila:  ['Registros Akáshicos', 'Mesa Radiônica', 'Mesa Cigana Completa', 'Theta Healing'],
-};
-
 const DIAS_ESP  = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
 const MESES_ESP = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
 
-let _profEspecial  = localStorage.getItem('especial_terapeuta') || 'matheus';
-let _especialCache = [];
+let _profEspecial   = localStorage.getItem('especial_terapeuta') || 'matheus';
+let _especialCache  = [];
+let _servicosEspPorProf = null;   // cache: { terapeuta: [nomes] }, vindo do catálogo
+
+function _profsEspecial() {
+  return (typeof listaTerapeutas === 'function')
+    ? listaTerapeutas()
+    : [{ id: 'matheus', nome: 'Matheus' }, { id: 'camila', nome: 'Camila' }];
+}
 
 // ============================================================
-// Seletor de profissional
+// Seletor de profissional (botões gerados da lista central)
 // ============================================================
+function _renderBotoesProf() {
+  const wrap = document.getElementById('esp-prof-btns');
+  if (!wrap) return;
+  const profs = _profsEspecial();
+  if (!profs.find(t => t.id === _profEspecial)) _profEspecial = profs[0]?.id || 'matheus';
+  wrap.innerHTML = '';
+  profs.forEach(t => {
+    const btn = document.createElement('button');
+    btn.className = 'ag-btn ag-btn-outline ag-btn-sm' + (t.id === _profEspecial ? ' active' : '');
+    btn.textContent = t.nome;
+    btn.dataset.prof = t.id;
+    btn.addEventListener('click', () => trocarProfEspecial(t.id));
+    wrap.appendChild(btn);
+  });
+}
+
 function trocarProfEspecial(p) {
   _profEspecial = p;
   localStorage.setItem('especial_terapeuta', p);
-  document.getElementById('btn-esp-matheus')?.classList.toggle('active', p === 'matheus');
-  document.getElementById('btn-esp-camila')?.classList.toggle('active',  p === 'camila');
+  document.querySelectorAll('#esp-prof-btns [data-prof]').forEach(b => {
+    b.classList.toggle('active', b.dataset.prof === p);
+  });
   _atualizarServicosInfo();
   carregarEspecial();
 }
 
-function _atualizarServicosInfo() {
+// Serviços de agenda especial vêm do catálogo (tipos_leitura.especial),
+// não de lista hardcoded — mudou o catálogo, muda aqui junto.
+async function _atualizarServicosInfo() {
   const el = document.getElementById('esp-servicos-info');
   if (!el) return;
-  const servicos = SERVICOS_ESPECIAIS_INFO[_profEspecial] || [];
-  el.textContent = servicos.join(' · ');
+  if (!_servicosEspPorProf) {
+    const { data, error } = await supabase
+      .from('tipos_leitura')
+      .select('nome, terapeuta')
+      .eq('especial', true)
+      .eq('ativo', true)
+      .order('ordem');
+    if (error) { el.textContent = '—'; return; }
+    _servicosEspPorProf = {};
+    (data || []).forEach(t => {
+      if (!t.terapeuta) return;
+      (_servicosEspPorProf[t.terapeuta] = _servicosEspPorProf[t.terapeuta] || []).push(t.nome);
+    });
+  }
+  const servicos = _servicosEspPorProf[_profEspecial] || [];
+  el.textContent = servicos.length ? servicos.join(' · ') : 'nenhum serviço especial ativo';
 }
 
 // ============================================================
@@ -291,8 +326,7 @@ function _toastEsp(msg) {
 // Init
 // ============================================================
 function inicializarEspecial() {
-  document.getElementById('btn-esp-matheus')?.classList.toggle('active', _profEspecial === 'matheus');
-  document.getElementById('btn-esp-camila')?.classList.toggle('active',  _profEspecial === 'camila');
+  _renderBotoesProf();
 
   // Popular select de hora do form de adição
   const selHora = document.getElementById('esp-nova-hora');

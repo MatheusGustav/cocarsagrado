@@ -2,10 +2,42 @@
    COCAR SAGRADO — Painel Admin
    ============================================================ */
 
-const WHATSAPP_TERAPEUTA = { matheus: '5528999476620', camila: '5527998528483' };
+// Lista padrão de terapeutas; sobrescrita pela config 'terapeutas' no banco
+// (configuracoes.valor = [{id, nome, whatsapp}]) quando existir. O CHECK de
+// terapeuta nas tabelas continua valendo — gente nova ainda exige migration.
+let _TERAPEUTAS = [
+  { id: 'matheus', nome: 'Matheus', whatsapp: '5528999476620' },
+  { id: 'camila',  nome: 'Camila',  whatsapp: '5527998528483' },
+];
+
+function listaTerapeutas() { return _TERAPEUTAS; }
+function terapeutaNome(id) { return _TERAPEUTAS.find(t => t.id === id)?.nome || id || ''; }
+
+async function _carregarTerapeutas() {
+  try {
+    const { data } = await supabase
+      .from('configuracoes').select('valor').eq('chave', 'terapeutas').maybeSingle();
+    if (Array.isArray(data?.valor) && data.valor.length) {
+      _TERAPEUTAS = data.valor.filter(t => t?.id && t?.nome);
+    }
+  } catch { /* mantém os padrões */ }
+  _popularFiltroTerapeuta();
+}
+
+function _popularFiltroTerapeuta() {
+  const sel = document.getElementById('filtro-terapeuta');
+  if (!sel) return;
+  const atual = sel.value;
+  sel.innerHTML = '<option value="">Todos</option>' +
+    _TERAPEUTAS.map(t => `<option value="${escapeAttr(t.id)}">${_esc(t.nome)}</option>`).join('');
+  sel.value = atual;
+}
 
 let _agendamentosTodos = [];
 let _statusAtivo       = 'pendente';
+let _buscaTexto        = '';
+let _janelaDias        = 90;   // janela de busca; 0 = sem corte (tudo)
+let _primeiroLoad      = true;
 let _autoRefreshTimer  = null;
 let _admAutenticado    = false;
 let _realtimeChannel   = null;
@@ -32,6 +64,13 @@ async function initAuth() {
   document.getElementById('adm-mfa-cancel')?.addEventListener('click', _fazerLogout);
   document.getElementById('adm-mfa-code')?.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') { e.preventDefault(); _verificarMFA(); }
+  });
+  document.getElementById('adm-esqueci-senha')?.addEventListener('click', _enviarResetSenha);
+  document.getElementById('adm-reset-btn')?.addEventListener('click', _salvarNovaSenha);
+
+  // Link de recuperação do e-mail abre o painel com este evento
+  supabase.auth.onAuthStateChange((event) => {
+    if (event === 'PASSWORD_RECOVERY') _mostrarTelaReset();
   });
 
   const { data: { session } } = await supabase.auth.getSession();
@@ -97,8 +136,71 @@ async function _avaliarSessao() {
 function _entrarNoPainel() {
   _admAutenticado = true;
   _mostrarAdmin();
-  if (typeof _initAdminNav === 'function') _initAdminNav();
-  carregarAgendamentos();
+  _carregarTerapeutas();
+  if (typeof _abrirSecaoInicial === 'function') {
+    _abrirSecaoInicial();   // abre a seção do hash (#agendamentos, #vagas, ...)
+  } else {
+    carregarAgendamentos();
+  }
+}
+
+// ============================================================
+// Recuperação de senha
+// ============================================================
+async function _enviarResetSenha() {
+  const email   = document.getElementById('adm-email')?.value?.trim();
+  const errorEl = document.getElementById('adm-login-error');
+  const btn     = document.getElementById('adm-esqueci-senha');
+  if (!errorEl) return;
+  errorEl.style.color = '';
+  if (!email) {
+    errorEl.textContent = 'Preencha o e-mail acima e clique de novo para receber o link.';
+    errorEl.style.display = 'block';
+    return;
+  }
+  if (btn) { btn.disabled = true; btn.textContent = 'Enviando...'; }
+  const { error } = await supabase.auth.resetPasswordForEmail(email, {
+    redirectTo: location.origin + location.pathname,
+  });
+  if (btn) { btn.disabled = false; btn.textContent = 'Esqueci minha senha'; }
+  if (error) {
+    errorEl.textContent = 'Erro ao enviar: ' + error.message;
+  } else {
+    errorEl.style.color = '#7a9b72';
+    errorEl.textContent = '✓ Link de redefinição enviado! Confira seu e-mail.';
+  }
+  errorEl.style.display = 'block';
+}
+
+function _mostrarTelaReset() {
+  document.getElementById('adm-login-screen').style.display = 'flex';
+  document.getElementById('admin-content').style.display    = 'none';
+  document.getElementById('adm-login-form').style.display   = 'none';
+  document.getElementById('adm-esqueci-senha').style.display = 'none';
+  document.getElementById('adm-mfa').style.display          = 'none';
+  document.getElementById('adm-reset').style.display        = 'block';
+}
+
+async function _salvarNovaSenha() {
+  const senha = document.getElementById('adm-reset-senha')?.value || '';
+  const err   = document.getElementById('adm-reset-error');
+  const btn   = document.getElementById('adm-reset-btn');
+  if (err) err.style.display = 'none';
+  if (senha.length < 8) {
+    if (err) { err.textContent = 'A senha precisa de pelo menos 8 caracteres.'; err.style.display = 'block'; }
+    return;
+  }
+  if (btn) { btn.disabled = true; btn.textContent = 'Salvando...'; }
+  const { error } = await supabase.auth.updateUser({ password: senha });
+  if (btn) { btn.disabled = false; btn.textContent = 'Salvar nova senha'; }
+  if (error) {
+    if (err) { err.textContent = 'Erro: ' + error.message; err.style.display = 'block'; }
+    return;
+  }
+  document.getElementById('adm-reset').style.display        = 'none';
+  document.getElementById('adm-login-form').style.display   = '';
+  document.getElementById('adm-esqueci-senha').style.display = '';
+  await _avaliarSessao();
 }
 
 // Desafio: o usuário já tem um TOTP verificado.
@@ -232,11 +334,15 @@ function _mostrarAdmin() {
 function _mostrarLogin() {
   document.getElementById('adm-login-screen')?.style.setProperty('display', '');
   document.getElementById('admin-content')?.style.setProperty('display', 'none');
-  // Garante que o card volte ao formulário de senha (esconde etapa MFA).
-  const form = document.getElementById('adm-login-form');
-  const mfa  = document.getElementById('adm-mfa');
-  if (form) form.style.display = '';
-  if (mfa)  mfa.style.display  = 'none';
+  // Garante que o card volte ao formulário de senha (esconde MFA e reset).
+  const form  = document.getElementById('adm-login-form');
+  const mfa   = document.getElementById('adm-mfa');
+  const reset = document.getElementById('adm-reset');
+  const link  = document.getElementById('adm-esqueci-senha');
+  if (form)  form.style.display  = '';
+  if (mfa)   mfa.style.display   = 'none';
+  if (reset) reset.style.display = 'none';
+  if (link)  link.style.display  = '';
 }
 
 // Alterna as telas do card de login: senha | enroll | challenge.
@@ -283,15 +389,10 @@ function _toastAdmin(msg, tipo) {
 // ============================================================
 // Carregamento principal
 // ============================================================
-async function carregarAgendamentos() {
-  if (!_admAutenticado) return;
+function _montarQueryAgendamentos() {
   const filtroData      = document.getElementById('filtro-data')?.value      || '';
   const filtroTerapeuta = document.getElementById('filtro-terapeuta')?.value || '';
   const filtroMetodo    = document.getElementById('filtro-metodo')?.value    || '';
-  const lista = document.getElementById('lista-agendamentos');
-  if (!lista) return;
-
-  lista.innerHTML = '<div class="ag-loading"><div class="ag-spinner"></div> Carregando...</div>';
 
   let query = supabase
     .from('agendamentos')
@@ -299,30 +400,80 @@ async function carregarAgendamentos() {
     .order('data_agendamento', { ascending: false })
     .order('hora_agendamento', { ascending: false });
 
-  if (filtroData)      query = query.eq('data_agendamento', filtroData);
+  if (filtroData) {
+    query = query.eq('data_agendamento', filtroData);
+  } else if (_janelaDias > 0) {
+    const corte = new Date();
+    corte.setDate(corte.getDate() - _janelaDias);
+    query = query.gte('data_agendamento', _dataLocalISO(corte));
+  }
   if (filtroTerapeuta) query = query.eq('terapeuta', filtroTerapeuta);
   if (filtroMetodo === '__null') query = query.is('metodo_pagamento', null);
   else if (filtroMetodo)        query = query.eq('metodo_pagamento', filtroMetodo);
 
-  const { data, error } = await query;
+  return query;
+}
+
+function _skeletonHTML() {
+  return `<div class="adm-skeleton-item">
+    <div class="adm-skeleton-bar adm-skeleton-bar--lg"></div>
+    <div class="adm-skeleton-bar adm-skeleton-bar--md"></div>
+    <div class="adm-skeleton-bar adm-skeleton-bar--sm"></div>
+  </div>`.repeat(3);
+}
+
+// Única função de carga: o primeiro load mostra skeleton; recargas
+// (realtime, auto-refresh, ações) renderizam por cima, sem flicker.
+async function carregarAgendamentos(opts = {}) {
+  if (!_admAutenticado) return;
+  const lista = document.getElementById('lista-agendamentos');
+  if (!lista) return;
+
+  if (_primeiroLoad) lista.innerHTML = _skeletonHTML();
+
+  const { data, error } = await _montarQueryAgendamentos();
 
   if (error) {
-    lista.innerHTML = '<div class="ag-empty">Erro ao carregar agendamentos.</div>';
+    if (!opts.silencioso) lista.innerHTML = '<div class="ag-empty">Erro ao carregar agendamentos.</div>';
     console.error(error);
     return;
   }
 
+  _primeiroLoad = false;
   _agendamentosTodos = data || [];
-  await calcularEstatisticas(_agendamentosTodos);
+  calcularEstatisticas(_agendamentosTodos);
   _atualizarContadoresPills(_agendamentosTodos);
-
-  const filtrados = _statusAtivo
-    ? _agendamentosTodos.filter(a => a.status === _statusAtivo)
-    : _agendamentosTodos;
-  renderizarAgendamentos(filtrados, lista);
+  _renderizarListaFiltrada();
+  _renderizarSemanaStrip();
+  _atualizarCarregarMais();
 
   _iniciarRealtime();
   _iniciarAutoRefresh();
+}
+
+// Pill de status + busca textual aplicados em memória
+function _filtrarLocal() {
+  let lista = _agendamentosTodos;
+  if (_statusAtivo) {
+    lista = _statusAtivo === 'pago'
+      ? lista.filter(a => ['pago', 'confirmado'].includes(a.status)) // contador da pill soma os dois
+      : lista.filter(a => a.status === _statusAtivo);
+  }
+  if (_buscaTexto) {
+    const q    = _buscaTexto.toLowerCase();
+    const qDig = q.replace(/\D/g, '');
+    lista = lista.filter(a =>
+      (a.cliente_nome || '').toLowerCase().includes(q) ||
+      (a.chave_pedido || '').toLowerCase().includes(q) ||
+      (qDig.length >= 4 && (a.cliente_whatsapp || '').replace(/\D/g, '').includes(qDig))
+    );
+  }
+  return lista;
+}
+
+function _renderizarListaFiltrada() {
+  const lista = document.getElementById('lista-agendamentos');
+  if (lista) renderizarAgendamentos(_filtrarLocal(), lista);
 }
 
 function filtrarPorPill(status) {
@@ -330,22 +481,105 @@ function filtrarPorPill(status) {
   document.querySelectorAll('.adm-pill').forEach(p => {
     p.classList.toggle('active', p.dataset.status === status);
   });
-  const lista = document.getElementById('lista-agendamentos');
-  if (!lista) return;
-  const filtrados = status
-    ? _agendamentosTodos.filter(a => a.status === status)
-    : _agendamentosTodos;
-  renderizarAgendamentos(filtrados, lista);
+  _renderizarListaFiltrada();
+}
+
+function limparFiltros() {
+  _statusAtivo = '';
+  _buscaTexto  = '';
+  ['filtro-busca', 'filtro-data', 'filtro-terapeuta', 'filtro-metodo'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+  document.querySelectorAll('.adm-pill').forEach(p => {
+    p.classList.toggle('active', p.dataset.status === '');
+  });
+  carregarAgendamentos();
+}
+
+function statCardHoje() {
+  const el = document.getElementById('filtro-data');
+  if (el) el.value = _dataLocalISO();
+  filtrarPorPill('');
+  carregarAgendamentos();
 }
 
 function _atualizarContadoresPills(todos) {
   const c = {};
   todos.forEach(a => { c[a.status] = (c[a.status] || 0) + 1; });
   const set = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val ?? 0; };
+  set('pill-count-todos',     todos.length);
   set('pill-count-pendente',  c.pendente || 0);
   set('pill-count-pago',      (c.pago || 0) + (c.confirmado || 0));
   set('pill-count-atendido',  c.atendido || 0);
   set('pill-count-cancelado', c.cancelado || 0);
+}
+
+// ============================================================
+// Strip da semana — ocupação dos próximos 7 dias (query própria,
+// independente do filtro de data; respeita o filtro de terapeuta)
+// ============================================================
+async function _renderizarSemanaStrip() {
+  const wrap = document.getElementById('adm-semana-strip');
+  if (!wrap) return;
+
+  const hoje = new Date();
+  hoje.setHours(0, 0, 0, 0);
+  const fim = new Date(hoje);
+  fim.setDate(hoje.getDate() + 6);
+
+  let query = supabase
+    .from('agendamentos')
+    .select('data_agendamento, status')
+    .gte('data_agendamento', _dataLocalISO(hoje))
+    .lte('data_agendamento', _dataLocalISO(fim));
+  const filtroTerapeuta = document.getElementById('filtro-terapeuta')?.value || '';
+  if (filtroTerapeuta) query = query.eq('terapeuta', filtroTerapeuta);
+
+  const { data, error } = await query;
+  if (error) return;
+
+  const porDia = {};
+  (data || []).forEach(a => {
+    if (a.status === 'cancelado') return;
+    porDia[a.data_agendamento] = (porDia[a.data_agendamento] || 0) + 1;
+  });
+
+  const filtroAtual = document.getElementById('filtro-data')?.value || '';
+  let html = '';
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(hoje);
+    d.setDate(hoje.getDate() + i);
+    const iso = _dataLocalISO(d);
+    const qtd = porDia[iso] || 0;
+    const cls = ['adm-semana-chip'];
+    if (i === 0)            cls.push('adm-semana-chip--hoje');
+    if (filtroAtual === iso) cls.push('adm-semana-chip--ativa');
+    html += `<button type="button" class="${cls.join(' ')}" onclick="filtrarPorDia('${iso}')" title="Ver agendamentos do dia">
+      <span class="adm-semana-dia">${DIAS_SEMANA_PT[d.getDay()].slice(0, 3)}</span>
+      <span class="adm-semana-num">${d.getDate()}</span>
+      <span class="adm-semana-qtd"><strong>${qtd}</strong> leitura${qtd === 1 ? '' : 's'}</span>
+    </button>`;
+  }
+  wrap.innerHTML = html;
+}
+
+// Clicar num dia filtra por ele; clicar de novo desliga o filtro.
+function filtrarPorDia(iso) {
+  const el = document.getElementById('filtro-data');
+  if (!el) return;
+  el.value = el.value === iso ? '' : iso;
+  carregarAgendamentos();
+}
+
+function _atualizarCarregarMais() {
+  const wrap = document.getElementById('adm-carregar-mais');
+  const info = document.getElementById('adm-janela-info');
+  if (!wrap) return;
+  const filtroData = document.getElementById('filtro-data')?.value || '';
+  const ativo = _janelaDias > 0 && !filtroData;
+  wrap.style.display = ativo ? 'flex' : 'none';
+  if (info) info.textContent = ativo ? `Mostrando os últimos ${_janelaDias} dias.` : '';
 }
 
 // ============================================================
@@ -354,8 +588,17 @@ function _atualizarContadoresPills(todos) {
 function _agendarRefresh() {
   clearTimeout(_refreshDebounce);
   _refreshDebounce = setTimeout(() => {
-    if (_admAutenticado) carregarAgendamentos();
+    if (_admAutenticado) carregarAgendamentos({ silencioso: true });
   }, 400);
+}
+
+function _setRealtimeStatus(ok, txt) {
+  const el = document.getElementById('adm-realtime');
+  const t  = document.getElementById('adm-realtime-txt');
+  if (!el) return;
+  el.classList.toggle('adm-realtime--on',  ok === true);
+  el.classList.toggle('adm-realtime--off', ok === false);
+  if (t) t.textContent = txt;
 }
 
 function _iniciarRealtime() {
@@ -373,47 +616,25 @@ function _iniciarRealtime() {
         }
         _agendarRefresh();
       })
-    .subscribe();
+    .subscribe((status) => {
+      if (status === 'SUBSCRIBED') {
+        _setRealtimeStatus(true, 'ao vivo');
+      } else if (['CHANNEL_ERROR', 'TIMED_OUT', 'CLOSED'].includes(status)) {
+        _setRealtimeStatus(false, 'desconectado');
+      }
+    });
 }
 
 function _pararRealtime() {
   if (!_realtimeChannel) return;
   supabase.removeChannel(_realtimeChannel);
   _realtimeChannel = null;
+  _setRealtimeStatus(false, 'desconectado');
 }
 
 function _iniciarAutoRefresh() {
   if (_autoRefreshTimer) return;
-  _autoRefreshTimer = setInterval(async () => {
-    if (!_admAutenticado) return;
-    const filtroData      = document.getElementById('filtro-data')?.value      || '';
-    const filtroTerapeuta = document.getElementById('filtro-terapeuta')?.value || '';
-    const filtroMetodo    = document.getElementById('filtro-metodo')?.value    || '';
-
-    let query = supabase
-      .from('agendamentos')
-      .select('*, tipos_leitura(nome)')
-      .order('data_agendamento', { ascending: false })
-      .order('hora_agendamento', { ascending: false });
-
-    if (filtroData)      query = query.eq('data_agendamento', filtroData);
-    if (filtroTerapeuta) query = query.eq('terapeuta', filtroTerapeuta);
-    if (filtroMetodo === '__null') query = query.is('metodo_pagamento', null);
-    else if (filtroMetodo)        query = query.eq('metodo_pagamento', filtroMetodo);
-
-    const { data, error } = await query;
-    if (error || !data) return;
-
-    _agendamentosTodos = data;
-    await calcularEstatisticas(_agendamentosTodos);
-    _atualizarContadoresPills(_agendamentosTodos);
-
-    const filtrados = _statusAtivo
-      ? _agendamentosTodos.filter(a => a.status === _statusAtivo)
-      : _agendamentosTodos;
-    const lista = document.getElementById('lista-agendamentos');
-    if (lista) renderizarAgendamentos(filtrados, lista);
-  }, 2 * 60 * 1000);
+  _autoRefreshTimer = setInterval(() => carregarAgendamentos({ silencioso: true }), 2 * 60 * 1000);
 }
 
 // ============================================================
@@ -423,7 +644,7 @@ function _dataLocalISO(d = new Date()) {
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 }
 
-async function calcularEstatisticas(todos) {
+function calcularEstatisticas(todos) {
   const hoje = _dataLocalISO();
 
   const agendamentosHoje  = todos.filter(a => a.data_agendamento === hoje).length;
@@ -645,7 +866,15 @@ function _agruparPorPedido(lista) {
 
 function renderizarAgendamentos(lista, container) {
   if (!lista.length) {
-    container.innerHTML = '<div class="ag-empty">Nenhum agendamento encontrado.</div>';
+    const temFiltro = !!(_statusAtivo || _buscaTexto ||
+      document.getElementById('filtro-data')?.value ||
+      document.getElementById('filtro-terapeuta')?.value ||
+      document.getElementById('filtro-metodo')?.value);
+    container.innerHTML = `<div class="ag-empty">Nenhum agendamento encontrado.${
+      temFiltro
+        ? '<div class="adm-empty-acoes"><button class="ag-btn ag-btn-outline ag-btn-sm" onclick="limparFiltros()">✕ Limpar filtros</button></div>'
+        : ''
+    }</div>`;
     return;
   }
   container.innerHTML = '';
@@ -682,8 +911,8 @@ function criarItemAgendamento(ag) {
   const horaLabel       = (!horaRaw || horaRaw === '00:00') ? '(horário a combinar)' : `até as ${horaRaw}`;
   const valor           = `R$ ${Number(ag.valor_final || 0).toFixed(2).replace('.', ',')}`;
   const badge           = `<span class="adm-badge adm-badge-${_esc(ag.status)}">${_esc(STATUS_LABELS[ag.status] || ag.status)}</span>`;
-  const terapeutaNome   = ag.terapeuta === 'matheus' ? 'Matheus' : ag.terapeuta === 'camila' ? 'Camila' : '';
-  const badgeTerapeuta  = terapeutaNome ? `<span class="adm-badge adm-badge-terapeuta">${terapeutaNome}</span>` : '';
+  const nomeTerapeuta   = ag.terapeuta ? terapeutaNome(ag.terapeuta) : '';
+  const badgeTerapeuta  = nomeTerapeuta ? `<span class="adm-badge adm-badge-terapeuta">${_esc(nomeTerapeuta)}</span>` : '';
 
   const acoes = montarAcoes(ag);
 
@@ -738,7 +967,7 @@ function criarItemGrupo(grupo) {
     const horaRaw    = ag.hora_agendamento?.slice(0, 5) || '';
     const horaLabel  = (!horaRaw || horaRaw === '00:00') ? 'a combinar' : `até ${horaRaw}`;
     const valor      = `R$ ${Number(ag.valor_final || 0).toFixed(2).replace('.', ',')}`;
-    const terapeuta  = ag.terapeuta === 'matheus' ? 'Matheus' : ag.terapeuta === 'camila' ? 'Camila' : ag.terapeuta || '—';
+    const terapeuta  = ag.terapeuta ? terapeutaNome(ag.terapeuta) : '—';
     const badgeSt    = `<span class="adm-badge adm-badge-${_esc(ag.status)} adm-badge-sm">${_esc(STATUS_LABELS[ag.status] || ag.status)}</span>`;
     return `<div class="adm-grupo-leitura">
       <div class="adm-grupo-leitura-info">
@@ -1021,16 +1250,54 @@ function escapeAttr(s) {
 // ============================================================
 // Init
 // ============================================================
+// ============================================================
+// Tema (auto | claro | escuro) — preferência no localStorage
+// ============================================================
+const _TEMA_ORDEM = ['auto', 'claro', 'escuro'];
+const _TEMA_ICONE = { auto: '🌗', claro: '☀️', escuro: '🌙' };
+
+function _temaAtual() {
+  try { return localStorage.getItem('adm_tema') || 'auto'; } catch { return 'auto'; }
+}
+
+function _ciclarTema() {
+  const prox = _TEMA_ORDEM[(_TEMA_ORDEM.indexOf(_temaAtual()) + 1) % _TEMA_ORDEM.length];
+  try { localStorage.setItem('adm_tema', prox); } catch {}
+  if (typeof window._aplicarTemaAdmin === 'function') window._aplicarTemaAdmin();
+  _atualizarRotuloTema();
+}
+
+function _atualizarRotuloTema() {
+  const btn = document.getElementById('adm-tema-btn');
+  const modo = _temaAtual();
+  if (btn) btn.textContent = `${_TEMA_ICONE[modo]} Tema: ${modo}`;
+}
+
+// ============================================================
+// Init
+// ============================================================
+let _buscaDebounce = null;
+
 document.addEventListener('DOMContentLoaded', () => {
-  document.getElementById('btn-atualizar')?.addEventListener('click', () => {
-    clearInterval(_autoRefreshTimer); // sem isso cada clique acumulava um interval extra
-    _autoRefreshTimer = null;
+  document.getElementById('btn-atualizar')?.addEventListener('click', () => carregarAgendamentos());
+  document.getElementById('btn-exportar')?.addEventListener('click', exportarRelatorio);
+  document.getElementById('filtro-data')?.addEventListener('change', () => carregarAgendamentos());
+  document.getElementById('filtro-terapeuta')?.addEventListener('change', () => carregarAgendamentos());
+  document.getElementById('filtro-metodo')?.addEventListener('change', () => carregarAgendamentos());
+  document.getElementById('filtro-busca')?.addEventListener('input', (e) => {
+    clearTimeout(_buscaDebounce);
+    _buscaDebounce = setTimeout(() => {
+      _buscaTexto = e.target.value.trim();
+      _renderizarListaFiltrada();
+    }, 200);
+  });
+  document.getElementById('btn-carregar-antigos')?.addEventListener('click', () => {
+    // 90 -> 270 -> 450 -> ... até 2 anos; depois carrega tudo (0 = sem corte)
+    _janelaDias = _janelaDias + 180 > 730 ? 0 : _janelaDias + 180;
     carregarAgendamentos();
   });
-  document.getElementById('btn-exportar')?.addEventListener('click', exportarRelatorio);
-  document.getElementById('filtro-data')?.addEventListener('change', carregarAgendamentos);
-  document.getElementById('filtro-terapeuta')?.addEventListener('change', carregarAgendamentos);
-  document.getElementById('filtro-metodo')?.addEventListener('change', carregarAgendamentos);
+  document.getElementById('adm-tema-btn')?.addEventListener('click', _ciclarTema);
+  _atualizarRotuloTema();
   document.getElementById('adm-logout-btn')?.addEventListener('click', _fazerLogout);
   tornarMascoteArrastavel();
   // Trocar de tela (qualquer link da nav) re-sorteia a fala do mascote.
