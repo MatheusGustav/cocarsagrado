@@ -491,11 +491,13 @@ textarea { resize: vertical; min-height: 90px; }
   padding: 20px;
   opacity: 0;
   pointer-events: none;
-  transition: opacity 0.25s ease;
+  visibility: hidden; /* tira da árvore de acessibilidade quando fechado */
+  transition: opacity 0.25s ease, visibility 0.25s ease;
 }
 .seletor-overlay.open {
   opacity: 1;
   pointer-events: all;
+  visibility: visible;
 }
 
 .seletor-card {
@@ -563,6 +565,7 @@ textarea { resize: vertical; min-height: 90px; }
   display: flex;
   align-items: center;
   justify-content: space-between;
+  width: 100%;
   padding: 14px 18px;
   border: 1.5px solid rgba(21, 40, 28, 0.15);
   border-radius: 12px;
@@ -570,6 +573,8 @@ textarea { resize: vertical; min-height: 90px; }
   transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
   background: transparent;
   text-align: left;
+  font-family: inherit;
+  font-size: inherit;
 }
 .seletor-tier-opt:hover {
   border-color: #C99A4E;

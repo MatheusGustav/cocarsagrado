@@ -276,7 +276,7 @@ function aplicarBadgesModalidade() {
     badge.className = modalidade === 'video'
       ? 'cat-badge-atendimento cat-badge-atendimento--video'
       : 'cat-badge-atendimento cat-badge-atendimento--mensagem';
-    badge.textContent = modalidade === 'video' ? 'Video-chamada' : 'mensagem';
+    badge.textContent = modalidade === 'video' ? 'Vídeo-chamada' : 'Mensagem';
 
     desc.insertAdjacentElement('afterend', badge);
   });
@@ -298,9 +298,16 @@ function inicializarFiltrosCatalogo() {
 
   let pendingTimers = [];
 
-  botoesFiltro.forEach(botao => {
-    botao.addEventListener('click', () => {
-      const filtro = botao.dataset.filter;
+  function aplicarFiltro(botao, atualizarURL) {
+    const filtro = botao.dataset.filter;
+
+    // Reflete o filtro na URL (deep link compartilhável)
+    if (atualizarURL) {
+      const url = new URL(window.location);
+      if (filtro === 'todos') url.searchParams.delete('filtro');
+      else url.searchParams.set('filtro', filtro);
+      history.replaceState(null, '', url);
+    }
 
       pendingTimers.forEach(clearTimeout);
       pendingTimers = [];
@@ -330,8 +337,18 @@ function inicializarFiltrosCatalogo() {
           pendingTimers.push(t);
         }
       });
-    });
+  }
+
+  botoesFiltro.forEach(botao => {
+    botao.addEventListener('click', () => aplicarFiltro(botao, true));
   });
+
+  // Aplica filtro vindo da URL (?filtro=camila)
+  const filtroURL = new URLSearchParams(window.location.search).get('filtro');
+  if (filtroURL && filtroURL !== 'todos') {
+    const botao = Array.from(botoesFiltro).find(b => b.dataset.filter === filtroURL);
+    if (botao) aplicarFiltro(botao, false);
+  }
 }
 
 
@@ -375,6 +392,13 @@ function inicializarScrollSuave() {
    7. TOGGLE DE TEMA (CLARO / ESCURO)
    ============================================================ */
 
+// Mantém a cor da barra do navegador alinhada ao tema atual
+function sincronizarThemeColor() {
+  const dark = document.documentElement.getAttribute('data-theme') === 'dark';
+  document.querySelector('meta[name="theme-color"]')
+    ?.setAttribute('content', dark ? '#080F08' : '#213D2C');
+}
+
 function inicializarToggleTema() {
   const btns = document.querySelectorAll('.theme-toggle');
   if (!btns.length) return;
@@ -392,6 +416,7 @@ function inicializarToggleTema() {
 
       document.documentElement.classList.add('theme-switching');
       document.documentElement.setAttribute('data-theme', novoTema);
+      sincronizarThemeColor();
       setTimeout(() => document.documentElement.classList.remove('theme-switching'), 350);
     });
   });
@@ -414,13 +439,11 @@ function inicializarModalInApp() {
   const backdrop = document.getElementById('inappBackdrop');
   if (!backdrop) return false;
 
-  backdrop.removeAttribute('aria-hidden');
   backdrop.classList.add('inapp--visible');
   document.body.style.overflow = 'hidden';
 
   document.getElementById('inappClose').addEventListener('click', () => {
     backdrop.classList.remove('inapp--visible');
-    backdrop.setAttribute('aria-hidden', 'true');
     document.body.style.overflow = '';
   });
 
@@ -459,6 +482,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // 7. Toggle de tema claro/escuro
   inicializarToggleTema();
+  sincronizarThemeColor();
 
   // 8. Sistema de descontos (usuários que retornam já com escolha feita)
   if (typeof renderizarDescontos === 'function') {

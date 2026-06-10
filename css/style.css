@@ -77,6 +77,47 @@
 /* === BASE DO DOCUMENTO === */
 html {
   scroll-behavior: smooth;
+  color-scheme: light;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Compensa o header sticky em deep links (#catalogo etc.) */
+[id] {
+  scroll-margin-top: 84px;
+}
+
+/* Remove o delay de double-tap zoom no mobile */
+a, button, input, select, textarea, [role="button"] {
+  touch-action: manipulation;
+}
+
+/* Link "pular para o conteúdo" — visível apenas com foco de teclado */
+.skip-link {
+  position: absolute;
+  top: -56px;
+  left: 8px;
+  z-index: 300;
+  background: var(--color-primary);
+  color: var(--color-text-on-dark);
+  padding: 10px 16px;
+  border-radius: var(--raio-md);
+  font-size: 13px;
+  font-weight: 600;
+  transition: top 0.2s ease;
+}
+
+.skip-link:focus {
+  top: 8px;
+}
+
+/* Respeita usuários sensíveis a movimento */
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }
 
 body {
@@ -182,6 +223,7 @@ button:focus-visible,
   letter-spacing: 0.02em;
   line-height: 1.2;
   margin-bottom: 1rem;
+  text-wrap: balance;
 }
 
 .section-sub {
@@ -534,6 +576,7 @@ body.cs-chat-active .nav-chat-btn { color: var(--color-gold); }
   color: var(--color-text-primary);
   letter-spacing: 0.01em;
   line-height: 1.08;
+  text-wrap: balance;
 }
 
 /* Citação destaque com borda dourada à esquerda — sem fundo extra para
@@ -907,6 +950,20 @@ body.cs-chat-active .nav-chat-btn { color: var(--color-gold); }
   font-weight: 700;
   color: var(--color-gold-deep);
   text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Preços alinham dígitos em colunas/comparações */
+.cat-footer-tiers,
+.cart-item-price,
+.cart-total,
+.seletor-resumo-preco,
+.tier-preco,
+.ag-resumo-total,
+.pag-resumo-linha,
+.cat-price-original,
+.cat-price-desconto {
+  font-variant-numeric: tabular-nums;
 }
 
 .cat-footer-tiers {
@@ -1455,6 +1512,7 @@ body.cs-chat-active .nav-chat-btn { color: var(--color-gold); }
   font-weight: 500;
   letter-spacing: 0.02em;
   color: var(--color-primary);
+  text-wrap: balance;
 }
 
 .cta-bar-sub {
@@ -1872,6 +1930,7 @@ body.cs-chat-active .nav-chat-btn { color: var(--color-gold); }
    ============================================================ */
 
 [data-theme="dark"] {
+  color-scheme: dark;
   --color-primary:          #3E6B45;
   --color-primary-hover:    #9DBF94;
   --color-primary-deep:     #213D2C;
