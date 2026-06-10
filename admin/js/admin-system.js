@@ -1218,15 +1218,20 @@ async function exportarRelatorio() {
 }
 
 // Exporta a agenda de contatos (nome + WhatsApp únicos) — backup dos
-// clientes. Dados de pedidos; dedup pelo número normalizado.
+// clientes. Une pedidos + agendamentos (clientes antigos podem existir
+// só em agendamentos, de antes do sistema de pedidos); dedup pelo
+// número normalizado.
 async function exportarContatos() {
   if (!_admAutenticado) { _mostrarLogin(); return; }
-  const { data, error } = await supabase
-    .from('pedidos')
-    .select('cliente_nome, cliente_whatsapp, criado_em')
-    .order('criado_em', { ascending: false });
+  const [{ data: peds, error: e1 }, { data: ags, error: e2 }] = await Promise.all([
+    supabase.from('pedidos').select('cliente_nome, cliente_whatsapp, criado_em'),
+    supabase.from('agendamentos').select('cliente_nome, cliente_whatsapp, criado_em'),
+  ]);
 
-  if (error || !data) { _toastAdmin('Erro ao exportar contatos.', 'erro'); return; }
+  if ((e1 && e2) || (!peds && !ags)) { _toastAdmin('Erro ao exportar contatos.', 'erro'); return; }
+
+  const data = [...(peds || []), ...(ags || [])]
+    .sort((a, b) => String(b.criado_em || '').localeCompare(String(a.criado_em || '')));
 
   // Dedup pelo número (só dígitos); mantém o registro mais recente
   const vistos = new Map();
