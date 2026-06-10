@@ -71,7 +71,7 @@ CREATE TABLE public.tipos_leitura (
   num_perguntas   INTEGER NOT NULL DEFAULT 0 CHECK (num_perguntas >= 0 AND num_perguntas <= 20),
   especial        BOOLEAN NOT NULL DEFAULT FALSE,
   badge           TEXT    CHECK (badge IS NULL OR badge IN ('buzios', 'cartas', 'radiestesia')),
-  modalidade      TEXT    NOT NULL DEFAULT 'mensagem' CHECK (modalidade IN ('mensagem', 'video')),
+  modalidade      TEXT    NOT NULL DEFAULT 'mensagem' CHECK (modalidade IN ('mensagem', 'video', 'audio')),
   ativo           BOOLEAN NOT NULL DEFAULT TRUE,
   criado_em       TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
