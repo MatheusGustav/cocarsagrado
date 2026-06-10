@@ -9,6 +9,8 @@
 //   reentregar o webhook.
 // - Falha na notificação Telegram nunca derruba a confirmação,
 //   mas fica registrada em webhook_log (resultado 'telegram_erro').
+// - Rejeições e erros (com chave) também disparam aviso no Telegram,
+//   em texto puro, dizendo o problema.
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const TG_BOT  = Deno.env.get('TELEGRAM_BOT_TOKEN')  || ''
@@ -32,12 +34,32 @@ function json(body: unknown, status = 200) {
   })
 }
 
-// Registra o resultado no log (best-effort: nunca lança)
+// Envia texto puro ao Telegram (best-effort: nunca lança)
+async function alertaTelegram(texto: string) {
+  if (!TG_BOT || !TG_CHAT) return
+  try {
+    const tg = await fetch(`https://api.telegram.org/bot${TG_BOT}/sendMessage`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ chat_id: TG_CHAT, text: texto }),
+    })
+    if (!tg.ok) console.error('Telegram alerta error:', tg.status, await tg.text())
+  } catch (e) {
+    console.error('Telegram alerta exception:', e)
+  }
+}
+
+// Registra o resultado no log (best-effort: nunca lança).
+// 'rejeitado' e 'erro' também disparam aviso no Telegram.
 async function log(chave: string | null, resultado: string, detalhe: string, payload?: unknown) {
   try {
     await supabase.from('webhook_log').insert({ chave, resultado, detalhe, payload: payload ?? null })
   } catch (e) {
     console.error('webhook_log insert falhou:', e)
+  }
+  // Sem chave = tráfego lixo no endpoint público; não vale aviso.
+  if ((resultado === 'rejeitado' || resultado === 'erro') && chave) {
+    await alertaTelegram(`⚠️ Problema no webhook de pagamento\n\n🔑 Pedido: ${chave ?? '(sem chave)'}\n❌ ${resultado}: ${detalhe}`)
   }
 }
 
@@ -64,6 +86,7 @@ async function notificarTelegram(chave: string, captureMethod: string) {
     if (agErr || !pc || !agendamentos?.length) {
       console.error('Telegram: dados incompletos', agErr?.message)
       await log(chave, 'telegram_erro', `dados incompletos: ${agErr?.message ?? 'pedido/agendamentos não encontrados'}`)
+      await alertaTelegram(`✅ Pedido ${chave} foi confirmado, mas não consegui montar a notificação completa (dados incompletos). Confira no painel admin.`)
       return
     }
 
@@ -85,6 +108,8 @@ async function notificarTelegram(chave: string, captureMethod: string) {
       const detalhe = await tg.text()
       console.error('Telegram error:', tg.status, detalhe)
       await log(chave, 'telegram_erro', `sendMessage HTTP ${tg.status}: ${detalhe.slice(0, 500)}`)
+      // Fallback: reenvia sem Markdown (parse_mode é a causa comum de 400)
+      await alertaTelegram(msg.replace(/\\([_*`\[])/g, '$1'))
     }
   } catch (e) {
     console.error('Telegram exception:', e)
