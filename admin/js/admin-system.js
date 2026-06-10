@@ -441,7 +441,7 @@ async function carregarAgendamentos(opts = {}) {
 
   _primeiroLoad = false;
   _agendamentosTodos = data || [];
-  calcularEstatisticas(_agendamentosTodos);
+  _carregarEstatisticas();
   _atualizarContadoresPills(_agendamentosTodos);
   _renderizarListaFiltrada();
   _renderizarSemanaStrip();
@@ -642,6 +642,19 @@ function _iniciarAutoRefresh() {
 // ============================================================
 function _dataLocalISO(d = new Date()) {
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
+// Consulta própria, SEM os filtros da lista (data/terapeuta/método):
+// os cards não podem mudar conforme o que está filtrado na tela.
+async function _carregarEstatisticas() {
+  const corte = new Date();
+  corte.setDate(corte.getDate() - 90);
+  const { data, error } = await supabase
+    .from('agendamentos')
+    .select('data_agendamento, status, valor_final')
+    .gte('data_agendamento', _dataLocalISO(corte));
+  if (error) { console.error('estatísticas:', error); return; }
+  calcularEstatisticas(data || []);
 }
 
 function calcularEstatisticas(todos) {
