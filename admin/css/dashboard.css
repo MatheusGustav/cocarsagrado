@@ -3434,7 +3434,10 @@ body.drawer-aberto { overflow: hidden; }
 .adm-semana-strip {
   display: flex; gap: 8px; overflow-x: auto;
   margin-bottom: 16px; padding-bottom: 4px;
+  scrollbar-width: none;        /* Firefox */
+  -ms-overflow-style: none;     /* IE/Edge legado */
 }
+.adm-semana-strip::-webkit-scrollbar { display: none; } /* Chrome/Safari */
 .adm-semana-chip {
   flex: none; min-width: 86px; text-align: center;
   border: 1px solid var(--border); border-radius: 10px;
