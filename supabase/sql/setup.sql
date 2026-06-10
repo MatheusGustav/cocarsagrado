@@ -295,38 +295,6 @@ CREATE INDEX idx_agend_chave         ON public.agendamentos (chave_pedido);
 CREATE INDEX idx_agend_pedido_id     ON public.agendamentos (pedido_id);
 CREATE INDEX idx_agend_whatsapp_norm ON public.agendamentos (regexp_replace(cliente_whatsapp, '\D', '', 'g'));
 
--- ============================================================
--- 4) TRIGGER: bloqueia desconto 10% para clientes recorrentes
---    Bloqueia o INSERT com exceção; o frontend deve pré-validar
---    via cliente_elegivel_desconto para evitar o erro.
--- ============================================================
-CREATE OR REPLACE FUNCTION public.validar_desconto_primeiro_cliente()
-RETURNS TRIGGER
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path = public
-AS $$
-BEGIN
-  IF NEW.aceitou_desconto_10 = TRUE AND EXISTS (
-    SELECT 1 FROM public.agendamentos
-    WHERE regexp_replace(cliente_whatsapp, '\D', '', 'g')
-        = regexp_replace(NEW.cliente_whatsapp, '\D', '', 'g')
-      AND status IN ('pago', 'confirmado', 'atendido')
-  ) THEN
-    RAISE EXCEPTION 'desconto_novo_cliente_invalido: este WhatsApp já possui agendamento — o desconto de novo cliente não se aplica';
-  END IF;
-  RETURN NEW;
-END;
-$$;
-
-CREATE TRIGGER trg_desconto_primeiro_cliente
-  BEFORE INSERT ON public.agendamentos
-  FOR EACH ROW
-  EXECUTE FUNCTION public.validar_desconto_primeiro_cliente();
-
--- Função de trigger: não é endpoint REST (EXECUTE só checado na criação do trigger)
-REVOKE ALL ON FUNCTION public.validar_desconto_primeiro_cliente() FROM PUBLIC, anon, authenticated;
-
 -- Agendamento especial: decrementa vaga em disponibilidade_especial de
 -- forma atômica (FOR UPDATE) e bloqueia o INSERT se não houver vaga.
 CREATE OR REPLACE FUNCTION public.decrementar_vaga_especial_trigger()
@@ -432,26 +400,6 @@ CREATE TRIGGER trg_validar_vaga_normal
   EXECUTE FUNCTION public.validar_vaga_normal_trigger();
 
 REVOKE ALL ON FUNCTION public.validar_vaga_normal_trigger() FROM PUBLIC, anon, authenticated;
-
--- RPC consultada pelo frontend antes do INSERT
-CREATE OR REPLACE FUNCTION public.cliente_elegivel_desconto(p_whatsapp text)
-RETURNS boolean
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path = public
-STABLE
-AS $$
-BEGIN
-  RETURN NOT EXISTS (
-    SELECT 1 FROM public.agendamentos
-    WHERE regexp_replace(cliente_whatsapp, '\D', '', 'g')
-        = regexp_replace(p_whatsapp, '\D', '', 'g')
-      AND status IN ('pago', 'confirmado', 'atendido')
-  );
-END;
-$$;
-
-GRANT EXECUTE ON FUNCTION public.cliente_elegivel_desconto(text) TO anon;
 
 -- ============================================================
 -- 5) RLS — modelo limpo
@@ -592,17 +540,15 @@ GRANT EXECUTE ON FUNCTION public.confirmar_pedido_pago(text, text) TO service_ro
 -- a transação inteira faz rollback.
 -- Validações server-side: 1–4 itens; tipo ativo + terapeuta confere;
 -- valor_original = preco_original × qty (1–5; especial = 1); desconto
--- máximo = maior entre promoção ativa e 10% novo cliente (não acumulam);
--- valor_total = soma dos valor_final.
+-- máximo = promoção ativa do serviço; valor_total = soma dos valor_final.
 CREATE OR REPLACE FUNCTION public.criar_pedido(
-  p_chave               text,
-  p_nome                text,
-  p_nascimento          date,
-  p_whatsapp            text,
-  p_email               text,
-  p_valor_total         numeric,
-  p_aceitou_desconto_10 boolean,
-  p_itens               jsonb
+  p_chave        text,
+  p_nome         text,
+  p_nascimento   date,
+  p_whatsapp     text,
+  p_email        text,
+  p_valor_total  numeric,
+  p_itens        jsonb
 )
 RETURNS text
 LANGUAGE plpgsql
@@ -619,7 +565,6 @@ DECLARE
   v_valor_final    numeric;
   v_qty            numeric;
   v_promo_pct      numeric;
-  v_max_pct        numeric;
   v_min_final      numeric;
   v_soma           numeric := 0;
   v_cfg            jsonb;
@@ -633,10 +578,10 @@ BEGIN
 
   INSERT INTO public.pedidos (
     chave_pedido, cliente_nome, cliente_nascimento, cliente_whatsapp,
-    cliente_email, valor_total, aceitou_desconto_10, status
+    cliente_email, valor_total, status
   ) VALUES (
     p_chave, p_nome, p_nascimento, p_whatsapp,
-    p_email, p_valor_total, p_aceitou_desconto_10, 'pendente'
+    p_email, p_valor_total, 'pendente'
   )
   RETURNING id INTO v_pedido_id;
 
@@ -679,12 +624,8 @@ BEGIN
         AND p->>'id' IN (v_tipo.slug, v_tipo.grupo_slug);
     END IF;
 
-    -- Desconto máximo: promoção OU 10% de novo cliente (não acumulam).
-    -- Os 10% só valem se o item carrega a flag aceitou_novo_cliente — assim
-    -- o trigger validar_desconto_primeiro_cliente sempre confere a elegibilidade.
-    v_max_pct   := greatest(v_promo_pct,
-      CASE WHEN COALESCE((v_item->>'aceitou_novo_cliente')::boolean, FALSE) THEN 10 ELSE 0 END);
-    v_min_final := round(v_valor_original * (100 - v_max_pct) / 100, 2);
+    -- Único desconto possível agora: promoção ativa do serviço.
+    v_min_final := round(v_valor_original * (100 - v_promo_pct) / 100, 2);
 
     IF v_valor_final < v_min_final - 0.01
        OR v_valor_final > v_valor_original
@@ -699,7 +640,7 @@ BEGIN
       cliente_nome, cliente_nascimento, cliente_whatsapp, cliente_email,
       cliente_observacoes, data_agendamento, hora_agendamento,
       valor_original, desconto_aplicado, valor_final,
-      aceitou_desconto_10, agendamento_especial, status
+      agendamento_especial, status
     ) VALUES (
       p_chave,
       v_pedido_id,
@@ -712,7 +653,6 @@ BEGIN
       v_valor_original,
       v_desconto,
       v_valor_final,
-      COALESCE((v_item->>'aceitou_novo_cliente')::boolean, FALSE),
       v_tipo.especial,  -- vem do catálogo, não do cliente (impede burlar a trava de vagas)
       'pendente'
     );
@@ -726,7 +666,7 @@ BEGIN
 END;
 $$;
 
-GRANT EXECUTE ON FUNCTION public.criar_pedido(text, text, date, text, text, numeric, boolean, jsonb) TO anon;
+GRANT EXECUTE ON FUNCTION public.criar_pedido(text, text, date, text, text, numeric, jsonb) TO anon;
 
 -- pedidos — anon SÓ INSERT (criar pedido). SELECT bloqueado (LGPD).
 -- authenticated admin ALL via is_admin().

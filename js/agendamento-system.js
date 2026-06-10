@@ -737,11 +737,6 @@ async function salvarMultiplosAgendamentos(itensPre) {
     p_whatsapp: whatsapp,
     p_email: Estado.dadosPessoais.email || null,
     p_valor_total: totalFinal,
-    // O desconto de 10% de novo cliente foi descontinuado. Mantemos o
-    // parâmetro (sempre false) só para casar com a assinatura atual da RPC
-    // criar_pedido (8 args), evitando quebra de checkout com JS em cache.
-    // TODO(limpeza): remover quando a RPC for enxugada p/ 7 args — ver CLAUDE.md.
-    p_aceitou_desconto_10: false,
     p_itens: payloadItens,
   });
 
