@@ -441,7 +441,7 @@ async function carregarAgendamentos(opts = {}) {
 
   _primeiroLoad = false;
   _agendamentosTodos = data || [];
-  _carregarEstatisticas();
+  calcularEstatisticas(_agendamentosTodos);
   _atualizarContadoresPills(_agendamentosTodos);
   _renderizarListaFiltrada();
   _renderizarSemanaStrip();
@@ -644,19 +644,8 @@ function _dataLocalISO(d = new Date()) {
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 }
 
-// Consulta própria, SEM os filtros da lista (data/terapeuta/método):
-// os cards não podem mudar conforme o que está filtrado na tela.
-async function _carregarEstatisticas() {
-  const corte = new Date();
-  corte.setDate(corte.getDate() - 90);
-  const { data, error } = await supabase
-    .from('agendamentos')
-    .select('data_agendamento, status, valor_final')
-    .gte('data_agendamento', _dataLocalISO(corte));
-  if (error) { console.error('estatísticas:', error); return; }
-  calcularEstatisticas(data || []);
-}
-
+// Os cards refletem a lista carregada (acompanham os filtros da tela).
+// Com um dia filtrado, o card de faturamento diz o dia no rótulo.
 function calcularEstatisticas(todos) {
   const hoje = _dataLocalISO();
 
@@ -665,17 +654,27 @@ function calcularEstatisticas(todos) {
   const pagos             = todos.filter(a => ['pago','confirmado','atendido'].includes(a.status)).length;
   const leiturasPendentes = todos.filter(a => ['pago','confirmado'].includes(a.status)).length;
 
-  // Total faturado no mês
-  const mesAtual = hoje.slice(0, 7);
-  const totalMes = todos
-    .filter(a => a.data_agendamento?.startsWith(mesAtual) && ['pago','confirmado','atendido'].includes(a.status))
-    .reduce((acc, a) => acc + Number(a.valor_final || 0), 0);
+  const filtroData = document.getElementById('filtro-data')?.value || '';
+  const pago = (a) => ['pago','confirmado','atendido'].includes(a.status);
+  let rotuloTotal, total;
+  if (filtroData) {
+    const [, m, d] = filtroData.split('-');
+    rotuloTotal = `Faturado em ${d}/${m}`;
+    total = todos.filter(a => a.data_agendamento === filtroData && pago(a))
+      .reduce((acc, a) => acc + Number(a.valor_final || 0), 0);
+  } else {
+    rotuloTotal = 'Faturado no mês';
+    const mesAtual = hoje.slice(0, 7);
+    total = todos.filter(a => a.data_agendamento?.startsWith(mesAtual) && pago(a))
+      .reduce((acc, a) => acc + Number(a.valor_final || 0), 0);
+  }
 
   const set = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
   set('stat-hoje',    agendamentosHoje);
   set('stat-pendente',pendentes);
   set('stat-pagos',   pagos);
-  set('stat-total',   `R$ ${totalMes.toFixed(2).replace('.', ',')}`);
+  set('stat-total',   `R$ ${total.toFixed(2).replace('.', ',')}`);
+  set('stat-total-label', rotuloTotal);
 
   atualizarMascote(pendentes, pagos);
 }
