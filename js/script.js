@@ -313,6 +313,8 @@ function inicializarFiltrosCatalogo() {
 
       botoesFiltro.forEach(b => b.classList.remove('active'));
       botao.classList.add('active');
+      // No mobile (chips com rolagem), garante o chip ativo à vista
+      botao.scrollIntoView({ block: 'nearest', inline: 'center', behavior: 'smooth' });
 
       cardsCatalogo.forEach(card => {
         const cats = card.dataset.category || '';
