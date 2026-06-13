@@ -546,7 +546,7 @@
             <button class="pag-voltar-btn" onclick="_mostrarTela(1)">← Voltar ao agendamento</button>
             <div class="pag-pantero" id="pag-pantero" role="note">
               <span class="pag-pantero-avatar"><img src="images/pantero.svg" alt=""></span>
-              <div class="pag-pantero-balao" id="pag-pantero-balao">Depois de concluir o pagamento, volte para esta página e clique em <strong>"Avisar que paguei via PIX"</strong>.</div>
+              <div class="pag-pantero-balao" id="pag-pantero-balao">Gere o link, pague o PIX pelo checkout que abrir e pronto — a confirmação chega automaticamente 🖤</div>
             </div>
 <div class="pag-resumo-box" role="region" aria-label="Resumo do agendamento">
               <h3>✦ Resumo do agendamento</h3>
@@ -573,7 +573,6 @@
               <div id="pix-status-box" class="ag-alert ag-alert-success" style="display:none;margin-bottom:16px;">✅ Pagamento confirmado! Combinaremos o horário no WhatsApp.</div>
               <div class="pag-btns">
                 <button id="pix-gerar-btn" class="ag-btn ag-btn-primary" onclick="gerarLinkPix()">🔗 Gerar link de pagamento</button>
-                <button class="ag-btn ag-btn-whatsapp" onclick="avisarWhatsAppModal('pix')">📱 Avisar que paguei via PIX</button>
               </div>
             </div>
             <div class="pag-panel pag-metodo-box" id="modal-painel-cartao" role="tabpanel" aria-labelledby="modal-tab-cartao">
@@ -587,7 +586,6 @@
               <div id="cartao-status-box" class="ag-alert ag-alert-success" style="display:none;margin-bottom:16px;">✅ Pagamento confirmado! Combinaremos o horário no WhatsApp.</div>
               <div class="pag-btns">
                 <button id="cartao-gerar-btn" class="ag-btn ag-btn-primary" onclick="gerarLinkCartao()">🔗 Gerar link de pagamento</button>
-                <button class="ag-btn ag-btn-whatsapp" onclick="avisarWhatsAppModal('cartao')">📱 Avisar que paguei no cartão</button>
               </div>
             </div>
             <div class="pag-panel pag-metodo-box" id="modal-painel-wise" role="tabpanel" aria-labelledby="modal-tab-wise">
