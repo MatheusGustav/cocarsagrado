@@ -341,7 +341,7 @@ function _atualizarBotaoRetomar() {
   }
 
   if (temPendente) {
-    btn.innerHTML = '💳 Retomar pagamento';
+    btn.innerHTML = '<img src="images/credit-card.webp" alt="" width="18" height="18" style="display:block"><span>Retomar pagamento</span>';
   } else {
     const n = Estado.carrinho.length;
     btn.innerHTML = `🛒 Continuar pedido (${n})`;
