@@ -667,7 +667,7 @@ function _atualizarBotoesCarrinho() {
 function _prepararDadosPessoais() {
   Estado.dadosPessoais = {
     nome: (document.getElementById('f-nome')?.value || '').trim(),
-    nascimento: document.getElementById('f-nasc')?.value || '',
+    nascimento: dataBrParaISO(document.getElementById('f-nasc')?.value || ''),
     whatsapp: obterWhatsappCompleto(),
     email: '', // não coletado no site; RPC criar_pedido recebe null
   };
@@ -687,9 +687,12 @@ function validarDadosPessoais() {
     const val = el.value.trim();
     const invalido = date
       ? (() => {
-          if (!val) return true;
-          const d = new Date(val);
-          if (isNaN(d.getTime())) return true;
+          const iso = dataBrParaISO(val);
+          if (!iso) return true;
+          const [y, m, dd] = iso.split('-').map(Number);
+          const d = new Date(y, m - 1, dd);
+          // rejeita datas inexistentes (ex.: 31/02) que o Date "corrige"
+          if (d.getFullYear() !== y || d.getMonth() !== m - 1 || d.getDate() !== dd) return true;
           const hoje = new Date();
           const minData = new Date(hoje.getFullYear() - 120, hoje.getMonth(), hoje.getDate());
           const maxData = new Date(hoje.getFullYear() - 10, hoje.getMonth(), hoje.getDate());
@@ -921,6 +924,25 @@ function aplicarMascaraFone(input) {
   }
 }
 
+// Máscara DD/MM/AAAA: permite digitar a data em qualquer dispositivo
+// (o type="date" nativo no celular só abre o seletor, sem digitação).
+function aplicarMascaraData(input) {
+  input.addEventListener('input', () => {
+    let v = input.value.replace(/\D/g, '').slice(0, 8);
+    if (v.length > 4) v = `${v.slice(0, 2)}/${v.slice(2, 4)}/${v.slice(4)}`;
+    else if (v.length > 2) v = `${v.slice(0, 2)}/${v.slice(2)}`;
+    input.value = v;
+  });
+}
+
+// "DD/MM/AAAA" → "AAAA-MM-DD" (ISO); '' se incompleta/inválida.
+function dataBrParaISO(br) {
+  const m = String(br || '').match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+  if (!m) return '';
+  const [, dd, mm, yyyy] = m;
+  return `${yyyy}-${mm}-${dd}`;
+}
+
 // ============================================================
 // Renderização dinâmica do catálogo no site
 // ============================================================
@@ -1108,6 +1130,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const fone = document.getElementById('f-fone');
   if (fone) aplicarMascaraFone(fone);
+
+  const nasc = document.getElementById('f-nasc');
+  if (nasc) aplicarMascaraData(nasc);
 
   const form = document.getElementById('form-dados');
   if (form) form.addEventListener('submit', processarFormulario);
