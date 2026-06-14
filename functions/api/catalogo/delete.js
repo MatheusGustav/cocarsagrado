@@ -6,7 +6,7 @@
 
 const SUPABASE_URL = 'https://demxedudbislzausvhwx.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_rfGhG8zjFnRgwzIBEN2Glw_vCWMBqeG';
-const ADMIN_EMAILS = ['matheusgustav.dev@gmail.com'];
+const ADMIN_EMAILS = ['cocarsagrado@gmail.com'];   // espelha public.is_admin()
 
 async function exigirAdmin(request) {
   const auth = request.headers.get('Authorization') || '';
