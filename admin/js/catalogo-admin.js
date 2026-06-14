@@ -1,9 +1,8 @@
 /* ============================================================
    CATÁLOGO — Painel Admin
-   CRUD em public.tipos_leitura + upload em storage bucket 'catalogo'
+   CRUD em public.tipos_leitura + upload de fotos via /api/catalogo (Cloudflare R2)
    ============================================================ */
 
-const _CAT_BUCKET = 'catalogo';
 const _CAT_TERAPEUTA_LABEL = { matheus: 'Matheus', camila: 'Camila' };
 
 let _catCache         = [];
@@ -502,14 +501,7 @@ async function _catSalvar() {
     const atual = _catEditandoId ? _catCache.find(x => x.id === _catEditandoId) : null;
 
     if (_catArquivoNovo) {
-      const ext  = (_catArquivoNovo.name.split('.').pop() || 'jpg').toLowerCase();
-      const path = `${crypto.randomUUID()}.${ext}`;
-      const { error: upErr } = await supabase.storage
-        .from(_CAT_BUCKET)
-        .upload(path, _catArquivoNovo, { cacheControl: '3600', upsert: false });
-      if (upErr) throw upErr;
-      const { data: pub } = supabase.storage.from(_CAT_BUCKET).getPublicUrl(path);
-      imagem_url = pub.publicUrl;
+      imagem_url = await _catUploadFoto(_catArquivoNovo);
       if (atual?.imagem_url) await _catRemoverArquivo(atual.imagem_url);
     } else if (_catImagemRemovida) {
       imagem_url = null;
@@ -660,14 +652,67 @@ async function cat_reativar(id) {
   await inicializarCatalogo();
 }
 
+/* Converte a imagem p/ WebP no navegador (redimensiona p/ caber em maxLado).
+   Mantém transparência. Se o navegador não suportar, devolve o arquivo original. */
+async function _catParaWebp(file, maxLado = 800, qualidade = 0.82) {
+  try {
+    const bitmap = await createImageBitmap(file);
+    const escala = Math.min(1, maxLado / Math.max(bitmap.width, bitmap.height));
+    const w = Math.max(1, Math.round(bitmap.width * escala));
+    const h = Math.max(1, Math.round(bitmap.height * escala));
+    const canvas = document.createElement('canvas');
+    canvas.width = w; canvas.height = h;
+    canvas.getContext('2d').drawImage(bitmap, 0, 0, w, h);
+    bitmap.close?.();
+    const blob = await new Promise(res => canvas.toBlob(res, 'image/webp', qualidade));
+    if (!blob || blob.type !== 'image/webp') return file;   // navegador sem WebP → original
+    return new File([blob], 'foto.webp', { type: 'image/webp' });
+  } catch {
+    return file;
+  }
+}
+
+/* Sobe a foto pro R2 via Pages Function autenticada. Retorna a URL pública (CDN). */
+async function _catUploadFoto(file) {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) throw new Error('Sessão expirada — faça login novamente.');
+  const enviar = await _catParaWebp(file);
+  const fd = new FormData();
+  fd.append('file', enviar);
+  const res = await fetch('/api/catalogo/upload', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${session.access_token}` },
+    body: fd,
+  });
+  if (!res.ok) {
+    let msg = `Upload falhou (${res.status}).`;
+    try { msg = (await res.json()).error || msg; } catch {}
+    throw new Error(msg);
+  }
+  const { url } = await res.json();
+  return url;
+}
+
+/* Extrai a chave (uuid.ext) de uma URL do CDN R2. */
+function _catChaveDaUrl(url) {
+  try { return new URL(url).pathname.replace(/^\/+/, '') || null; }
+  catch { return null; }
+}
+
 async function _catRemoverArquivo(url) {
   try {
-    const marker = `/${_CAT_BUCKET}/`;
-    const idx    = url.indexOf(marker);
-    if (idx === -1) return;
-    const path = url.substring(idx + marker.length).split('?')[0];
-    if (!path) return;
-    await supabase.storage.from(_CAT_BUCKET).remove([path]);
+    const key = _catChaveDaUrl(url);
+    if (!key) return;
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return;
+    await fetch('/api/catalogo/delete', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${session.access_token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ key }),
+    });
   } catch (e) {
     console.warn('Falha ao remover arquivo antigo:', e);
   }
