@@ -993,6 +993,22 @@ function _nomeGrupo(principal) {
   return sep > 0 ? principal.nome.slice(0, sep) : principal.nome;
 }
 
+// Monta a imagem do card. Aceita combo: duas URLs em imagem_url separadas
+// por "|" → dois círculos na diagonal. 1 URL = card normal; nenhuma = placeholder.
+function _catImg(imagem_url, nome) {
+  const urls = String(imagem_url || '').split('|').map(s => s.trim()).filter(Boolean);
+  if (urls.length >= 2) {
+    return `<div class="cat-img-combo">
+        <img src="${_escCat(urls[0])}" alt="${_escCat(nome)}" class="cat-img cat-img--combo-top" loading="lazy">
+        <img src="${_escCat(urls[1])}" alt="" class="cat-img cat-img--combo-bottom" loading="lazy">
+      </div>`;
+  }
+  if (urls.length === 1) {
+    return `<img src="${_escCat(urls[0])}" alt="${_escCat(nome)}" class="cat-img" loading="lazy">`;
+  }
+  return `<div class="cat-img cat-img--placeholder" aria-hidden="true">✦</div>`;
+}
+
 // Ranking de demanda (agendamentos pagos) por service_id — só a ordem,
 // sem totais (volume de vendas é dado interno). Falha → Map vazio.
 async function _buscarRankingCatalogo() {
@@ -1029,9 +1045,7 @@ async function renderizarCatalogoSite() {
     if (item.kind === 'grupo') {
       const p     = item.principal;
       const nome  = _nomeGrupo(p);
-      const img   = p.imagem_url
-        ? `<img src="${_escCat(p.imagem_url)}" alt="${_escCat(nome)}" class="cat-img" loading="lazy">`
-        : `<div class="cat-img cat-img--placeholder" aria-hidden="true">✦</div>`;
+      const img   = _catImg(p.imagem_url, nome);
       const desc  = p.descricao ? `<p class="cat-desc">${_escDesc(p.descricao)}</p>` : '';
       const tiers = item.tiers.map(t => `
         <span><span>${_escCat(t.tier_label || t.nome)}</span><strong>${_formatarPrecoCat(t.preco_original)}</strong></span>
@@ -1055,9 +1069,7 @@ async function renderizarCatalogoSite() {
 
     const t       = item.tipo;
     const slug    = t.slug || `id-${t.id}`;
-    const img     = t.imagem_url
-      ? `<img src="${_escCat(t.imagem_url)}" alt="${_escCat(t.nome)}" class="cat-img" loading="lazy">`
-      : `<div class="cat-img cat-img--placeholder" aria-hidden="true">✦</div>`;
+    const img     = _catImg(t.imagem_url, t.nome);
     const desc    = t.descricao ? `<p class="cat-desc">${_escDesc(t.descricao)}</p>` : '';
     const onclick = t.slug ? `abrirSeletor('${_escCat(slug)}')` : `abrirSeletor(${t.id})`;
     const bucket  = Number(t.preco_original) <= 50 ? ' ate50' : '';
