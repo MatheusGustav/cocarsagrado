@@ -1,5 +1,7 @@
 # Cocar Sagrado
 
+> ⚠️ **Código proprietário — todos os direitos reservados.** Este repositório é público apenas para fins de portfólio/demonstração. É proibido copiar, modificar, hospedar, redistribuir ou usar comercialmente sem autorização expressa por escrito do autor. Veja [LICENSE](LICENSE).
+
 ![Cocar Sagrado](images/readme.webp)
 
 O Cocar Sagrado atua no nicho de terapêutica oracular desde 2019. Com uma base sólida de clientes construída ao longo dos anos, o processo de agendamento e pagamento era feito 100% pelo WhatsApp — o que funcionava, mas não escalava.
