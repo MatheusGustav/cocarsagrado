@@ -1,0 +1,92 @@
+LICENÇA PROPRIETÁRIA — TODOS OS DIREITOS RESERVADOS
+Copyright (c) 2026 Matheus Gustav. Todos os direitos reservados.
+
+Projeto: Cocar Sagrado (o "Software")
+Titular dos direitos: Matheus Gustav (o "Autor")
+
+================================================================
+1. AVISO DE PROPRIEDADE
+================================================================
+Este repositório e todo o seu conteúdo — incluindo, sem limitação,
+código-fonte, scripts, esquemas de banco de dados, migrações,
+configurações, textos, imagens, identidade visual, marca, layout,
+fluxos de negócio e documentação (em conjunto, o "Software") — são
+de propriedade exclusiva do Autor e protegidos pelas leis de direito
+autoral (Lei nº 9.610/1998), de software (Lei nº 9.609/1998) e de
+propriedade industrial (Lei nº 9.279/1996) do Brasil, bem como por
+tratados internacionais aplicáveis.
+
+O Software é disponibilizado publicamente APENAS para fins de
+visualização, avaliação e portfólio. A publicidade do código-fonte
+NÃO constitui, em nenhuma hipótese, licença, cessão, renúncia ou
+autorização de uso, expressa ou implícita.
+
+================================================================
+2. CONDUTAS PROIBIDAS
+================================================================
+É EXPRESSAMENTE PROIBIDO, no todo ou em parte, sem autorização
+prévia e por escrito do Autor:
+
+ a) copiar, clonar, reproduzir, baixar para fins que não a mera
+    leitura, ou armazenar o Software;
+ b) usar, executar, implantar ou hospedar o Software, em ambiente
+    de produção, teste ou qualquer outro;
+ c) modificar, adaptar, traduzir, criar obras derivadas ou fazer
+    engenharia reversa;
+ d) redistribuir, sublicenciar, vender, alugar, emprestar ou
+    explorar comercialmente, direta ou indiretamente;
+ e) reutilizar a marca, o nome "Cocar Sagrado", a identidade visual,
+    os textos ou qualquer elemento de design;
+ f) remover, ocultar ou alterar este aviso de licença, avisos de
+    copyright ou atribuições de autoria;
+ g) usar o Software para induzir terceiros a erro, passar-se pelo
+    Autor ou pelo negócio, ou praticar concorrência desleal.
+
+================================================================
+3. PROIBIÇÃO DE FRAUDE E USO INDEVIDO
+================================================================
+É terminantemente vedado o uso do Software, de seus fluxos de
+pagamento, de suas integrações, chaves, endpoints ou de qualquer
+parte dele para:
+
+ a) fraude, estelionato, falsificação ou simulação de pagamentos,
+    pedidos, agendamentos ou cobranças;
+ b) burlar, contornar ou desabilitar controles de segurança,
+    autenticação, autorização (RLS) ou validações;
+ c) acesso não autorizado a dados, contas, painéis administrativos
+    ou infraestrutura;
+ d) coleta, tratamento ou vazamento de dados pessoais de clientes
+    em violação à Lei Geral de Proteção de Dados (Lei nº 13.709/2018).
+
+Quaisquer dessas condutas constituem ilícito civil e criminal,
+sujeitando o infrator às penas dos arts. 171 (estelionato), 154-A
+(invasão de dispositivo informático) e 184 (violação de direito
+autoral) do Código Penal, sem prejuízo de reparação integral por
+perdas e danos.
+
+================================================================
+4. AUSÊNCIA DE GARANTIA
+================================================================
+O SOFTWARE É FORNECIDO "NO ESTADO EM QUE SE ENCONTRA", SEM GARANTIA
+DE QUALQUER NATUREZA. O AUTOR NÃO SE RESPONSABILIZA POR QUAISQUER
+DANOS DECORRENTES DO USO NÃO AUTORIZADO, QUE SE DÁ POR CONTA E RISCO
+EXCLUSIVOS DE QUEM O PRATICAR.
+
+================================================================
+5. RESERVA DE DIREITOS E AUTORIZAÇÃO
+================================================================
+Todos os direitos não expressamente concedidos neste documento ficam
+reservados ao Autor. Qualquer uso depende de autorização prévia,
+específica e por escrito do Autor, que poderá concedê-la, negá-la ou
+revogá-la a seu exclusivo critério.
+
+Para solicitar autorização ou licenciamento, contate o Autor pelos
+canais oficiais do projeto Cocar Sagrado.
+
+================================================================
+6. FORO E LEGISLAÇÃO APLICÁVEL
+================================================================
+Esta licença é regida pelas leis da República Federativa do Brasil.
+Fica eleito o foro da comarca de domicílio do Autor para dirimir
+quaisquer controvérsias, com renúncia a qualquer outro, por mais
+privilegiado que seja.
