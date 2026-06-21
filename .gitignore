@@ -7,3 +7,6 @@ supabase/.temp/
 # Skills de agentes de IA (ferramenta de dev, não faz parte do site)
 .agents/
 skills-lock.json
+
+# Scripts de migração one-off (ferramenta local, não faz parte do site)
+scripts/
