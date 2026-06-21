@@ -1032,6 +1032,28 @@ body.cs-chat-active .nav-chat-btn { color: var(--color-gold); }
   box-shadow: 0 6px 20px rgba(0,0,0,0.4), 0 0 0 2px var(--color-gold);
 }
 
+/* Combo: duas fotinhas circulares empilhadas na diagonal */
+.cat-img-combo {
+  position: relative;
+  width: 112px;
+  height: 112px;
+}
+.cat-img-combo .cat-img {
+  position: absolute;
+  width: 74px;
+  height: 74px;
+}
+.cat-img-combo .cat-img--combo-top {
+  top: 0;
+  left: 0;
+  z-index: 2;
+}
+.cat-img-combo .cat-img--combo-bottom {
+  bottom: 0;
+  right: 0;
+  z-index: 1;
+}
+
 
 .cat-footer {
   display: flex;
