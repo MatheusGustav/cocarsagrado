@@ -262,27 +262,6 @@ function inicializarCarrosselDepoimentos() {
 
 
 /* ============================================================
-   BADGES DE MODALIDADE DE ATENDIMENTO
-   ============================================================ */
-
-function aplicarBadgesModalidade() {
-  document.querySelectorAll('.cat-card[data-modalidade]').forEach(card => {
-    const modalidade = card.dataset.modalidade;
-    const body = card.querySelector('.cat-body');
-    const desc = body && body.querySelector('.cat-desc');
-    if (!desc || body.querySelector('.cat-badge-atendimento')) return;
-
-    const rotulos = { video: 'Vídeo-chamada', audio: 'Áudio gravado', mensagem: 'Mensagem' };
-    const badge = document.createElement('span');
-    badge.className = `cat-badge-atendimento cat-badge-atendimento--${rotulos[modalidade] ? modalidade : 'mensagem'}`;
-    badge.textContent = rotulos[modalidade] || rotulos.mensagem;
-
-    desc.insertAdjacentElement('afterend', badge);
-  });
-}
-
-
-/* ============================================================
    5. FILTROS DO CATÁLOGO
    ============================================================
    Filtra os cards do catálogo pelo data-category de cada card.
@@ -296,6 +275,13 @@ function inicializarFiltrosCatalogo() {
   if (!botoesFiltro.length || !cardsCatalogo.length) return;
 
   let pendingTimers = [];
+
+  const underline = document.querySelector('.cat-filter-underline');
+  const moverSublinhado = (botao) => {
+    if (!underline || !botao) return;
+    underline.style.left  = botao.offsetLeft + 'px';
+    underline.style.width = botao.offsetWidth + 'px';
+  };
 
   function aplicarFiltro(botao, atualizarURL) {
     const filtro = botao.dataset.filter;
@@ -313,8 +299,7 @@ function inicializarFiltrosCatalogo() {
 
       botoesFiltro.forEach(b => b.classList.remove('active'));
       botao.classList.add('active');
-      // No mobile (chips com rolagem), garante o chip ativo à vista
-      botao.scrollIntoView({ block: 'nearest', inline: 'center', behavior: 'smooth' });
+      moverSublinhado(botao);
 
       cardsCatalogo.forEach(card => {
         const cats = card.dataset.category || '';
@@ -359,6 +344,15 @@ function inicializarFiltrosCatalogo() {
   if (filtroURL && filtroURL !== 'todos') {
     const botao = Array.from(botoesFiltro).find(b => b.dataset.filter === filtroURL);
     if (botao) aplicarFiltro(botao, false);
+  }
+
+  // Posiciona o sublinhado na aba ativa (após o layout / carga de emojis/fontes)
+  const ativa = () => document.querySelector('.cat-filter.active');
+  requestAnimationFrame(() => moverSublinhado(ativa()));
+  setTimeout(() => moverSublinhado(ativa()), 90);
+  if (!window._catFiltroResize) {
+    window._catFiltroResize = true;
+    window.addEventListener('resize', () => moverSublinhado(ativa()));
   }
 }
 
@@ -499,9 +493,6 @@ document.addEventListener('DOMContentLoaded', () => {
   if (typeof renderizarDescontos === 'function') {
     renderizarDescontos();
   }
-
-  // 9. Badges de modalidade (videochamada / por mensagem)
-  aplicarBadgesModalidade();
 
   // 10. Status online dos terapeutas
   atualizarStatusOnline();

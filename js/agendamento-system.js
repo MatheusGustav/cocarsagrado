@@ -1200,7 +1200,6 @@ async function renderizarCatalogoSite() {
 
   if (typeof inicializarFiltrosCatalogo === 'function') inicializarFiltrosCatalogo();
   if (typeof renderizarDescontos === 'function') renderizarDescontos();
-  if (typeof aplicarBadgesModalidade === 'function') aplicarBadgesModalidade();
   _destacarMaisProcurada();
 }
 
