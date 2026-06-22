@@ -1032,6 +1032,42 @@ body.cs-chat-active .nav-chat-btn { color: var(--color-gold); }
   gap: 12px;
 }
 
+/* Catálogo agrupado por terapeuta */
+.cat-catalogo {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(2.25rem, 4vw, 3.25rem);
+}
+.cat-group--hidden { display: none; }
+.cat-group-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.cat-group-avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid var(--color-gold);
+  flex: 0 0 auto;
+}
+.cat-group-titulo {
+  font-family: var(--fonte-titulo);
+  font-size: clamp(1.3rem, 3vw, 1.7rem);
+  font-weight: 600;
+  color: var(--color-primary);
+  margin: 0;
+  white-space: nowrap;
+}
+.cat-group-head::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, rgba(192, 149, 78, 0.5), transparent);
+}
+
 /* Card invertido: verde primordial sobre a seção off-white —
    o contraste verde/marfim vive dentro de cada card. */
 .cat-card {

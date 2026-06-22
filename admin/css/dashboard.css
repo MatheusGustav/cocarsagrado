@@ -3794,3 +3794,55 @@ body.drawer-aberto { overflow: hidden; }
   .cup-form-row { flex-direction: column; align-items: stretch; }
   .cup-btn-add { width: 100%; }
 }
+
+/* ============================================================
+   CATÁLOGO — blocos por terapeuta + arrastar para reordenar
+   ============================================================ */
+.cat-dnd-dica { font-size: .8rem; color: var(--text-muted); margin: 0 0 16px; }
+.cat-bloco { margin-bottom: 28px; }
+.cat-bloco-titulo {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 1.3rem; font-weight: 600;
+  margin: 0 0 12px; display: flex; align-items: center; gap: 8px;
+}
+.cat-bloco-count {
+  font-size: .72rem; font-weight: 700;
+  background: var(--bd-soft); color: var(--text-muted);
+  border-radius: 999px; padding: 2px 9px;
+}
+.cat-bloco-vazio { font-size: .85rem; color: var(--text-muted); padding: 6px 2px; }
+
+.cat-drag-list { display: flex; flex-direction: column; gap: 10px; max-width: 760px; }
+.cat-drag-list .cat-card {
+  flex-direction: row; align-items: center; text-align: left;
+  padding: 10px 14px 10px 6px; gap: 12px; flex-wrap: wrap;
+}
+.cat-drag-list .cat-card-foto {
+  width: 52px !important; height: 52px !important;
+  max-width: 52px; max-height: 52px;
+}
+.cat-drag-list .cat-card-info {
+  flex: 1 1 180px; display: flex; flex-direction: column;
+  align-items: flex-start; text-align: left; gap: 3px;
+}
+.cat-drag-list .cat-card-acoes { margin-left: auto; display: flex; gap: 6px; }
+.cat-drag-list .cat-tier-list { flex: 1 1 100%; }
+
+.cat-drag-handle {
+  flex: 0 0 auto; cursor: grab; color: var(--text-muted);
+  font-size: 1.25rem; line-height: 1; padding: 6px 4px;
+  user-select: none; touch-action: none;
+}
+.cat-drag-handle:active { cursor: grabbing; }
+.cat-card.dragging { opacity: .5; box-shadow: 0 10px 26px rgba(1,55,24,.20); }
+
+.cat-inativas-bloco {
+  display: flex; flex-direction: column; gap: 8px;
+  margin-top: 10px; max-width: 760px; opacity: .65;
+}
+.cat-inativas-bloco .cat-card {
+  flex-direction: row; align-items: center; text-align: left;
+  padding: 8px 14px; gap: 12px;
+}
+.cat-inativas-bloco .cat-card-foto { width: 44px !important; height: 44px !important; }
+.cat-inativas-bloco .cat-card-info { align-items: flex-start; text-align: left; }
