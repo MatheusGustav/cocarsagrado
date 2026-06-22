@@ -140,7 +140,7 @@ function _descRenderizar() {
 
     <div class="desc-salvar-bar">
       <button class="ag-btn ag-btn-copy" id="btn-salvar-descontos" onclick="salvarDescontos()">
-        Salvar Alterações
+        Salvar promoções
       </button>
     </div>
   `;
@@ -248,5 +248,5 @@ async function salvarDescontos() {
   }
 
   btn.disabled = false;
-  btn.textContent = 'Salvar Alterações';
+  btn.textContent = 'Salvar promoções';
 }

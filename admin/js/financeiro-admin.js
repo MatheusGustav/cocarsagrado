@@ -132,9 +132,25 @@ function _renderFinanceiro(cache, container) {
     return [...mapa.values()].sort((a, b) => b.total - a.total);
   };
 
-  const porTerapeuta = agrupar(doMes,
-    r => r.terapeuta || '—',
-    r => (typeof terapeutaNome === 'function' && r.terapeuta) ? terapeutaNome(r.terapeuta) : (r.terapeuta || '—'));
+  // Por terapeuta: leituras + lançamentos manuais do mês (NULL = Geral).
+  // Mantém a quebra reconciliando com o card "Faturado este mês".
+  const lancMesTerap = lancamentos.filter(l => _finMesKey(l.data) === mesAtual);
+  const terapMap = new Map();
+  const _addTerap = (chave, rotulo, valor) => {
+    const item = terapMap.get(chave) || { rotulo, total: 0, qtd: 0 };
+    item.total += Number(valor || 0);
+    item.qtd   += 1;
+    terapMap.set(chave, item);
+  };
+  doMes.forEach(r => _addTerap(
+    r.terapeuta || '—',
+    (typeof terapeutaNome === 'function' && r.terapeuta) ? terapeutaNome(r.terapeuta) : (r.terapeuta || '—'),
+    r.valor_final));
+  lancMesTerap.forEach(l => _addTerap(
+    l.terapeuta || 'geral',
+    l.terapeuta ? (typeof terapeutaNome === 'function' ? terapeutaNome(l.terapeuta) : l.terapeuta) : 'Geral / avulsos',
+    l.valor));
+  const porTerapeuta = [...terapMap.values()].sort((a, b) => b.total - a.total);
   const porServico = agrupar(doMes,
     r => r.tipos_leitura?.nome || '—',
     r => r.tipos_leitura?.nome || '—').slice(0, 8);
@@ -172,7 +188,7 @@ function _renderFinanceiro(cache, container) {
       <h3>Lançamentos manuais (mês atual)</h3>
       ${lancDoMes.length
         ? lancDoMes.map(l => `<div class="fin-break-row">
-            <span class="fin-break-nome">${_esc(l.descricao)} <em class="fin-lanc-cat">${rotuloCat[l.categoria] || l.categoria}</em></span>
+            <span class="fin-break-nome">${_esc(l.descricao)} <em class="fin-lanc-cat">${rotuloCat[l.categoria] || l.categoria}${l.terapeuta ? ' · ' + _esc(typeof terapeutaNome === 'function' ? terapeutaNome(l.terapeuta) : l.terapeuta) : ''}</em></span>
             <span class="fin-break-valor${Number(l.valor) < 0 ? ' fin-break-valor--neg' : ''}">${_esc(_finBRL(l.valor))}</span>
             <button class="fin-lanc-del" onclick="fin_excluirLancamento(${l.id})" aria-label="Excluir lançamento">✕</button>
           </div>`).join('')
@@ -254,13 +270,22 @@ function fin_abrirLancamento() {
             <input type="date" id="fin-lanc-data" value="${_dataLocalISO()}">
           </div>
         </div>
-        <div class="ag-form-group">
-          <label for="fin-lanc-cat">Categoria</label>
-          <select id="fin-lanc-cat">
-            <option value="trabalho">Trabalho espiritual (entrada)</option>
-            <option value="outro">Outro (entrada)</option>
-            <option value="despesa">Despesa (sai do total)</option>
-          </select>
+        <div class="cat-form-row">
+          <div class="ag-form-group">
+            <label for="fin-lanc-cat">Categoria</label>
+            <select id="fin-lanc-cat">
+              <option value="trabalho">Trabalho espiritual (entrada)</option>
+              <option value="outro">Outro (entrada)</option>
+              <option value="despesa">Despesa (sai do total)</option>
+            </select>
+          </div>
+          <div class="ag-form-group">
+            <label for="fin-lanc-terapeuta">Terapeuta</label>
+            <select id="fin-lanc-terapeuta">
+              ${(typeof listaTerapeutas === 'function' ? listaTerapeutas() : [{id:'matheus',nome:'Matheus'},{id:'camila',nome:'Camila'}])
+                .map(t => `<option value="${_esc(t.id)}">${_esc(t.nome)}</option>`).join('')}
+            </select>
+          </div>
         </div>
       </div>
       <div class="cat-form-actions">
@@ -285,10 +310,12 @@ async function fin_salvarLancamento() {
   const valor     = parseFloat(document.getElementById('fin-lanc-valor')?.value);
   const data      = document.getElementById('fin-lanc-data')?.value;
   const categoria = document.getElementById('fin-lanc-cat')?.value || 'trabalho';
+  const terapeuta = document.getElementById('fin-lanc-terapeuta')?.value || '';
 
   if (!descricao)               { _toastAdmin('Informe a descrição.', 'erro'); return; }
   if (isNaN(valor) || valor <= 0) { _toastAdmin('Valor inválido.', 'erro'); return; }
   if (!data)                    { _toastAdmin('Informe a data.', 'erro'); return; }
+  if (!terapeuta)               { _toastAdmin('Selecione o terapeuta.', 'erro'); return; }
 
   const btn = document.getElementById('fin-lanc-salvar');
   if (btn) { btn.disabled = true; btn.textContent = 'Salvando…'; }
@@ -298,7 +325,7 @@ async function fin_salvarLancamento() {
 
   const { error } = await supabase
     .from('lancamentos_financeiros')
-    .insert({ descricao, valor: valorFinal, data, categoria });
+    .insert({ descricao, valor: valorFinal, data, categoria, terapeuta });
 
   if (error) {
     _toastAdmin('Erro ao salvar: ' + error.message, 'erro');

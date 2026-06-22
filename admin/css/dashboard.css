@@ -1642,8 +1642,20 @@ body.modal-aberto { overflow: hidden; }
   }
 
   /* ── Vagas ────────────────────────────────────────────── */
+  /* Carrossel já é o padrão (base); no celular o card ocupa quase toda a tela
+     e a barra some — rola só no touch. */
   .vps-semana-grid {
-    grid-template-columns: 1fr;
+    gap: 12px;
+    scroll-padding: 0 16px;
+    scrollbar-width: none;          /* Firefox */
+    -ms-overflow-style: none;       /* IE/Edge antigo */
+  }
+  .vps-semana-grid::-webkit-scrollbar {
+    display: none;                  /* WebKit (Chrome/Safari mobile) */
+  }
+  .vps-semana-grid > .vps-dia-card {
+    flex: 0 0 86%;
+    scroll-snap-align: center;
   }
 
   .vagas-ajuste-sidebar {
@@ -2046,11 +2058,56 @@ body.modal-aberto { overflow: hidden; }
 /* ============================================================
    CONFIGURAÇÃO PADRÃO — Grid de dias
    ============================================================ */
+/* Vagas: carrossel horizontal (swipe pros lados) em todas as telas,
+   igual ao carrossel de feedbacks do site — sem grade empilhada. */
 .vps-semana-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  display: flex;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
   gap: 16px;
-  padding-bottom: 8px;
+  padding-bottom: 12px;
+  scroll-padding: 0 4px;
+}
+.vps-semana-grid > .vps-dia-card {
+  flex: 0 0 320px;
+  scroll-snap-align: start;
+}
+
+/* PC: barra de rolagem horizontal grossa e bem visível. */
+@media (min-width: 900px) {
+  .vps-semana-grid {
+    padding-bottom: 16px;
+    scrollbar-width: auto;
+    scrollbar-color: var(--primary, #013718) var(--bd-soft, rgba(0,0,0,.08));
+  }
+  .vps-semana-grid::-webkit-scrollbar {
+    height: 14px;
+  }
+  .vps-semana-grid::-webkit-scrollbar-track {
+    background: var(--bd-soft, rgba(0,0,0,.06));
+    border-radius: 999px;
+  }
+  .vps-semana-grid::-webkit-scrollbar-thumb {
+    background: var(--primary, #013718);
+    border-radius: 999px;
+  }
+  .vps-semana-grid::-webkit-scrollbar-thumb:hover {
+    background: var(--secondary, #A67C32);
+  }
+}
+
+/* Subseção Agenda Especial dentro de Vagas */
+.vagas-especial-bloco {
+  margin-top: 36px;
+  border-top: 1px solid var(--bd-soft);
+  padding-top: 24px;
+}
+.vagas-sub-titulo {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 1.4rem;
+  font-weight: 600;
+  margin: 0 0 16px;
 }
 
 .vps-dia-card {
@@ -2805,9 +2862,14 @@ body.modal-aberto { overflow: hidden; }
 .desc-salvar-bar {
   display: flex;
   justify-content: flex-end;
-  padding: 20px 0 8px;
-  border-top: 1px solid var(--bd-soft);
+  padding: 16px 0 8px;
   margin-top: 4px;
+}
+
+/* Divisória entre Promoções (+botão Salvar) e Cupons */
+#cupons-container {
+  border-top: 1px solid var(--bd-soft);
+  padding-top: 28px;
 }
 
 @media (max-width: 640px) {
@@ -3666,3 +3728,69 @@ body.drawer-aberto { overflow: hidden; }
 }
 
 .fin-break-valor--neg { color: var(--t-danger); }
+
+/* ============================================================
+   CUPONS
+   ============================================================ */
+.cup-form {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 16px;
+}
+.cup-form-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 12px;
+}
+.cup-campo {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  font-size: .8rem;
+  color: var(--text-muted, #6b7280);
+}
+.cup-campo-desc { flex: 1; min-width: 180px; }
+.cup-input {
+  padding: 9px 11px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  font-size: .95rem;
+  background: var(--bg, #fff);
+  color: inherit;
+}
+.cup-input-codigo { text-transform: uppercase; font-weight: 600; }
+.cup-input:focus { outline: none; border-color: var(--secondary, #A67C32); }
+.cup-btn-add { white-space: nowrap; }
+
+.cup-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 14px 16px;
+  margin-bottom: 10px;
+  box-shadow: 0 1px 3px rgba(1,55,24,0.04);
+  transition: opacity .2s, border-color .2s, box-shadow .22s;
+}
+.cup-card:hover { border-color: rgba(201,168,76,0.45); }
+.cup-card--off { opacity: .55; background: var(--s-cream-5); }
+.cup-card-info { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.cup-card-codigo {
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-weight: 700;
+  font-size: 1.25rem;
+  letter-spacing: .05em;
+  color: var(--secondary, #A67C32);
+}
+.cup-card-valor { font-size: .9rem; font-weight: 600; }
+.cup-card-desc { font-size: .82rem; color: var(--text-muted, #6b7280); }
+.cup-card-acoes { display: flex; align-items: center; gap: 14px; flex: 0 0 auto; }
+@media (max-width: 560px) {
+  .cup-form-row { flex-direction: column; align-items: stretch; }
+  .cup-btn-add { width: 100%; }
+}
