@@ -226,10 +226,13 @@
           <p class="section-sub">Temos diversas modalidades para diversas demandas</p>
         </div>
 
-        <!-- Filtros de categoria -->
-        <div class="cat-filters" id="catFilters">
-          <button class="cat-filter active" data-filter="todos">Todos</button>
-          <button class="cat-filter" data-filter="ate50">Até R$&nbsp;50</button>
+        <!-- Filtro por modalidade de atendimento (abas com sublinhado deslizante) -->
+        <div class="cat-filters" id="catFilters" role="tablist" aria-label="Filtrar por modalidade">
+          <button class="cat-filter active" data-filter="todos"><span class="cat-filter-ico" aria-hidden="true">✦</span> Todos</button>
+          <button class="cat-filter" data-filter="mensagem"><span class="cat-filter-ico" aria-hidden="true">💬</span> Mensagem</button>
+          <button class="cat-filter" data-filter="audio"><span class="cat-filter-ico" aria-hidden="true">🎙️</span> Áudio<span class="cat-filter-extra"> gravado</span></button>
+          <button class="cat-filter" data-filter="video"><span class="cat-filter-ico" aria-hidden="true">📹</span> Vídeo<span class="cat-filter-extra">-chamada</span></button>
+          <span class="cat-filter-underline" aria-hidden="true"></span>
         </div>
 
         <!-- Catálogo agrupado por terapeuta (renderizado por agendamento-system.js → renderizarCatalogoSite) -->
