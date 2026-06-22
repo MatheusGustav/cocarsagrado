@@ -34,6 +34,7 @@ function _popularFiltroTerapeuta() {
 }
 
 let _agendamentosTodos = [];
+let _lancamentosStats  = [];   // lançamentos manuais (p/ o card "Faturado no mês")
 let _statusAtivo       = 'pendente';
 let _buscaTexto        = '';
 let _janelaDias        = 90;   // janela de busca; 0 = sem corte (tudo)
@@ -422,6 +423,22 @@ function _skeletonHTML() {
   </div>`.repeat(3);
 }
 
+// Lançamentos manuais dos últimos ~12 meses (entram no card de faturamento).
+// Falha silenciosa: sem dado, o card mostra só as leituras.
+async function _carregarLancamentosStats() {
+  try {
+    const inicio = new Date();
+    inicio.setDate(1);
+    inicio.setMonth(inicio.getMonth() - 11);
+    const { data, error } = await supabase
+      .from('lancamentos_financeiros')
+      .select('valor, data, terapeuta')
+      .gte('data', _dataLocalISO(inicio));
+    if (error) return [];
+    return data || [];
+  } catch { return []; }
+}
+
 // Única função de carga: o primeiro load mostra skeleton; recargas
 // (realtime, auto-refresh, ações) renderizam por cima, sem flicker.
 async function carregarAgendamentos(opts = {}) {
@@ -431,7 +448,12 @@ async function carregarAgendamentos(opts = {}) {
 
   if (_primeiroLoad) lista.innerHTML = _skeletonHTML();
 
-  const { data, error } = await _montarQueryAgendamentos();
+  // Agendamentos + lançamentos manuais em paralelo (lançamentos entram no
+  // card "Faturado no mês", igual ao Financeiro).
+  const [{ data, error }, lancs] = await Promise.all([
+    _montarQueryAgendamentos(),
+    _carregarLancamentosStats(),
+  ]);
 
   if (error) {
     if (!opts.silencioso) lista.innerHTML = '<div class="ag-empty">Erro ao carregar agendamentos.</div>';
@@ -441,6 +463,7 @@ async function carregarAgendamentos(opts = {}) {
 
   _primeiroLoad = false;
   _agendamentosTodos = data || [];
+  _lancamentosStats  = lancs || [];
   calcularEstatisticas(_agendamentosTodos);
   _atualizarContadoresPills(_agendamentosTodos);
   _renderizarListaFiltrada();
@@ -667,6 +690,19 @@ function calcularEstatisticas(todos) {
     const mesAtual = hoje.slice(0, 7);
     total = todos.filter(a => a.data_agendamento?.startsWith(mesAtual) && pago(a))
       .reduce((acc, a) => acc + Number(a.valor_final || 0), 0);
+  }
+
+  // Soma os lançamentos manuais do período (avulsos somam, despesas são
+  // negativas e subtraem) — alinha o card ao total do Financeiro.
+  // Respeita os filtros da tela: terapeuta filtra lançamentos também; com
+  // filtro de método de pagamento, lançamentos não entram (não têm método).
+  const filtroTerapeuta = document.getElementById('filtro-terapeuta')?.value || '';
+  const filtroMetodo    = document.getElementById('filtro-metodo')?.value    || '';
+  if (!filtroMetodo) {
+    total += (_lancamentosStats || [])
+      .filter(l => filtroData ? l.data === filtroData : (l.data || '').startsWith(hoje.slice(0, 7)))
+      .filter(l => !filtroTerapeuta || l.terapeuta === filtroTerapeuta)
+      .reduce((acc, l) => acc + Number(l.valor || 0), 0);
   }
 
   const set = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
