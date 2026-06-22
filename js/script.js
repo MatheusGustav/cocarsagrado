@@ -338,6 +338,16 @@ function inicializarFiltrosCatalogo() {
           pendingTimers.push(t);
         }
       });
+
+      // Esconde o bloco do terapeuta (cabeçalho + grade) quando nenhum
+      // card dele bate com o filtro — evita título solto sem leituras.
+      document.querySelectorAll('.cat-group').forEach(grupo => {
+        const algum = Array.from(grupo.querySelectorAll('.cat-card')).some(c => {
+          const cats = c.dataset.category || '';
+          return filtro === 'todos' || cats.split(' ').includes(filtro);
+        });
+        grupo.classList.toggle('cat-group--hidden', !algum);
+      });
   }
 
   botoesFiltro.forEach(botao => {

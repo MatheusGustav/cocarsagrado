@@ -1094,74 +1094,96 @@ async function _buscarRankingCatalogo() {
   } catch { return new Map(); }
 }
 
+const _TERAPEUTA_NOME = { matheus: 'Matheus', camila: 'Camila' };
+
+// Monta o HTML de um card (grupo de tiers ou leitura simples).
+function _catCardHTML(item) {
+  if (item.kind === 'grupo') {
+    const p     = item.principal;
+    const nome  = _nomeGrupo(p);
+    const img   = _catImg(p.imagem_url, nome);
+    const desc  = p.descricao ? `<p class="cat-desc">${_escDesc(p.descricao)}</p>` : '';
+    const tiers = item.tiers.map(t => `
+      <span><span>${_escCat(t.tier_label || t.nome)}</span><strong>${_formatarPrecoCat(t.preco_original)}</strong></span>
+    `).join('');
+    const bucket = Number(item.tiers[0].preco_original) <= 50 ? ' ate50' : '';
+
+    return `
+      <article class="cat-card" data-category="${_escCat(p.terapeuta)} ${_escCat(p.modalidade || 'mensagem')}${bucket}" data-modalidade="${_escCat(p.modalidade || 'mensagem')}" data-service-id="grupo:${_escCat(item.grupo_slug)}">
+        <div class="cat-card-img">${img}</div>
+        <div class="cat-body">
+          <h3 class="cat-name">${_escCat(nome)}</h3>
+          ${desc}
+        </div>
+        <div class="cat-footer">
+          <div class="cat-footer-tiers">${tiers}</div>
+          <button class="cat-btn" onclick="abrirSeletor('grupo:${_escCat(item.grupo_slug)}')">Agendar</button>
+        </div>
+      </article>
+    `;
+  }
+
+  const t       = item.tipo;
+  const slug    = t.slug || `id-${t.id}`;
+  const img     = _catImg(t.imagem_url, t.nome);
+  const desc    = t.descricao ? `<p class="cat-desc">${_escDesc(t.descricao)}</p>` : '';
+  const onclick = t.slug ? `abrirSeletor('${_escCat(slug)}')` : `abrirSeletor(${t.id})`;
+  const bucket  = Number(t.preco_original) <= 50 ? ' ate50' : '';
+
+  return `
+    <article class="cat-card" data-category="${_escCat(t.terapeuta)} ${_escCat(t.modalidade || 'mensagem')}${bucket}" data-modalidade="${_escCat(t.modalidade || 'mensagem')}" data-service-id="${_escCat(slug)}">
+      <div class="cat-card-img">${img}</div>
+      <div class="cat-body">
+        <h3 class="cat-name">${_escCat(t.nome)}</h3>
+        ${desc}
+      </div>
+      <div class="cat-footer">
+        <span class="cat-footer-price">${_formatarPrecoCat(t.preco_original)}</span>
+        <button class="cat-btn" onclick="${onclick}">Agendar</button>
+      </div>
+    </article>
+  `;
+}
+
 async function renderizarCatalogoSite() {
   const grid = document.getElementById('catGrid');
   if (!grid) return;
 
-  const [tipos, ranking] = await Promise.all([_garantirTipos(), _buscarRankingCatalogo()]);
+  const tipos = await _garantirTipos();
   if (!tipos.length) {
     grid.innerHTML = '<div class="ag-empty">Nenhuma leitura disponível no momento.</div>';
     return;
   }
 
+  // Agrupa em cards (grupos de tiers + simples) preservando a ordem do admin.
   const itens = _agruparCatalogo(tipos);
 
-  // Ordena por demanda real; sem ranking, preserva a ordem do admin
-  itens.forEach((item, i) => {
-    item._sid = item.kind === 'grupo'
-      ? `grupo:${item.grupo_slug}`
-      : (item.tipo.slug || `id-${item.tipo.id}`);
-    item._rank = ranking.has(item._sid) ? ranking.get(item._sid) : Infinity;
-    item._idx = i;
-  });
-  itens.sort((a, b) => (a._rank - b._rank) || (a._idx - b._idx));
+  // Bloca por terapeuta. A ordem dos blocos segue a 1ª aparição na lista já
+  // ordenada por `ordem` — ou seja, o admin controla tudo pela coluna ordem.
+  const blocos = [];
+  const idxBloco = {};
+  for (const item of itens) {
+    const ter = (item.kind === 'grupo' ? item.principal.terapeuta : item.tipo.terapeuta) || '—';
+    if (!(ter in idxBloco)) { idxBloco[ter] = blocos.length; blocos.push({ terapeuta: ter, itens: [] }); }
+    blocos[idxBloco[ter]].itens.push(item);
+  }
 
-  grid.innerHTML = itens.map(item => {
-    if (item.kind === 'grupo') {
-      const p     = item.principal;
-      const nome  = _nomeGrupo(p);
-      const img   = _catImg(p.imagem_url, nome);
-      const desc  = p.descricao ? `<p class="cat-desc">${_escDesc(p.descricao)}</p>` : '';
-      const tiers = item.tiers.map(t => `
-        <span><span>${_escCat(t.tier_label || t.nome)}</span><strong>${_formatarPrecoCat(t.preco_original)}</strong></span>
-      `).join('');
-      const bucket = Number(item.tiers[0].preco_original) <= 50 ? ' ate50' : '';
-
-      return `
-        <article class="cat-card" data-category="${_escCat(p.terapeuta)} ${_escCat(p.modalidade || 'mensagem')}${bucket}" data-modalidade="${_escCat(p.modalidade || 'mensagem')}" data-service-id="grupo:${_escCat(item.grupo_slug)}">
-          <div class="cat-card-img">${img}</div>
-          <div class="cat-body">
-            <h3 class="cat-name">${_escCat(nome)}</h3>
-            ${desc}
-          </div>
-          <div class="cat-footer">
-            <div class="cat-footer-tiers">${tiers}</div>
-            <button class="cat-btn" onclick="abrirSeletor('grupo:${_escCat(item.grupo_slug)}')">Agendar</button>
-          </div>
-        </article>
-      `;
-    }
-
-    const t       = item.tipo;
-    const slug    = t.slug || `id-${t.id}`;
-    const img     = _catImg(t.imagem_url, t.nome);
-    const desc    = t.descricao ? `<p class="cat-desc">${_escDesc(t.descricao)}</p>` : '';
-    const onclick = t.slug ? `abrirSeletor('${_escCat(slug)}')` : `abrirSeletor(${t.id})`;
-    const bucket  = Number(t.preco_original) <= 50 ? ' ate50' : '';
-
+  grid.innerHTML = blocos.map(b => {
+    const nome   = _TERAPEUTA_NOME[b.terapeuta] || (b.terapeuta === '—' ? '' : b.terapeuta);
+    const titulo = nome ? `Leituras com ${_escCat(nome)}` : 'Outras leituras';
+    const avatar = _TERAPEUTA_NOME[b.terapeuta]
+      ? `<img class="cat-group-avatar" src="images/perfil-${_escCat(b.terapeuta)}.webp" alt="" width="44" height="44" loading="lazy">`
+      : '';
     return `
-      <article class="cat-card" data-category="${_escCat(t.terapeuta)} ${_escCat(t.modalidade || 'mensagem')}${bucket}" data-modalidade="${_escCat(t.modalidade || 'mensagem')}" data-service-id="${_escCat(slug)}">
-        <div class="cat-card-img">${img}</div>
-        <div class="cat-body">
-          <h3 class="cat-name">${_escCat(t.nome)}</h3>
-          ${desc}
+      <div class="cat-group" data-terapeuta="${_escCat(b.terapeuta)}">
+        <div class="cat-group-head">
+          ${avatar}
+          <h3 class="cat-group-titulo">${titulo}</h3>
         </div>
-        <div class="cat-footer">
-          <span class="cat-footer-price">${_formatarPrecoCat(t.preco_original)}</span>
-          <button class="cat-btn" onclick="${onclick}">Agendar</button>
+        <div class="cat-grid">
+          ${b.itens.map(_catCardHTML).join('')}
         </div>
-      </article>
-    `;
+      </div>`;
   }).join('');
 
   grid.removeAttribute('aria-busy');

@@ -63,15 +63,33 @@ function cat_toggleInativas() {
   _catRenderizar();
 }
 
+// Ordem dos blocos = ordem dos terapeutas na config (listaTerapeutas).
+function _catOrdemTerapeutas() {
+  const list = (typeof listaTerapeutas === 'function')
+    ? listaTerapeutas()
+    : [{ id: 'matheus' }, { id: 'camila' }];
+  return list.map(t => t.id);
+}
+function _catBlockIdx(terapeuta) {
+  const i = _catOrdemTerapeutas().indexOf(terapeuta);
+  return i === -1 ? _catOrdemTerapeutas().length : i;
+}
+// Próxima ordem livre no fim do bloco do terapeuta (base = blockIdx*1000).
+function _catOrdemFimBloco(terapeuta) {
+  const base = _catBlockIdx(terapeuta) * 1000;
+  const ativos = _catCache.filter(x => x.terapeuta === terapeuta && x.ativo !== false);
+  const maxOrd = ativos.reduce((m, x) => Math.max(m, Number(x.ordem) || 0), 0);
+  return Math.max(maxOrd, base) + 10;
+}
+
 function _catRenderizar() {
   const container = document.getElementById('catalogo-container');
   if (!container) return;
 
   const inativas = _catCache.filter(t => t.ativo === false).length;
-  const visiveis = _catMostrarInativas
+  const totalVisiveis = (_catMostrarInativas
     ? _catCache
-    : _catCache.filter(t => t.ativo !== false);
-  const itens = _catAgrupar(visiveis);
+    : _catCache.filter(t => t.ativo !== false)).length;
 
   const btnInativas = inativas > 0
     ? `<button class="ag-btn ag-btn-outline ag-btn-sm" onclick="cat_toggleInativas()">
@@ -79,27 +97,150 @@ function _catRenderizar() {
        </button>`
     : '';
 
-  container.innerHTML = `
+  // Ordena os blocos: terapeutas da config primeiro, depois quaisquer outros / "sem terapeuta".
+  const ordemTer  = _catOrdemTerapeutas();
+  const presentes = [...new Set(_catCache.map(t => t.terapeuta || '—'))];
+  const blocos    = [
+    ...ordemTer.filter(id => presentes.includes(id)),
+    ...presentes.filter(id => !ordemTer.includes(id)),
+  ];
+
+  let html = `
     <div class="cat-topbar">
       <button class="ag-btn ag-btn-primary ag-btn-sm" onclick="cat_abrirFormNovo()">+ Nova Leitura</button>
       ${btnInativas}
-      <span class="cat-count">${visiveis.length} leitura${visiveis.length === 1 ? '' : 's'} · ${itens.length} card${itens.length === 1 ? '' : 's'}</span>
+      <span class="cat-count">${totalVisiveis} leitura${totalVisiveis === 1 ? '' : 's'}</span>
     </div>
-    <div class="cat-grid">
-      ${itens.map(it => it.kind === 'grupo' ? _catCardGrupo(it) : _catCard(it.tipo)).join('')}
-    </div>
+    <p class="cat-dnd-dica">⠿ Arraste pela alça para reordenar dentro de cada terapeuta. A ordem do site reflete isto.</p>
   `;
+
+  for (const ter of blocos) {
+    const nome = ter === '—'
+      ? 'Sem terapeuta'
+      : (typeof terapeutaNome === 'function' ? terapeutaNome(ter) : ter);
+    const doTer    = _catCache.filter(t => (t.terapeuta || '—') === ter);
+    const ativos   = doTer.filter(t => t.ativo !== false).slice().sort(_catCmpOrdem);
+    const inativos = doTer.filter(t => t.ativo === false);
+
+    const cardsAtivos = _catAgrupar(ativos)
+      .map(it => it.kind === 'grupo' ? _catCardGrupo(it, true) : _catCard(it.tipo, true))
+      .join('') || '<p class="cat-bloco-vazio">Nenhuma leitura ativa.</p>';
+
+    let inativosHtml = '';
+    if (_catMostrarInativas && inativos.length) {
+      inativosHtml = `
+        <div class="cat-inativas-bloco">
+          ${_catAgrupar(inativos).map(it => it.kind === 'grupo' ? _catCardGrupo(it, false) : _catCard(it.tipo, false)).join('')}
+        </div>`;
+    }
+
+    html += `
+      <div class="cat-bloco">
+        <h3 class="cat-bloco-titulo">${_catEsc(nome)} <span class="cat-bloco-count">${ativos.length}</span></h3>
+        <div class="cat-drag-list" data-terapeuta="${_catEsc(ter)}">
+          ${cardsAtivos}
+        </div>
+        ${inativosHtml}
+      </div>`;
+  }
+
+  container.innerHTML = html;
+  _catWireDnD();
+}
+
+// ============================================================
+// Drag-and-drop: reordena cards DENTRO de cada terapeuta.
+// A alça (⠿) ativa o draggable; soltar persiste a nova ordem.
+// ============================================================
+function _catDragAfter(container, y) {
+  const els = [...container.querySelectorAll('.cat-card[data-card-kind]:not(.dragging)')];
+  let closest = { offset: -Infinity, el: null };
+  for (const child of els) {
+    const box = child.getBoundingClientRect();
+    const offset = y - box.top - box.height / 2;
+    if (offset < 0 && offset > closest.offset) closest = { offset, el: child };
+  }
+  return closest.el;
+}
+
+function _catWireDnD() {
+  document.querySelectorAll('.cat-drag-list').forEach(container => {
+    container.addEventListener('dragover', e => {
+      const dragging = document.querySelector('.cat-card.dragging');
+      // só reordena no mesmo terapeuta (trocar terapeuta é via modal)
+      if (!dragging || dragging.parentElement !== container) return;
+      e.preventDefault();
+      const after = _catDragAfter(container, e.clientY);
+      if (!after) container.appendChild(dragging);
+      else container.insertBefore(dragging, after);
+    });
+    container.addEventListener('drop', e => {
+      const dragging = document.querySelector('.cat-card.dragging');
+      if (!dragging || dragging.parentElement !== container) return;
+      e.preventDefault();
+      _catPersistirOrdem(container);
+    });
+  });
+
+  document.querySelectorAll('.cat-card[data-card-kind]').forEach(card => {
+    const handle = card.querySelector('.cat-drag-handle');
+    if (!handle) return;
+    const ativar = () => { card.draggable = true; };
+    handle.addEventListener('mousedown', ativar);
+    handle.addEventListener('touchstart', ativar, { passive: true });
+    card.addEventListener('dragstart', e => {
+      card.classList.add('dragging');
+      e.dataTransfer.effectAllowed = 'move';
+      try { e.dataTransfer.setData('text/plain', card.dataset.cardId || card.dataset.cardGrupo || ''); } catch {}
+    });
+    card.addEventListener('dragend', () => {
+      card.classList.remove('dragging');
+      card.draggable = false;
+    });
+  });
+}
+
+// Persiste a ordem dos cards de um terapeuta: ordem = blockIdx*1000 + pos*10.
+// Grupos: todos os tiers recebem a mesma ordem (ficam contíguos no site).
+async function _catPersistirOrdem(container) {
+  const terapeuta = container.dataset.terapeuta;
+  const base = _catBlockIdx(terapeuta) * 1000;
+  const cards = [...container.querySelectorAll('.cat-card[data-card-kind]')];
+
+  const updates = [];
+  cards.forEach((card, i) => {
+    const ordem = base + (i + 1) * 10;
+    if (card.dataset.cardKind === 'single') {
+      updates.push({ id: Number(card.dataset.cardId), ordem });
+    } else {
+      const slug = card.dataset.cardGrupo;
+      _catCache.filter(x => x.grupo_slug === slug).forEach(t => updates.push({ id: t.id, ordem }));
+    }
+  });
+
+  try {
+    await Promise.all(updates.map(u =>
+      supabase.from('tipos_leitura').update({ ordem: u.ordem }).eq('id', u.id)
+    ));
+    updates.forEach(u => { const it = _catCache.find(x => x.id === u.id); if (it) it.ordem = u.ordem; });
+    _toastAdmin('✅ Ordem salva', 'ok');
+  } catch (e) {
+    _toastAdmin('Erro ao salvar ordem: ' + (e.message || e), 'erro');
+    inicializarCatalogo(); // recarrega o estado real
+  }
 }
 
 const _CAT_BADGE_LABEL = { buzios: 'Búzios', cartas: 'Cartas', radiestesia: 'Radiestesia' };
 
 // Card de grupo: 1 card com as variações (tiers) listadas dentro,
 // cada uma com Editar/Excluir próprios.
-function _catCardGrupo(g) {
+function _catCardGrupo(g, arrastavel = false) {
   const p = g.tiers[0];
   const sep  = p.nome.indexOf(' – ');
   const nome = (p.tier_label && sep > 0) ? p.nome.slice(0, sep) : p.nome;
   const todosInativos = g.tiers.every(t => t.ativo === false);
+  const dragAttrs = arrastavel ? `data-card-kind="grupo" data-card-grupo="${_catEsc(g.slug)}"` : '';
+  const handle    = arrastavel ? `<span class="cat-drag-handle" title="Arraste para reordenar" aria-hidden="true">⠿</span>` : '';
 
   const terapeutaTag = p.terapeuta
     ? `<span class="cat-card-terapeuta">${_CAT_TERAPEUTA_LABEL[p.terapeuta] || p.terapeuta}</span>`
@@ -126,7 +267,8 @@ function _catCardGrupo(g) {
   }).join('');
 
   return `
-    <div class="cat-card${todosInativos ? ' cat-card--inativo' : ''}" data-grupo="${_catEsc(g.slug)}">
+    <div class="cat-card${todosInativos ? ' cat-card--inativo' : ''}" data-grupo="${_catEsc(g.slug)}" ${dragAttrs}>
+      ${handle}
       ${img}
       <div class="cat-card-info">
         <div class="cat-card-nome">${_catEsc(nome)}</div>
@@ -138,9 +280,11 @@ function _catCardGrupo(g) {
   `;
 }
 
-function _catCard(t) {
+function _catCard(t, arrastavel = false) {
   const preco    = `R$ ${Number(t.preco_original || 0).toFixed(2).replace('.', ',')}`;
   const inativo  = t.ativo === false;
+  const dragAttrs = arrastavel ? `data-card-kind="single" data-card-id="${t.id}"` : '';
+  const handle    = arrastavel ? `<span class="cat-drag-handle" title="Arraste para reordenar" aria-hidden="true">⠿</span>` : '';
   const terapeutaTag = t.terapeuta
     ? `<span class="cat-card-terapeuta">${_CAT_TERAPEUTA_LABEL[t.terapeuta] || t.terapeuta}</span>`
     : `<span class="cat-card-terapeuta cat-card-terapeuta--missing">sem terapeuta</span>`;
@@ -161,7 +305,8 @@ function _catCard(t) {
        <button class="ag-btn ag-btn-danger ag-btn-sm" onclick="cat_excluir(${t.id})">Excluir</button>`;
 
   return `
-    <div class="cat-card${inativo ? ' cat-card--inativo' : ''}" data-id="${t.id}">
+    <div class="cat-card${inativo ? ' cat-card--inativo' : ''}" data-id="${t.id}" ${dragAttrs}>
+      ${handle}
       ${img}
       <div class="cat-card-info">
         <div class="cat-card-nome">${_catEsc(t.nome)} ${inativoTag}</div>
@@ -254,10 +399,6 @@ function _catRenderForm(t) {
               ${opt('camila', 'Camila', t.terapeuta || '')}
             </select>
           </div>
-          <div class="ag-form-group">
-            <label for="cat-ordem">Posição na lista</label>
-            <select id="cat-ordem" disabled><option>Selecione um terapeuta…</option></select>
-          </div>
         </div>
 
         <div class="ag-form-group">
@@ -342,12 +483,6 @@ function _catRenderForm(t) {
     if (wrapPerg) wrapPerg.style.display = chkPerg.checked ? '' : 'none';
   });
 
-  // Popular o select de posição com base no terapeuta atual
-  _catAtualizarOrdemSelect(t.terapeuta || '');
-  document.getElementById('cat-terapeuta')?.addEventListener('change', e => {
-    _catAtualizarOrdemSelect(e.target.value);
-  });
-
   // Fechar ao clicar no fundo
   overlay.addEventListener('click', e => {
     if (e.target === overlay) cat_fecharForm();
@@ -363,60 +498,6 @@ function _catRenderForm(t) {
 
 function _catEscHandler(e) {
   if (e.key === 'Escape') cat_fecharForm();
-}
-
-/* Monta o <select id="cat-ordem"> com posições relativas ao terapeuta.
-   Inativas não contam. Se editando, a leitura entra na contagem; se nova,
-   adiciona uma posição extra ao final. */
-function _catAtualizarOrdemSelect(terapeuta) {
-  const sel = document.getElementById('cat-ordem');
-  if (!sel) return;
-
-  if (!terapeuta) {
-    sel.disabled = true;
-    sel.innerHTML = '<option>Selecione um terapeuta…</option>';
-    return;
-  }
-
-  const ativasDoTerapeuta = _catCache.filter(x =>
-    x.terapeuta === terapeuta && x.ativo !== false
-  );
-  const editandoTrocouTerapeuta = _catEditandoId &&
-    !ativasDoTerapeuta.some(x => x.id === _catEditandoId);
-  const editandoMesmoTerapeuta = _catEditandoId &&
-    ativasDoTerapeuta.some(x => x.id === _catEditandoId);
-
-  // Quantos itens haverá na lista após salvar
-  const total = editandoMesmoTerapeuta
-    ? ativasDoTerapeuta.length
-    : ativasDoTerapeuta.length + 1;
-
-  // Posição padrão sugerida no select
-  let posPadrao;
-  if (editandoMesmoTerapeuta) {
-    // Mantém posição atual (ordena pela ordem real e descobre o índice)
-    const ordenadas = [...ativasDoTerapeuta].sort(_catCmpOrdem);
-    posPadrao = ordenadas.findIndex(x => x.id === _catEditandoId) + 1;
-  } else {
-    posPadrao = total; // entra no fim
-  }
-
-  sel.disabled = false;
-  sel.innerHTML = '';
-  for (let i = 1; i <= total; i++) {
-    const opt = document.createElement('option');
-    opt.value = String(i);
-    opt.textContent = `${i}ª de ${total}`;
-    if (i === posPadrao) opt.selected = true;
-    sel.appendChild(opt);
-  }
-
-  if (editandoTrocouTerapeuta) {
-    // Aviso visual sutil: trocou de terapeuta → vai pro fim por padrão
-    sel.title = 'Trocou de terapeuta — entrará no fim da lista do novo terapeuta';
-  } else {
-    sel.title = '';
-  }
 }
 
 function _catCmpOrdem(a, b) {
@@ -480,7 +561,6 @@ async function _catSalvar() {
   const desc      = document.getElementById('cat-desc')?.value?.trim() || null;
   const preco     = parseFloat(document.getElementById('cat-preco')?.value);
   const terapeuta = document.getElementById('cat-terapeuta')?.value || null;
-  const posicao   = parseInt(document.getElementById('cat-ordem')?.value, 10);
   const especial  = document.querySelector('input[name="cat-agenda"]:checked')?.value === 'especial';
   const badge     = document.querySelector('input[name="cat-badge"]:checked')?.value || null;
   const modalidade = document.querySelector('input[name="cat-modalidade"]:checked')?.value || 'mensagem';
@@ -491,7 +571,6 @@ async function _catSalvar() {
   if (!nome)                          { _toastAdmin('Informe o nome.', 'erro'); return; }
   if (isNaN(preco) || preco < 0)      { _toastAdmin('Preço inválido.', 'erro'); return; }
   if (!terapeuta)                     { _toastAdmin('Selecione um terapeuta.', 'erro'); return; }
-  if (isNaN(posicao) || posicao < 1)  { _toastAdmin('Selecione uma posição.', 'erro'); return; }
 
   const btn = document.getElementById('cat-btn-salvar');
   if (btn) { btn.disabled = true; btn.textContent = 'Salvando...'; }
@@ -512,6 +591,12 @@ async function _catSalvar() {
 
     const slug = atual?.slug || await _catSlugUnico(_catSlugify(nome));
 
+    // Ordem: mantém a atual se segue no mesmo terapeuta; senão entra no fim
+    // do bloco (novo ou trocou de terapeuta). A reordenação fina é por arrastar.
+    const ordem = (atual && atual.terapeuta === terapeuta && atual.ordem != null)
+      ? atual.ordem
+      : _catOrdemFimBloco(terapeuta);
+
     const payload = {
       nome,
       descricao:       desc,
@@ -519,7 +604,7 @@ async function _catSalvar() {
       imagem_url,
       slug,
       terapeuta,
-      ordem:           posicao * 10,
+      ordem,
       especial,
       badge:           badge || null,
       modalidade,
@@ -541,8 +626,6 @@ async function _catSalvar() {
       salvoId = data?.id;
     }
 
-    await _catRenumerarTerapeuta(terapeuta, salvoId, posicao);
-
     _toastAdmin('✅ Salvo com sucesso!', 'ok');
     cat_fecharForm();
     await inicializarCatalogo();
@@ -550,35 +633,6 @@ async function _catSalvar() {
     _toastAdmin('Erro ao salvar: ' + (e.message || e), 'erro');
     if (btn) { btn.disabled = false; btn.textContent = 'Salvar'; }
   }
-}
-
-/* Renumera todas as leituras ATIVAS do terapeuta com ordens 10, 20, 30…
-   garantindo que `idAlvo` fique na posição `posicaoAlvo` (1-based). */
-async function _catRenumerarTerapeuta(terapeuta, idAlvo, posicaoAlvo) {
-  const { data, error } = await supabase
-    .from('tipos_leitura')
-    .select('id, nome, ordem, ativo')
-    .eq('terapeuta', terapeuta)
-    .eq('ativo', true);
-  if (error) throw error;
-
-  const lista = (data || []).slice().sort(_catCmpOrdem);
-  const alvoIdx = lista.findIndex(x => x.id === idAlvo);
-  if (alvoIdx === -1) return; // alvo inativo ou de outro terapeuta — nada a fazer
-  const [alvo] = lista.splice(alvoIdx, 1);
-  const destino = Math.max(0, Math.min(lista.length, posicaoAlvo - 1));
-  lista.splice(destino, 0, alvo);
-
-  const updates = lista
-    .map((item, i) => ({ id: item.id, novaOrdem: (i + 1) * 10 }))
-    .filter(u => {
-      const original = (data || []).find(x => x.id === u.id);
-      return original && original.ordem !== u.novaOrdem;
-    });
-
-  await Promise.all(updates.map(u =>
-    supabase.from('tipos_leitura').update({ ordem: u.novaOrdem }).eq('id', u.id)
-  ));
 }
 
 async function _catSlugUnico(base) {
@@ -626,26 +680,17 @@ async function cat_excluir(id) {
 async function cat_reativar(id) {
   const t = _catCache.find(x => x.id === id);
 
+  // Reativa e joga pro fim do bloco do terapeuta (ordem livre no fim).
+  const novaOrdem = t?.terapeuta ? _catOrdemFimBloco(t.terapeuta) : undefined;
+  const patch = novaOrdem != null ? { ativo: true, ordem: novaOrdem } : { ativo: true };
+
   const { error } = await supabase
     .from('tipos_leitura')
-    .update({ ativo: true })
+    .update(patch)
     .eq('id', id);
   if (error) {
     _toastAdmin('Erro: ' + error.message, 'erro');
     return;
-  }
-
-  // Joga para o fim da lista do terapeuta dela
-  if (t?.terapeuta) {
-    const ativasDoTerapeuta = _catCache.filter(x =>
-      x.terapeuta === t.terapeuta && x.ativo !== false && x.id !== id
-    );
-    const posicaoFinal = ativasDoTerapeuta.length + 1;
-    try {
-      await _catRenumerarTerapeuta(t.terapeuta, id, posicaoFinal);
-    } catch (e) {
-      console.warn('Falha ao renumerar após reativar:', e);
-    }
   }
 
   _toastAdmin('✅ Leitura reativada.', 'ok');
