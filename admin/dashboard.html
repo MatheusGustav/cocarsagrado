@@ -131,10 +131,9 @@
         <p>Painel Administrativo</p>
       </div>
       <nav class="adm-nav" aria-label="Menu admin">
-        <a href="#agendamentos" class="active" id="nav-agendamentos" data-secao="agendamentos">✦ Agendamentos</a>
+        <a href="#agendamentos" class="active" id="nav-agendamentos" data-secao="agendamentos">✦ Painel</a>
         <a href="#financeiro" id="nav-financeiro" data-secao="financeiro">✦ Financeiro</a>
         <a href="#vagas" id="nav-vagas" data-secao="vagas">✦ Vagas</a>
-        <a href="#especial" id="nav-especial" data-secao="especial">✦ Agenda Especial</a>
         <a href="#descontos" id="nav-descontos" data-secao="descontos">✦ Descontos</a>
         <a href="#catalogo" id="nav-catalogo" data-secao="catalogo">✦ Catálogo</a>
         <a href="../index.html" target="_blank">✦ Ver site</a>
@@ -152,7 +151,7 @@
       <!-- AGENDAMENTOS -->
       <div id="secao-agendamentos">
         <header class="adm-main-header">
-          <h1>Agendamentos</h1>
+          <h1>Painel</h1>
           <div class="adm-header-actions">
             <span class="adm-realtime" id="adm-realtime" title="Status da conexão em tempo real">
               <span class="adm-realtime-dot"></span><span id="adm-realtime-txt">conectando…</span>
@@ -249,7 +248,7 @@
         </div>
       </div>
 
-      <!-- VAGAS -->
+      <!-- VAGAS (padrão + agenda especial) -->
       <div id="secao-vagas" style="display:none">
         <header class="adm-main-header">
           <h1>Vagas</h1>
@@ -257,49 +256,50 @@
         <div id="vagas-padrao-container">
           <div class="ag-loading"><div class="ag-spinner"></div> Carregando...</div>
         </div>
+
+        <!-- AGENDA ESPECIAL (subseção) -->
+        <section class="vagas-especial-bloco">
+          <h2 class="vagas-sub-titulo">Agenda Especial</h2>
+          <div class="esp-prof-btns" id="esp-prof-btns"></div>
+          <p class="esp-servicos-info">
+            Serviços: <strong id="esp-servicos-info"></strong>
+          </p>
+          <div class="esp-add-form">
+            <div class="ag-form-group">
+              <label for="esp-nova-data">Data</label>
+              <input type="date" id="esp-nova-data">
+            </div>
+            <div class="ag-form-group">
+              <label for="esp-nova-vagas">Vagas</label>
+              <select id="esp-nova-vagas">
+                <option value="1">1</option>
+                <option value="2">2</option>
+                <option value="3">3</option>
+                <option value="4">4</option>
+                <option value="5">5</option>
+              </select>
+            </div>
+            <div class="ag-form-group">
+              <label for="esp-nova-hora">Até</label>
+              <select id="esp-nova-hora"></select>
+            </div>
+            <button class="ag-btn ag-btn-primary ag-btn-sm esp-btn-add" id="esp-btn-adicionar" onclick="adicionarDataEspecial()">
+              + Adicionar
+            </button>
+          </div>
+          <div id="esp-lista" style="margin-top:20px;"></div>
+        </section>
       </div>
 
-      <!-- AGENDA ESPECIAL -->
-      <div id="secao-especial" style="display:none">
-        <header class="adm-main-header">
-          <h1>Agenda Especial</h1>
-        </header>
-        <div class="esp-prof-btns" id="esp-prof-btns"></div>
-        <p class="esp-servicos-info">
-          Serviços: <strong id="esp-servicos-info"></strong>
-        </p>
-        <div class="esp-add-form">
-          <div class="ag-form-group">
-            <label for="esp-nova-data">Data</label>
-            <input type="date" id="esp-nova-data">
-          </div>
-          <div class="ag-form-group">
-            <label for="esp-nova-vagas">Vagas</label>
-            <select id="esp-nova-vagas">
-              <option value="1">1</option>
-              <option value="2">2</option>
-              <option value="3">3</option>
-              <option value="4">4</option>
-              <option value="5">5</option>
-            </select>
-          </div>
-          <div class="ag-form-group">
-            <label for="esp-nova-hora">Até</label>
-            <select id="esp-nova-hora"></select>
-          </div>
-          <button class="ag-btn ag-btn-primary ag-btn-sm esp-btn-add" id="esp-btn-adicionar" onclick="adicionarDataEspecial()">
-            + Adicionar
-          </button>
-        </div>
-        <div id="esp-lista" style="margin-top:20px;"></div>
-      </div>
-
-      <!-- DESCONTOS -->
+      <!-- DESCONTOS (promoções + cupons) -->
       <div id="secao-descontos" style="display:none">
         <header class="adm-main-header">
           <h1>Descontos</h1>
         </header>
         <div id="descontos-container">
+          <div class="ag-loading"><div class="ag-spinner"></div> Carregando...</div>
+        </div>
+        <div id="cupons-container" style="margin-top:32px;">
           <div class="ag-loading"><div class="ag-spinner"></div> Carregando...</div>
         </div>
       </div>
@@ -333,6 +333,7 @@
 <script src="js/vagas-admin.js"></script>
 <script src="js/vagas-especial-admin.js"></script>
 <script src="js/descontos-admin.js"></script>
+<script src="js/cupons-admin.js"></script>
 <script src="js/catalogo-admin.js"></script>
 <script>
   // ============================================================
@@ -341,9 +342,8 @@
   const SECOES_ADMIN = {
     agendamentos: { el: 'secao-agendamentos', init: () => carregarAgendamentos() },
     financeiro:   { el: 'secao-financeiro',   init: () => inicializarFinanceiro() },
-    vagas:        { el: 'secao-vagas',        init: () => inicializarVagas() },
-    especial:     { el: 'secao-especial',     init: () => inicializarEspecial() },
-    descontos:    { el: 'secao-descontos',    init: () => inicializarDescontos() },
+    vagas:        { el: 'secao-vagas',        init: () => { inicializarVagas(); inicializarEspecial(); } },
+    descontos:    { el: 'secao-descontos',    init: () => { inicializarDescontos(); inicializarCupons(); } },
     catalogo:     { el: 'secao-catalogo',     init: () => inicializarCatalogo() },
   };
 

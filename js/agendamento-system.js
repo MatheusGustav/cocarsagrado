@@ -9,8 +9,15 @@ const Estado = {
   serviceId: null,
   // Carrinho multi-leitura
   carrinho: [],
+  cupom: null, // { codigo, valor } — desconto R$ fixo no total do pedido
   dadosPessoais: { nome: '', nascimento: '', whatsapp: '', email: '' },
 };
+
+// Desconto do cupom limitado ao total (nunca deixa o pedido negativo).
+function _cupomDesconto(totalFinal) {
+  if (!Estado.cupom) return 0;
+  return Math.min(Estado.cupom.valor, totalFinal);
+}
 
 const DIAS_PT  = ['Domingo','Segunda','Terça','Quarta','Quinta','Sexta','Sábado'];
 const MESES_PT = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
@@ -380,12 +387,14 @@ async function irParaPagamentoCarrinho() {
   // Calcula os itens (com desconto distribuído) ANTES de salvar/limpar o carrinho.
   // Esse mesmo snapshot alimenta a tela de pagamento.
   const itens = _aplicarDescontosCarrinho(Estado.carrinho);
+  const cupomSnap = Estado.cupom; // capturado antes de limpar
 
   try {
     const chave = await salvarMultiplosAgendamentos(itens);
     Estado.carrinho = [];
+    Estado.cupom = null;
     _renderizarCarrinho();
-    if (chave) redirecionarParaPagamento(chave, itens);
+    if (chave) redirecionarParaPagamento(chave, itens, cupomSnap);
   } catch (err) {
     console.error('irParaPagamentoCarrinho:', err);
     const msg = err?.userMessage ? err.message : 'Erro ao salvar. Tente novamente.';
@@ -613,6 +622,9 @@ function _renderizarCarrinho() {
       </div>`;
   });
 
+  const cupomDesc     = _cupomDesconto(totalFinal);
+  const totalComCupom = totalFinal - cupomDesc;
+
   html += `<div class="cart-total">
     <div class="cart-total-row">
       <span>Subtotal</span><span>${fmtBRL(totalOriginal)}</span>
@@ -622,11 +634,32 @@ function _renderizarCarrinho() {
       <span>Desconto</span><span>- ${fmtBRL(totalDesconto)}</span>
     </div>`;
   }
+  if (cupomDesc > 0) {
+    html += `<div class="cart-total-row cart-total-desc">
+      <span>Cupom ${_escCat(Estado.cupom.codigo)}</span><span>- ${fmtBRL(cupomDesc)}</span>
+    </div>`;
+  }
   html += `<div class="cart-total-row cart-total-final">
-      <span>Total</span><span>${fmtBRL(totalFinal)}</span>
+      <span>Total</span><span>${fmtBRL(totalComCupom)}</span>
     </div>
-  </div>
-  <p class="cart-entrega-aviso">📲 Sua leitura será enviada por WhatsApp até o horário indicado em cada item.</p>`;
+  </div>`;
+
+  // Campo de cupom (comunidade): aplica desconto fixo no total.
+  if (Estado.cupom) {
+    html += `<div class="cart-cupom cart-cupom-ok">
+      <span>🏷️ Cupom <strong>${_escCat(Estado.cupom.codigo)}</strong> aplicado</span>
+      <button type="button" class="cart-cupom-remover" onclick="removerCupom()">Remover</button>
+    </div>`;
+  } else {
+    html += `<div class="cart-cupom">
+      <input type="text" id="f-cupom" class="cart-cupom-input" placeholder="Tem um cupom?"
+             autocomplete="off" maxlength="32" onkeydown="if(event.key==='Enter'){event.preventDefault();aplicarCupom();}">
+      <button type="button" class="ag-btn ag-btn-outline cart-cupom-btn" onclick="aplicarCupom()">Aplicar</button>
+    </div>
+    <p class="cart-cupom-msg" id="cupom-msg" role="alert" aria-live="polite"></p>`;
+  }
+
+  html += `<p class="cart-entrega-aviso">📲 Sua leitura será enviada por WhatsApp até o horário indicado em cada item.</p>`;
 
   container.innerHTML = html;
 
@@ -644,6 +677,44 @@ function _renderizarCarrinho() {
   _atualizarBotoesCarrinho();
 }
 
+// ============================================================
+// CUPOM — valida via RPC validar_cupom (anon) e aplica no total.
+// ============================================================
+async function aplicarCupom() {
+  const input = document.getElementById('f-cupom');
+  const msg   = document.getElementById('cupom-msg');
+  const codigo = (input?.value || '').trim().toUpperCase();
+  if (!codigo) { if (msg) msg.textContent = 'Digite um código de cupom.'; return; }
+
+  const btn = document.querySelector('.cart-cupom-btn');
+  if (btn) { btn.disabled = true; btn.textContent = '...'; }
+
+  try {
+    const { data, error } = await supabase.rpc('validar_cupom', { p_codigo: codigo });
+    const linha = Array.isArray(data) ? data[0] : data;
+    if (error) throw error;
+    if (linha?.valido) {
+      Estado.cupom = { codigo, valor: Number(linha.valor_desconto) || 0 };
+      _renderizarCarrinho();
+    } else {
+      if (msg) msg.textContent = 'Cupom inválido ou expirado.';
+      if (btn) { btn.disabled = false; btn.textContent = 'Aplicar'; }
+    }
+  } catch (e) {
+    console.error('aplicarCupom:', e);
+    if (msg) msg.textContent = 'Erro ao validar o cupom. Tente novamente.';
+    if (btn) { btn.disabled = false; btn.textContent = 'Aplicar'; }
+  }
+}
+
+function removerCupom() {
+  Estado.cupom = null;
+  _renderizarCarrinho();
+}
+
+window.aplicarCupom = aplicarCupom;
+window.removerCupom = removerCupom;
+
 function _atualizarBotoesCarrinho() {
   const addBtn = document.getElementById('btn-add-leitura');
   const payBtn = document.getElementById('btn-ir-pagar');
@@ -651,7 +722,8 @@ function _atualizarBotoesCarrinho() {
   if (payBtn) {
     if (Estado.carrinho.length > 0) {
       const itens = _aplicarDescontosCarrinho(Estado.carrinho);
-      const total = itens.reduce((s, i) => s + i.valor_final, 0);
+      const totalFinal = itens.reduce((s, i) => s + i.valor_final, 0);
+      const total = totalFinal - _cupomDesconto(totalFinal);
       const n = Estado.carrinho.length;
       const label = n === 1 ? '1 leitura' : `${n} leituras`;
       payBtn.style.display = '';
@@ -726,6 +798,8 @@ async function salvarMultiplosAgendamentos(itensPre) {
   const itens = itensPre || _aplicarDescontosCarrinho(Estado.carrinho);
   const chave = await gerarChavePedido();
   const totalFinal = itens.reduce((s, i) => s + i.valor_final, 0);
+  const cupomDesc  = _cupomDesconto(totalFinal);
+  const totalCobrar = totalFinal - cupomDesc;
   const nome = Estado.dadosPessoais.nome;
   const nascimento = Estado.dadosPessoais.nascimento || null;
 
@@ -752,8 +826,9 @@ async function salvarMultiplosAgendamentos(itensPre) {
     p_nascimento: nascimento,
     p_whatsapp: whatsapp,
     p_email: Estado.dadosPessoais.email || null,
-    p_valor_total: totalFinal,
+    p_valor_total: totalCobrar,
     p_itens: payloadItens,
+    p_cupom_codigo: Estado.cupom?.codigo || null,
   });
 
   if (rpcErr) {

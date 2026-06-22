@@ -249,6 +249,8 @@ CREATE TABLE public.pedidos (
   cliente_email       TEXT,
   valor_total         NUMERIC(10,2) NOT NULL CHECK (valor_total >= 0),
   aceitou_desconto_10 BOOLEAN NOT NULL DEFAULT FALSE,
+  cupom_codigo        TEXT,
+  cupom_desconto      NUMERIC(10,2) NOT NULL DEFAULT 0 CHECK (cupom_desconto >= 0),
   status              TEXT NOT NULL DEFAULT 'pendente'
                       CHECK (status IN ('pendente','pago','cancelado')),
   metodo_pagamento    TEXT,
@@ -596,7 +598,8 @@ CREATE OR REPLACE FUNCTION public.criar_pedido(
   p_whatsapp     text,
   p_email        text,
   p_valor_total  numeric,
-  p_itens        jsonb
+  p_itens        jsonb,
+  p_cupom_codigo text DEFAULT NULL
 )
 RETURNS text
 LANGUAGE plpgsql
@@ -616,6 +619,15 @@ DECLARE
   v_min_final      numeric;
   v_soma           numeric := 0;
   v_cfg            jsonb;
+  v_cupom_cod      text;
+  v_cupom_val      numeric := 0;
+  v_cupom_desc     numeric := 0;
+  v_ag_id          bigint;
+  v_ids            bigint[]  := '{}';
+  v_vals           numeric[] := '{}';
+  v_i              integer;
+  v_share_cents    numeric;
+  v_resto_cents    numeric;
 BEGIN
   v_n := COALESCE(jsonb_array_length(p_itens), 0);
   IF v_n < 1 OR v_n > 4 THEN
@@ -624,12 +636,24 @@ BEGIN
 
   SELECT valor INTO v_cfg FROM public.configuracoes WHERE chave = 'descontos';
 
+  -- Cupom (R$ fixo no total). Valida cedo pra falhar antes de inserir.
+  v_cupom_cod := NULLIF(upper(trim(COALESCE(p_cupom_codigo, ''))), '');
+  IF v_cupom_cod IS NOT NULL THEN
+    SELECT valor_desconto INTO v_cupom_val
+    FROM public.cupons
+    WHERE upper(codigo) = v_cupom_cod
+      AND ativo = TRUE;
+    IF v_cupom_val IS NULL THEN
+      RAISE EXCEPTION 'pedido_invalido: cupom inválido ou inativo';
+    END IF;
+  END IF;
+
   INSERT INTO public.pedidos (
     chave_pedido, cliente_nome, cliente_nascimento, cliente_whatsapp,
-    cliente_email, valor_total, status
+    cliente_email, valor_total, status, cupom_codigo
   ) VALUES (
     p_chave, p_nome, p_nascimento, p_whatsapp,
-    p_email, p_valor_total, 'pendente'
+    p_email, p_valor_total, 'pendente', v_cupom_cod
   )
   RETURNING id INTO v_pedido_id;
 
@@ -703,18 +727,51 @@ BEGIN
       v_valor_final,
       v_tipo.especial,  -- vem do catálogo, não do cliente (impede burlar a trava de vagas)
       'pendente'
-    );
+    )
+    RETURNING id INTO v_ag_id;
+
+    v_ids  := array_append(v_ids, v_ag_id);
+    v_vals := array_append(v_vals, v_valor_final);
   END LOOP;
 
-  IF abs(p_valor_total - v_soma) > 0.05 THEN
+  -- Cupom: nunca passa do total das leituras.
+  v_cupom_desc := least(v_cupom_val, v_soma);
+
+  IF abs(p_valor_total - (v_soma - v_cupom_desc)) > 0.05 THEN
     RAISE EXCEPTION 'pedido_invalido: total não confere com a soma das leituras';
   END IF;
+
+  -- Distribui o desconto do cupom entre os filhos (proporcional, em centavos),
+  -- para que cada agendamento.valor_final reflita o valor REALMENTE cobrado.
+  -- Mantém pedido.valor_total = soma(valor_final) e os relatórios corretos.
+  IF v_cupom_desc > 0 AND v_soma > 0 THEN
+    v_resto_cents := round(v_cupom_desc * 100);
+    FOR v_i IN 1 .. array_length(v_ids, 1) LOOP
+      IF v_i = array_length(v_ids, 1) THEN
+        v_share_cents := least(v_resto_cents, round(v_vals[v_i] * 100));
+      ELSE
+        v_share_cents := floor(round(v_cupom_desc * 100) * round(v_vals[v_i] * 100)
+                               / round(v_soma * 100));
+        v_resto_cents := v_resto_cents - v_share_cents;
+      END IF;
+      IF v_share_cents > 0 THEN
+        UPDATE public.agendamentos
+        SET desconto_aplicado = desconto_aplicado + v_share_cents / 100.0,
+            valor_final       = valor_final       - v_share_cents / 100.0
+        WHERE id = v_ids[v_i];
+      END IF;
+    END LOOP;
+  END IF;
+
+  UPDATE public.pedidos
+  SET cupom_desconto = v_cupom_desc
+  WHERE id = v_pedido_id;
 
   RETURN p_chave;
 END;
 $$;
 
-GRANT EXECUTE ON FUNCTION public.criar_pedido(text, text, date, text, text, numeric, jsonb) TO anon;
+GRANT EXECUTE ON FUNCTION public.criar_pedido(text, text, date, text, text, numeric, jsonb, text) TO anon;
 
 -- pedidos — anon SÓ INSERT (criar pedido). SELECT bloqueado (LGPD).
 -- authenticated admin ALL via is_admin().
@@ -760,6 +817,7 @@ CREATE TABLE IF NOT EXISTS public.lancamentos_financeiros (
   descricao TEXT NOT NULL,
   valor     NUMERIC(10,2) NOT NULL CHECK (valor <> 0),
   categoria TEXT NOT NULL DEFAULT 'trabalho' CHECK (categoria IN ('trabalho', 'outro', 'despesa')),
+  terapeuta TEXT CHECK (terapeuta IS NULL OR terapeuta IN ('matheus', 'camila')),  -- NULL = Geral
   criado_em TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
@@ -789,6 +847,50 @@ CREATE POLICY "anon_select_config" ON public.configuracoes
 
 CREATE POLICY "auth_admin_config" ON public.configuracoes
   FOR ALL TO authenticated USING (is_admin()) WITH CHECK (is_admin());
+
+-- ============================================================
+-- 8b) CUPONS (desconto R$ fixo no total — comunidade do WhatsApp)
+-- ============================================================
+-- anon NÃO lê a tabela (evita enumerar códigos); valida via RPC validar_cupom.
+-- criar_pedido revalida o cupom server-side. Não acumula com promoção.
+CREATE TABLE IF NOT EXISTS public.cupons (
+  codigo         TEXT PRIMARY KEY,                      -- sempre em CAIXA ALTA
+  valor_desconto NUMERIC(10,2) NOT NULL CHECK (valor_desconto > 0),
+  descricao      TEXT,
+  ativo          BOOLEAN NOT NULL DEFAULT TRUE,
+  criado_em      TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+ALTER TABLE public.cupons ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "auth_admin_cupons" ON public.cupons;
+CREATE POLICY "auth_admin_cupons" ON public.cupons
+  FOR ALL TO authenticated USING (is_admin()) WITH CHECK (is_admin());
+
+-- validar_cupom: anon checa um código e recebe só {valido, valor_desconto}.
+CREATE OR REPLACE FUNCTION public.validar_cupom(p_codigo text)
+RETURNS TABLE(valido boolean, valor_desconto numeric)
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v numeric;
+BEGIN
+  SELECT c.valor_desconto INTO v
+  FROM public.cupons c
+  WHERE upper(c.codigo) = upper(trim(p_codigo))
+    AND c.ativo = TRUE;
+
+  IF v IS NULL THEN
+    RETURN QUERY SELECT FALSE, 0::numeric;
+  ELSE
+    RETURN QUERY SELECT TRUE, v;
+  END IF;
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION public.validar_cupom(text) TO anon, authenticated;
 
 -- ============================================================
 -- 9) REALTIME — dashboard escuta as tabelas agendamentos e pedidos

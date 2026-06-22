@@ -492,6 +492,68 @@ body.modal-aberto { overflow: hidden; }
   text-align: center;
   line-height: 1.4;
 }
+/* Cupom de desconto (revisão do carrinho) */
+.cart-cupom {
+  display: flex;
+  gap: 8px;
+  margin-top: 14px;
+  align-items: center;
+}
+.cart-cupom-input {
+  flex: 1;
+  min-width: 0;
+  padding: 10px 12px;
+  border: 1px solid rgba(201, 154, 78, 0.35);
+  border-radius: 10px;
+  font-size: .95rem;
+  text-transform: uppercase;
+  background: var(--bg, #fff);
+  color: inherit;
+}
+.cart-cupom-input:focus {
+  outline: none;
+  border-color: var(--secondary, #A67C32);
+}
+.cart-cupom-btn {
+  flex: 0 0 auto;
+  width: auto;
+  padding: 10px 16px;
+  white-space: nowrap;
+}
+.cart-cupom-msg {
+  margin: 6px 2px 0;
+  font-size: .82rem;
+  color: #b91c1c;
+  min-height: 1em;
+}
+.cart-cupom-ok {
+  justify-content: space-between;
+  background: rgba(6, 95, 70, 0.08);
+  border: 1px solid rgba(6, 95, 70, 0.2);
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-size: .9rem;
+  color: #065f46;
+}
+.cart-cupom-remover {
+  background: none;
+  border: none;
+  color: #b91c1c;
+  font-weight: 600;
+  cursor: pointer;
+  font-size: .85rem;
+  padding: 2px 4px;
+}
+.cart-cupom-remover:hover { text-decoration: underline; }
+[data-theme="dark"] .cart-cupom-input {
+  background: rgba(217, 183, 118, 0.05);
+  border-color: rgba(217, 183, 118, 0.3);
+}
+[data-theme="dark"] .cart-cupom-ok {
+  background: rgba(52, 211, 153, 0.1);
+  border-color: rgba(52, 211, 153, 0.25);
+  color: #6ee7b7;
+}
 .ag-btn-spinner {
   display: inline-block;
   width: 14px;

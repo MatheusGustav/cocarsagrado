@@ -143,7 +143,7 @@ function _mostrarTela(num, animacao) {
 // ============================================================
 // Override: mostra tela 2 em vez de redirecionar
 // ============================================================
-window.redirecionarParaPagamento = function(chave, carrinhoSnap) {
+window.redirecionarParaPagamento = function(chave, carrinhoSnap, cupomSnap) {
   // Usa o snapshot do carrinho (capturado ANTES de salvar/limpar). Fallback:
   // estado atual e, por último, 1 item a partir de tipoSelecionado (legado).
   let lista = (Array.isArray(carrinhoSnap) && carrinhoSnap.length)
@@ -168,11 +168,29 @@ window.redirecionarParaPagamento = function(chave, carrinhoSnap) {
 
   const totalFinal = lista.reduce((s, i) => s + (i.valor_final || 0), 0);
 
-  const items = lista.map(item => ({
+  // Cupom (R$ fixo no total). Distribui o desconto proporcionalmente entre os
+  // itens (em centavos) para que a soma dos items[] bata com o total cobrado —
+  // a InfinitePay soma os items e não aceita linha de desconto negativa.
+  const baseCents  = Math.round(totalFinal * 100);
+  const cupomCents = (cupomSnap && baseCents > 0)
+    ? Math.min(Math.round((cupomSnap.valor || 0) * 100), baseCents)
+    : 0;
+
+  const cents = lista.map(i => Math.round((i.valor_final || 0) * 100));
+  let restanteCupom = cupomCents;
+  const descCents = cents.map((c, idx) => {
+    if (idx === cents.length - 1) return restanteCupom;       // último abate o resto
+    const d = baseCents > 0 ? Math.floor(cupomCents * c / baseCents) : 0;
+    restanteCupom -= d;
+    return d;
+  });
+
+  const items = lista.map((item, idx) => ({
     description: item.tipo.tier_label || item.tipo.nome,
-    price: (item.valor_final || 0).toFixed(2),
+    price: ((cents[idx] - descCents[idx]) / 100).toFixed(2),
   }));
   const labelLeitura = items.map(i => i.description).join(' + ');
+  const totalCobrar  = (baseCents - cupomCents) / 100;
 
   const nome = Estado.dadosPessoais.nome || document.getElementById('f-nome')?.value?.trim() || '';
   const whatsapp = Estado.dadosPessoais.whatsapp || (typeof obterWhatsappCompleto === 'function' ? obterWhatsappCompleto() : '');
@@ -188,7 +206,9 @@ window.redirecionarParaPagamento = function(chave, carrinhoSnap) {
     const hora = (item.horario && item.horario !== '00:00') ? ` até ${item.horario.slice(0,5)}` : '';
     const obsTxt = item.observacoes ? ` — ${String(item.observacoes).replace(/\n/g, ' | ')}` : '';
     return `• ${item.tipo.tier_label || item.tipo.nome} (${dataFmt}${hora})${obsTxt}`;
-  }).join('\n');
+  }).join('\n') + (cupomCents > 0
+    ? `\n🏷️ Cupom ${cupomSnap.codigo}: -R$ ${(cupomCents / 100).toFixed(2).replace('.', ',')}`
+    : '');
 
   const dataLabel = lista.length === 1
     ? (() => { const [y, m, dd] = String(lista[0].data).split('-'); return `${parseInt(dd, 10)} de ${MESES_PT[parseInt(m, 10) - 1]} de ${y}`; })()
@@ -202,7 +222,7 @@ window.redirecionarParaPagamento = function(chave, carrinhoSnap) {
     terapeuta: lista[0]?.terapeuta || 'camila',
     data:      dataLabel,
     hora:      '',
-    valor:     totalFinal.toFixed(2).replace('.', ','),
+    valor:     totalCobrar.toFixed(2).replace('.', ','),
     nome,
     nascimento: nascFmt,
     obs: '',
