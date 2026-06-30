@@ -554,9 +554,10 @@ SECURITY DEFINER
 SET search_path = public
 AS $$
 DECLARE
-  v_id bigint;
+  v_id    bigint;
+  v_cupom text;
 BEGIN
-  SELECT id INTO v_id
+  SELECT id, cupom_codigo INTO v_id, v_cupom
   FROM public.pedidos
   WHERE chave_pedido = p_chave
     AND status = 'pendente'
@@ -574,6 +575,14 @@ BEGIN
   SET status = 'pago', pago_em = NOW(), metodo_pagamento = p_metodo
   WHERE pedido_id = v_id
     AND status = 'pendente';
+
+  -- Cupom de uso único: morre após o pagamento confirmado.
+  IF v_cupom IS NOT NULL THEN
+    UPDATE public.cupons
+    SET ativo = FALSE
+    WHERE upper(codigo) = upper(v_cupom)
+      AND uso_unico = TRUE;
+  END IF;
 
   RETURN 1;
 END;
@@ -858,6 +867,7 @@ CREATE TABLE IF NOT EXISTS public.cupons (
   valor_desconto NUMERIC(10,2) NOT NULL CHECK (valor_desconto > 0),
   descricao      TEXT,
   ativo          BOOLEAN NOT NULL DEFAULT TRUE,
+  uso_unico      BOOLEAN NOT NULL DEFAULT FALSE,        -- morre ao confirmar pagamento
   criado_em      TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
