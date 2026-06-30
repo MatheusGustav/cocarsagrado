@@ -3789,6 +3789,20 @@ body.drawer-aberto { overflow: hidden; }
 }
 .cup-card-valor { font-size: .9rem; font-weight: 600; }
 .cup-card-desc { font-size: .82rem; color: var(--text-muted, #6b7280); }
+.cup-card-badge {
+  align-self: flex-start;
+  margin-top: 2px;
+  padding: 2px 9px;
+  border-radius: 999px;
+  font-size: .68rem;
+  font-weight: 700;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  color: var(--secondary, #A67C32);
+  background: rgba(201,168,76,0.14);
+  border: 1px solid rgba(201,168,76,0.35);
+}
+.cup-campo-uso { justify-content: flex-end; }
 .cup-card-acoes { display: flex; align-items: center; gap: 14px; flex: 0 0 auto; }
 @media (max-width: 560px) {
   .cup-form-row { flex-direction: column; align-items: stretch; }
