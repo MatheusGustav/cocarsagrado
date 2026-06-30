@@ -630,7 +630,8 @@
        DRAWER "MINHA CONTA" — login/conta opcional via OTP por e-mail
        ============================================================ -->
   <div id="contaDrawerOverlay" class="conta-drawer-overlay" role="dialog" aria-modal="true" aria-labelledby="conta-drawer-title">
-    <div class="conta-drawer-panel" role="document">
+    <div class="conta-drawer-panel" id="contaDrawerPanel" role="document">
+      <div class="conta-drawer-resize" id="contaDrawerResize" role="separator" aria-orientation="vertical" aria-label="Ampliar painel" title="Arraste para ampliar"></div>
       <button type="button" class="conta-drawer-fechar" id="contaDrawerFechar" aria-label="Fechar">✕</button>
 
       <!-- Estado: deslogado, passo 1 — pedir e-mail -->
@@ -658,11 +659,45 @@
         <button type="button" class="conta-drawer-link" id="contaVoltarEmail">← Usar outro e-mail</button>
       </div>
 
+      <!-- Estado: 1º login — perfil ainda não existe, pede os dados de uma vez -->
+      <div class="conta-drawer-tela" id="contaTelaPerfil" hidden>
+        <h2 class="conta-drawer-titulo">Quase lá</h2>
+        <p class="conta-drawer-sub">Preencha seus dados uma vez — nos próximos agendamentos, mesmo em outro aparelho, já vêm prontos.</p>
+        <form id="contaFormPerfil" class="conta-drawer-form" novalidate>
+          <label for="conta-perfil-nome">Nome completo</label>
+          <input type="text" id="conta-perfil-nome" name="nome" placeholder="Seu nome completo" required autocomplete="name">
+
+          <label for="conta-perfil-nasc">Data de nascimento</label>
+          <input type="text" id="conta-perfil-nasc" name="nascimento" placeholder="DD/MM/AAAA" inputmode="numeric" maxlength="10" required autocomplete="bday">
+
+          <label for="conta-perfil-fone">WhatsApp</label>
+          <div class="conta-drawer-fone-row">
+            <select id="conta-perfil-ddi" name="ddi" autocomplete="tel-country-code">
+              <option value="+55">🇧🇷 +55</option>
+              <option value="+1">🇺🇸 +1</option>
+              <option value="+351">🇵🇹 +351</option>
+            </select>
+            <input type="tel" id="conta-perfil-fone" name="fone" placeholder="(27) 99999-9999" required autocomplete="tel-national">
+          </div>
+
+          <div class="conta-drawer-erro" id="contaPerfilErro" hidden></div>
+          <button type="submit" class="conta-drawer-btn" id="contaPerfilBtn">Salvar e continuar</button>
+        </form>
+      </div>
+
       <!-- Estado: logado -->
       <div class="conta-drawer-tela" id="contaTelaLogado" hidden>
         <h2 class="conta-drawer-titulo">Olá, <span id="contaNomeLogado">—</span></h2>
         <p class="conta-drawer-sub" id="contaEmailLogado"></p>
         <button type="button" class="conta-drawer-btn conta-drawer-btn--sair" id="contaSairBtn">Sair</button>
+      </div>
+
+      <!-- Estado: admin -->
+      <div class="conta-drawer-tela" id="contaTelaAdmin" hidden>
+        <h2 class="conta-drawer-titulo">Painel administrativo</h2>
+        <p class="conta-drawer-sub" id="contaEmailAdmin"></p>
+        <a href="admin/dashboard.html" class="conta-drawer-btn" id="contaAbrirPainel">Abrir painel</a>
+        <button type="button" class="conta-drawer-btn conta-drawer-btn--sair" id="contaSairAdminBtn">Sair</button>
       </div>
     </div>
   </div>

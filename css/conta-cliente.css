@@ -20,8 +20,8 @@ body.conta-drawer-aberto { overflow: hidden; }
   top: 0;
   right: 0;
   height: 100%;
-  width: 360px;
-  max-width: 100%;
+  width: var(--conta-drawer-width, 360px);
+  max-width: 95vw;
   background: #FFFDF8;
   border-left: 1px solid rgba(201, 154, 78, 0.2);
   box-shadow: -8px 0 40px rgba(31, 51, 31, 0.25);
@@ -33,8 +33,46 @@ body.conta-drawer-aberto { overflow: hidden; }
 }
 .conta-drawer-overlay.open .conta-drawer-panel { transform: translateX(0); }
 
+/* Enquanto arrasta a alça, desliga a transição pra acompanhar o cursor sem lag */
+.conta-drawer-panel.is-resizing { transition: none; }
+
+/* Alça na borda esquerda (linha de divisão) — desktop só */
+.conta-drawer-resize {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 10px;
+  height: 100%;
+  cursor: ew-resize;
+  touch-action: none;
+  z-index: 2;
+}
+.conta-drawer-resize::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 3px;
+  transform: translateY(-50%);
+  width: 3px;
+  height: 44px;
+  border-radius: 3px;
+  background: rgba(201, 154, 78, 0.35);
+  transition: background 0.2s;
+}
+.conta-drawer-resize:hover::after,
+.conta-drawer-panel.is-resizing .conta-drawer-resize::after {
+  background: var(--color-gold);
+}
+
 @media (max-width: 480px) {
-  .conta-drawer-panel { width: 100%; border-left: none; }
+  .conta-drawer-panel {
+    width: 100%;
+    max-width: 100%;
+    border-left: none;
+    /* Deslize suave da direita pra esquerda, cobrindo a tela toda (sem overshoot) */
+    transition: transform 0.32s ease-out;
+  }
+  .conta-drawer-resize { display: none; }
 }
 
 .conta-drawer-fechar {
@@ -85,6 +123,17 @@ body.conta-drawer-aberto { overflow: hidden; }
   border-color: var(--color-gold);
 }
 
+.conta-drawer-fone-row { display: flex; gap: 8px; margin-bottom: 4px; }
+.conta-drawer-fone-row select {
+  flex: 0 0 90px;
+  padding: 12px 6px;
+  border-radius: 10px;
+  border: 1px solid rgba(31, 51, 31, 0.2);
+  font-size: 0.95rem;
+  font-family: inherit;
+}
+.conta-drawer-fone-row input { flex: 1; margin-bottom: 0; }
+
 .conta-drawer-erro {
   color: #B3261E;
   font-size: 0.82rem;
@@ -92,6 +141,9 @@ body.conta-drawer-aberto { overflow: hidden; }
 }
 
 .conta-drawer-btn {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
   margin-top: 8px;
   padding: 12px 16px;
   border-radius: 10px;
@@ -100,6 +152,8 @@ body.conta-drawer-aberto { overflow: hidden; }
   color: var(--color-gold);
   font-weight: 700;
   font-size: 0.95rem;
+  text-align: center;
+  text-decoration: none;
   cursor: pointer;
   transition: opacity 0.2s, transform 0.1s ease;
 }
