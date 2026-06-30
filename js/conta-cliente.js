@@ -8,10 +8,11 @@ document.addEventListener('DOMContentLoaded', () => {
   const fechar    = document.getElementById('contaDrawerFechar');
   const gatilhos  = document.querySelectorAll('[data-cs-account]');
 
-  const telaEmail   = document.getElementById('contaTelaEmail');
-  const telaCodigo  = document.getElementById('contaTelaCodigo');
-  const telaPerfil  = document.getElementById('contaTelaPerfil');
-  const telaLogado  = document.getElementById('contaTelaLogado');
+  const telaEmail    = document.getElementById('contaTelaEmail');
+  const telaCodigo   = document.getElementById('contaTelaCodigo');
+  const telaPerfil   = document.getElementById('contaTelaPerfil');
+  const telaReaceite = document.getElementById('contaTelaReaceite');
+  const telaLogado   = document.getElementById('contaTelaLogado');
 
   const formEmail   = document.getElementById('contaFormEmail');
   const inputEmail  = document.getElementById('conta-email');
@@ -32,6 +33,12 @@ document.addEventListener('DOMContentLoaded', () => {
   const perfilFone   = document.getElementById('conta-perfil-fone');
   const perfilErro   = document.getElementById('contaPerfilErro');
   const perfilBtn    = document.getElementById('contaPerfilBtn');
+  const perfilTermos = document.getElementById('conta-perfil-termos');
+
+  const formReaceite   = document.getElementById('contaFormReaceite');
+  const reaceiteTermos = document.getElementById('conta-reaceite-termos');
+  const reaceiteErro   = document.getElementById('contaReaceiteErro');
+  const reaceiteBtn    = document.getElementById('contaReaceiteBtn');
 
   const telaAdmin     = document.getElementById('contaTelaAdmin');
   const emailAdminEl  = document.getElementById('contaEmailAdmin');
@@ -143,8 +150,29 @@ document.addEventListener('DOMContentLoaded', () => {
   // Trocar de tela dentro do drawer
   // ============================================================
   function mostrarTela(tela) {
-    [telaEmail, telaCodigo, telaPerfil, telaLogado, telaAdmin].forEach(t => { if (t) t.hidden = (t !== tela); });
+    [telaEmail, telaCodigo, telaPerfil, telaReaceite, telaLogado, telaAdmin].forEach(t => { if (t) t.hidden = (t !== tela); });
   }
+
+  // ============================================================
+  // Modal de Termos de Uso — abre por qualquer link [data-cs-termos]
+  // (form de perfil, re-aceite e checkbox do carrinho)
+  // ============================================================
+  const termosOverlay = document.getElementById('termosModalOverlay');
+  const termosFechar  = document.getElementById('termosModalFechar');
+  function abrirTermos() { if (termosOverlay) termosOverlay.hidden = false; }
+  function fecharTermos() { if (termosOverlay) termosOverlay.hidden = true; }
+  document.addEventListener('click', (e) => {
+    if (e.target.closest('[data-cs-termos]')) { e.preventDefault(); abrirTermos(); }
+  });
+  termosFechar?.addEventListener('click', fecharTermos);
+  termosOverlay?.addEventListener('click', (e) => { if (e.target === termosOverlay) fecharTermos(); });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && termosOverlay && !termosOverlay.hidden) fecharTermos();
+  });
+
+  // Botão só libera depois de marcar "Li e concordo".
+  perfilTermos?.addEventListener('change', () => { if (perfilBtn) perfilBtn.disabled = !perfilTermos.checked; });
+  reaceiteTermos?.addEventListener('change', () => { if (reaceiteBtn) reaceiteBtn.disabled = !reaceiteTermos.checked; });
 
   function limparErro(el) { el.hidden = true; el.textContent = ''; }
   function mostrarErroEl(el, msg) { el.textContent = msg; el.hidden = false; }
@@ -224,6 +252,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (nome.length < 3) { mostrarErroEl(perfilErro, 'Nome deve ter pelo menos 3 caracteres.'); return; }
     if (!nascIso) { mostrarErroEl(perfilErro, 'Data de nascimento inválida.'); return; }
     if (fone.length < 6) { mostrarErroEl(perfilErro, 'Número inválido.'); return; }
+    if (!perfilTermos?.checked) { mostrarErroEl(perfilErro, 'É preciso aceitar os Termos de Uso.'); return; }
 
     const { data: { user } } = await window.supabase.auth.getUser();
     if (!user) return;
@@ -236,6 +265,8 @@ document.addEventListener('DOMContentLoaded', () => {
       nome,
       nascimento: nascIso,
       whatsapp,
+      termos_versao: window.TERMOS_VERSAO,
+      termos_aceitos_em: new Date().toISOString(),
     });
     perfilBtn.disabled = false;
     perfilBtn.textContent = 'Salvar e continuar';
@@ -252,6 +283,34 @@ document.addEventListener('DOMContentLoaded', () => {
       }));
     }
 
+    atualizarUiLogado(await window.supabase.auth.getSession().then(r => r.data.session));
+  });
+
+  // ============================================================
+  // Re-aceite — termos mudaram desde o último aceite do cliente.
+  // Dados já existem; só atualiza a versão/data aceita no perfil.
+  // ============================================================
+  formReaceite?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    limparErro(reaceiteErro);
+    if (!reaceiteTermos?.checked) { mostrarErroEl(reaceiteErro, 'É preciso aceitar os Termos de Uso.'); return; }
+
+    const { data: { user } } = await window.supabase.auth.getUser();
+    if (!user) return;
+
+    reaceiteBtn.disabled = true;
+    reaceiteBtn.textContent = 'Salvando…';
+    const { error } = await window.supabase.from('perfis').update({
+      termos_versao: window.TERMOS_VERSAO,
+      termos_aceitos_em: new Date().toISOString(),
+    }).eq('id', user.id);
+    reaceiteBtn.textContent = 'Concordar e continuar';
+
+    if (error) {
+      reaceiteBtn.disabled = false;
+      mostrarErroEl(reaceiteErro, 'Não foi possível salvar. Tente novamente.');
+      return;
+    }
     atualizarUiLogado(await window.supabase.auth.getSession().then(r => r.data.session));
   });
 
@@ -280,15 +339,23 @@ document.addEventListener('DOMContentLoaded', () => {
   async function buscarPerfil(userId) {
     const { data } = await window.supabase
       .from('perfis')
-      .select('nome')
+      .select('nome, termos_versao')
       .eq('id', userId)
       .maybeSingle();
     return data;
   }
 
+  // Avisa o carrinho se o cliente logado já tem os termos aceitos na
+  // versão atual — nesse caso o checkout não repete o checkbox.
+  function definirTermosOk(ok) {
+    window._csTermosOk = ok;
+    if (typeof window._atualizarBotoesCarrinho === 'function') window._atualizarBotoesCarrinho();
+  }
+
   async function atualizarUiLogado(session) {
     if (!session) {
       atualizarIconeNav(false, '');
+      definirTermosOk(false);
       mostrarTela(telaEmail);
       return;
     }
@@ -300,6 +367,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (ehAdmin) {
       emailAdminEl.textContent = email;
       atualizarIconeNav(true, email.trim().charAt(0).toUpperCase());
+      definirTermosOk(false);
       mostrarTela(telaAdmin);
       return;
     }
@@ -309,11 +377,27 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!perfil) {
       // 1º login: ainda não tem perfil — pede os dados antes de liberar a conta.
       atualizarIconeNav(false, '');
+      definirTermosOk(false);
       formPerfil?.reset();
+      if (perfilBtn) perfilBtn.disabled = true;
       limparErro(perfilErro);
       mostrarTela(telaPerfil);
       return;
     }
+
+    // Termos mudaram desde o último aceite → pede re-aceite antes de liberar.
+    if (perfil.termos_versao !== window.TERMOS_VERSAO) {
+      atualizarIconeNav(false, '');
+      definirTermosOk(false);
+      formReaceite?.reset();
+      if (reaceiteBtn) reaceiteBtn.disabled = true;
+      limparErro(reaceiteErro);
+      mostrarTela(telaReaceite);
+      return;
+    }
+
+    // Cliente logado com termos em dia: checkout não precisa repetir o aceite.
+    definirTermosOk(true);
 
     const inicial = (perfil.nome || email || '?').trim().charAt(0).toUpperCase();
     nomeLogadoEl.textContent  = perfil.nome || email;

@@ -949,6 +949,11 @@ CREATE TABLE public.perfis (
   nome       text NOT NULL,
   nascimento date NOT NULL,
   whatsapp   text NOT NULL,
+  -- Aceite de termos: qual versão foi aceita e quando. Se os termos
+  -- mudarem, o login compara a versão e pede re-aceite. Guests (sem
+  -- conta) aceitam por pedido — trava de UI, não grava aqui.
+  termos_versao     text,
+  termos_aceitos_em timestamptz,
   criado_em  timestamptz NOT NULL DEFAULT now()
 );
 
