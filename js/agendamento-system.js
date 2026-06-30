@@ -101,6 +101,12 @@ function _lsSet(key, val) {
 // ============================================================
 const CLIENTE_LOCAL_KEY = 'cocar_cliente_v1';
 
+// Versão dos termos de uso. Quem tem conta aceita 1× e guardamos esta
+// versão no perfil; se mudar aqui, o login pede re-aceite. Guests aceitam
+// a cada pedido (só trava de UI). Incremente manualmente a cada mudança.
+const TERMOS_VERSAO = '1.0';
+window.TERMOS_VERSAO = TERMOS_VERSAO;
+
 function salvarDadosPessoaisLocal() {
   const dados = {
     nome: document.getElementById('f-nome')?.value?.trim() || '',
@@ -480,6 +486,13 @@ async function irParaPagamentoCarrinho() {
     return;
   }
 
+  // Guest precisa aceitar os termos antes de pagar (cliente logado já aceitou).
+  const termosChk = document.getElementById('carrinho-termos');
+  if (!window._csTermosOk && !(termosChk && termosChk.checked)) {
+    mostrarAlerta('Aceite os Termos de Uso para continuar.', 'error');
+    return;
+  }
+
   const btn = document.getElementById('btn-ir-pagar');
   if (btn) {
     btn.disabled = true;
@@ -495,6 +508,7 @@ async function irParaPagamentoCarrinho() {
     const chave = await salvarMultiplosAgendamentos(itens);
     Estado.carrinho = [];
     Estado.cupom = null;
+    if (termosChk) termosChk.checked = false; // próximo pedido pede aceite de novo
     _renderizarCarrinho();
     if (chave) redirecionarParaPagamento(chave, itens, cupomSnap);
   } catch (err) {
@@ -818,18 +832,28 @@ window.aplicarCupom = aplicarCupom;
 window.removerCupom = removerCupom;
 
 function _atualizarBotoesCarrinho() {
-  const addBtn = document.getElementById('btn-add-leitura');
-  const payBtn = document.getElementById('btn-ir-pagar');
+  const addBtn   = document.getElementById('btn-add-leitura');
+  const payBtn   = document.getElementById('btn-ir-pagar');
+  const termosEl = document.getElementById('termosAceiteCarrinho');
+  const termosChk = document.getElementById('carrinho-termos');
   if (addBtn) addBtn.disabled = Estado.carrinho.length >= 4;
+
+  // Guest (não logado / sem termos em dia) precisa aceitar a cada pedido.
+  // Cliente logado com termos aceitos (window._csTermosOk) pula o checkbox.
+  const temItens = Estado.carrinho.length > 0;
+  const exigeTermos = temItens && !window._csTermosOk;
+  if (termosEl) termosEl.hidden = !exigeTermos;
+
   if (payBtn) {
-    if (Estado.carrinho.length > 0) {
+    if (temItens) {
       const itens = _aplicarDescontosCarrinho(Estado.carrinho);
       const totalFinal = itens.reduce((s, i) => s + i.valor_final, 0);
       const total = totalFinal - _cupomDesconto(totalFinal);
       const n = Estado.carrinho.length;
       const label = n === 1 ? '1 leitura' : `${n} leituras`;
       payBtn.style.display = '';
-      payBtn.disabled = false; // reabilita após um pedido anterior ter deixado o botão travado
+      // Trava o botão até aceitar os termos (quando exigido).
+      payBtn.disabled = exigeTermos && !(termosChk && termosChk.checked);
       payBtn.innerHTML = `💳 Pagar ${fmtBRL(total)} (${label})`;
     } else {
       payBtn.style.display = 'none';
@@ -837,6 +861,12 @@ function _atualizarBotoesCarrinho() {
   }
   if (typeof window._atualizarBotaoRetomar === 'function') window._atualizarBotaoRetomar();
 }
+window._atualizarBotoesCarrinho = _atualizarBotoesCarrinho;
+
+// Marcar/desmarcar o aceite reabilita/trava o botão de pagar na hora.
+document.addEventListener('change', (e) => {
+  if (e.target && e.target.id === 'carrinho-termos') _atualizarBotoesCarrinho();
+});
 
 function _prepararDadosPessoais() {
   Estado.dadosPessoais = {

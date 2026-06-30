@@ -546,6 +546,10 @@
                 <button class="ag-btn ag-btn-outline" id="btn-add-leitura" onclick="adicionarOutraLeitura()" style="width:100%;">
                   + Adicionar outra leitura
                 </button>
+                <label class="termos-aceite termos-aceite--carrinho" id="termosAceiteCarrinho" hidden>
+                  <input type="checkbox" id="carrinho-termos">
+                  <span>Li e concordo com os <button type="button" class="termos-link" data-cs-termos>Termos de Uso e a Política de Privacidade</button></span>
+                </label>
                 <button class="ag-btn ag-btn-primary" id="btn-ir-pagar" onclick="irParaPagamentoCarrinho()" style="width:100%;display:none;">
                   Ir para o pagamento →
                 </button>
@@ -680,8 +684,27 @@
             <input type="tel" id="conta-perfil-fone" name="fone" placeholder="(27) 99999-9999" required autocomplete="tel-national">
           </div>
 
+          <label class="termos-aceite">
+            <input type="checkbox" id="conta-perfil-termos">
+            <span>Li e concordo com os <button type="button" class="termos-link" data-cs-termos>Termos de Uso e a Política de Privacidade</button></span>
+          </label>
+
           <div class="conta-drawer-erro" id="contaPerfilErro" hidden></div>
-          <button type="submit" class="conta-drawer-btn" id="contaPerfilBtn">Salvar e continuar</button>
+          <button type="submit" class="conta-drawer-btn" id="contaPerfilBtn" disabled>Salvar e continuar</button>
+        </form>
+      </div>
+
+      <!-- Estado: termos mudaram — re-aceite (dados já existem, só pede o aceite) -->
+      <div class="conta-drawer-tela" id="contaTelaReaceite" hidden>
+        <h2 class="conta-drawer-titulo">Atualizamos nossos Termos</h2>
+        <p class="conta-drawer-sub">Revise e aceite a nova versão para continuar usando sua conta.</p>
+        <form id="contaFormReaceite" class="conta-drawer-form" novalidate>
+          <label class="termos-aceite">
+            <input type="checkbox" id="conta-reaceite-termos">
+            <span>Li e concordo com os <button type="button" class="termos-link" data-cs-termos>Termos de Uso e a Política de Privacidade</button></span>
+          </label>
+          <div class="conta-drawer-erro" id="contaReaceiteErro" hidden></div>
+          <button type="submit" class="conta-drawer-btn" id="contaReaceiteBtn" disabled>Concordar e continuar</button>
         </form>
       </div>
 
@@ -698,6 +721,134 @@
         <p class="conta-drawer-sub" id="contaEmailAdmin"></p>
         <a href="admin/dashboard.html" class="conta-drawer-btn" id="contaAbrirPainel">Abrir painel</a>
         <button type="button" class="conta-drawer-btn conta-drawer-btn--sair" id="contaSairAdminBtn">Sair</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       MODAL — Termos de Uso (aberto pelos links "Termos de Uso")
+       ============================================================ -->
+  <div id="termosModalOverlay" class="termos-modal-overlay" hidden>
+    <div class="termos-modal" role="dialog" aria-modal="true" aria-labelledby="termosModalTitulo">
+      <button type="button" class="termos-modal-fechar" id="termosModalFechar" aria-label="Fechar">✕</button>
+      <h2 class="termos-modal-titulo" id="termosModalTitulo">Termos de Uso e Política de Privacidade</h2>
+      <div class="termos-modal-corpo" id="termosModalCorpo">
+        <!-- Ao alterar este texto, incremente TERMOS_VERSAO em
+             js/agendamento-system.js para forçar o re-aceite de quem tem conta. -->
+        <p class="termos-meta">Última atualização: 30 de junho de 2026 — Versão 1.0</p>
+
+        <p>Estes Termos de Uso e a Política de Privacidade regem a contratação dos serviços de terapêutica oracular oferecidos pelo Cocar Sagrado por meio do site <strong>cocarsagrado.com.br</strong>. Ao concluir um agendamento e aceitar este documento, você declara que leu, compreendeu e concorda com todas as condições abaixo.</p>
+
+        <h3>Identificação dos prestadores</h3>
+        <p>Os serviços são prestados por:</p>
+        <ul>
+          <li><strong>Camila Feital Delgado</strong>;</li>
+          <li><strong>Matheus Gustav Koblinger de Almeida</strong>.</li>
+        </ul>
+        <p>Página oficial: <strong>cocarsagrado.com.br</strong>. Contato: cocarsagrado@gmail.com.</p>
+
+        <h3>Parte 1 — Termos de Uso</h3>
+
+        <h4>1. Natureza dos serviços</h4>
+        <p>As leituras oferecidas pelo Cocar Sagrado têm finalidade de autoconhecimento, reflexão e orientação espiritual. Elas não substituem acompanhamento médico, psicológico, psiquiátrico, jurídico, financeiro ou de qualquer outro profissional. Nenhuma informação trazida em uma leitura deve ser tomada como diagnóstico, laudo, ordem ou garantia de resultado.</p>
+        <p>Os atendimentos são realizados de forma online, nas modalidades de chamada de vídeo, texto ou áudio gravado, conforme escolhido no momento do agendamento.</p>
+
+        <h4>2. Responsabilidade, interpretação e temas sensíveis</h4>
+        <p><strong>Interpretação e ações do consulente.</strong> O conteúdo da leitura é um ponto de partida para a sua reflexão. A interpretação que você faz das informações e qualquer decisão ou ação tomada a partir delas são de sua inteira e exclusiva responsabilidade. Os terapeutas não se responsabilizam pelo que o consulente entende, conclui ou decide fazer após o atendimento.</p>
+        <p><strong>Temas sensíveis ou polêmicos.</strong> Determinados temas não são respondidos de forma direta de imediato. Sobre eles, os terapeutas podem aconselhar e acolher, e somente após conversar e compreender o caso do consulente é que uma abordagem mais direta poderá ser feita, sempre com cuidado e responsabilidade. São exemplos:</p>
+        <ul>
+          <li><strong>Relacionamentos e suspeita de traição:</strong> não há confirmação nem negação direta antes da compreensão do contexto, justamente para que a leitura não sirva de gatilho para qualquer ato de violência contra o(a) parceiro(a) ou terceiros.</li>
+          <li><strong>Gravidez:</strong> não cabe à leitura afirmar gestação. Isso é papel de um teste de gravidez e de acompanhamento médico, para onde o consulente será orientado.</li>
+          <li><strong>Saúde e medicação:</strong> os terapeutas não indicam, suspendem nem substituem tratamentos, exames ou medicamentos. Nenhuma leitura deve levar o consulente a interromper ou iniciar medicação por conta própria; essas decisões cabem exclusivamente ao médico.</li>
+          <li><strong>Saúde mental e risco de vida:</strong> diante de sinais de sofrimento intenso, automutilação ou pensamentos de tirar a própria vida, o papel dos terapeutas é acolher e encaminhar para ajuda especializada. Procure um profissional de saúde mental e, em situações de crise, ligue para o CVV — 188 (ligação gratuita, 24 horas).</li>
+          <li><strong>Morte e tempo de vida:</strong> não são respondidas previsões sobre quando alguém irá morrer ou quanto tempo de vida alguém tem.</li>
+          <li><strong>Pessoas que não consultaram:</strong> a leitura se concentra no consulente, no que afeta a sua vida e nas suas escolhas, e não é utilizada para devassar ou investigar a vida de terceiros que não consentiram com o atendimento.</li>
+          <li><strong>Datas exatas, loteria e números:</strong> não são fornecidas datas precisas, números da sorte, resultados de jogos ou loterias.</li>
+          <li><strong>Menores de 18 anos:</strong> não são atendidos menores de 18 anos sem acompanhamento e autorização por áudio dos pais ou responsáveis.</li>
+        </ul>
+
+        <h4>3. Agendamento e pagamento</h4>
+        <p>O agendamento é feito pelo site, com escolha da leitura, do terapeuta, da data e do horário. A preparação ou a realização da leitura só tem início após a confirmação do pagamento.</p>
+        <p>O pagamento é processado pela InfinitePay, por meio de PIX ou cartão de crédito, ou por outro meio disponibilizado no checkout. Não coletamos nem armazenamos dados do seu cartão.</p>
+
+        <h4>4. Consultas por chamada de vídeo</h4>
+        <p>Para as consultas realizadas ao vivo por videochamada, e a fim de garantir o bom andamento dos atendimentos e o respeito ao tempo de todos, aplicam-se as regras a seguir.</p>
+        <p><strong>Tolerância de atraso.</strong> As sessões têm tolerância de até 10 minutos. Após esse período, caso não haja aviso prévio, a sessão será considerada realizada e não poderá ser remarcada.</p>
+        <p><strong>Atraso com aviso prévio.</strong> Se o consulente avisar que irá atrasar, o terapeuta aguardará até o limite de 15 minutos, e a sessão será feita com o tempo restante. Em alguns casos, uma remarcação parcial poderá ser combinada, conforme a agenda do terapeuta.</p>
+        <p><strong>Cancelamento com antecedência.</strong> O consulente que precisar cancelar e avisar com pelo menos 24 horas de antecedência terá direito a remarcar a sessão uma vez, dentro da disponibilidade da agenda. O valor pago não é reembolsado em dinheiro, ficando garantido como crédito da própria sessão remarcada.</p>
+        <p><strong>Faltas sem aviso.</strong> O não comparecimento sem aviso com pelo menos 24 horas de antecedência resulta na perda da sessão, sem direito à reposição ou reembolso.</p>
+        <p><strong>Saída durante o atendimento.</strong> Em caso de saída do consulente no meio do atendimento, o tempo continua sendo contado, salvo situações de urgência, em que o tempo será congelado.</p>
+        <p><strong>Falhas técnicas por parte do terapeuta.</strong> Caso o terapeuta precise cancelar a sessão por algum imprevisto, o consulente poderá escolher entre remarcação prioritária na agenda ou reembolso integral do valor pago. Se, durante o atendimento, a conexão do terapeuta ficar instável e prejudicar a leitura, os minutos afetados serão congelados, e a continuidade será decidida em conjunto: retomar em uma próxima sessão ou seguir com o atendimento com cautela.</p>
+
+        <h4>5. Leituras por texto ou áudio</h4>
+        <p>As leituras por texto ou áudio gravado são preparadas individualmente para cada consulente e, por não terem horário ao vivo, seguem regras próprias.</p>
+        <p><strong>Prazo de entrega.</strong> No momento do agendamento, o consulente escolhe o dia e o horário-limite de envio, no modelo "entregue até as [horário] horas do dia [data]". O terapeuta se compromete a enviar a leitura pronta dentro desse prazo combinado.</p>
+        <p><strong>Conclusão do serviço.</strong> O serviço considera-se concluído no momento do envio do áudio ou texto pelo canal combinado. A partir daí, a leitura está entregue e a obrigação, cumprida.</p>
+        <p><strong>Cancelamento e reembolso.</strong> O consulente pode cancelar e receber reembolso integral até 1 (uma) hora após a criação do pedido, contada a partir da confirmação do pagamento. Após esse prazo, por se tratar de trabalho personalizado e feito sob encomenda, não há reembolso, pois a leitura passa a ser dedicada exclusivamente ao consulente.</p>
+        <p><strong>Dúvidas e esclarecimentos.</strong> Após receber a leitura, o consulente pode solicitar esclarecimentos à vontade, sem limite, para compreender melhor o conteúdo entregue. Esclarecer não significa refazer: a leitura entregue é final, e uma nova leitura constitui sempre um novo atendimento, mediante pagamento.</p>
+
+        <h4>6. Direito de arrependimento (compras online)</h4>
+        <p>Por se tratar de serviço contratado pela internet, com data e horário escolhidos pelo consulente, ao concluir o agendamento o consulente solicita que a consulta seja realizada na data marcada — ou, no caso de leitura por texto ou áudio, que seja preparada e entregue na data escolhida — antes do término do prazo de 7 dias previsto no art. 49 do Código de Defesa do Consumidor, e declara estar ciente de que, após a prestação integral do serviço, não haverá reembolso, aplicando-se as políticas de cancelamento descritas acima.</p>
+
+        <h3>Parte 2 — Política de Privacidade</h3>
+        <p>Esta política explica quais dados coletamos, para que os usamos, com quem os compartilhamos e quais são os seus direitos, conforme a Lei Geral de Proteção de Dados (LGPD — Lei nº 13.709/2018).</p>
+
+        <h4>7. Dados que coletamos</h4>
+        <ul>
+          <li><strong>Dados de agendamento:</strong> nome completo, data de nascimento e WhatsApp.</li>
+          <li><strong>Dados de perfil (caso você crie uma conta):</strong> nome, data de nascimento, WhatsApp e e-mail.</li>
+          <li><strong>Dados do pedido:</strong> leituras escolhidas, terapeuta, data e horário, valores e situação do pagamento.</li>
+          <li><strong>Mensagens do chat:</strong> o texto que você digita no nosso chat de atendimento com inteligência artificial.</li>
+        </ul>
+        <p>Não coletamos nem armazenamos dados do seu cartão. O pagamento é processado diretamente pela InfinitePay.</p>
+
+        <h4>8. Para que usamos</h4>
+        <ul>
+          <li>Realizar a leitura e organizar o seu agendamento;</li>
+          <li>Processar o pagamento e confirmar o pedido;</li>
+          <li>Entrar em contato com você sobre o atendimento;</li>
+          <li>Manter o histórico das suas leituras e a prestação de contas;</li>
+          <li>Responder às suas dúvidas no chat de atendimento.</li>
+        </ul>
+
+        <h4>9. Com quem compartilhamos</h4>
+        <p>Compartilhamos o mínimo necessário, apenas com os serviços que fazem o site funcionar (operadores de dados):</p>
+        <ul>
+          <li><strong>Supabase</strong> — banco de dados onde suas informações ficam armazenadas com segurança.</li>
+          <li><strong>InfinitePay</strong> — processamento do pagamento (recebe seu nome e WhatsApp para emitir a cobrança).</li>
+          <li><strong>Telegram</strong> — notificação interna que avisa os terapeutas de um novo pedido confirmado (contém nome, WhatsApp, leituras compradas e valor).</li>
+          <li><strong>Groq</strong> — provedor de inteligência artificial do chat de atendimento, que recebe apenas o texto que você digita no chat, e nenhum outro dado do seu cadastro.</li>
+        </ul>
+        <p>Não vendemos nem cedemos seus dados para fins de publicidade de terceiros.</p>
+        <p>Sobre o chat: evite digitar dados sensíveis ou pessoais (documentos, dados de saúde, senhas) na conversa com a inteligência artificial, pois esse texto é enviado ao provedor do chat para gerar a resposta.</p>
+
+        <h4>10. Dados sensíveis</h4>
+        <p>Uma leitura oracular pode tocar em temas íntimos (saúde, religiosidade, sexualidade, relacionamentos). A LGPD trata essas informações como dados sensíveis, com proteção reforçada. Por isso, tratamos o conteúdo das leituras com sigilo e só damos seguimento ao atendimento mediante o seu consentimento ao aceitar este documento.</p>
+
+        <h4>11. Por quanto tempo guardamos</h4>
+        <p>Mantemos seus dados pelo tempo necessário para prestar o serviço e cumprir obrigações legais e contábeis. Você pode solicitar a exclusão a qualquer momento, ressalvado o que a lei exigir que seja mantido.</p>
+
+        <h4>12. Seus direitos</h4>
+        <p>A qualquer momento, você pode solicitar:</p>
+        <ul>
+          <li>Confirmação de que tratamos seus dados e acesso a eles;</li>
+          <li>Correção de dados incompletos ou desatualizados;</li>
+          <li>Exclusão ou anonimização dos seus dados;</li>
+          <li>Informação sobre com quem compartilhamos;</li>
+          <li>Revogação do consentimento.</li>
+        </ul>
+        <p>Para exercer qualquer um desses direitos, entre em contato por um destes canais:</p>
+        <ul>
+          <li>E-mail: cocarsagrado@gmail.com</li>
+          <li>WhatsApp (Matheus): (28) 99947-6620</li>
+          <li>WhatsApp (Camila): (27) 99852-8483</li>
+        </ul>
+
+        <h4>13. Alterações e contato</h4>
+        <p>Este documento pode ser atualizado para refletir mudanças nos nossos serviços ou na legislação. A versão vigente estará sempre disponível no site, com a data da última atualização indicada no topo. Caso as alterações sejam relevantes, um novo aceite poderá ser solicitado no próximo acesso.</p>
+        <p>Em caso de dúvidas, fale com a gente pelo e-mail cocarsagrado@gmail.com.</p>
+
+        <p class="termos-fecho">Ao concluir o agendamento e marcar a opção "Li e concordo com os Termos de Uso e a Política de Privacidade", você declara estar ciente e de acordo com todas as condições deste documento.</p>
       </div>
     </div>
   </div>
