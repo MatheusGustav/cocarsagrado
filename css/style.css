@@ -505,12 +505,57 @@ button:focus-visible,
 .nav-chat-btn:active { background: rgba(255, 255, 255, 0.2); transform: scale(0.96); }
 body.cs-chat-active .nav-chat-btn { color: var(--color-gold); }
 
+/* Botão "Minha conta" na navbar (desktop + mobile) — só ícone */
+.nav-account-btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  min-width: 36px;
+  padding: 0;
+  background: transparent;
+  border: none;
+  border-radius: 50%;
+  color: var(--color-text-on-dark);
+  cursor: pointer;
+  transition: background var(--transicao), color var(--transicao), transform 0.1s ease;
+  flex-shrink: 0;
+}
+.nav-account-icon {
+  width: 20px;
+  height: 20px;
+  fill: currentColor;
+  flex-shrink: 0;
+}
+.nav-account-btn:hover { background: rgba(255, 255, 255, 0.12); }
+.nav-account-btn:active { background: rgba(255, 255, 255, 0.2); transform: scale(0.96); }
+
+/* Logado: troca o ícone de silhueta por uma bolinha com a inicial do nome. */
+.nav-account-initial {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #1F331F;
+  color: var(--color-gold);
+  font-family: var(--fonte-titulo);
+  font-weight: 700;
+  font-size: 13px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+.nav-account-btn--logged-in .nav-account-icon { display: none; }
+.nav-account-btn--logged-in .nav-account-initial { display: flex; }
+
 /* Mobile: toggle + chat colados ao hambúrguer, empurrados pra direita */
 @media (max-width: 768px) {
   .nav-links .nav-theme-wrapper { display: none; }
   .header-inner { gap: 0.5rem; }
   .theme-toggle--mobile {
-    margin-left: auto;
     width: 40px;
     height: 40px;
     min-width: 40px;
@@ -522,9 +567,18 @@ body.cs-chat-active .nav-chat-btn { color: var(--color-gold); }
     min-width: 40px;
   }
   .nav-chat-btn--mobile .nav-chat-icon { width: 22px; height: 22px; }
+  .nav-account-btn--mobile {
+    margin-left: auto;
+    width: 40px;
+    height: 40px;
+    min-width: 40px;
+  }
+  .nav-account-btn--mobile .nav-account-icon { width: 22px; height: 22px; }
+  .nav-account-btn--mobile .nav-account-initial { width: 28px; height: 28px; font-size: 15px; }
 }
 @media (min-width: 769px) {
   .nav-chat-btn--mobile { display: none; }
+  .nav-account-btn--mobile { display: none; }
   .theme-toggle.theme-toggle--mobile { display: none; }
   .nav-theme-wrapper { gap: 4px; }
 }

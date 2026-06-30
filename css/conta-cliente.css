@@ -1,0 +1,127 @@
+/* ============================================================
+   COCAR SAGRADO — Drawer "Minha conta" (login opcional via OTP)
+   ============================================================ */
+
+.conta-drawer-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  z-index: 9500;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.3s ease, visibility 0.3s ease;
+}
+.conta-drawer-overlay.open { opacity: 1; visibility: visible; }
+
+body.conta-drawer-aberto { overflow: hidden; }
+
+.conta-drawer-panel {
+  position: fixed;
+  top: 0;
+  right: 0;
+  height: 100%;
+  width: 360px;
+  max-width: 100%;
+  background: #FFFDF8;
+  border-left: 1px solid rgba(201, 154, 78, 0.2);
+  box-shadow: -8px 0 40px rgba(31, 51, 31, 0.25);
+  transform: translateX(100%);
+  transition: transform 0.35s cubic-bezier(0.34, 1.08, 0.64, 1);
+  padding: 28px 24px;
+  box-sizing: border-box;
+  overflow-y: auto;
+}
+.conta-drawer-overlay.open .conta-drawer-panel { transform: translateX(0); }
+
+@media (max-width: 480px) {
+  .conta-drawer-panel { width: 100%; border-left: none; }
+}
+
+.conta-drawer-fechar {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  background: none;
+  border: none;
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+  color: #1F331F;
+  opacity: 0.6;
+  transition: opacity 0.2s;
+}
+.conta-drawer-fechar:hover { opacity: 1; }
+
+.conta-drawer-titulo {
+  font-family: var(--fonte-titulo);
+  font-size: 1.4rem;
+  margin: 8px 0 8px;
+  color: #1F331F;
+}
+
+.conta-drawer-sub {
+  font-size: 0.9rem;
+  line-height: 1.5;
+  opacity: 0.75;
+  margin: 0 0 20px;
+}
+
+.conta-drawer-form { display: flex; flex-direction: column; gap: 6px; }
+.conta-drawer-form label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  opacity: 0.8;
+}
+.conta-drawer-form input {
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1px solid rgba(31, 51, 31, 0.2);
+  font-size: 1rem;
+  font-family: inherit;
+  margin-bottom: 4px;
+}
+.conta-drawer-form input:focus {
+  outline: none;
+  border-color: var(--color-gold);
+}
+
+.conta-drawer-erro {
+  color: #B3261E;
+  font-size: 0.82rem;
+  margin: -2px 0 4px;
+}
+
+.conta-drawer-btn {
+  margin-top: 8px;
+  padding: 12px 16px;
+  border-radius: 10px;
+  border: none;
+  background: #1F331F;
+  color: var(--color-gold);
+  font-weight: 700;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: opacity 0.2s, transform 0.1s ease;
+}
+.conta-drawer-btn:hover { opacity: 0.9; }
+.conta-drawer-btn:active { transform: scale(0.98); }
+.conta-drawer-btn:disabled { opacity: 0.5; cursor: default; }
+
+.conta-drawer-btn--sair {
+  background: transparent;
+  color: #1F331F;
+  border: 1px solid rgba(31, 51, 31, 0.3);
+}
+
+.conta-drawer-link {
+  display: block;
+  margin-top: 16px;
+  background: none;
+  border: none;
+  font-size: 0.85rem;
+  text-decoration: underline;
+  opacity: 0.7;
+  cursor: pointer;
+  color: #1F331F;
+}
+.conta-drawer-link:hover { opacity: 1; }
