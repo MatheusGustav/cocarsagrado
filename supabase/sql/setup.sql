@@ -683,30 +683,39 @@ BEGIN
     v_desconto       := COALESCE((v_item->>'desconto_aplicado')::numeric, 0);
     v_valor_final    := COALESCE((v_item->>'valor_final')::numeric, -1);
 
-    -- valor_original deve ser múltiplo do preço do catálogo (qty 1–5; especial = 1)
-    IF v_tipo.preco_original = 0 THEN
-      IF v_valor_original <> 0 THEN
+    IF v_tipo.slug = 'naipes-da-pombo-gira' THEN
+      -- Naipes da Pomba Gira: preço progressivo fixo por qtd de perguntas
+      -- (1→30, 2→56, 3→78, 4→96). Sem desconto de nenhum tipo.
+      IF v_valor_original NOT IN (30, 56, 78, 96) THEN
         RAISE EXCEPTION 'pedido_invalido: valor não confere com o catálogo';
       END IF;
+      v_min_final := v_valor_original; -- força valor_final = valor_original
     ELSE
-      v_qty := v_valor_original / v_tipo.preco_original;
-      IF v_qty <> trunc(v_qty) OR v_qty < 1 OR v_qty > 5
-         OR (v_tipo.especial AND v_qty <> 1) THEN
-        RAISE EXCEPTION 'pedido_invalido: valor não confere com o catálogo';
+      -- valor_original deve ser múltiplo do preço do catálogo (qty 1–5; especial = 1)
+      IF v_tipo.preco_original = 0 THEN
+        IF v_valor_original <> 0 THEN
+          RAISE EXCEPTION 'pedido_invalido: valor não confere com o catálogo';
+        END IF;
+      ELSE
+        v_qty := v_valor_original / v_tipo.preco_original;
+        IF v_qty <> trunc(v_qty) OR v_qty < 1 OR v_qty > 5
+           OR (v_tipo.especial AND v_qty <> 1) THEN
+          RAISE EXCEPTION 'pedido_invalido: valor não confere com o catálogo';
+        END IF;
       END IF;
-    END IF;
 
-    -- Percentual de promoção ativa do serviço (id salvo = slug ou grupo_slug)
-    v_promo_pct := 0;
-    IF v_cfg IS NOT NULL THEN
-      SELECT COALESCE(max((p->>'percentualDesconto')::numeric), 0) INTO v_promo_pct
-      FROM jsonb_array_elements(COALESCE(v_cfg->'promocoes', '[]'::jsonb)) AS p
-      WHERE COALESCE((p->>'descontoAtivo')::boolean, FALSE)
-        AND p->>'id' IN (v_tipo.slug, v_tipo.grupo_slug);
-    END IF;
+      -- Percentual de promoção ativa do serviço (id salvo = slug ou grupo_slug)
+      v_promo_pct := 0;
+      IF v_cfg IS NOT NULL THEN
+        SELECT COALESCE(max((p->>'percentualDesconto')::numeric), 0) INTO v_promo_pct
+        FROM jsonb_array_elements(COALESCE(v_cfg->'promocoes', '[]'::jsonb)) AS p
+        WHERE COALESCE((p->>'descontoAtivo')::boolean, FALSE)
+          AND p->>'id' IN (v_tipo.slug, v_tipo.grupo_slug);
+      END IF;
 
-    -- Único desconto possível agora: promoção ativa do serviço.
-    v_min_final := round(v_valor_original * (100 - v_promo_pct) / 100, 2);
+      -- Único desconto possível agora: promoção ativa do serviço.
+      v_min_final := round(v_valor_original * (100 - v_promo_pct) / 100, 2);
+    END IF;
 
     IF v_valor_final < v_min_final - 0.01
        OR v_valor_final > v_valor_original

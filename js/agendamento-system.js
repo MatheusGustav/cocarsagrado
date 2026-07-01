@@ -33,6 +33,37 @@ let _tiposCache    = null;
 let _seletorTipo   = null;
 let _seletorQty    = 1;
 
+// ============================================================
+// NAIPES DA POMBA GIRA — leitura com preço progressivo
+// Cliente escolhe 1 naipe (tema) e de 1 a 4 perguntas. Cada pergunta
+// extra custa R$4 a menos, mas soma as anteriores: 30 / 56 / 78 / 96.
+// Sem desconto (progressão já é o único "desconto"). Slug do catálogo abaixo.
+// ============================================================
+const NAIPE_SLUG   = 'naipes-da-pombo-gira';
+const NAIPE_MAX_Q  = 4;
+const NAIPE_CUSTO  = [30, 26, 22, 18]; // custo da 1ª, 2ª, 3ª, 4ª pergunta
+const NAIPES = [
+  { id: 'copas',   simbolo: '♥', nome: 'Copas',   cor: 'vermelho', desc: 'amor, relacionamentos, família, vínculos afetivos' },
+  { id: 'ouros',   simbolo: '♦', nome: 'Ouros',   cor: 'vermelho', desc: 'dinheiro, prosperidade, bens materiais, negócios' },
+  { id: 'paus',    simbolo: '♣', nome: 'Paus',    cor: 'preto',    desc: 'trabalho, carreira, ação, conquistas, força de vontade' },
+  { id: 'espadas', simbolo: '♠', nome: 'Espadas', cor: 'preto',    desc: 'espiritualidade, mediunidade, conflitos internos, clareza mental' },
+];
+
+// Preço acumulado para N perguntas (1..4).
+function precoNaipe(qtd) {
+  const n = Math.max(1, Math.min(NAIPE_MAX_Q, parseInt(qtd, 10) || 1));
+  let total = 0;
+  for (let i = 0; i < n; i++) total += NAIPE_CUSTO[i];
+  return total;
+}
+
+function _ehNaipe(tipo) {
+  return !!(tipo && (tipo.isNaipe || tipo.slug === NAIPE_SLUG));
+}
+
+let _seletorNaipe     = null; // naipe (tema) escolhido no seletor
+let _seletorNaipeBase = null; // o tipo do catálogo (id, terapeuta, slug…)
+
 const WHATSAPP_TERAPEUTA = {
   matheus: '5528999476620',
   camila:  '5527998528483',
@@ -85,6 +116,84 @@ function _coletarObservacoes(tipo) {
     if (v) partes.push(n === 1 ? v : `${i}. ${v}`);
   }
   return partes.length ? partes.join('\n') : null;
+}
+
+// ---- Naipes: perguntas dinâmicas na tela da leitura --------------------
+// Lê os textos já digitados (preserva ao adicionar/remover campos).
+function _lerNaipeVals() {
+  return Array.from(document.querySelectorAll('#f-obs-group textarea')).map(t => t.value);
+}
+
+// Recalcula o preço (30/56/78/96) conforme a qtd de campos e atualiza o resumo.
+function _atualizarValorNaipe() {
+  const tipo = Estado.tipoSelecionado;
+  if (!_ehNaipe(tipo)) return;
+  const n = document.querySelectorAll('#f-obs-group textarea').length || 1;
+  tipo.num_perguntas  = n;
+  tipo.preco_original = precoNaipe(n);
+  atualizarResumo();
+}
+
+// (Re)desenha os campos de pergunta a partir de um array de valores.
+function _renderNaipePerguntas(vals) {
+  const g = document.getElementById('f-obs-group');
+  if (!g) return;
+  const n = Math.max(1, Math.min(NAIPE_MAX_Q, vals.length));
+  g.style.display = '';
+  g.innerHTML = '';
+
+  for (let idx = 0; idx < n; idx++) {
+    const i = idx + 1;
+    const row = document.createElement('div');
+    row.className = 'naipe-pergunta-row';
+
+    const head = document.createElement('div');
+    head.className = 'naipe-pergunta-head';
+    const lbl = document.createElement('label');
+    lbl.htmlFor = `f-obs-${i}`;
+    lbl.textContent = n === 1 ? 'Pergunta/Questão *' : `Pergunta ${i} *`;
+    head.appendChild(lbl);
+    if (n > 1) {
+      const rm = document.createElement('button');
+      rm.type = 'button';
+      rm.className = 'naipe-pergunta-rm';
+      rm.setAttribute('aria-label', `Remover pergunta ${i}`);
+      rm.innerHTML = '✕';
+      rm.addEventListener('click', () => {
+        const cur = _lerNaipeVals();
+        cur.splice(idx, 1);
+        _renderNaipePerguntas(cur);
+        _atualizarValorNaipe();
+      });
+      head.appendChild(rm);
+    }
+    row.appendChild(head);
+
+    const ta = document.createElement('textarea');
+    ta.id = `f-obs-${i}`;
+    ta.name = `obs${i}`;
+    ta.required = true;
+    ta.rows = 3;
+    ta.placeholder = 'Escreva sua pergunta ou questão para a leitura…';
+    ta.value = vals[idx] || '';
+    row.appendChild(ta);
+
+    g.appendChild(row);
+  }
+
+  if (n < NAIPE_MAX_Q) {
+    const add = document.createElement('button');
+    add.type = 'button';
+    add.className = 'naipe-add-btn';
+    add.innerHTML = '＋ Adicionar pergunta';
+    add.addEventListener('click', () => {
+      const cur = _lerNaipeVals();
+      cur.push('');
+      _renderNaipePerguntas(cur);
+      _atualizarValorNaipe();
+    });
+    g.appendChild(add);
+  }
 }
 
 function _lsGet(key) {
@@ -282,6 +391,10 @@ async function abrirSeletor(ref) {
     return;
   }
 
+  if (_ehNaipe(tipo)) {
+    return _abrirSeletorNaipes(tipo);
+  }
+
   _seletorTipo     = tipo;
   Estado.serviceId = tipo.slug || tipo.id;
   _seletorQty      = 1;
@@ -362,6 +475,55 @@ function _abrirSeletorGrupo(grupoSlug, tiers) {
   document.addEventListener('keydown', _escSeletorHandler);
 }
 
+// Seletor dos 4 naipes (tema). Preço só depende da qtd de perguntas, que é
+// escolhida depois (na tela da leitura), então aqui mostramos "a partir de".
+function _abrirSeletorNaipes(tipo) {
+  _seletorTipo      = null;
+  _seletorNaipe     = null;
+  _seletorNaipeBase = tipo;
+  _seletorQty       = 1;
+  Estado.serviceId  = tipo.slug || tipo.id;
+
+  const tiersEl    = document.getElementById('seletor-tiers');
+  const qtyEl      = document.getElementById('seletor-qty-wrap');
+  const resumoEl   = document.getElementById('seletor-resumo');
+  const btnConfirm = document.getElementById('seletor-btn-confirm');
+
+  document.getElementById('seletor-nome').textContent     = tipo.nome;
+  document.getElementById('seletor-pergunta').textContent = 'Escolha o naipe (tema) da sua leitura';
+
+  const precoBase = fmtBRL(precoNaipe(1));
+  tiersEl.innerHTML = '';
+  NAIPES.forEach(naipe => {
+    const opt = document.createElement('button');
+    opt.type = 'button';
+    opt.className = `seletor-tier-opt naipe-opt naipe-${naipe.cor}`;
+    opt.innerHTML = `
+      <span class="naipe-top">
+        <span class="tier-label"><span class="naipe-simbolo" aria-hidden="true">${naipe.simbolo}</span>${_escCat(naipe.nome)}</span>
+        <span class="tier-preco">${precoBase}</span>
+      </span>
+      <span class="naipe-desc">${_escCat(naipe.desc)}</span>`;
+    opt.addEventListener('click', () => {
+      tiersEl.querySelectorAll('.seletor-tier-opt').forEach(o => o.classList.remove('selected'));
+      opt.classList.add('selected');
+      _seletorNaipe = naipe;
+      btnConfirm.removeAttribute('disabled');
+    });
+    tiersEl.appendChild(opt);
+  });
+
+  tiersEl.style.display  = 'flex';
+  qtyEl.style.display    = 'none';
+  resumoEl.style.display = 'none';
+  btnConfirm.setAttribute('disabled', '');
+
+  document.getElementById('seletor-overlay').classList.add('open');
+  document.body.classList.add('seletor-aberto');
+  setTimeout(() => document.querySelector('.seletor-card')?.focus(), 280);
+  document.addEventListener('keydown', _escSeletorHandler);
+}
+
 function _atualizarResumoSeletor() {
   const tipo = _seletorTipo;
   if (!tipo) return;
@@ -383,6 +545,8 @@ function _escSeletorHandler(e) {
 }
 
 function fecharSeletor() {
+  _seletorNaipe     = null;
+  _seletorNaipeBase = null;
   document.removeEventListener('keydown', _escSeletorHandler);
   document.getElementById('seletor-overlay')?.classList.remove('open');
   document.body.classList.remove('seletor-aberto');
@@ -392,6 +556,28 @@ function fecharSeletor() {
 }
 
 function confirmarSeletor() {
+  // Naipes da Pomba Gira: tema escolhido; perguntas e preço vêm na tela seguinte.
+  if (_seletorNaipe && _seletorNaipeBase) {
+    const t = _seletorNaipeBase;
+    const n = _seletorNaipe;
+    const tipoFinal = {
+      ...t,
+      terapeuta:      t.terapeuta,
+      especial:       false,
+      requerPergunta: true,
+      isNaipe:        true,
+      naipe:          n.id,
+      naipeLabel:     `${n.simbolo} ${n.nome}`,
+      naipeDesc:      n.desc,
+      num_perguntas:  1,
+      preco_original: precoNaipe(1),
+      nome:           `${t.nome} — ${n.simbolo} ${n.nome}`,
+    };
+    fecharSeletor();
+    abrirModal(tipoFinal);
+    return;
+  }
+
   if (!_seletorTipo) return;
 
   const t = _seletorTipo;
@@ -626,9 +812,12 @@ function atualizarResumo() {
   if (!tipo || !data) return;
 
   // Simula esta leitura entrando no carrinho para refletir o preço real.
+  // Naipes não entram em promoção: preço = progressão (30/56/78/96).
   const tentativa = {
     valor_original: tipo.preco_original,
-    preco_base: _precoComPromoServico(tipo.preco_original, Estado.serviceId),
+    preco_base: _ehNaipe(tipo)
+      ? tipo.preco_original
+      : _precoComPromoServico(tipo.preco_original, Estado.serviceId),
   };
   const simulado = _aplicarDescontosCarrinho([...Estado.carrinho, tentativa]);
   const esta = simulado[simulado.length - 1];
@@ -669,7 +858,12 @@ function adicionarAoCarrinho() {
     return;
   }
 
-  const obs = _coletarObservacoes(tipo);
+  let obs = _coletarObservacoes(tipo);
+  // Naipes: registra o naipe (tema) escolhido no topo das observações.
+  if (_ehNaipe(tipo) && tipo.naipeLabel) {
+    const cabecalho = `Naipe: ${tipo.naipeLabel} — ${tipo.naipeDesc}`;
+    obs = obs ? `${cabecalho}\n\n${obs}` : cabecalho;
+  }
 
   const item = {
     tipo,
@@ -679,7 +873,9 @@ function adicionarAoCarrinho() {
     horario: Estado.horarioSelecionado || '00:00',
     observacoes: obs,
     valor_original: tipo.preco_original,
-    preco_base: _precoComPromoServico(tipo.preco_original, Estado.serviceId),
+    preco_base: _ehNaipe(tipo)
+      ? tipo.preco_original
+      : _precoComPromoServico(tipo.preco_original, Estado.serviceId),
     agendamento_especial: !!tipo.especial,
     num_perguntas: _numeroDePerguntas(tipo),
   };
