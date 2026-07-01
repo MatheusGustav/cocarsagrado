@@ -627,6 +627,7 @@ DECLARE
   v_promo_pct      numeric;
   v_min_final      numeric;
   v_soma           numeric := 0;
+  v_soma_elig      numeric := 0;   -- soma das leituras elegíveis a cupom (não-naipe)
   v_cfg            jsonb;
   v_cupom_cod      text;
   v_cupom_val      numeric := 0;
@@ -634,6 +635,8 @@ DECLARE
   v_ag_id          bigint;
   v_ids            bigint[]  := '{}';
   v_vals           numeric[] := '{}';
+  v_elig_ids       bigint[]  := '{}'; -- filhos que entram no rateio do cupom
+  v_elig_vals      numeric[] := '{}';
   v_i              integer;
   v_share_cents    numeric;
   v_resto_cents    numeric;
@@ -750,33 +753,39 @@ BEGIN
 
     v_ids  := array_append(v_ids, v_ag_id);
     v_vals := array_append(v_vals, v_valor_final);
+    -- Naipes da Pomba Gira não entram em cupom (leitura sem desconto).
+    IF v_tipo.slug <> 'naipes-da-pombo-gira' THEN
+      v_elig_ids  := array_append(v_elig_ids, v_ag_id);
+      v_elig_vals := array_append(v_elig_vals, v_valor_final);
+      v_soma_elig := v_soma_elig + v_valor_final;
+    END IF;
   END LOOP;
 
-  -- Cupom: nunca passa do total das leituras.
-  v_cupom_desc := least(v_cupom_val, v_soma);
+  -- Cupom: incide só sobre as leituras elegíveis (nunca passa da base).
+  v_cupom_desc := least(v_cupom_val, v_soma_elig);
 
   IF abs(p_valor_total - (v_soma - v_cupom_desc)) > 0.05 THEN
     RAISE EXCEPTION 'pedido_invalido: total não confere com a soma das leituras';
   END IF;
 
-  -- Distribui o desconto do cupom entre os filhos (proporcional, em centavos),
-  -- para que cada agendamento.valor_final reflita o valor REALMENTE cobrado.
-  -- Mantém pedido.valor_total = soma(valor_final) e os relatórios corretos.
-  IF v_cupom_desc > 0 AND v_soma > 0 THEN
+  -- Distribui o desconto do cupom entre os filhos ELEGÍVEIS (proporcional, em
+  -- centavos), para que cada agendamento.valor_final reflita o valor REALMENTE
+  -- cobrado. Mantém pedido.valor_total = soma(valor_final) e relatórios corretos.
+  IF v_cupom_desc > 0 AND v_soma_elig > 0 THEN
     v_resto_cents := round(v_cupom_desc * 100);
-    FOR v_i IN 1 .. array_length(v_ids, 1) LOOP
-      IF v_i = array_length(v_ids, 1) THEN
-        v_share_cents := least(v_resto_cents, round(v_vals[v_i] * 100));
+    FOR v_i IN 1 .. array_length(v_elig_ids, 1) LOOP
+      IF v_i = array_length(v_elig_ids, 1) THEN
+        v_share_cents := least(v_resto_cents, round(v_elig_vals[v_i] * 100));
       ELSE
-        v_share_cents := floor(round(v_cupom_desc * 100) * round(v_vals[v_i] * 100)
-                               / round(v_soma * 100));
+        v_share_cents := floor(round(v_cupom_desc * 100) * round(v_elig_vals[v_i] * 100)
+                               / round(v_soma_elig * 100));
         v_resto_cents := v_resto_cents - v_share_cents;
       END IF;
       IF v_share_cents > 0 THEN
         UPDATE public.agendamentos
         SET desconto_aplicado = desconto_aplicado + v_share_cents / 100.0,
             valor_final       = valor_final       - v_share_cents / 100.0
-        WHERE id = v_ids[v_i];
+        WHERE id = v_elig_ids[v_i];
       END IF;
     END LOOP;
   END IF;
