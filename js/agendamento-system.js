@@ -13,10 +13,15 @@ const Estado = {
   dadosPessoais: { nome: '', nascimento: '', whatsapp: '', email: '' },
 };
 
-// Desconto do cupom limitado ao total (nunca deixa o pedido negativo).
-function _cupomDesconto(totalFinal) {
+// Desconto do cupom limitado à base ELEGÍVEL (nunca deixa o pedido negativo).
+// Naipes da Pomba Gira não entram em cupom (leitura sem desconto), então a
+// base é a soma das leituras não-naipe. Mantém front e RPC em sincronia.
+function _cupomDesconto(itens) {
   if (!Estado.cupom) return 0;
-  return Math.min(Estado.cupom.valor, totalFinal);
+  const base = (Array.isArray(itens) ? itens : [])
+    .filter(i => !_ehNaipe(i.tipo))
+    .reduce((s, i) => s + (Number(i.valor_final) || 0), 0);
+  return Math.min(Estado.cupom.valor, base);
 }
 
 const DIAS_PT  = ['Domingo','Segunda','Terça','Quarta','Quinta','Sexta','Sábado'];
@@ -366,6 +371,9 @@ async function abrirSeletor(ref) {
   if (document.activeElement && document.activeElement !== document.body) {
     document.activeElement.setAttribute('data-last-focus', '');
   }
+  // Zera seleção de naipe pendente (evita vazar pro confirmarSeletor de outro serviço)
+  _seletorNaipe     = null;
+  _seletorNaipeBase = null;
   let tipos;
   try {
     tipos = await _garantirTipos();
@@ -941,7 +949,7 @@ function _renderizarCarrinho() {
       </div>`;
   });
 
-  const cupomDesc     = _cupomDesconto(totalFinal);
+  const cupomDesc     = _cupomDesconto(itens);
   const totalComCupom = totalFinal - cupomDesc;
 
   html += `<div class="cart-total">
@@ -1051,7 +1059,7 @@ function _atualizarBotoesCarrinho() {
     if (temItens) {
       const itens = _aplicarDescontosCarrinho(Estado.carrinho);
       const totalFinal = itens.reduce((s, i) => s + i.valor_final, 0);
-      const total = totalFinal - _cupomDesconto(totalFinal);
+      const total = totalFinal - _cupomDesconto(itens);
       const n = Estado.carrinho.length;
       const label = n === 1 ? '1 leitura' : `${n} leituras`;
       payBtn.style.display = '';
@@ -1134,7 +1142,7 @@ async function salvarMultiplosAgendamentos(itensPre) {
   const itens = itensPre || _aplicarDescontosCarrinho(Estado.carrinho);
   const chave = await gerarChavePedido();
   const totalFinal = itens.reduce((s, i) => s + i.valor_final, 0);
-  const cupomDesc  = _cupomDesconto(totalFinal);
+  const cupomDesc  = _cupomDesconto(itens);
   const totalCobrar = totalFinal - cupomDesc;
   const nome = Estado.dadosPessoais.nome;
   const nascimento = Estado.dadosPessoais.nascimento || null;
