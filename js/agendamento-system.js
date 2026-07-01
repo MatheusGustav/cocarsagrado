@@ -153,6 +153,13 @@ function _renderNaipePerguntas(vals) {
     lbl.htmlFor = `f-obs-${i}`;
     lbl.textContent = n === 1 ? 'Pergunta/Questão *' : `Pergunta ${i} *`;
     head.appendChild(lbl);
+
+    // Selo com o custo desta pergunta (1ª = preço cheio; extras = quanto somam).
+    const preco = document.createElement('span');
+    preco.className = idx === 0 ? 'naipe-pergunta-preco' : 'naipe-pergunta-preco extra';
+    preco.textContent = idx === 0 ? fmtBRL(NAIPE_CUSTO[0]) : `+ ${fmtBRL(NAIPE_CUSTO[idx])}`;
+    head.appendChild(preco);
+
     if (n > 1) {
       const rm = document.createElement('button');
       rm.type = 'button';
