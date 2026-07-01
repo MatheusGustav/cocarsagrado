@@ -598,6 +598,81 @@ textarea { resize: vertical; min-height: 90px; }
 }
 .tier-preco   { font-size: 1rem; font-weight: 700; color: #A67C32; }
 
+/* ---- Naipes da Pomba Gira: card com significado (subtítulo) ---- */
+.seletor-tier-opt.naipe-opt {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 5px;
+  padding: 13px 16px;
+}
+.naipe-opt .naipe-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+}
+.naipe-opt .tier-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 0.95rem;
+}
+.naipe-simbolo { font-size: 1.15rem; line-height: 1; }
+.naipe-vermelho .naipe-simbolo { color: #C0392B; }
+.naipe-preto   .naipe-simbolo { color: #1F2D25; }
+.naipe-desc {
+  font-size: 0.78rem;
+  line-height: 1.4;
+  color: #5c6b60;
+  text-align: left;
+  overflow-wrap: break-word;
+  hyphens: auto;
+}
+
+/* ---- Naipes: perguntas dinâmicas na tela da leitura ---- */
+.naipe-pergunta-row { margin-bottom: 14px; }
+.naipe-pergunta-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+.naipe-pergunta-head label { margin: 0; }
+.naipe-pergunta-rm {
+  flex: 0 0 auto;
+  width: 26px;
+  height: 26px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(192, 57, 43, 0.35);
+  border-radius: 50%;
+  background: transparent;
+  color: #C0392B;
+  font-size: 0.8rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+.naipe-pergunta-rm:hover { background: rgba(192, 57, 43, 0.1); border-color: #C0392B; }
+.naipe-add-btn {
+  width: 100%;
+  padding: 11px 14px;
+  margin-bottom: 4px;
+  border: 1.5px dashed #C99A4E;
+  border-radius: 12px;
+  background: rgba(201, 154, 78, 0.06);
+  color: #A67C32;
+  font-family: inherit;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+.naipe-add-btn:hover { background: rgba(201, 154, 78, 0.14); border-color: #A67C32; }
+
 /* Quantity stepper */
 .seletor-qty-wrap {
   display: flex;
@@ -863,6 +938,20 @@ textarea { resize: vertical; min-height: 90px; }
 [data-theme="dark"] .tier-preco {
   color: #D9B776;
 }
+[data-theme="dark"] .naipe-desc { color: #9db0a2; }
+[data-theme="dark"] .naipe-vermelho .naipe-simbolo { color: #E57368; }
+[data-theme="dark"] .naipe-preto   .naipe-simbolo { color: #C8BC8A; }
+[data-theme="dark"] .naipe-add-btn {
+  border-color: #D9B776;
+  color: #D9B776;
+  background: rgba(217, 183, 118, 0.08);
+}
+[data-theme="dark"] .naipe-add-btn:hover { background: rgba(217, 183, 118, 0.16); }
+[data-theme="dark"] .naipe-pergunta-rm {
+  border-color: rgba(229, 115, 104, 0.4);
+  color: #E57368;
+}
+[data-theme="dark"] .naipe-pergunta-rm:hover { background: rgba(229, 115, 104, 0.15); }
 [data-theme="dark"] .seletor-qty-btn {
   border-color: #D9B776;
   color: #D9B776;

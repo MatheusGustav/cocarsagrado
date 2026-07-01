@@ -23,7 +23,10 @@ function abrirModal(tipo) {
   }
 
   const obsGroup = document.getElementById('f-obs-group');
-  if (obsGroup) {
+  if (obsGroup && _ehNaipe(tipo)) {
+    // Naipes: começa com 1 pergunta; botão "＋" adiciona até 4 (preço ao vivo).
+    _renderNaipePerguntas(['']);
+  } else if (obsGroup) {
     const n = (tipo && tipo.requerPergunta) ? _numeroDePerguntas(tipo) : 0;
     obsGroup.innerHTML = '';
     if (n === 0) {
