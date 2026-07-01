@@ -1545,6 +1545,88 @@ async function renderizarCatalogoSite() {
   if (typeof inicializarFiltrosCatalogo === 'function') inicializarFiltrosCatalogo();
   if (typeof renderizarDescontos === 'function') renderizarDescontos();
   _destacarMaisProcurada();
+  _configurarVerMaisCatalogo(grid);
+}
+
+// ---- "Ver mais" das descrições do catálogo ----------------------------------
+// Injeta o botão SÓ nos cards cujo texto foi realmente cortado pelo clamp
+// (medição scrollHeight vs clientHeight). Vale pra qualquer descrição do admin,
+// hoje e no futuro — encurtou e coube, o botão some; aumentou e estourou, aparece.
+function _configurarVerMaisCatalogo(grid) {
+  grid.querySelectorAll('.cat-desc').forEach(desc => {
+    if (desc.scrollHeight - desc.clientHeight <= 2) return; // coube inteiro
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'cat-vermais';
+    btn.textContent = 'ver mais';
+    btn.setAttribute('aria-expanded', 'false');
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation(); // não dispara o clique do card (abrirSeletor)
+      _abrirDescPop(desc, btn);
+    });
+    desc.insertAdjacentElement('afterend', btn);
+  });
+}
+
+// Painel flutuante único (no body) com a descrição completa. position:fixed
+// posicionado sobre o card → flutua por cima dos vizinhos sem refluir o grid.
+let _descPopEl = null, _descPopBtn = null;
+
+function _abrirDescPop(desc, btn) {
+  const card = desc.closest('.cat-card');
+  if (!card) return;
+  // toggle: clicar de novo no mesmo "ver mais" fecha
+  if (_descPopBtn === btn && _descPopEl && _descPopEl.classList.contains('aberto')) {
+    _fecharDescPop();
+    return;
+  }
+  if (!_descPopEl) {
+    _descPopEl = document.createElement('div');
+    _descPopEl.className = 'cat-desc-pop';
+    _descPopEl.setAttribute('role', 'dialog');
+    document.body.appendChild(_descPopEl);
+  }
+  _descPopBtn = btn;
+  btn.setAttribute('aria-expanded', 'true');
+  _descPopEl.innerHTML =
+    '<p class="cat-desc-pop-txt"></p>' +
+    '<button type="button" class="cat-desc-pop-fechar">ver menos</button>';
+  _descPopEl.querySelector('.cat-desc-pop-txt').textContent = desc.textContent;
+  _descPopEl.querySelector('.cat-desc-pop-fechar')
+    .addEventListener('click', (e) => { e.stopPropagation(); _fecharDescPop(); });
+
+  // left/largura seguem o card; topo ancora na descrição (foto + nome ficam à mostra)
+  const rc = card.getBoundingClientRect();
+  const rd = desc.getBoundingClientRect();
+  _descPopEl.style.left  = `${rc.left}px`;
+  _descPopEl.style.width = `${rc.width}px`;
+  _descPopEl.style.top   = `${rd.top}px`;
+  _descPopEl.classList.add('aberto');
+
+  document.addEventListener('click', _descPopOutside, true);
+  document.addEventListener('keydown', _descPopEsc);
+  window.addEventListener('scroll', _fecharDescPop, true);
+  window.addEventListener('resize', _fecharDescPop);
+}
+
+function _fecharDescPop() {
+  if (!_descPopEl) return;
+  _descPopEl.classList.remove('aberto');
+  if (_descPopBtn) { _descPopBtn.setAttribute('aria-expanded', 'false'); _descPopBtn = null; }
+  document.removeEventListener('click', _descPopOutside, true);
+  document.removeEventListener('keydown', _descPopEsc);
+  window.removeEventListener('scroll', _fecharDescPop, true);
+  window.removeEventListener('resize', _fecharDescPop);
+}
+
+function _descPopOutside(e) {
+  if (_descPopEl && !_descPopEl.contains(e.target) && !e.target.closest('.cat-vermais')) {
+    _fecharDescPop();
+  }
+}
+
+function _descPopEsc(e) {
+  if (e.key === 'Escape') _fecharDescPop();
 }
 
 // Destaca o card da leitura com mais agendamentos pagos (RPC agregada;

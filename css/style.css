@@ -1226,6 +1226,67 @@ body.cs-chat-active .nav-chat-btn { color: var(--color-gold); }
   overflow: hidden;
 }
 
+/* "ver mais" — só injetado nos cards cujo texto estoura o clamp */
+.cat-vermais {
+  align-self: center;
+  margin-top: 4px;
+  background: none;
+  border: none;
+  padding: 2px 4px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  color: var(--color-gold-light);
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.cat-vermais:hover { color: var(--color-gold-mist); }
+
+/* Painel flutuante com a descrição completa (fica por cima, não reflui o grid) */
+.cat-desc-pop {
+  position: fixed;
+  z-index: 500;
+  box-sizing: border-box;
+  background: var(--color-primary-deep);
+  color: var(--color-text-on-dark);
+  border: 1px solid var(--color-gold-light);
+  border-radius: 12px;
+  padding: 14px 16px 12px;
+  box-shadow: 0 10px 30px rgba(14, 33, 23, 0.45);
+  opacity: 0;
+  transform: translateY(-4px) scale(0.98);
+  transform-origin: top center;
+  pointer-events: none;
+  transition: opacity 0.18s ease, transform 0.18s ease;
+}
+.cat-desc-pop.aberto {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  pointer-events: auto;
+}
+.cat-desc-pop-txt {
+  margin: 0 0 10px;
+  font-size: 12.5px;
+  line-height: 1.6;
+  text-align: center;
+}
+.cat-desc-pop-fechar {
+  display: block;
+  margin: 0 auto;
+  background: none;
+  border: none;
+  padding: 2px 4px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  color: var(--color-gold-light);
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.cat-desc-pop-fechar:hover { color: var(--color-gold-mist); }
+
 
 .cat-card-img {
   display: flex;
