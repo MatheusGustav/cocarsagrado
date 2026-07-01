@@ -635,11 +635,19 @@ textarea { resize: vertical; min-height: 90px; }
 .naipe-pergunta-head {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-start;
   gap: 10px;
   margin-bottom: 6px;
 }
 .naipe-pergunta-head label { margin: 0; }
+.naipe-pergunta-preco {
+  margin-left: auto;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #A67C32;
+  white-space: nowrap;
+}
+.naipe-pergunta-preco.extra { color: #2F8F5B; } /* extra sai mais barata */
 .naipe-pergunta-rm {
   flex: 0 0 auto;
   width: 26px;
@@ -939,6 +947,8 @@ textarea { resize: vertical; min-height: 90px; }
   color: #D9B776;
 }
 [data-theme="dark"] .naipe-desc { color: #9db0a2; }
+[data-theme="dark"] .naipe-pergunta-preco { color: #D9B776; }
+[data-theme="dark"] .naipe-pergunta-preco.extra { color: #5FC98B; }
 [data-theme="dark"] .naipe-vermelho .naipe-simbolo { color: #E57368; }
 [data-theme="dark"] .naipe-preto   .naipe-simbolo { color: #C8BC8A; }
 [data-theme="dark"] .naipe-add-btn {
