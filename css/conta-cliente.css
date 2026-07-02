@@ -1,11 +1,18 @@
 /* ============================================================
    COCAR SAGRADO — Drawer "Minha conta" (login opcional via OTP)
+
+   Linguagem visual: cada tela abre com um "céu" verde-noite
+   (lua crescente + estrelas) e o progresso do login é um ciclo
+   lunar — nova (e-mail) → crescente (código) → cheia (você).
+   Cores via tokens de style.css: o drawer acompanha o tema
+   claro/escuro do site.
    ============================================================ */
 
 .conta-drawer-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.6);
+  background: rgba(8, 15, 8, 0.55);
+  backdrop-filter: blur(2px);
   z-index: 9500;
   opacity: 0;
   visibility: hidden;
@@ -16,28 +23,38 @@
 body.conta-drawer-aberto { overflow: hidden; }
 
 .conta-drawer-panel {
+  --cd-erro: #B3261E;
+  --cd-hairline: rgba(192, 149, 78, 0.3);
+  --cd-hairline-suave: rgba(192, 149, 78, 0.18);
+
   position: fixed;
   top: 0;
   right: 0;
   height: 100%;
-  width: var(--conta-drawer-width, 360px);
+  width: var(--conta-drawer-width, 380px);
   max-width: 95vw;
-  background: #FFFDF8;
-  /* Cor-base própria: o site é escuro (body com texto creme) e os textos
-     sem cor explícita herdavam creme + opacity = ilegível sobre o creme. */
-  color: #1F331F;
-  border-left: 1px solid rgba(201, 154, 78, 0.2);
-  box-shadow: -8px 0 40px rgba(31, 51, 31, 0.25);
+  background: var(--color-bg-card, #FFFDF8);
+  color: var(--color-text-primary, #13251A);
+  border-left: 1px solid var(--cd-hairline);
+  box-shadow: -8px 0 40px rgba(14, 33, 23, 0.3);
   transform: translateX(100%);
   transition: transform 0.35s cubic-bezier(0.34, 1.08, 0.64, 1);
-  padding: 28px 24px;
+  padding: 0;
   box-sizing: border-box;
   overflow-y: auto;
+}
+[data-theme="dark"] .conta-drawer-panel {
+  --cd-erro: #E28B84;
+  --cd-hairline: rgba(217, 183, 118, 0.28);
+  --cd-hairline-suave: rgba(217, 183, 118, 0.16);
 }
 .conta-drawer-overlay.open .conta-drawer-panel { transform: translateX(0); }
 
 /* Enquanto arrasta a alça, desliga a transição pra acompanhar o cursor sem lag */
 .conta-drawer-panel.is-resizing { transition: none; }
+
+/* Telas alternam via atributo hidden — nenhum display abaixo pode vencê-lo */
+.conta-drawer-tela[hidden] { display: none !important; }
 
 /* Alça na borda esquerda (linha de divisão) — desktop só */
 .conta-drawer-resize {
@@ -48,7 +65,7 @@ body.conta-drawer-aberto { overflow: hidden; }
   height: 100%;
   cursor: ew-resize;
   touch-action: none;
-  z-index: 2;
+  z-index: 4;
 }
 .conta-drawer-resize::after {
   content: "";
@@ -78,67 +95,252 @@ body.conta-drawer-aberto { overflow: hidden; }
   .conta-drawer-resize { display: none; }
 }
 
+/* ✕ flutua sobre o céu de todas as telas — chip pra valer em qualquer fundo */
 .conta-drawer-fechar {
   position: absolute;
-  top: 16px;
-  right: 16px;
-  background: none;
-  border: none;
-  font-size: 20px;
+  top: 14px;
+  right: 14px;
+  z-index: 3;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: rgba(8, 15, 8, 0.35);
+  border: 1px solid rgba(217, 183, 118, 0.25);
+  font-size: 15px;
   line-height: 1;
   cursor: pointer;
-  color: #1F331F;
-  opacity: 0.6;
-  transition: opacity 0.2s;
+  color: #F2EAD8;
+  opacity: 0.85;
+  transition: opacity 0.2s, background 0.2s;
 }
-.conta-drawer-fechar:hover { opacity: 1; }
+.conta-drawer-fechar:hover { opacity: 1; background: rgba(8, 15, 8, 0.55); }
+.conta-drawer-fechar:focus-visible {
+  outline: 2px solid var(--color-focus-ring, #A8C49E);
+  outline-offset: 2px;
+}
+
+/* ============================================================
+   Céu — cabeçalho celeste de cada tela (full-bleed)
+   ============================================================ */
+.conta-ceu {
+  position: relative;
+  background: linear-gradient(186deg, var(--color-bg-dark-deep, #0E2117) 0%, var(--color-bg-dark, #142E20) 96%);
+  color: var(--color-text-on-dark, #ECE3D0);
+  padding: 52px 26px 22px;
+  border-bottom: 1px solid var(--cd-hairline);
+  overflow: hidden;
+}
+/* Estrelas: pontos dourados fixos, sem imagem */
+.conta-ceu::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    radial-gradient(1.5px 1.5px at 82% 22%, rgba(217, 183, 118, 0.85) 50%, transparent 51%),
+    radial-gradient(1px 1px   at 64% 48%, rgba(217, 183, 118, 0.5)  50%, transparent 51%),
+    radial-gradient(1px 1px   at 34% 18%, rgba(217, 183, 118, 0.65) 50%, transparent 51%),
+    radial-gradient(1.5px 1.5px at 91% 62%, rgba(217, 183, 118, 0.45) 50%, transparent 51%),
+    radial-gradient(1px 1px   at 48% 76%, rgba(217, 183, 118, 0.35) 50%, transparent 51%),
+    radial-gradient(1px 1px   at 12% 64%, rgba(217, 183, 118, 0.4)  50%, transparent 51%);
+}
+/* Uma estrela de quatro pontas, como no resto do site */
+.conta-ceu::after {
+  content: "✦";
+  position: absolute;
+  top: 24px;
+  right: 64px;
+  font-size: 11px;
+  color: rgba(217, 183, 118, 0.7);
+  pointer-events: none;
+}
+
+/* Lua crescente em CSS puro (círculo transparente + sombra interna) */
+.conta-ceu-lua {
+  display: block;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  box-shadow: inset -10px 7px 0 0 var(--color-gold-light, #D9B776);
+  transform: rotate(-16deg);
+  margin-bottom: 4px;
+}
 
 .conta-drawer-titulo {
   font-family: var(--fonte-titulo);
-  font-size: 1.4rem;
-  margin: 8px 0 8px;
-  color: #1F331F;
+  font-style: italic;
+  font-weight: 500;
+  font-size: 1.75rem;
+  line-height: 1.15;
+  letter-spacing: 0.01em;
+  margin: 12px 0 4px;
+  color: inherit;
+  position: relative;
 }
+
+.conta-ceu-sub {
+  font-size: 0.85rem;
+  margin: 0;
+  color: var(--color-gold-light, #D9B776);
+  opacity: 0.9;
+  position: relative;
+  overflow-wrap: anywhere;
+}
+
+/* Tela logado: avatar-lua com a inicial no lugar da lua */
+.conta-avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 58px;
+  height: 58px;
+  border-radius: 50%;
+  border: 1.5px solid var(--color-gold, #C0954E);
+  box-shadow: 0 0 0 4px rgba(217, 183, 118, 0.14);
+  background: radial-gradient(circle at 50% 28%, rgba(217, 183, 118, 0.2), transparent 72%);
+  font-family: var(--fonte-titulo);
+  font-style: italic;
+  font-size: 1.7rem;
+  line-height: 1;
+  color: var(--color-gold-light, #D9B776);
+  margin-bottom: 6px;
+  position: relative;
+}
+.conta-ceu--logado { padding-bottom: 24px; }
+
+/* Entrada orquestrada: a lua nasce, o corpo sobe */
+@keyframes conta-lua-nasce {
+  from { opacity: 0; transform: translateY(10px) rotate(-34deg); }
+  to   { opacity: 1; transform: rotate(-16deg); }
+}
+@keyframes conta-corpo-sobe {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: none; }
+}
+.conta-drawer-overlay.open .conta-ceu-lua {
+  animation: conta-lua-nasce 0.8s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.conta-drawer-overlay.open .conta-drawer-corpo {
+  animation: conta-corpo-sobe 0.55s ease 0.12s both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .conta-drawer-overlay.open .conta-ceu-lua,
+  .conta-drawer-overlay.open .conta-drawer-corpo { animation: none; }
+}
+
+/* ============================================================
+   Corpo das telas
+   ============================================================ */
+.conta-drawer-corpo { padding: 20px 26px 28px; }
 
 .conta-drawer-sub {
   font-size: 0.9rem;
-  line-height: 1.5;
-  opacity: 0.75;
-  margin: 0 0 20px;
+  line-height: 1.55;
+  color: var(--color-text-body, #33473B);
+  margin: 0 0 18px;
 }
+.conta-drawer-sub strong { color: var(--color-text-primary, #13251A); }
 
-.conta-drawer-form { display: flex; flex-direction: column; gap: 6px; }
-.conta-drawer-form label {
-  font-size: 0.8rem;
-  font-weight: 600;
-  opacity: 0.8;
+/* Ciclo lunar — progresso do login (nova → crescente → cheia) */
+.conta-fases {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  list-style: none;
+  margin: 0 0 18px;
+  padding: 0 0 14px;
+  border-bottom: 1px solid var(--cd-hairline-suave);
 }
-.conta-drawer-form input {
+.conta-fase {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 10.5px;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--color-text-muted, #837B68);
+}
+/* Fio entre as fases */
+.conta-fase + .conta-fase::before {
+  content: "";
+  width: 16px;
+  height: 1px;
+  background: var(--cd-hairline);
+  margin-right: 10px;
+}
+.conta-fase-lua {
+  flex: 0 0 auto;
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  border: 1.5px solid var(--color-gold, #C0954E);
+  box-sizing: border-box;
+}
+.conta-fase-lua--crescente {
+  background: linear-gradient(90deg, var(--color-gold, #C0954E) 50%, transparent 50%);
+}
+.conta-fase-lua--cheia { background: var(--color-gold, #C0954E); }
+.conta-fase.is-atual {
+  color: var(--color-text-primary, #13251A);
+}
+.conta-fase.is-atual .conta-fase-lua {
+  box-shadow: 0 0 0 3px var(--color-gold-mist, #EDDDB8);
+}
+.conta-fase:not(.is-atual):not(.is-feita) { opacity: 0.55; }
+
+/* ============================================================
+   Formulários
+   ============================================================ */
+.conta-drawer-form { display: flex; flex-direction: column; gap: 6px; }
+.conta-drawer-form label:not(.termos-aceite) {
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--color-text-muted, #837B68);
+  margin-top: 4px;
+}
+.conta-drawer-form input,
+.conta-drawer-fone-row select {
   padding: 12px 14px;
-  border-radius: 10px;
-  border: 1px solid rgba(31, 51, 31, 0.2);
+  border-radius: 12px;
+  border: 1px solid var(--color-neutral-stone, #D6CDBA);
+  background: var(--color-bg-page, #FAF7F0);
+  color: var(--color-text-primary, #13251A);
   font-size: 1rem;
   font-family: inherit;
   margin-bottom: 4px;
+  transition: border-color 0.2s, box-shadow 0.2s;
 }
-.conta-drawer-form input:focus {
+.conta-drawer-form input::placeholder { color: var(--color-text-muted, #837B68); opacity: 0.75; }
+.conta-drawer-form input:focus,
+.conta-drawer-fone-row select:focus {
   outline: none;
   border-color: var(--color-gold);
+  box-shadow: 0 0 0 3px var(--color-gold-mist, #EDDDB8);
+}
+
+/* Campo do código OTP: 6 dígitos espaçados, centrados */
+.conta-input--codigo {
+  font-size: 1.5rem;
+  font-weight: 500;
+  letter-spacing: 0.5em;
+  text-align: center;
+  text-indent: 0.5em; /* compensa o letter-spacing do último dígito */
+  font-variant-numeric: tabular-nums;
 }
 
 .conta-drawer-fone-row { display: flex; gap: 8px; margin-bottom: 4px; }
-.conta-drawer-fone-row select {
-  flex: 0 0 90px;
-  padding: 12px 6px;
-  border-radius: 10px;
-  border: 1px solid rgba(31, 51, 31, 0.2);
-  font-size: 0.95rem;
-  font-family: inherit;
-}
+.conta-drawer-fone-row select { flex: 0 0 92px; padding: 12px 6px; font-size: 0.95rem; }
 .conta-drawer-fone-row input { flex: 1; margin-bottom: 0; }
 
 .conta-drawer-erro {
-  color: #B3261E;
+  color: var(--cd-erro);
   font-size: 0.82rem;
   margin: -2px 0 4px;
 }
@@ -147,41 +349,67 @@ body.conta-drawer-aberto { overflow: hidden; }
   display: block;
   width: 100%;
   box-sizing: border-box;
-  margin-top: 8px;
-  padding: 12px 16px;
-  border-radius: 10px;
-  border: none;
-  background: #1F331F;
-  color: var(--color-gold);
-  font-weight: 700;
+  margin-top: 10px;
+  padding: 13px 16px;
+  border-radius: 12px;
+  border: 1px solid rgba(217, 183, 118, 0.3);
+  background: linear-gradient(180deg, var(--color-bg-dark, #142E20), var(--color-bg-dark-deep, #0E2117));
+  color: var(--color-gold-light, #D9B776);
+  font-family: inherit;
+  font-weight: 600;
   font-size: 0.95rem;
+  letter-spacing: 0.02em;
   text-align: center;
   text-decoration: none;
   cursor: pointer;
-  transition: opacity 0.2s, transform 0.1s ease;
+  box-shadow: 0 6px 18px rgba(14, 33, 23, 0.18);
+  transition: border-color 0.2s, box-shadow 0.2s, transform 0.1s ease, opacity 0.2s;
 }
-.conta-drawer-btn:hover { opacity: 0.9; }
+.conta-drawer-btn:hover:not(:disabled) {
+  border-color: var(--color-gold, #C0954E);
+  box-shadow: 0 8px 22px rgba(14, 33, 23, 0.26);
+}
 .conta-drawer-btn:active { transform: scale(0.98); }
 .conta-drawer-btn:disabled { opacity: 0.5; cursor: default; }
+.conta-drawer-btn:focus-visible {
+  outline: 2px solid var(--color-focus-ring, #A8C49E);
+  outline-offset: 2px;
+}
 
 .conta-drawer-btn--sair {
   background: transparent;
-  color: #1F331F;
-  border: 1px solid rgba(31, 51, 31, 0.3);
+  color: var(--color-text-primary, #13251A);
+  border: 1px solid var(--cd-hairline);
+  box-shadow: none;
 }
+.conta-drawer-btn--sair:hover:not(:disabled) { box-shadow: none; }
 
 .conta-drawer-link {
   display: block;
   margin-top: 16px;
   background: none;
   border: none;
+  padding: 0;
+  font-family: inherit;
   font-size: 0.85rem;
   text-decoration: underline;
+  text-underline-offset: 3px;
   opacity: 0.7;
   cursor: pointer;
-  color: #1F331F;
+  color: var(--color-text-primary, #13251A);
 }
 .conta-drawer-link:hover { opacity: 1; }
+.conta-drawer-link:focus-visible {
+  outline: 2px solid var(--color-focus-ring, #A8C49E);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+@media (max-width: 480px) {
+  .conta-ceu { padding: 46px 20px 18px; }
+  .conta-drawer-corpo { padding: 18px 20px 24px; }
+  .conta-drawer-titulo { font-size: 1.55rem; }
+}
 
 /* ============================================================
    Tela admin — painel embutido (iframe) ocupando o drawer inteiro
@@ -195,24 +423,17 @@ body.conta-drawer-aberto { overflow: hidden; }
   border-left: none;
 }
 
-/* O ✕ flutua sobre o header escuro (ou sobre o iframe, no modo login) —
-   chip com fundo pra ficar visível em qualquer tema do painel. */
+/* No modo admin o ✕ flutua sobre o header do painel (chip já é padrão) */
 .conta-drawer-panel--admin .conta-drawer-fechar {
   top: 12px;
   right: 12px;
   width: 30px;
   height: 30px;
-  padding: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 50%;
-  background: rgba(31, 51, 31, 0.55);
-  color: #FFFDF8;
-  opacity: 0.9;
   font-size: 16px;
+  background: rgba(31, 51, 31, 0.55);
+  border: none;
+  color: #FFFDF8;
 }
-.conta-drawer-panel--admin .conta-drawer-fechar:hover { opacity: 1; }
 
 .conta-drawer-tela--admin:not([hidden]) {
   display: flex;
@@ -251,14 +472,14 @@ body.conta-drawer-aberto { overflow: hidden; }
   line-height: 1.4;
   margin: 12px 0 4px;
   cursor: pointer;
-  color: #1F331F;
+  color: var(--color-text-primary, #13251A);
 }
 .termos-aceite input[type="checkbox"] {
   flex: 0 0 auto;
   width: 18px;
   height: 18px;
   margin: 1px 0 0;
-  accent-color: #1F331F;
+  accent-color: var(--color-primary, #142E20);
   cursor: pointer;
 }
 .termos-link {
@@ -266,7 +487,7 @@ body.conta-drawer-aberto { overflow: hidden; }
   border: none;
   padding: 0;
   font: inherit;
-  color: var(--color-gold, #C99A4E);
+  color: var(--color-gold-deep, #9A742F);
   font-weight: 600;
   text-decoration: underline;
   cursor: pointer;
@@ -288,7 +509,7 @@ body.conta-drawer-aberto { overflow: hidden; }
 .termos-modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.6);
+  background: rgba(8, 15, 8, 0.55);
   z-index: 10000;
   display: flex;
   align-items: center;
@@ -300,10 +521,10 @@ body.conta-drawer-aberto { overflow: hidden; }
 
 .termos-modal {
   position: relative;
-  background: #FFFDF8;
+  background: var(--color-bg-card, #FFFDF8);
   border: 1px solid rgba(201, 154, 78, 0.3);
   border-radius: 14px;
-  box-shadow: 0 20px 60px rgba(31, 51, 31, 0.35);
+  box-shadow: 0 20px 60px rgba(14, 33, 23, 0.35);
   width: 100%;
   max-width: 600px;
   max-height: 85vh;
@@ -321,7 +542,7 @@ body.conta-drawer-aberto { overflow: hidden; }
   font-size: 20px;
   line-height: 1;
   cursor: pointer;
-  color: #1F331F;
+  color: var(--color-text-primary, #13251A);
   opacity: 0.6;
   transition: opacity 0.2s;
 }
@@ -330,19 +551,19 @@ body.conta-drawer-aberto { overflow: hidden; }
   font-family: var(--fonte-titulo);
   font-size: 1.4rem;
   margin: 0 30px 14px 0;
-  color: #1F331F;
+  color: var(--color-text-primary, #13251A);
 }
 .termos-modal-corpo {
   overflow-y: auto;
   font-size: 0.92rem;
   line-height: 1.6;
-  color: #2c2c2c;
+  color: var(--color-text-body, #33473B);
 }
 .termos-modal-corpo p { margin: 0 0 12px; }
 .termos-modal-corpo h3 {
   font-family: var(--fonte-titulo);
   font-size: 1.12rem;
-  color: #1F331F;
+  color: var(--color-text-primary, #13251A);
   margin: 22px 0 10px;
   padding-top: 14px;
   border-top: 1px solid rgba(201, 154, 78, 0.25);
@@ -350,12 +571,12 @@ body.conta-drawer-aberto { overflow: hidden; }
 .termos-modal-corpo h4 {
   font-size: 0.98rem;
   font-weight: 700;
-  color: #1F331F;
+  color: var(--color-text-primary, #13251A);
   margin: 18px 0 8px;
 }
 .termos-modal-corpo ul { margin: 0 0 12px; padding-left: 20px; }
 .termos-modal-corpo li { margin-bottom: 6px; }
-.termos-modal-corpo strong { color: #1F331F; }
+.termos-modal-corpo strong { color: var(--color-text-primary, #13251A); }
 .termos-meta { font-size: 0.82rem; opacity: 0.65; margin-bottom: 16px !important; }
 .termos-fecho {
   margin-top: 18px !important;
@@ -369,30 +590,41 @@ body.conta-drawer-aberto { overflow: hidden; }
 /* ============================================================
    Histórico de leituras (tela logado) + form de pergunta adicional
    ============================================================ */
-.conta-historico { margin: 4px 0 18px; }
+.conta-historico { margin: 0 0 18px; }
 
 .conta-historico-titulo {
   font-family: var(--fonte-titulo);
-  font-size: 1.05rem;
-  color: #1F331F;
-  margin: 0 0 10px;
-  padding-top: 14px;
-  border-top: 1px solid rgba(201, 154, 78, 0.25);
+  font-size: 1.15rem;
+  font-weight: 600;
+  color: var(--color-text-primary, #13251A);
+  margin: 0 0 12px;
+}
+.conta-historico-titulo::before {
+  content: "✦";
+  font-size: 0.75em;
+  color: var(--color-gold, #C0954E);
+  margin-right: 8px;
 }
 
 .conta-historico-vazio {
   font-size: 0.85rem;
   line-height: 1.5;
-  opacity: 0.65;
+  color: var(--color-text-muted, #837B68);
   margin: 4px 0;
 }
 
 .conta-historico-card {
-  border: 1px solid rgba(201, 154, 78, 0.25);
+  border: 1px solid var(--cd-hairline-suave);
+  border-left: 3px solid var(--color-gold, #C0954E);
   border-radius: 12px;
-  padding: 12px 14px;
+  padding: 13px 15px;
   margin-bottom: 10px;
-  background: rgba(201, 154, 78, 0.05);
+  background: var(--color-bg-page, #FAF7F0);
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.conta-historico-card:hover {
+  border-color: var(--cd-hairline);
+  box-shadow: 0 4px 14px rgba(14, 33, 23, 0.08);
 }
 
 .conta-historico-head {
@@ -402,27 +634,30 @@ body.conta-drawer-aberto { overflow: hidden; }
   gap: 8px;
 }
 .conta-historico-head strong {
-  font-size: 0.92rem;
-  color: #1F331F;
-  line-height: 1.3;
+  font-family: var(--fonte-titulo);
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--color-text-primary, #13251A);
+  line-height: 1.25;
 }
 
 .conta-historico-status {
   flex: 0 0 auto;
-  font-size: 0.7rem;
+  font-size: 0.68rem;
   font-weight: 700;
-  padding: 2px 8px;
+  letter-spacing: 0.04em;
+  padding: 2px 9px;
   border-radius: 999px;
   white-space: nowrap;
 }
-.conta-historico-status--pendente  { background: rgba(201, 154, 78, 0.18); color: #8a6320; }
-.conta-historico-status--pago      { background: rgba(31, 51, 31, 0.1);   color: #1F331F; }
-.conta-historico-status--atendido  { background: rgba(31, 51, 31, 0.85);  color: var(--color-gold, #C99A4E); }
-.conta-historico-status--cancelado { background: rgba(179, 38, 30, 0.12); color: #B3261E; }
+.conta-historico-status--pendente  { background: rgba(192, 149, 78, 0.16);  color: var(--color-gold-deep, #9A742F); }
+.conta-historico-status--pago      { background: rgba(62, 107, 69, 0.14);   color: var(--color-text-primary, #13251A); }
+.conta-historico-status--atendido  { background: var(--color-bg-dark, #142E20); color: var(--color-gold-light, #D9B776); }
+.conta-historico-status--cancelado { background: rgba(179, 38, 30, 0.12);   color: var(--cd-erro); }
 
 .conta-historico-meta {
   font-size: 0.8rem;
-  opacity: 0.7;
+  color: var(--color-text-muted, #837B68);
   margin: 6px 0 0;
 }
 
@@ -431,26 +666,28 @@ body.conta-drawer-aberto { overflow: hidden; }
   font-size: 0.78rem;
   margin: 6px 0 0;
   padding-left: 10px;
-  border-left: 2px solid rgba(201, 154, 78, 0.45);
-  opacity: 0.85;
+  border-left: 2px solid rgba(192, 149, 78, 0.45);
+  color: var(--color-text-body, #33473B);
 }
 
 .conta-historico-add {
   display: inline-block;
   margin-top: 10px;
-  padding: 7px 12px;
+  padding: 7px 13px;
   border-radius: 999px;
-  border: 1px solid rgba(31, 51, 31, 0.35);
+  border: 1px solid var(--cd-hairline);
   background: transparent;
-  color: #1F331F;
+  color: var(--color-text-primary, #13251A);
+  font-family: inherit;
   font-size: 0.8rem;
-  font-weight: 700;
+  font-weight: 600;
   cursor: pointer;
-  transition: background 0.2s, color 0.2s;
+  transition: background 0.2s, color 0.2s, border-color 0.2s;
 }
 .conta-historico-add:hover:not(:disabled) {
-  background: #1F331F;
-  color: var(--color-gold, #C99A4E);
+  background: var(--color-bg-dark, #142E20);
+  border-color: var(--color-bg-dark, #142E20);
+  color: var(--color-gold-light, #D9B776);
 }
 .conta-historico-add:disabled { opacity: 0.55; cursor: default; }
 
@@ -461,34 +698,33 @@ body.conta-drawer-aberto { overflow: hidden; }
   gap: 6px;
   margin-top: 12px;
   padding-top: 10px;
-  border-top: 1px dashed rgba(201, 154, 78, 0.4);
+  border-top: 1px dashed rgba(192, 149, 78, 0.4);
 }
 .conta-comp-form label {
-  font-size: 0.78rem;
-  font-weight: 600;
-  opacity: 0.8;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--color-text-muted, #837B68);
 }
-.conta-comp-form select {
-  padding: 10px 12px;
-  border-radius: 10px;
-  border: 1px solid rgba(31, 51, 31, 0.2);
-  font-size: 0.9rem;
-  font-family: inherit;
-  background: #FFFDF8;
-}
-.conta-comp-campos { display: flex; flex-direction: column; gap: 6px; }
+.conta-comp-form select,
 .conta-comp-campos textarea {
   padding: 10px 12px;
   border-radius: 10px;
-  border: 1px solid rgba(31, 51, 31, 0.2);
+  border: 1px solid var(--color-neutral-stone, #D6CDBA);
+  background: var(--color-bg-card, #FFFDF8);
+  color: var(--color-text-primary, #13251A);
   font-size: 0.9rem;
   font-family: inherit;
-  resize: vertical;
+  transition: border-color 0.2s, box-shadow 0.2s;
 }
+.conta-comp-campos { display: flex; flex-direction: column; gap: 6px; }
+.conta-comp-campos textarea { resize: vertical; }
 .conta-comp-campos textarea:focus,
 .conta-comp-form select:focus {
   outline: none;
-  border-color: var(--color-gold, #C99A4E);
+  border-color: var(--color-gold, #C0954E);
+  box-shadow: 0 0 0 3px var(--color-gold-mist, #EDDDB8);
 }
 .conta-comp-form .conta-drawer-btn { margin-top: 4px; }
 .conta-comp-form .conta-drawer-link { margin-top: 6px; }
