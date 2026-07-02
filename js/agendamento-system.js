@@ -687,9 +687,10 @@ async function irParaPagamentoCarrinho() {
     return;
   }
 
-  // Guest precisa aceitar os termos antes de pagar (cliente logado já aceitou).
+  // Guest precisa aceitar os termos antes de pagar. Logado nunca vê o
+  // checkbox (regra do Matheus): o aceite já fica registrado no perfil.
   const termosChk = document.getElementById('carrinho-termos');
-  if (!window._csTermosOk && !(termosChk && termosChk.checked)) {
+  if (!window._csLogado && !window._csTermosOk && !(termosChk && termosChk.checked)) {
     mostrarAlerta('Aceite os Termos de Uso para continuar.', 'error');
     return;
   }
@@ -1052,10 +1053,11 @@ function _atualizarBotoesCarrinho() {
   const termosChk = document.getElementById('carrinho-termos');
   if (addBtn) addBtn.disabled = Estado.carrinho.length >= 4;
 
-  // Guest (não logado / sem termos em dia) precisa aceitar a cada pedido.
-  // Cliente logado com termos aceitos (window._csTermosOk) pula o checkbox.
+  // Guest (não logado) precisa aceitar a cada pedido. Logado NUNCA vê o
+  // checkbox (window._csLogado): aceitou ao criar a conta e o re-aceite
+  // de versão nova acontece no login, não no carrinho.
   const temItens = Estado.carrinho.length > 0;
-  const exigeTermos = temItens && !window._csTermosOk;
+  const exigeTermos = temItens && !window._csLogado && !window._csTermosOk;
   if (termosEl) termosEl.hidden = !exigeTermos;
 
   if (payBtn) {
