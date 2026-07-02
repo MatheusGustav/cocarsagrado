@@ -216,9 +216,10 @@ function _lsSet(key, val) {
 }
 
 // ============================================================
-// LEMBRAR CLIENTE NO MESMO APARELHO (localStorage, sem login)
-// Guarda os campos já formatados de "Seus dados" e preenche sozinho
-// na próxima visita. Sem e-mail — conta/login virá em etapa futura.
+// LEMBRAR CLIENTE (localStorage, SÓ com conta logada)
+// Regra do Matheus (2026-07-02): guest não tem dados lembrados. O
+// espelho local é populado pelo login (conta-cliente.js, a partir do
+// perfil) e apagado no logout; o autofill roda só com sessão ativa.
 // ============================================================
 const CLIENTE_LOCAL_KEY = 'cocar_cliente_v1';
 
@@ -1132,7 +1133,8 @@ function _focarPrimeiroErro() {
 function confirmarDadosPessoais() {
   if (!validarDadosPessoais()) return;
   _prepararDadosPessoais();
-  salvarDadosPessoaisLocal();
+  // Só quem tem conta é lembrado; guest não deixa rastro no aparelho.
+  if (window._csLogado) salvarDadosPessoaisLocal();
   irParaPasso(2);
 }
 
@@ -1725,8 +1727,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const nasc = document.getElementById('f-nasc');
   if (nasc) aplicarMascaraData(nasc);
 
-  // Lembra o cliente neste aparelho (preenche "Seus dados" sozinho).
-  restaurarDadosPessoaisLocal();
+  // Autofill de "Seus dados" NÃO roda mais aqui: só com sessão ativa —
+  // conta-cliente.js chama restaurarDadosPessoaisLocal() após confirmar login.
 
   const form = document.getElementById('form-dados');
   if (form) form.addEventListener('submit', processarFormulario);
