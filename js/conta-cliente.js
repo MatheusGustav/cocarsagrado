@@ -80,6 +80,9 @@ document.addEventListener('DOMContentLoaded', () => {
   function abrirDrawer() {
     overlay.classList.add('open');
     document.body.classList.add('conta-drawer-aberto');
+    // Histórico pode ter mudado desde o login (ex.: complemento pago) —
+    // recarrega ao reabrir já na tela de logado.
+    if (telaLogado && !telaLogado.hidden) carregarHistorico();
   }
   function fecharDrawer() {
     overlay.classList.remove('open');
@@ -346,10 +349,260 @@ document.addEventListener('DOMContentLoaded', () => {
   async function buscarPerfil(userId) {
     const { data } = await window.supabase
       .from('perfis')
-      .select('nome, termos_versao')
+      .select('nome, termos_versao, whatsapp')
       .eq('id', userId)
       .maybeSingle();
     return data;
+  }
+
+  // ============================================================
+  // Histórico de leituras + pergunta adicional (só cliente; admin
+  // nunca chega nesta tela — cai em #contaTelaAdmin antes).
+  // ============================================================
+  const historicoLista = document.getElementById('contaHistoricoLista');
+  let perfilAtual = null; // nome/whatsapp p/ o link de pagamento do complemento
+
+  const STATUS_LEITURA = {
+    pendente:   { txt: 'Aguardando pagamento', cls: 'pendente' },
+    pago:       { txt: 'Pago',                 cls: 'pago' },
+    confirmado: { txt: 'Confirmado',           cls: 'pago' },
+    atendido:   { txt: 'Realizada',            cls: 'atendido' },
+    cancelado:  { txt: 'Cancelado',            cls: 'cancelado' },
+  };
+
+  function _dataBr(iso) {
+    const [y, m, d] = String(iso || '').split('-');
+    return (y && m && d) ? `${d}/${m}/${y}` : String(iso || '');
+  }
+  const _brl = (v) => `R$ ${Number(v || 0).toFixed(2).replace('.', ',')}`;
+
+  // Preço acumulado por qtd de perguntas (tabela ATUAL — o banco refaz a
+  // conta na RPC; aqui é só exibição). Naipe: precoNaipe() global do
+  // modal-agendamento. Amarração: tiers do catálogo público.
+  async function _tabelaPrecos(row) {
+    if (row.tipo_slug === 'naipes-da-pombo-gira') {
+      const fallback = { 1: 30, 2: 56, 3: 78, 4: 96 };
+      const tab = {};
+      for (let n = 1; n <= row.max_perguntas; n++) {
+        tab[n] = (typeof precoNaipe === 'function') ? precoNaipe(n) : fallback[n];
+      }
+      return tab;
+    }
+    const { data, error } = await window.supabase
+      .from('tipos_leitura')
+      .select('num_perguntas, preco_original')
+      .eq('grupo_slug', row.grupo_slug)
+      .eq('ativo', true);
+    if (error || !data?.length) return null;
+    const tab = {};
+    data.forEach(t => { if (t.num_perguntas >= 1) tab[t.num_perguntas] = Number(t.preco_original); });
+    return tab;
+  }
+
+  async function carregarHistorico() {
+    if (!historicoLista) return;
+    historicoLista.innerHTML = '<p class="conta-historico-vazio">Carregando…</p>';
+    const { data, error } = await window.supabase.rpc('minhas_leituras');
+    if (error) {
+      historicoLista.innerHTML = '<p class="conta-historico-vazio">Não foi possível carregar suas leituras. Tente novamente.</p>';
+      return;
+    }
+    renderHistorico(data || []);
+  }
+
+  function renderHistorico(rows) {
+    historicoLista.innerHTML = '';
+    const origens      = rows.filter(r => !r.leitura_origem_id);
+    const complementos = rows.filter(r => r.leitura_origem_id);
+
+    if (!origens.length) {
+      historicoLista.innerHTML = '<p class="conta-historico-vazio">Suas leituras vão aparecer aqui. Pedidos feitos sem a conta conectada não entram na lista.</p>';
+      return;
+    }
+
+    origens.forEach(row => {
+      const card = document.createElement('div');
+      card.className = 'conta-historico-card';
+
+      const st    = STATUS_LEITURA[row.status] || { txt: row.status, cls: 'pendente' };
+      const head  = document.createElement('div');
+      head.className = 'conta-historico-head';
+      const nome  = document.createElement('strong');
+      nome.textContent = row.tipo_nome;
+      const badge = document.createElement('span');
+      badge.className = `conta-historico-status conta-historico-status--${st.cls}`;
+      badge.textContent = st.txt;
+      head.append(nome, badge);
+
+      const meta = document.createElement('p');
+      meta.className = 'conta-historico-meta';
+      const perg = row.perguntas_total >= 1
+        ? ` · ${row.perguntas_total} pergunta${row.perguntas_total > 1 ? 's' : ''}`
+        : '';
+      meta.textContent = `${_dataBr(row.data_agendamento)}${perg} · ${_brl(row.valor_final)}`;
+      card.append(head, meta);
+
+      complementos.filter(c => c.leitura_origem_id === row.id).forEach(c => {
+        const stc   = STATUS_LEITURA[c.status] || { txt: c.status };
+        const linha = document.createElement('p');
+        linha.className = 'conta-historico-comp';
+        const plural = c.num_perguntas > 1 ? 's adicionais' : ' adicional';
+        linha.textContent = `+ ${c.num_perguntas} pergunta${plural} · ${_brl(c.valor_final)} · ${stc.txt}`;
+        card.appendChild(linha);
+      });
+
+      if (row.pode_complementar) {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'conta-historico-add';
+        btn.textContent = '+ Adicionar pergunta';
+        btn.addEventListener('click', () => abrirFormComplemento(card, row, btn));
+        card.appendChild(btn);
+      }
+
+      historicoLista.appendChild(card);
+    });
+  }
+
+  // Mini-form dentro do card: qtd extra (com o valor da diferença) +
+  // texto das perguntas → RPC → paga pelo modal de pagamento normal.
+  async function abrirFormComplemento(card, row, btnAbrir) {
+    if (card.querySelector('.conta-comp-form')) return;
+    btnAbrir.disabled = true;
+
+    const tab    = await _tabelaPrecos(row);
+    const atuais = row.perguntas_total;
+    const opcoes = [];
+    if (tab && tab[atuais] != null) {
+      for (let extra = 1; atuais + extra <= row.max_perguntas; extra++) {
+        const alvo = atuais + extra;
+        if (tab[alvo] == null || tab[alvo] <= tab[atuais]) break;
+        opcoes.push({ extra, delta: tab[alvo] - tab[atuais] });
+      }
+    }
+    if (!opcoes.length) {
+      btnAbrir.disabled = false;
+      btnAbrir.textContent = 'Indisponível no momento';
+      return;
+    }
+
+    const form = document.createElement('form');
+    form.className = 'conta-comp-form';
+    form.noValidate = true;
+
+    const lbl = document.createElement('label');
+    lbl.textContent = 'Quantas perguntas a mais?';
+    const sel = document.createElement('select');
+    opcoes.forEach(o => {
+      const opt = document.createElement('option');
+      opt.value = String(o.extra);
+      opt.textContent = `+${o.extra} pergunta${o.extra > 1 ? 's' : ''} — só ${_brl(o.delta)} de diferença`;
+      sel.appendChild(opt);
+    });
+
+    const campos = document.createElement('div');
+    campos.className = 'conta-comp-campos';
+    function renderCampos() {
+      const extra  = parseInt(sel.value, 10) || 1;
+      const antigas = Array.from(campos.querySelectorAll('textarea')).map(t => t.value);
+      campos.innerHTML = '';
+      for (let i = 0; i < extra; i++) {
+        const ta = document.createElement('textarea');
+        ta.rows = 2;
+        ta.placeholder = extra > 1
+          ? `Escreva a ${atuais + i + 1}ª pergunta…`
+          : 'Escreva sua nova pergunta…';
+        ta.value = antigas[i] || '';
+        campos.appendChild(ta);
+      }
+    }
+    renderCampos();
+    sel.addEventListener('change', renderCampos);
+
+    const erro = document.createElement('p');
+    erro.className = 'conta-drawer-erro';
+    erro.hidden = true;
+
+    const enviar = document.createElement('button');
+    enviar.type = 'submit';
+    enviar.className = 'conta-drawer-btn';
+    enviar.textContent = 'Ir para o pagamento';
+
+    const cancelar = document.createElement('button');
+    cancelar.type = 'button';
+    cancelar.className = 'conta-drawer-link';
+    cancelar.textContent = 'Cancelar';
+    cancelar.addEventListener('click', () => {
+      form.remove();
+      btnAbrir.disabled = false;
+    });
+
+    form.append(lbl, sel, campos, erro, enviar, cancelar);
+    card.appendChild(form);
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      erro.hidden = true;
+
+      const extra  = parseInt(sel.value, 10) || 1;
+      const textos = Array.from(campos.querySelectorAll('textarea')).map(t => t.value.trim());
+      if (textos.some(t => t.length < 3)) {
+        erro.textContent = 'Escreva cada pergunta antes de continuar.';
+        erro.hidden = false;
+        return;
+      }
+      // Numeração continua a da leitura original (admin lê tudo em sequência)
+      const obs = textos.map((t, i) => `${atuais + i + 1}. ${t}`).join('\n');
+
+      enviar.disabled = true;
+      enviar.textContent = 'Preparando pagamento…';
+      try {
+        if (typeof gerarChavePedido !== 'function' || typeof window.redirecionarParaPagamento !== 'function') {
+          throw new Error('Recarregue a página e tente novamente.');
+        }
+        const chave = await gerarChavePedido();
+        const { data, error } = await window.supabase.rpc('criar_pedido_complemento', {
+          p_chave: chave,
+          p_leitura_origem_id: row.id,
+          p_perguntas_extra: extra,
+          p_observacoes: obs,
+        });
+        if (error) {
+          const msg = String(error.message || '');
+          throw new Error(msg.includes('complemento_expirado')
+            ? 'O prazo para adicionar perguntas a esta leitura terminou.'
+            : 'Não foi possível criar o complemento. Tente novamente.');
+        }
+        const valor = Number(data?.valor || 0);
+
+        // O modal de pagamento lê nome/whatsapp de Estado.dadosPessoais —
+        // garante que estão preenchidos mesmo sem carrinho nesta sessão.
+        if (typeof Estado !== 'undefined' && Estado?.dadosPessoais) {
+          if (!Estado.dadosPessoais.nome && perfilAtual?.nome) Estado.dadosPessoais.nome = perfilAtual.nome;
+          if (!Estado.dadosPessoais.whatsapp && perfilAtual?.whatsapp) Estado.dadosPessoais.whatsapp = perfilAtual.whatsapp;
+        }
+
+        fecharDrawer();
+        document.getElementById('modalAgendamento')?.classList.add('open');
+        document.body.classList.add('modal-aberto');
+        window.redirecionarParaPagamento(chave, [{
+          tipo:              { nome: `Pergunta adicional — ${row.tipo_nome}` },
+          terapeuta:         row.terapeuta,
+          data:              row.data_agendamento,
+          horario:           '00:00',
+          observacoes:       obs,
+          valor_original:    valor,
+          desconto_aplicado: 0,
+          valor_final:       valor,
+        }], null);
+      } catch (err) {
+        erro.textContent = err?.message || 'Não foi possível continuar. Tente novamente.';
+        erro.hidden = false;
+        enviar.disabled = false;
+        enviar.textContent = 'Ir para o pagamento';
+        carregarHistorico();
+      }
+    });
   }
 
   // Avisa o carrinho se o cliente logado já tem os termos aceitos na
@@ -406,11 +659,13 @@ document.addEventListener('DOMContentLoaded', () => {
     // Cliente logado com termos em dia: checkout não precisa repetir o aceite.
     definirTermosOk(true);
 
+    perfilAtual = perfil;
     const inicial = (perfil.nome || email || '?').trim().charAt(0).toUpperCase();
     nomeLogadoEl.textContent  = perfil.nome || email;
     emailLogadoEl.textContent = email;
     atualizarIconeNav(true, inicial);
     mostrarTela(telaLogado);
+    carregarHistorico();
   }
 
   window.supabase.auth.onAuthStateChange((_event, session) => {

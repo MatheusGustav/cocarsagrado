@@ -712,6 +712,15 @@
       <div class="conta-drawer-tela" id="contaTelaLogado" hidden>
         <h2 class="conta-drawer-titulo">Olá, <span id="contaNomeLogado">—</span></h2>
         <p class="conta-drawer-sub" id="contaEmailLogado"></p>
+
+        <!-- Histórico de leituras (só pedidos feitos com a conta conectada).
+             Nas leituras elegíveis (Naipes / Amarração de Igbo) aparece o botão
+             de adicionar pergunta pagando só a diferença — janela de 1 dia. -->
+        <div class="conta-historico">
+          <h3 class="conta-historico-titulo">Suas leituras</h3>
+          <div class="conta-historico-lista" id="contaHistoricoLista" aria-live="polite"></div>
+        </div>
+
         <button type="button" class="conta-drawer-btn conta-drawer-btn--sair" id="contaSairBtn">Sair</button>
       </div>
 

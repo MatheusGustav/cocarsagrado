@@ -305,3 +305,130 @@ body.conta-drawer-aberto { overflow: hidden; }
   font-size: 0.88rem;
   opacity: 0.85;
 }
+
+/* ============================================================
+   Histórico de leituras (tela logado) + form de pergunta adicional
+   ============================================================ */
+.conta-historico { margin: 4px 0 18px; }
+
+.conta-historico-titulo {
+  font-family: var(--fonte-titulo);
+  font-size: 1.05rem;
+  color: #1F331F;
+  margin: 0 0 10px;
+  padding-top: 14px;
+  border-top: 1px solid rgba(201, 154, 78, 0.25);
+}
+
+.conta-historico-vazio {
+  font-size: 0.85rem;
+  line-height: 1.5;
+  opacity: 0.65;
+  margin: 4px 0;
+}
+
+.conta-historico-card {
+  border: 1px solid rgba(201, 154, 78, 0.25);
+  border-radius: 12px;
+  padding: 12px 14px;
+  margin-bottom: 10px;
+  background: rgba(201, 154, 78, 0.05);
+}
+
+.conta-historico-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+.conta-historico-head strong {
+  font-size: 0.92rem;
+  color: #1F331F;
+  line-height: 1.3;
+}
+
+.conta-historico-status {
+  flex: 0 0 auto;
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+.conta-historico-status--pendente  { background: rgba(201, 154, 78, 0.18); color: #8a6320; }
+.conta-historico-status--pago      { background: rgba(31, 51, 31, 0.1);   color: #1F331F; }
+.conta-historico-status--atendido  { background: rgba(31, 51, 31, 0.85);  color: var(--color-gold, #C99A4E); }
+.conta-historico-status--cancelado { background: rgba(179, 38, 30, 0.12); color: #B3261E; }
+
+.conta-historico-meta {
+  font-size: 0.8rem;
+  opacity: 0.7;
+  margin: 6px 0 0;
+}
+
+/* Linha de complemento (pergunta adicional já pedida) */
+.conta-historico-comp {
+  font-size: 0.78rem;
+  margin: 6px 0 0;
+  padding-left: 10px;
+  border-left: 2px solid rgba(201, 154, 78, 0.45);
+  opacity: 0.85;
+}
+
+.conta-historico-add {
+  display: inline-block;
+  margin-top: 10px;
+  padding: 7px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(31, 51, 31, 0.35);
+  background: transparent;
+  color: #1F331F;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+}
+.conta-historico-add:hover:not(:disabled) {
+  background: #1F331F;
+  color: var(--color-gold, #C99A4E);
+}
+.conta-historico-add:disabled { opacity: 0.55; cursor: default; }
+
+/* Mini-form do complemento dentro do card */
+.conta-comp-form {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px dashed rgba(201, 154, 78, 0.4);
+}
+.conta-comp-form label {
+  font-size: 0.78rem;
+  font-weight: 600;
+  opacity: 0.8;
+}
+.conta-comp-form select {
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(31, 51, 31, 0.2);
+  font-size: 0.9rem;
+  font-family: inherit;
+  background: #FFFDF8;
+}
+.conta-comp-campos { display: flex; flex-direction: column; gap: 6px; }
+.conta-comp-campos textarea {
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(31, 51, 31, 0.2);
+  font-size: 0.9rem;
+  font-family: inherit;
+  resize: vertical;
+}
+.conta-comp-campos textarea:focus,
+.conta-comp-form select:focus {
+  outline: none;
+  border-color: var(--color-gold, #C99A4E);
+}
+.conta-comp-form .conta-drawer-btn { margin-top: 4px; }
+.conta-comp-form .conta-drawer-link { margin-top: 6px; }
