@@ -1557,3 +1557,46 @@ BEGIN
   );
 END
 $do$;
+
+-- ============================================================
+-- 14) LIMPEZA DE CONTAS FANTASMA
+-- Usuário OTP nasce no PEDIDO do código; typo virava conta morta.
+-- O front confirma antes de criar conta nova; a vassoura diária
+-- ('limpar-contas-fantasma', 00:35 SP) apaga quem nunca confirmou
+-- o código e tem +7 dias (sem perfil e sem pedido, por garantia).
+-- ============================================================
+CREATE OR REPLACE FUNCTION public.limpar_contas_fantasma()
+RETURNS integer
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_n integer;
+BEGIN
+  DELETE FROM auth.users u
+  WHERE u.email_confirmed_at IS NULL
+    AND u.created_at < now() - interval '7 days'
+    AND NOT EXISTS (SELECT 1 FROM public.perfis  p WHERE p.id = u.id)
+    AND NOT EXISTS (SELECT 1 FROM public.pedidos o WHERE o.user_id = u.id);
+
+  GET DIAGNOSTICS v_n = ROW_COUNT;
+  RETURN v_n;
+END;
+$$;
+
+REVOKE ALL ON FUNCTION public.limpar_contas_fantasma() FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.limpar_contas_fantasma() TO service_role;
+
+DO $do$
+BEGIN
+  IF EXISTS (SELECT 1 FROM cron.job WHERE jobname = 'limpar-contas-fantasma') THEN
+    PERFORM cron.unschedule('limpar-contas-fantasma');
+  END IF;
+  PERFORM cron.schedule(
+    'limpar-contas-fantasma',
+    '35 3 * * *',
+    'SELECT public.limpar_contas_fantasma();'
+  );
+END
+$do$;

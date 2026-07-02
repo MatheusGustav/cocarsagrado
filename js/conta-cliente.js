@@ -19,6 +19,10 @@ document.addEventListener('DOMContentLoaded', () => {
   const inputEmail  = document.getElementById('conta-email');
   const emailErro   = document.getElementById('contaEmailErro');
   const emailBtn    = document.getElementById('contaEmailBtn');
+  const emailConfirma    = document.getElementById('contaEmailConfirma');
+  const emailConfirmaRef = document.getElementById('contaEmailConfirmaRef');
+  const emailCriarBtn    = document.getElementById('contaEmailCriarBtn');
+  const emailCorrigirBtn = document.getElementById('contaEmailCorrigir');
 
   const formCodigo  = document.getElementById('contaFormCodigo');
   const inputCodigo = document.getElementById('conta-codigo');
@@ -255,8 +259,27 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // ============================================================
-  // Passo 1 — enviar código por e-mail
+  // Passo 1 — enviar código por e-mail.
+  // O Supabase cria o usuário no PEDIDO do código — então primeiro
+  // tentamos sem criar conta (shouldCreateUser: false). E-mail sem
+  // conta cai numa confirmação explícita antes de criar: erro de
+  // digitação não vira usuário fantasma.
   // ============================================================
+  function irParaCodigo(email) {
+    emailPendente = email;
+    codigoEmailRef.textContent = email;
+    inputCodigo.value = '';
+    codigoBtn.disabled = false;
+    codigoBtn.textContent = 'Confirmar';
+    limparErro(codigoErro);
+    mostrarTela(telaCodigo);
+  }
+
+  function mostrarConfirmaEmail(mostrar) {
+    if (emailConfirma) emailConfirma.hidden = !mostrar;
+    if (formEmail) formEmail.hidden = mostrar;
+  }
+
   formEmail?.addEventListener('submit', async (e) => {
     e.preventDefault();
     limparErro(emailErro);
@@ -272,23 +295,50 @@ document.addEventListener('DOMContentLoaded', () => {
     emailBtn.textContent = 'Enviando…';
     const { error } = await window.supabase.auth.signInWithOtp({
       email,
-      options: { shouldCreateUser: true },
+      options: { shouldCreateUser: false },
     });
     emailBtn.disabled = false;
     emailBtn.textContent = 'Enviar código';
 
     if (error) {
+      // "Signups not allowed for otp" = e-mail sem conta → confirma antes de criar
+      const semConta = error.code === 'otp_disabled'
+        || /signups? not allowed/i.test(error.message || '');
+      if (semConta) {
+        if (emailConfirmaRef) emailConfirmaRef.textContent = email;
+        mostrarConfirmaEmail(true);
+        return;
+      }
       mostrarErroEl(emailErro, 'Não foi possível enviar o código. Tente novamente.');
       return;
     }
 
-    emailPendente = email;
-    codigoEmailRef.textContent = email;
-    inputCodigo.value = '';
-    codigoBtn.disabled = false;
-    codigoBtn.textContent = 'Confirmar';
-    limparErro(codigoErro);
-    mostrarTela(telaCodigo);
+    irParaCodigo(email);
+  });
+
+  // Confirmou que o e-mail está certo: agora sim cria a conta.
+  emailCriarBtn?.addEventListener('click', async () => {
+    const email = inputEmail.value.trim();
+    emailCriarBtn.disabled = true;
+    emailCriarBtn.textContent = 'Criando…';
+    const { error } = await window.supabase.auth.signInWithOtp({
+      email,
+      options: { shouldCreateUser: true },
+    });
+    emailCriarBtn.disabled = false;
+    emailCriarBtn.textContent = 'Sim, criar minha conta';
+
+    mostrarConfirmaEmail(false);
+    if (error) {
+      mostrarErroEl(emailErro, 'Não foi possível enviar o código. Tente novamente.');
+      return;
+    }
+    irParaCodigo(email);
+  });
+
+  emailCorrigirBtn?.addEventListener('click', () => {
+    mostrarConfirmaEmail(false);
+    inputEmail.focus();
   });
 
   // ============================================================
@@ -321,6 +371,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   voltarEmailBtn?.addEventListener('click', () => {
     limparErro(codigoErro);
+    mostrarConfirmaEmail(false);
     mostrarTela(telaEmail);
   });
 
@@ -903,6 +954,7 @@ document.addEventListener('DOMContentLoaded', () => {
       modoLoginAdmin = false;
       atualizarIconeNav(false, '');
       definirTermosOk(false);
+      mostrarConfirmaEmail(false);
       mostrarTela(telaEmail);
       return;
     }
