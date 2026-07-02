@@ -23,16 +23,22 @@ DROP TABLE IF EXISTS public.tipos_leitura            CASCADE;
 
 -- Define quem é admin: a RLS de authenticated em todas as tabelas
 -- usa is_admin(). Apenas estes e-mails têm acesso pleno ao painel.
+-- Exige AAL2 (senha + TOTP): sem o 2º fator o RLS não reconhece admin,
+-- então quem tiver só a senha não bate na API REST direto (sessão aal1).
+-- IMPORTANTE: só funciona depois de inscrever o TOTP no /admin e logar
+-- até aal2; senão o painel fica sem ler/gravar (login/enroll seguem ok).
 CREATE OR REPLACE FUNCTION public.is_admin()
 RETURNS boolean
 LANGUAGE sql
 SECURITY DEFINER
+STABLE
 SET search_path = public
 AS $$
   SELECT auth.email() IN (
-    'cocarsagrado@gmail.com'
-    -- adicione outros e-mails de admin aqui se necessário
-  );
+           'cocarsagrado@gmail.com'
+           -- adicione outros e-mails de admin aqui se necessário
+         )
+     AND COALESCE(auth.jwt() ->> 'aal', 'aal1') = 'aal2';
 $$;
 
 -- Só authenticated executa (policies RLS rodam como o role consultante)
@@ -433,17 +439,19 @@ DROP POLICY IF EXISTS "auth_admin_horarios" ON public.horarios_disponiveis;
 CREATE POLICY "auth_admin_horarios" ON public.horarios_disponiveis
   FOR ALL TO authenticated USING (is_admin()) WITH CHECK (is_admin());
 
--- agendamentos — anon SÓ pode INSERT (criar agendamento novo).
--- SELECT/UPDATE/DELETE bloqueados: clientes não leem nem alteram
--- agendamentos de outras pessoas. Frontend usa RPCs security definer
--- (chave_pedido_existe, contar_agendamentos_por_data). Admin = is_admin().
+-- agendamentos — anon NÃO tem acesso direto. Toda criação passa pela
+-- RPC criar_pedido (SECURITY DEFINER, valida preço/desconto). Deixar
+-- anon dar INSERT direto (WITH CHECK TRUE) furava essa validação —
+-- dava POST /rest/v1/agendamentos com status='pago'/valor=0. Por isso
+-- não há policy de INSERT para anon + REVOKE INSERT (defesa em profund.).
+-- SELECT via RPCs security definer (chave_pedido_existe, contar_...).
+-- Admin = is_admin().
 DROP POLICY IF EXISTS "anon_select_agend" ON public.agendamentos;
 DROP POLICY IF EXISTS "anon_insert_agend" ON public.agendamentos;
 DROP POLICY IF EXISTS "anon_update_agend" ON public.agendamentos;
 DROP POLICY IF EXISTS "anon_delete_agend" ON public.agendamentos;
 
-CREATE POLICY "anon_insert_agend" ON public.agendamentos
-  FOR INSERT TO anon WITH CHECK (TRUE);
+REVOKE INSERT ON public.agendamentos FROM anon;
 
 DROP POLICY IF EXISTS "auth_admin_agend" ON public.agendamentos;
 CREATE POLICY "auth_admin_agend" ON public.agendamentos
@@ -626,6 +634,8 @@ DECLARE
   v_qty            numeric;
   v_promo_pct      numeric;
   v_min_final      numeric;
+  v_num_perg       integer;   -- naipe: qtd de perguntas declarada (1..4)
+  v_esperado_naipe numeric;   -- preço acumulado esperado para v_num_perg
   v_soma           numeric := 0;
   v_soma_elig      numeric := 0;   -- soma das leituras elegíveis a cupom (não-naipe)
   v_cfg            jsonb;
@@ -687,10 +697,20 @@ BEGIN
     v_valor_final    := COALESCE((v_item->>'valor_final')::numeric, -1);
 
     IF v_tipo.slug = 'naipes-da-pombo-gira' THEN
-      -- Naipes da Pomba Gira: preço progressivo fixo por qtd de perguntas
-      -- (1→30, 2→56, 3→78, 4→96). Sem desconto de nenhum tipo.
-      IF v_valor_original NOT IN (30, 56, 78, 96) THEN
-        RAISE EXCEPTION 'pedido_invalido: valor não confere com o catálogo';
+      -- Naipes da Pomba Gira: preço progressivo por qtd de perguntas, amarrado
+      -- ao num_perguntas declarado (1→30, 2→56, 3→78, 4→96). Sem desconto.
+      v_num_perg := COALESCE((v_item->>'num_perguntas')::integer, 0);
+      IF v_num_perg < 1 OR v_num_perg > 4 THEN
+        RAISE EXCEPTION 'pedido_invalido: qtd de perguntas do naipe inválida';
+      END IF;
+      v_esperado_naipe := CASE v_num_perg
+                            WHEN 1 THEN 30
+                            WHEN 2 THEN 56
+                            WHEN 3 THEN 78
+                            WHEN 4 THEN 96
+                          END;
+      IF v_valor_original <> v_esperado_naipe THEN
+        RAISE EXCEPTION 'pedido_invalido: valor do naipe não confere com a qtd de perguntas';
       END IF;
       v_min_final := v_valor_original; -- força valor_final = valor_original
     ELSE
@@ -800,13 +820,15 @@ $$;
 
 GRANT EXECUTE ON FUNCTION public.criar_pedido(text, text, date, text, text, numeric, jsonb, text) TO anon;
 
--- pedidos — anon SÓ INSERT (criar pedido). SELECT bloqueado (LGPD).
--- authenticated admin ALL via is_admin().
+-- pedidos — anon NÃO tem acesso direto. Criação só via RPC criar_pedido
+-- (SECURITY DEFINER). INSERT direto de anon (WITH CHECK TRUE) permitia
+-- gravar pedido com status='pago'/valor_total=0 furando a validação de
+-- preço — por isso sem policy de INSERT + REVOKE. SELECT bloqueado (LGPD);
+-- status do cliente via RPC pedido_status. Admin ALL via is_admin().
 DROP POLICY IF EXISTS "anon_insert_pedidos" ON public.pedidos;
 DROP POLICY IF EXISTS "auth_admin_pedidos" ON public.pedidos;
 
-CREATE POLICY "anon_insert_pedidos" ON public.pedidos
-  FOR INSERT TO anon WITH CHECK (TRUE);
+REVOKE INSERT ON public.pedidos FROM anon;
 
 CREATE POLICY "auth_admin_pedidos" ON public.pedidos
   FOR ALL TO authenticated USING (is_admin()) WITH CHECK (is_admin());

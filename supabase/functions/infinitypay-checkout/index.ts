@@ -33,6 +33,31 @@ Deno.serve(async (req) => {
       description: i.description,
     }))
 
+    // Revalida o valor contra o pedido já gravado (criar_pedido valida o total
+    // contra o catálogo). Sem isso o cliente forjaria items[] baratos e geraria
+    // link de R$1 no handle da loja — o webhook rejeitaria, mas o dinheiro já
+    // teria entrado (suporte/estorno manual). Amarrar a uma linha real de pedido
+    // também impede gerar links de cobrança arbitrários no endpoint aberto.
+    const SUPABASE_URL = Deno.env.get('SUPABASE_URL') ?? ''
+    const SERVICE_KEY  = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    if (!SUPABASE_URL || !SERVICE_KEY) return json({ error: 'servidor mal configurado' }, 500)
+
+    const supabase = createClient(SUPABASE_URL, SERVICE_KEY)
+    const { data: pedido, error: pErr } = await supabase
+      .from('pedidos')
+      .select('valor_total, status')
+      .eq('chave_pedido', chave)
+      .maybeSingle()
+
+    if (pErr) return json({ error: 'falha ao validar pedido' }, 500)
+    if (!pedido) return json({ error: 'pedido não encontrado' }, 404)
+
+    const totalItens = ipItems.reduce((s: number, i: { price: number }) => s + i.price, 0)
+    const totalPedido = Math.round(Number(pedido.valor_total) * 100)
+    if (Math.abs(totalItens - totalPedido) > 5) {
+      return json({ error: 'valor dos itens não confere com o pedido' }, 400)
+    }
+
     // Email plus-address da loja: pré-preenche o checkout (cliente não digita)
     // e o recibo cai filtrado/arquivado no Gmail da loja.
     const fone = String(whatsapp ?? '').replace(/\D/g, '')
