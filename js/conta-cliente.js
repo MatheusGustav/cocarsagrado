@@ -736,6 +736,19 @@ document.addEventListener('DOMContentLoaded', () => {
     const perfil = await buscarPerfil(session.user.id);
 
     if (!perfil) {
+      // Conta com TOTP verificado = admin a meio caminho (OTP/senha ok,
+      // falta o 2º fator — is_admin só vira true em aal2). Sem este desvio
+      // cairia no "Quase lá" e criaria linha de cliente em perfis. Cliente
+      // comum nunca tem fator TOTP inscrito.
+      const { data: fatores } = await window.supabase.auth.mfa.listFactors();
+      if ((fatores?.totp || []).some(f => f.status === 'verified')) {
+        modoLoginAdmin = true;
+        atualizarIconeNav(false, '');
+        definirTermosOk(false);
+        mostrarTela(telaAdmin);
+        return;
+      }
+
       // 1º login: ainda não tem perfil — pede os dados antes de liberar a conta.
       atualizarIconeNav(false, '');
       definirTermosOk(false);
@@ -774,12 +787,17 @@ document.addEventListener('DOMContentLoaded', () => {
     atualizarUiLogado(session);
   });
 
-  // Dashboard embutido avisa quando o login chega em aal2 — atualiza o
-  // ícone da nav e encerra o modoLoginAdmin (o evento de auth nem sempre
-  // cruza o iframe).
+  // Dashboard embutido avisa login (aal2) e logout — os eventos de auth do
+  // supabase-js nem sempre cruzam o iframe.
   window.addEventListener('message', (e) => {
-    if (e.origin !== location.origin || e.data?.tipo !== 'cocar-admin-logado') return;
-    window.supabase.auth.getSession().then(({ data }) => atualizarUiLogado(data.session));
+    if (e.origin !== location.origin) return;
+    if (e.data?.tipo === 'cocar-admin-logado') {
+      window.supabase.auth.getSession().then(({ data }) => atualizarUiLogado(data.session));
+    } else if (e.data?.tipo === 'cocar-admin-saiu') {
+      // Iframe já revogou no servidor; aqui só limpa o estado local —
+      // o evento SIGNED_OUT resultante arruma a UI inteira.
+      window.supabase.auth.signOut({ scope: 'local' });
+    }
   });
 
   window.supabase.auth.getSession().then(({ data }) => {

@@ -329,6 +329,11 @@ async function _fazerLogout() {
   _mfaFactorId = null;
   await supabase.auth.signOut();
   _admAutenticado = false;
+  // Embutido no drawer do site: avisa o pai pra voltar à tela de e-mail
+  // (o SIGNED_OUT do supabase-js nem sempre cruza o iframe).
+  if (document.documentElement.classList.contains('is-embed') && window.parent !== window) {
+    window.parent.postMessage({ tipo: 'cocar-admin-saiu' }, location.origin);
+  }
   _mostrarLogin();
 }
 
