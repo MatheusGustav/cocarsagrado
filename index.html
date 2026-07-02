@@ -640,34 +640,66 @@
 
       <!-- Estado: deslogado, passo 1 — pedir e-mail -->
       <div class="conta-drawer-tela" id="contaTelaEmail">
-        <h2 id="conta-drawer-title" class="conta-drawer-titulo">Minha conta</h2>
-        <p class="conta-drawer-sub">Entre com seu e-mail pra acessar seus pedidos de qualquer aparelho. É opcional — não precisa pra agendar.</p>
-        <form id="contaFormEmail" class="conta-drawer-form" novalidate>
-          <label for="conta-email">E-mail</label>
-          <input type="email" id="conta-email" name="email" placeholder="voce@email.com" required autocomplete="email">
-          <div class="conta-drawer-erro" id="contaEmailErro" hidden></div>
-          <button type="submit" class="conta-drawer-btn" id="contaEmailBtn">Enviar código</button>
-        </form>
+        <header class="conta-ceu">
+          <span class="conta-ceu-lua" aria-hidden="true"></span>
+          <h2 id="conta-drawer-title" class="conta-drawer-titulo">Minha conta</h2>
+          <p class="conta-ceu-sub">Suas leituras, num lugar só seu.</p>
+        </header>
+        <div class="conta-drawer-corpo">
+          <ol class="conta-fases" aria-label="Etapas de acesso">
+            <li class="conta-fase is-atual"><span class="conta-fase-lua conta-fase-lua--nova" aria-hidden="true"></span>E-mail</li>
+            <li class="conta-fase"><span class="conta-fase-lua conta-fase-lua--crescente" aria-hidden="true"></span>Código</li>
+            <li class="conta-fase"><span class="conta-fase-lua conta-fase-lua--cheia" aria-hidden="true"></span>Você</li>
+          </ol>
+          <p class="conta-drawer-sub">Sem senha: você recebe um código no e-mail e pronto. É opcional — dá pra agendar sem conta.</p>
+          <form id="contaFormEmail" class="conta-drawer-form" novalidate>
+            <label for="conta-email">E-mail</label>
+            <input type="email" id="conta-email" name="email" placeholder="voce@email.com" required autocomplete="email">
+            <div class="conta-drawer-erro" id="contaEmailErro" hidden></div>
+            <button type="submit" class="conta-drawer-btn" id="contaEmailBtn">Enviar código</button>
+          </form>
+        </div>
       </div>
 
       <!-- Estado: deslogado, passo 2 — confirmar código recebido -->
       <div class="conta-drawer-tela" id="contaTelaCodigo" hidden>
-        <h2 class="conta-drawer-titulo">Confirme o código</h2>
-        <p class="conta-drawer-sub">Enviamos um código de 6 dígitos pra <strong id="contaCodigoEmailRef"></strong>.</p>
-        <form id="contaFormCodigo" class="conta-drawer-form" novalidate>
-          <label for="conta-codigo">Código</label>
-          <input type="text" id="conta-codigo" name="codigo" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="000000" required>
-          <div class="conta-drawer-erro" id="contaCodigoErro" hidden></div>
-          <button type="submit" class="conta-drawer-btn" id="contaCodigoBtn">Confirmar</button>
-        </form>
-        <button type="button" class="conta-drawer-link" id="contaVoltarEmail">← Usar outro e-mail</button>
+        <header class="conta-ceu">
+          <span class="conta-ceu-lua" aria-hidden="true"></span>
+          <h2 class="conta-drawer-titulo">Confirme o código</h2>
+          <p class="conta-ceu-sub">Quase dentro.</p>
+        </header>
+        <div class="conta-drawer-corpo">
+          <ol class="conta-fases" aria-label="Etapas de acesso">
+            <li class="conta-fase is-feita"><span class="conta-fase-lua conta-fase-lua--nova" aria-hidden="true"></span>E-mail</li>
+            <li class="conta-fase is-atual"><span class="conta-fase-lua conta-fase-lua--crescente" aria-hidden="true"></span>Código</li>
+            <li class="conta-fase"><span class="conta-fase-lua conta-fase-lua--cheia" aria-hidden="true"></span>Você</li>
+          </ol>
+          <p class="conta-drawer-sub">Enviamos um código de 6 dígitos pra <strong id="contaCodigoEmailRef"></strong>.</p>
+          <form id="contaFormCodigo" class="conta-drawer-form" novalidate>
+            <label for="conta-codigo">Código</label>
+            <input type="text" id="conta-codigo" class="conta-input--codigo" name="codigo" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="······" required>
+            <div class="conta-drawer-erro" id="contaCodigoErro" hidden></div>
+            <button type="submit" class="conta-drawer-btn" id="contaCodigoBtn">Confirmar</button>
+          </form>
+          <button type="button" class="conta-drawer-link" id="contaVoltarEmail">← Usar outro e-mail</button>
+        </div>
       </div>
 
       <!-- Estado: 1º login — perfil ainda não existe, pede os dados de uma vez -->
       <div class="conta-drawer-tela" id="contaTelaPerfil" hidden>
-        <h2 class="conta-drawer-titulo">Quase lá</h2>
-        <p class="conta-drawer-sub">Preencha seus dados uma vez — nos próximos agendamentos, mesmo em outro aparelho, já vêm prontos.</p>
-        <form id="contaFormPerfil" class="conta-drawer-form" novalidate>
+        <header class="conta-ceu">
+          <span class="conta-ceu-lua" aria-hidden="true"></span>
+          <h2 class="conta-drawer-titulo">Quase lá</h2>
+          <p class="conta-ceu-sub">Só na primeira vez.</p>
+        </header>
+        <div class="conta-drawer-corpo">
+          <ol class="conta-fases" aria-label="Etapas de acesso">
+            <li class="conta-fase is-feita"><span class="conta-fase-lua conta-fase-lua--nova" aria-hidden="true"></span>E-mail</li>
+            <li class="conta-fase is-feita"><span class="conta-fase-lua conta-fase-lua--crescente" aria-hidden="true"></span>Código</li>
+            <li class="conta-fase is-atual"><span class="conta-fase-lua conta-fase-lua--cheia" aria-hidden="true"></span>Você</li>
+          </ol>
+          <p class="conta-drawer-sub">Preencha seus dados uma vez — nos próximos agendamentos, mesmo em outro aparelho, já vêm prontos.</p>
+          <form id="contaFormPerfil" class="conta-drawer-form" novalidate>
           <label for="conta-perfil-nome">Nome completo</label>
           <input type="text" id="conta-perfil-nome" name="nome" placeholder="Seu nome completo" required autocomplete="name">
 
@@ -689,39 +721,50 @@
             <span>Li e concordo com os <button type="button" class="termos-link" data-cs-termos>Termos de Uso e a Política de Privacidade</button></span>
           </label>
 
-          <div class="conta-drawer-erro" id="contaPerfilErro" hidden></div>
-          <button type="submit" class="conta-drawer-btn" id="contaPerfilBtn" disabled>Salvar e continuar</button>
-        </form>
+            <div class="conta-drawer-erro" id="contaPerfilErro" hidden></div>
+            <button type="submit" class="conta-drawer-btn" id="contaPerfilBtn" disabled>Salvar e continuar</button>
+          </form>
+        </div>
       </div>
 
       <!-- Estado: termos mudaram — re-aceite (dados já existem, só pede o aceite) -->
       <div class="conta-drawer-tela" id="contaTelaReaceite" hidden>
-        <h2 class="conta-drawer-titulo">Atualizamos nossos Termos</h2>
-        <p class="conta-drawer-sub">Revise e aceite a nova versão para continuar usando sua conta.</p>
-        <form id="contaFormReaceite" class="conta-drawer-form" novalidate>
-          <label class="termos-aceite">
-            <input type="checkbox" id="conta-reaceite-termos">
-            <span>Li e concordo com os <button type="button" class="termos-link" data-cs-termos>Termos de Uso e a Política de Privacidade</button></span>
-          </label>
-          <div class="conta-drawer-erro" id="contaReaceiteErro" hidden></div>
-          <button type="submit" class="conta-drawer-btn" id="contaReaceiteBtn" disabled>Concordar e continuar</button>
-        </form>
+        <header class="conta-ceu">
+          <span class="conta-ceu-lua" aria-hidden="true"></span>
+          <h2 class="conta-drawer-titulo">Atualizamos nossos Termos</h2>
+          <p class="conta-ceu-sub">Uma releitura rápida.</p>
+        </header>
+        <div class="conta-drawer-corpo">
+          <p class="conta-drawer-sub">Revise e aceite a nova versão para continuar usando sua conta.</p>
+          <form id="contaFormReaceite" class="conta-drawer-form" novalidate>
+            <label class="termos-aceite">
+              <input type="checkbox" id="conta-reaceite-termos">
+              <span>Li e concordo com os <button type="button" class="termos-link" data-cs-termos>Termos de Uso e a Política de Privacidade</button></span>
+            </label>
+            <div class="conta-drawer-erro" id="contaReaceiteErro" hidden></div>
+            <button type="submit" class="conta-drawer-btn" id="contaReaceiteBtn" disabled>Concordar e continuar</button>
+          </form>
+        </div>
       </div>
 
       <!-- Estado: logado -->
       <div class="conta-drawer-tela" id="contaTelaLogado" hidden>
-        <h2 class="conta-drawer-titulo">Olá, <span id="contaNomeLogado">—</span></h2>
-        <p class="conta-drawer-sub" id="contaEmailLogado"></p>
+        <header class="conta-ceu conta-ceu--logado">
+          <span class="conta-avatar" id="contaAvatarLogado" aria-hidden="true"></span>
+          <h2 class="conta-drawer-titulo">Olá, <span id="contaNomeLogado">—</span></h2>
+          <p class="conta-ceu-sub" id="contaEmailLogado"></p>
+        </header>
+        <div class="conta-drawer-corpo">
+          <!-- Histórico de leituras (só pedidos feitos com a conta conectada).
+               Nas leituras elegíveis (Naipes / Amarração de Igbo) aparece o botão
+               de adicionar pergunta pagando só a diferença — janela de 1 dia. -->
+          <div class="conta-historico">
+            <h3 class="conta-historico-titulo">Suas leituras</h3>
+            <div class="conta-historico-lista" id="contaHistoricoLista" aria-live="polite"></div>
+          </div>
 
-        <!-- Histórico de leituras (só pedidos feitos com a conta conectada).
-             Nas leituras elegíveis (Naipes / Amarração de Igbo) aparece o botão
-             de adicionar pergunta pagando só a diferença — janela de 1 dia. -->
-        <div class="conta-historico">
-          <h3 class="conta-historico-titulo">Suas leituras</h3>
-          <div class="conta-historico-lista" id="contaHistoricoLista" aria-live="polite"></div>
+          <button type="button" class="conta-drawer-btn conta-drawer-btn--sair" id="contaSairBtn">Sair</button>
         </div>
-
-        <button type="button" class="conta-drawer-btn conta-drawer-btn--sair" id="contaSairBtn">Sair</button>
       </div>
 
       <!-- Estado: admin — painel embutido no drawer (iframe compartilha a

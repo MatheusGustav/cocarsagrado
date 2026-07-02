@@ -42,9 +42,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const telaAdmin     = document.getElementById('contaTelaAdmin');
 
-  const nomeLogadoEl  = document.getElementById('contaNomeLogado');
-  const emailLogadoEl = document.getElementById('contaEmailLogado');
-  const sairBtn       = document.getElementById('contaSairBtn');
+  const nomeLogadoEl   = document.getElementById('contaNomeLogado');
+  const emailLogadoEl  = document.getElementById('contaEmailLogado');
+  const avatarLogadoEl = document.getElementById('contaAvatarLogado');
+  const sairBtn        = document.getElementById('contaSairBtn');
 
   if (!overlay || !window.supabase) return;
 
@@ -764,10 +765,12 @@ document.addEventListener('DOMContentLoaded', () => {
     // Falha transitória: tela logada mínima (sem termosOk — checkout pede o
     // aceite). Reabrir o drawer tenta o histórico de novo.
     if (perfilErroFetch) {
-      atualizarIconeNav(true, (email || '?').trim().charAt(0).toUpperCase());
+      const inicialEmail = (email || '?').trim().charAt(0).toUpperCase();
+      atualizarIconeNav(true, inicialEmail);
       definirTermosOk(false);
       nomeLogadoEl.textContent  = email;
       emailLogadoEl.textContent = email;
+      if (avatarLogadoEl) avatarLogadoEl.textContent = inicialEmail;
       mostrarTela(telaLogado);
       carregarHistorico();
       return;
@@ -816,6 +819,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const inicial = (perfil.nome || email || '?').trim().charAt(0).toUpperCase();
     nomeLogadoEl.textContent  = perfil.nome || email;
     emailLogadoEl.textContent = email;
+    if (avatarLogadoEl) avatarLogadoEl.textContent = inicial;
     atualizarIconeNav(true, inicial);
     mostrarTela(telaLogado);
     carregarHistorico();
