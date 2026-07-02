@@ -1028,6 +1028,11 @@ async function aplicarCupom() {
     if (linha?.valido) {
       Estado.cupom = { codigo, valor: Number(linha.valor_desconto) || 0 };
       _renderizarCarrinho();
+    } else if (linha?.precisa_login) {
+      // Cupom pessoal digitado deslogado: sem a dica, o dono legítimo
+      // (que recebeu o código por e-mail) só veria "inválido".
+      if (msg) msg.textContent = 'Esse cupom é pessoal — entre na sua conta (ícone no topo do site) e aplique de novo.';
+      if (btn) { btn.disabled = false; btn.textContent = 'Aplicar'; }
     } else {
       if (msg) msg.textContent = 'Cupom inválido ou expirado.';
       if (btn) { btn.disabled = false; btn.textContent = 'Aplicar'; }
@@ -1043,6 +1048,24 @@ function removerCupom() {
   Estado.cupom = null;
   _renderizarCarrinho();
 }
+
+// Revalida o cupom aplicado quando a sessão muda (login/logout no drawer).
+// Cupom pessoal validado logado morreria só na criar_pedido após o logout —
+// erro genérico no fim do checkout. Aqui ele sai do carrinho na hora, avisando.
+window._csRevalidarCupom = async function () {
+  if (!Estado.cupom) return;
+  try {
+    const { data, error } = await supabase.rpc('validar_cupom', { p_codigo: Estado.cupom.codigo });
+    if (error) return; // erro de rede: não pune o cupom
+    const linha = Array.isArray(data) ? data[0] : data;
+    if (!linha?.valido) {
+      Estado.cupom = null;
+      try { _renderizarCarrinho(); } catch (_) { /* carrinho fora da tela */ }
+      const msg = document.getElementById('cupom-msg');
+      if (msg) msg.textContent = 'O cupom saiu do pedido: ele é pessoal e a conta mudou.';
+    }
+  } catch (_) { /* melhor manter o cupom do que removê-lo por falha de rede */ }
+};
 
 window.aplicarCupom = aplicarCupom;
 window.removerCupom = removerCupom;

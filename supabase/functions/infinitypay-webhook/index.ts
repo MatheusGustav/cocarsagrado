@@ -202,6 +202,13 @@ Deno.serve(async (req) => {
       return json({ ok: true, skipped: 'already processed' })
     }
 
+    // 2 = confirmado, mas o cupom de uso único do pedido JÁ tinha sido
+    // queimado por outro pedido — o desconto saiu em dobro. Confirma
+    // mesmo assim (o dinheiro já entrou), mas pede um olho humano.
+    if (Number(rpcData) === 2) {
+      await alertaTelegram(`⚠️ Cupom de uso único usado em MAIS DE UM pedido pago!\n\n🔑 Pedido: ${chave}\n\nO desconto saiu em dobro — confira no painel e trate com o cliente se for o caso.`)
+    }
+
     await log(chave, 'confirmado', `pago via ${captureMethod} (recebido ${recebido}, esperado ${esperado})`, body)
 
     await notificarTelegram(chave, captureMethod)

@@ -182,6 +182,11 @@ async function criarCupom() {
     userId = data[0].user_id;
     // Sem descrição, anota o dono (a tabela não guarda o e-mail).
     if (!desc) desc = `pessoal: ${data[0].nome || email}`;
+    // Conta que nunca confirmou o código: o cupom fica preso a um user
+    // que talvez nunca logue (e o cliente não vê nada no site).
+    if (data[0].confirmado === false) {
+      _toastAdmin('⚠️ Essa conta nunca concluiu o login — o cliente só verá o cupom depois de entrar com esse e-mail.', 'erro');
+    }
   }
 
   // Validade: expira no fim do dia escolhido, horário de Brasília.
