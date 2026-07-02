@@ -49,10 +49,17 @@ const brl = (v: unknown) => {
   return Number.isInteger(n) ? `R$ ${n}` : `R$ ${n.toFixed(2).replace('.', ',')}`
 }
 
-// 'YYYY-MM-DD...' -> 'DD/MM/YYYY' (sem Date(): evita shift de fuso)
+// -> 'DD/MM/YYYY'. Data pura ('YYYY-MM-DD') não tem fuso: split manual.
+// Timestamptz vem em UTC — formata no fuso de SP, senão cupom que expira
+// 23:59 SP (= dia seguinte em UTC) sai com validade 1 dia maior no e-mail.
 function dataBR(iso: unknown) {
-  const [y, m, d] = String(iso ?? '').slice(0, 10).split('-')
-  return (y && m && d) ? `${d}/${m}/${y}` : ''
+  const s = String(iso ?? '')
+  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) {
+    const [y, m, d] = s.split('-')
+    return `${d}/${m}/${y}`
+  }
+  const dt = new Date(s)
+  return isNaN(dt.getTime()) ? '' : dt.toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' })
 }
 
 function esc(s: unknown) {

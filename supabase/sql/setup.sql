@@ -585,6 +585,9 @@ AS $$
 DECLARE
   v_id    bigint;
   v_cupom text;
+  v_uso   boolean;
+  v_ativo boolean;
+  v_reuso boolean := FALSE;
 BEGIN
   SELECT id, cupom_codigo INTO v_id, v_cupom
   FROM public.pedidos
@@ -605,15 +608,24 @@ BEGIN
   WHERE pedido_id = v_id
     AND status = 'pendente';
 
-  -- Cupom de uso único: morre após o pagamento confirmado.
+  -- Cupom de uso único: morre após o pagamento confirmado. Se JÁ estava
+  -- morto (outro pedido queimou antes), o desconto deste pedido já foi
+  -- dado no link — confirma mesmo assim, mas retorna 2 pro webhook
+  -- alertar no Telegram (desconto saiu em dobro).
   IF v_cupom IS NOT NULL THEN
+    SELECT uso_unico, ativo INTO v_uso, v_ativo
+    FROM public.cupons
+    WHERE upper(codigo) = upper(v_cupom);
+    IF COALESCE(v_uso, FALSE) AND v_ativo IS FALSE THEN
+      v_reuso := TRUE;
+    END IF;
     UPDATE public.cupons
     SET ativo = FALSE
     WHERE upper(codigo) = upper(v_cupom)
       AND uso_unico = TRUE;
   END IF;
 
-  RETURN 1;
+  RETURN CASE WHEN v_reuso THEN 2 ELSE 1 END;
 END;
 $$;
 
@@ -662,6 +674,7 @@ DECLARE
   v_cfg            jsonb;
   v_cupom_cod      text;
   v_cupom_val      numeric := 0;
+  v_cupom_uso      boolean := FALSE;
   v_cupom_desc     numeric := 0;
   v_ag_id          bigint;
   v_ids            bigint[]  := '{}';
@@ -683,7 +696,7 @@ BEGIN
   -- Cupom pessoal só vale pro dono logado; expirado não passa.
   v_cupom_cod := NULLIF(upper(trim(COALESCE(p_cupom_codigo, ''))), '');
   IF v_cupom_cod IS NOT NULL THEN
-    SELECT valor_desconto INTO v_cupom_val
+    SELECT valor_desconto, uso_unico INTO v_cupom_val, v_cupom_uso
     FROM public.cupons
     WHERE upper(codigo) = v_cupom_cod
       AND ativo = TRUE
@@ -691,6 +704,19 @@ BEGIN
       AND (user_id IS NULL OR user_id = auth.uid());
     IF v_cupom_val IS NULL THEN
       RAISE EXCEPTION 'pedido_invalido: cupom inválido ou inativo';
+    END IF;
+
+    -- Uso único: o desconto entra no link de pagamento ANTES do webhook
+    -- queimar o cupom — sem esta trava, 2 pedidos pendentes gastariam o
+    -- mesmo cupom. Pago trava sempre; pendente trava por 24h (carrinho
+    -- abandonado não prende o cupom pra sempre).
+    IF v_cupom_uso AND EXISTS (
+      SELECT 1 FROM public.pedidos p
+      WHERE upper(p.cupom_codigo) = v_cupom_cod
+        AND (p.status = 'pago'
+             OR (p.status = 'pendente' AND p.criado_em > now() - interval '24 hours'))
+    ) THEN
+      RAISE EXCEPTION 'pedido_invalido: cupom já está em uso em outro pedido';
     END IF;
   END IF;
 
@@ -950,32 +976,61 @@ DROP POLICY IF EXISTS "auth_admin_cupons" ON public.cupons;
 CREATE POLICY "auth_admin_cupons" ON public.cupons
   FOR ALL TO authenticated USING (is_admin()) WITH CHECK (is_admin());
 
--- validar_cupom: anon checa um código e recebe só {valido, valor_desconto}.
+-- validar_cupom: anon checa um código e recebe {valido, valor_desconto,
+-- precisa_login}. precisa_login = cupom pessoal digitado deslogado (dica
+-- de entrar na conta); dono errado recebe o "inválido" genérico.
 CREATE OR REPLACE FUNCTION public.validar_cupom(p_codigo text)
-RETURNS TABLE(valido boolean, valor_desconto numeric)
+RETURNS TABLE(valido boolean, valor_desconto numeric, precisa_login boolean)
 LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path = public
 AS $$
 DECLARE
-  v numeric;
+  v_cod  text;
+  v_val  numeric;
+  v_user uuid;
+  v_uso  boolean;
 BEGIN
-  SELECT c.valor_desconto INTO v
-  FROM public.cupons c
-  WHERE upper(c.codigo) = upper(trim(p_codigo))
-    AND c.ativo = TRUE
-    AND (c.expira_em IS NULL OR c.expira_em > now())
-    AND (c.user_id IS NULL OR c.user_id = auth.uid());
+  v_cod := upper(trim(COALESCE(p_codigo, '')));
 
-  IF v IS NULL THEN
-    RETURN QUERY SELECT FALSE, 0::numeric;
-  ELSE
-    RETURN QUERY SELECT TRUE, v;
+  SELECT c.valor_desconto, c.user_id, c.uso_unico
+  INTO v_val, v_user, v_uso
+  FROM public.cupons c
+  WHERE upper(c.codigo) = v_cod
+    AND c.ativo = TRUE
+    AND (c.expira_em IS NULL OR c.expira_em > now());
+
+  IF v_val IS NULL THEN
+    RETURN QUERY SELECT FALSE, 0::numeric, FALSE; RETURN;
   END IF;
+
+  IF v_user IS NOT NULL AND auth.uid() IS NULL THEN
+    RETURN QUERY SELECT FALSE, 0::numeric, TRUE; RETURN;
+  END IF;
+  IF v_user IS NOT NULL AND v_user <> auth.uid() THEN
+    RETURN QUERY SELECT FALSE, 0::numeric, FALSE; RETURN;
+  END IF;
+
+  -- Uso único já preso em outro pedido (mesma regra da criar_pedido)
+  IF v_uso AND EXISTS (
+    SELECT 1 FROM public.pedidos p
+    WHERE upper(p.cupom_codigo) = v_cod
+      AND (p.status = 'pago'
+           OR (p.status = 'pendente' AND p.criado_em > now() - interval '24 hours'))
+  ) THEN
+    RETURN QUERY SELECT FALSE, 0::numeric, FALSE; RETURN;
+  END IF;
+
+  RETURN QUERY SELECT TRUE, v_val, FALSE;
 END;
 $$;
 
+REVOKE ALL ON FUNCTION public.validar_cupom(text) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.validar_cupom(text) TO anon, authenticated;
+
+-- Índice p/ as checagens de cupom em uso (pedidos por código)
+CREATE INDEX IF NOT EXISTS idx_pedidos_cupom
+  ON public.pedidos (upper(cupom_codigo)) WHERE cupom_codigo IS NOT NULL;
 
 -- ============================================================
 -- 9) REALTIME — dashboard escuta as tabelas agendamentos e pedidos
@@ -1052,6 +1107,12 @@ CREATE POLICY "perfis_update_own" ON public.perfis
   FOR UPDATE
   USING (id = auth.uid())
   WITH CHECK (id = auth.uid());
+
+-- UPDATE por coluna: cliente não altera o próprio nascimento (senão
+-- "antecipa" o cupom de aniversário pelo console). Correção = admin.
+REVOKE UPDATE ON public.perfis FROM authenticated;
+GRANT UPDATE (nome, whatsapp, termos_versao, termos_aceitos_em, aceita_emails, aceita_emails_em)
+  ON public.perfis TO authenticated;
 
 -- ============================================================
 -- 11) HISTÓRICO DE LEITURAS + PERGUNTA ADICIONAL (complemento)
@@ -1357,7 +1418,7 @@ GRANT EXECUTE ON FUNCTION public.meus_cupons() TO authenticated;
 
 -- admin_user_por_email: admin resolve e-mail → conta (cupom pessoal).
 CREATE OR REPLACE FUNCTION public.admin_user_por_email(p_email text)
-RETURNS TABLE (user_id uuid, nome text)
+RETURNS TABLE (user_id uuid, nome text, confirmado boolean)
 LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path = public
@@ -1368,7 +1429,7 @@ BEGIN
     RAISE EXCEPTION 'acesso negado';
   END IF;
   RETURN QUERY
-  SELECT u.id, pf.nome
+  SELECT u.id, pf.nome, (u.email_confirmed_at IS NOT NULL)
   FROM auth.users u
   LEFT JOIN public.perfis pf ON pf.id = u.id
   WHERE lower(u.email) = lower(trim(p_email));
@@ -1513,19 +1574,21 @@ DECLARE
   v_hoje     date := (now() AT TIME ZONE 'America/Sao_Paulo')::date;
   v_ano      integer := extract(year FROM v_hoje)::integer;
   v_bissexto boolean := (v_ano % 4 = 0 AND (v_ano % 100 <> 0 OR v_ano % 400 = 0));
+  v_prefixo  text := 'NIVER' || to_char(v_hoje, 'YY') || '-';
   v_n        integer;
 BEGIN
   INSERT INTO public.cupons (codigo, valor_desconto, descricao, ativo, uso_unico, user_id, expira_em)
   SELECT
-    'NIVER' || to_char(v_hoje, 'YY') || '-'
-      || upper(substr(md5(p.id::text || v_ano::text), 1, 6)),
+    -- 8 chars de md5 (colisão ~1 em 4 bi); idempotência real é o
+    -- NOT EXISTS por usuário/ano abaixo.
+    v_prefixo || upper(substr(md5(p.id::text || v_ano::text), 1, 8)),
     15,
     'aniversário: ' || p.nome,
     TRUE,
     TRUE,
     p.id,
-    -- fim do 7º dia após o aniversário, horário de SP
-    ((v_hoje + 8)::timestamp AT TIME ZONE 'America/Sao_Paulo')
+    -- 23:59:59 SP do 7º dia após o aniversário
+    ((v_hoje + 8)::timestamp AT TIME ZONE 'America/Sao_Paulo') - interval '1 second'
   FROM public.perfis p
   WHERE (
     (extract(month FROM p.nascimento) = extract(month FROM v_hoje)
@@ -1535,7 +1598,12 @@ BEGIN
         AND to_char(v_hoje, 'MM-DD') = '02-28'
         AND NOT v_bissexto)
   )
-  ON CONFLICT (codigo) DO NOTHING;  -- idempotente: já ganhou este ano, pula
+  -- já ganhou este ano (mesmo que o admin tenha desativado)? pula.
+  AND NOT EXISTS (
+    SELECT 1 FROM public.cupons c
+    WHERE c.user_id = p.id AND c.codigo LIKE v_prefixo || '%'
+  )
+  ON CONFLICT (codigo) DO NOTHING;
 
   GET DIAGNOSTICS v_n = ROW_COUNT;
   RETURN v_n;
@@ -1578,7 +1646,10 @@ BEGIN
   WHERE u.email_confirmed_at IS NULL
     AND u.created_at < now() - interval '7 days'
     AND NOT EXISTS (SELECT 1 FROM public.perfis  p WHERE p.id = u.id)
-    AND NOT EXISTS (SELECT 1 FROM public.pedidos o WHERE o.user_id = u.id);
+    AND NOT EXISTS (SELECT 1 FROM public.pedidos o WHERE o.user_id = u.id)
+    -- cupom pessoal criado pelo admin: apagar a conta levaria o cupom
+    -- junto (CASCADE) sem aviso.
+    AND NOT EXISTS (SELECT 1 FROM public.cupons  c WHERE c.user_id = u.id);
 
   GET DIAGNOSTICS v_n = ROW_COUNT;
   RETURN v_n;

@@ -705,8 +705,11 @@ document.addEventListener('DOMContentLoaded', () => {
   const configAbrir  = document.getElementById('contaConfigAbrirBtn');
   const configVoltar = document.getElementById('contaConfigVoltar');
 
-  ligarMascaraFone(configDdi, configFone);
-  if (typeof aplicarMascaraData === 'function' && configNasc) aplicarMascaraData(configNasc);
+  // limparAoTrocarDdi: false — aqui o campo chega PRÉ-preenchido com o
+  // WhatsApp salvo; esbarrar no seletor de DDI não pode apagar o número.
+  // (Nascimento é somente leitura: sem máscara — editável permitia
+  // "antecipar" o cupom de aniversário; o banco também bloqueia.)
+  ligarMascaraFone(configDdi, configFone, { limparAoTrocarDdi: false });
 
   // O interruptor mostra o estado por extenso — some a dúvida de
   // "marcado significa o quê?".
@@ -717,8 +720,25 @@ document.addEventListener('DOMContentLoaded', () => {
   }
   configEmails?.addEventListener('change', atualizarEstadoEmails);
 
-  configAbrir?.addEventListener('click', () => {
-    if (!perfilAtual) return; // perfil ainda carregando/falhou: não abre form vazio
+  configAbrir?.addEventListener('click', async () => {
+    // Fallback de erro no fetch do perfil deixa a tela logada aberta com
+    // perfilAtual = null — o botão não pode virar no-op silencioso (é o
+    // caminho de descadastro dos e-mails). Tenta buscar de novo; falhou,
+    // avisa no próprio botão.
+    if (!perfilAtual) {
+      configAbrir.disabled = true;
+      const { data } = await window.supabase.auth.getSession();
+      const uid = data?.session?.user?.id;
+      const { perfil } = uid ? await buscarPerfil(uid) : {};
+      configAbrir.disabled = false;
+      if (perfil) {
+        perfilAtual = perfil;
+      } else {
+        configAbrir.textContent = 'Sem conexão — toque pra tentar de novo';
+        setTimeout(() => { configAbrir.textContent = '⚙ Configurações'; }, 3000);
+        return;
+      }
+    }
     configNome.value = perfilAtual.nome || '';
     configNasc.value = _dataBr(perfilAtual.nascimento);
     // whatsapp salvo como "+55 (27) 99999-9999" → separa DDI do número
@@ -740,13 +760,11 @@ document.addEventListener('DOMContentLoaded', () => {
     e.preventDefault();
     limparErro(configErro);
 
-    const nome    = configNome.value.trim();
-    const nascIso = typeof dataBrParaISO === 'function' ? dataBrParaISO(configNasc.value.trim()) : '';
-    const fone    = configFone.value.trim();
-    const quer    = !!configEmails.checked;
+    const nome = configNome.value.trim();
+    const fone = configFone.value.trim();
+    const quer = !!configEmails.checked;
 
     if (nome.length < 3) { mostrarErroEl(configErro, 'Nome deve ter pelo menos 3 caracteres.'); return; }
-    if (!nascIso) { mostrarErroEl(configErro, 'Data de nascimento inválida.'); return; }
     if (fone.replace(/\D/g, '').length < 6) { mostrarErroEl(configErro, 'Número inválido.'); return; }
 
     configBtn.disabled = true;
@@ -760,7 +778,8 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     const whatsapp = `${configDdi.value} ${fone}`;
-    const patch = { nome, nascimento: nascIso, whatsapp, aceita_emails: quer };
+    // Nascimento fica de fora: somente leitura (o banco também rejeita).
+    const patch = { nome, whatsapp, aceita_emails: quer };
     // Só re-marca o momento do consentimento quando a preferência MUDA.
     if (quer !== !!perfilAtual?.aceita_emails) patch.aceita_emails_em = new Date().toISOString();
 
@@ -773,7 +792,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Estado local + espelho do autofill + cabeçalho da tela logada.
-    perfilAtual = { ...(perfilAtual || {}), nome, nascimento: nascIso, whatsapp, aceita_emails: quer };
+    perfilAtual = { ...(perfilAtual || {}), nome, whatsapp, aceita_emails: quer };
     if (typeof _lsSet === 'function' && typeof CLIENTE_LOCAL_KEY === 'string') {
       _lsSet(CLIENTE_LOCAL_KEY, JSON.stringify({
         nome, nasc: configNasc.value.trim(), ddi: configDdi.value, fone,
@@ -944,6 +963,10 @@ document.addEventListener('DOMContentLoaded', () => {
     // Logado (qualquer estado) nunca vê o checkbox de termos no carrinho —
     // aceite fica no perfil; versão nova pede re-aceite no login.
     window._csLogado = !!session;
+
+    // Sessão mudou: cupom pessoal aplicado no carrinho pode ter deixado
+    // de valer (logout) ou passado a valer (login) — revalida já.
+    if (typeof window._csRevalidarCupom === 'function') window._csRevalidarCupom();
 
     if (!session) {
       // Sem conta = sem dados lembrados: apaga o espelho local (logout

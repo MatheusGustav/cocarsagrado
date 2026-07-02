@@ -801,8 +801,11 @@
             <label for="conta-config-nome">Nome completo</label>
             <input type="text" id="conta-config-nome" name="nome" required autocomplete="name">
 
+            <!-- Somente leitura: nascimento editável permitia "antecipar" o
+                 cupom de aniversário. Correção de typo = via WhatsApp/admin. -->
             <label for="conta-config-nasc">Data de nascimento</label>
-            <input type="text" id="conta-config-nasc" name="nascimento" placeholder="DD/MM/AAAA" inputmode="numeric" maxlength="10" required autocomplete="bday">
+            <input type="text" id="conta-config-nasc" name="nascimento" readonly tabindex="-1">
+            <p class="conta-config-nota">Digitou errado no cadastro? Fala com a gente no WhatsApp que corrigimos.</p>
 
             <label for="conta-config-fone">WhatsApp</label>
             <div class="conta-drawer-fone-row">

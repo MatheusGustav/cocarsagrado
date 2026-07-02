@@ -831,3 +831,15 @@ body.conta-drawer-aberto { overflow: hidden; }
   border-color: var(--color-gold, #C0954E);
   box-shadow: none;
 }
+
+/* Nascimento somente leitura em Configurações (correção via admin) */
+.conta-drawer-form input[readonly] {
+  background: var(--color-bg-page, #FAF7F0);
+  color: var(--color-text-muted, #837B68);
+  cursor: default;
+}
+.conta-config-nota {
+  font-size: 0.75rem;
+  color: var(--color-text-muted, #837B68);
+  margin: -4px 0 10px;
+}
