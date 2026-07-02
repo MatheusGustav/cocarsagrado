@@ -1,0 +1,35 @@
+<!-- ============================================================
+     Template do e-mail de código OTP (Supabase Auth).
+     Aplicado via Management API nos campos mailer_templates_
+     magic_link_content (usuário existente) e confirmation_content
+     (usuário novo) — os dois usam o MESMO conteúdo.
+
+     Visual: mesmo tema dos e-mails automáticos (emails-cron) —
+     nasce escuro (modo escuro do Gmail não inverte) e em tabela
+     fluida (Gmail mobile não dá zoom). {{ .Token }} = código.
+     ============================================================ -->
+<body style="margin:0;padding:0;background:#0E2117;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#0E2117;">
+    <tr><td align="center" style="padding:28px 16px;">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:480px;">
+        <tr><td align="center" style="padding:0 0 18px;font-family:Georgia,'Times New Roman',serif;">
+          <div style="font-size:26px;line-height:1;">&#129718;</div>
+          <div style="color:#D9B776;font-size:17px;letter-spacing:3px;padding-top:8px;">COCAR SAGRADO</div>
+        </td></tr>
+        <tr><td style="background:#142E20;border:1px solid #2C4A38;border-radius:14px;padding:24px 22px;font-family:Georgia,'Times New Roman',serif;color:#EFE9DB;font-size:15px;line-height:1.6;text-align:center;">
+          <p style="margin:0 0 18px;">Ol&aacute;! Aqui est&aacute; o seu c&oacute;digo de acesso:</p>
+          <table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center" style="margin:0 auto;">
+            <tr><td style="background:#0E2117;border:1px solid #C0954E;border-radius:10px;padding:14px 26px;">
+              <span style="font-family:Georgia,'Times New Roman',serif;font-size:30px;font-weight:bold;letter-spacing:8px;color:#D9B776;">{{ .Token }}</span>
+            </td></tr>
+          </table>
+          <p style="margin:18px 0 0;font-size:13px;color:#A8B5AA;">O c&oacute;digo vale por 1 hora e s&oacute; pode ser usado uma vez.</p>
+        </td></tr>
+        <tr><td align="center" style="padding:16px 8px 0;font-family:Georgia,'Times New Roman',serif;color:#7D8F83;font-size:11px;line-height:1.5;">
+          Se voc&ecirc; n&atilde;o pediu este c&oacute;digo, pode ignorar este e-mail com tranquilidade.<br>
+          <a href="https://cocarsagrado.com.br" style="color:#D9B776;text-decoration:none;">cocarsagrado.com.br</a>
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body>

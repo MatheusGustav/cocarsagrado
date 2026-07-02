@@ -721,6 +721,13 @@
             <span>Li e concordo com os <button type="button" class="termos-link" data-cs-termos>Termos de Uso e a Política de Privacidade</button></span>
           </label>
 
+          <!-- Opt-in de e-mails (LGPD): opcional, desmarcado por padrão e
+               NÃO trava o botão — só os Termos travam. -->
+          <label class="termos-aceite conta-optin-emails">
+            <input type="checkbox" id="conta-perfil-emails">
+            <span>Quero receber novidades e lembretes por e-mail <span class="conta-optin-opcional">(opcional)</span></span>
+          </label>
+
             <div class="conta-drawer-erro" id="contaPerfilErro" hidden></div>
             <button type="submit" class="conta-drawer-btn" id="contaPerfilBtn" disabled>Salvar e continuar</button>
           </form>
@@ -763,7 +770,61 @@
             <div class="conta-historico-lista" id="contaHistoricoLista" aria-live="polite"></div>
           </div>
 
+          <!-- Cupons pessoais (RPC meus_cupons). Sem cupom, a seção some. -->
+          <div class="conta-cupons" id="contaCuponsWrap" hidden>
+            <h3 class="conta-historico-titulo">Seus cupons</h3>
+            <div class="conta-cupons-lista" id="contaCuponsLista" aria-live="polite"></div>
+          </div>
+
+          <button type="button" class="conta-drawer-btn conta-drawer-btn--config" id="contaConfigAbrirBtn">⚙ Configurações</button>
           <button type="button" class="conta-drawer-btn conta-drawer-btn--sair" id="contaSairBtn">Sair</button>
+        </div>
+      </div>
+
+      <!-- Estado: configurações — cliente edita os próprios dados e a
+           preferência de e-mails (que também é o "descadastrar" LGPD:
+           o rodapé dos e-mails aponta pra cá). -->
+      <div class="conta-drawer-tela" id="contaTelaConfig" hidden>
+        <header class="conta-ceu">
+          <span class="conta-ceu-lua" aria-hidden="true"></span>
+          <h2 class="conta-drawer-titulo">Configurações</h2>
+          <p class="conta-ceu-sub">Seus dados, do seu jeito.</p>
+        </header>
+        <div class="conta-drawer-corpo">
+          <form id="contaFormConfig" class="conta-drawer-form" novalidate>
+            <label for="conta-config-nome">Nome completo</label>
+            <input type="text" id="conta-config-nome" name="nome" required autocomplete="name">
+
+            <label for="conta-config-nasc">Data de nascimento</label>
+            <input type="text" id="conta-config-nasc" name="nascimento" placeholder="DD/MM/AAAA" inputmode="numeric" maxlength="10" required autocomplete="bday">
+
+            <label for="conta-config-fone">WhatsApp</label>
+            <div class="conta-drawer-fone-row">
+              <select id="conta-config-ddi" name="ddi" autocomplete="tel-country-code">
+                <option value="+55">🇧🇷 +55</option>
+                <option value="+1">🇺🇸 +1</option>
+                <option value="+351">🇵🇹 +351</option>
+              </select>
+              <input type="tel" id="conta-config-fone" name="fone" required autocomplete="tel-national">
+            </div>
+
+            <!-- Interruptor com estado escrito (marcado = consente; LGPD
+                 exige ação explícita, nunca pré-marcado) -->
+            <div class="conta-switch-row">
+              <span class="conta-switch-info">
+                <strong>E-mails de novidades e lembretes</strong>
+                <small id="contaConfigEmailsEstado">Desativados</small>
+              </span>
+              <label class="conta-switch">
+                <input type="checkbox" id="conta-config-emails">
+                <span class="conta-switch-track" aria-hidden="true"><span class="conta-switch-thumb"></span></span>
+              </label>
+            </div>
+
+            <div class="conta-drawer-erro" id="contaConfigErro" hidden></div>
+            <button type="submit" class="conta-drawer-btn" id="contaConfigBtn">Salvar alterações</button>
+          </form>
+          <button type="button" class="conta-drawer-link" id="contaConfigVoltar">← Voltar</button>
         </div>
       </div>
 
