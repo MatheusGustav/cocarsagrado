@@ -728,3 +728,106 @@ body.conta-drawer-aberto { overflow: hidden; }
 }
 .conta-comp-form .conta-drawer-btn { margin-top: 4px; }
 .conta-comp-form .conta-drawer-link { margin-top: 6px; }
+
+/* ============================================================
+   Cupons pessoais (tela logado) — cards estilo "ticket"
+   ============================================================ */
+.conta-cupons { margin: 0 0 18px; }
+
+.conta-cupom-card {
+  border: 1px dashed var(--color-gold, #C0954E);
+  border-radius: 12px;
+  padding: 12px 15px;
+  margin-bottom: 10px;
+  background: rgba(192, 149, 78, 0.06);
+}
+.conta-cupom-card--off {
+  border-color: var(--cd-hairline-suave);
+  background: var(--color-bg-page, #FAF7F0);
+  opacity: 0.72;
+}
+
+.conta-cupom-codigo {
+  font-family: 'Courier New', monospace;
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: var(--color-text-primary, #13251A);
+}
+
+/* Opt-in de e-mails — no cadastro (marcador de "opcional") e na tela logado */
+.conta-optin-opcional {
+  color: var(--color-text-muted, #837B68);
+  font-size: 0.8em;
+}
+/* Interruptor de e-mails (tela Configurações) — estado por extenso */
+.conta-switch-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 14px 0 6px;
+  padding-top: 14px;
+  border-top: 1px solid var(--cd-hairline-suave);
+}
+.conta-switch-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 0.85rem;
+  color: var(--color-text-primary, #13251A);
+}
+.conta-switch-info small {
+  font-size: 0.75rem;
+  color: var(--color-text-muted, #837B68);
+}
+.conta-switch-info small.is-on {
+  color: var(--color-gold-deep, #9A742F);
+  font-weight: 600;
+}
+.conta-switch { cursor: pointer; flex: 0 0 auto; }
+.conta-switch input {
+  position: absolute;
+  opacity: 0;
+  width: 1px;
+  height: 1px;
+}
+.conta-switch-track {
+  display: inline-block;
+  position: relative;
+  width: 44px;
+  height: 24px;
+  border-radius: 999px;
+  background: var(--color-neutral-stone, #D6CDBA);
+  transition: background 0.2s;
+}
+.conta-switch-thumb {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--color-bg-card, #FFFDF8);
+  box-shadow: 0 1px 3px rgba(14, 33, 23, 0.35);
+  transition: left 0.2s;
+}
+.conta-switch input:checked + .conta-switch-track { background: var(--color-gold, #C0954E); }
+.conta-switch input:checked + .conta-switch-track .conta-switch-thumb { left: 23px; }
+.conta-switch input:focus-visible + .conta-switch-track {
+  outline: 2px solid var(--color-focus-ring, #A8C49E);
+  outline-offset: 2px;
+}
+
+/* Botão "Configurações" na tela logado — discreto, acima do Sair */
+.conta-drawer-btn--config {
+  background: transparent;
+  color: var(--color-text-primary, #13251A);
+  border: 1px solid var(--cd-hairline);
+  box-shadow: none;
+  margin-bottom: 2px;
+}
+.conta-drawer-btn--config:hover:not(:disabled) {
+  border-color: var(--color-gold, #C0954E);
+  box-shadow: none;
+}

@@ -13,6 +13,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const telaPerfil   = document.getElementById('contaTelaPerfil');
   const telaReaceite = document.getElementById('contaTelaReaceite');
   const telaLogado   = document.getElementById('contaTelaLogado');
+  const telaConfig   = document.getElementById('contaTelaConfig');
 
   const formEmail   = document.getElementById('contaFormEmail');
   const inputEmail  = document.getElementById('conta-email');
@@ -34,6 +35,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const perfilErro   = document.getElementById('contaPerfilErro');
   const perfilBtn    = document.getElementById('contaPerfilBtn');
   const perfilTermos = document.getElementById('conta-perfil-termos');
+  const perfilEmails = document.getElementById('conta-perfil-emails');
 
   const formReaceite   = document.getElementById('contaFormReaceite');
   const reaceiteTermos = document.getElementById('conta-reaceite-termos');
@@ -53,22 +55,28 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Máscara de telefone simples (BR formatada; outros DDIs livres) —
   // versão isolada da de agendamento-system.js pra não colidir com #f-ddi/#f-fone.
-  if (perfilFone) {
-    const atualizarMascaraFone = () => {
-      const isBR = !perfilDdi || perfilDdi.value === '+55';
+  // Reutilizada nos forms de 1º login e de configurações.
+  function ligarMascaraFone(ddiEl, foneEl, { limparAoTrocarDdi = true } = {}) {
+    if (!foneEl) return;
+    const atualizar = () => {
+      const isBR = !ddiEl || ddiEl.value === '+55';
       if (isBR) {
-        let v = perfilFone.value.replace(/\D/g, '').slice(0, 11);
+        let v = foneEl.value.replace(/\D/g, '').slice(0, 11);
         if (v.length > 6) v = `(${v.slice(0, 2)}) ${v.slice(2, 7)}-${v.slice(7)}`;
         else if (v.length > 2) v = `(${v.slice(0, 2)}) ${v.slice(2)}`;
         else if (v.length) v = `(${v}`;
-        perfilFone.value = v;
+        foneEl.value = v;
       } else {
-        perfilFone.value = perfilFone.value.replace(/[^\d\s\-().+]/g, '');
+        foneEl.value = foneEl.value.replace(/[^\d\s\-().+]/g, '');
       }
     };
-    perfilFone.addEventListener('input', atualizarMascaraFone);
-    perfilDdi?.addEventListener('change', () => { perfilFone.value = ''; atualizarMascaraFone(); });
+    foneEl.addEventListener('input', atualizar);
+    ddiEl?.addEventListener('change', () => {
+      if (limparAoTrocarDdi) foneEl.value = '';
+      atualizar();
+    });
   }
+  ligarMascaraFone(perfilDdi, perfilFone);
   if (typeof aplicarMascaraData === 'function' && perfilNasc) {
     aplicarMascaraData(perfilNasc);
   }
@@ -79,9 +87,9 @@ document.addEventListener('DOMContentLoaded', () => {
   function abrirDrawer() {
     overlay.classList.add('open');
     document.body.classList.add('conta-drawer-aberto');
-    // Histórico pode ter mudado desde o login (ex.: complemento pago) —
-    // recarrega ao reabrir já na tela de logado.
-    if (telaLogado && !telaLogado.hidden) carregarHistorico();
+    // Histórico/cupons podem ter mudado desde o login (ex.: complemento
+    // pago, cupom novo) — recarrega ao reabrir já na tela de logado.
+    if (telaLogado && !telaLogado.hidden) { carregarHistorico(); carregarCupons(); }
     // Painel admin embutido só carrega quando o drawer abre de fato.
     if (telaAdmin && !telaAdmin.hidden) garantirFrameAdmin();
     // Login admin pode ter concluído dentro do iframe sem evento chegar
@@ -189,7 +197,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function mostrarTela(tela) {
-    [telaEmail, telaCodigo, telaPerfil, telaReaceite, telaLogado, telaAdmin].forEach(t => { if (t) t.hidden = (t !== tela); });
+    [telaEmail, telaCodigo, telaPerfil, telaReaceite, telaLogado, telaConfig, telaAdmin].forEach(t => { if (t) t.hidden = (t !== tela); });
 
     // Modo admin: painel ocupa o drawer inteiro (sem padding) e a largura
     // salva/padrão é a do admin; voltando pra cliente, restaura a dele.
@@ -345,6 +353,7 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
     const whatsapp = `${perfilDdi.value} ${fone}`;
+    const querEmails = !!perfilEmails?.checked;
     const { error } = await window.supabase.from('perfis').insert({
       id: user.id,
       nome,
@@ -352,6 +361,9 @@ document.addEventListener('DOMContentLoaded', () => {
       whatsapp,
       termos_versao: window.TERMOS_VERSAO,
       termos_aceitos_em: new Date().toISOString(),
+      // Opt-in LGPD: só TRUE se marcou; guarda quando consentiu.
+      aceita_emails: querEmails,
+      aceita_emails_em: querEmails ? new Date().toISOString() : null,
     });
     perfilBtn.disabled = false;
     perfilBtn.textContent = 'Salvar e continuar';
@@ -434,7 +446,7 @@ document.addEventListener('DOMContentLoaded', () => {
   async function buscarPerfil(userId) {
     const { data, error } = await window.supabase
       .from('perfis')
-      .select('nome, termos_versao, whatsapp, nascimento')
+      .select('nome, termos_versao, whatsapp, nascimento, aceita_emails')
       .eq('id', userId)
       .maybeSingle();
     return error ? { erro: true } : { perfil: data };
@@ -469,6 +481,8 @@ document.addEventListener('DOMContentLoaded', () => {
   // nunca chega nesta tela — cai em #contaTelaAdmin antes).
   // ============================================================
   const historicoLista = document.getElementById('contaHistoricoLista');
+  const cuponsWrap     = document.getElementById('contaCuponsWrap');
+  const cuponsLista    = document.getElementById('contaCuponsLista');
   let perfilAtual = null; // nome/whatsapp p/ o link de pagamento do complemento
 
   const STATUS_LEITURA = {
@@ -572,6 +586,155 @@ document.addEventListener('DOMContentLoaded', () => {
       historicoLista.appendChild(card);
     });
   }
+
+  // ============================================================
+  // Cupons pessoais (RPC meus_cupons) — a seção só aparece se a
+  // conta tiver algum cupom; sem nada, some (drawer limpo).
+  // ============================================================
+  const STATUS_CUPOM = {
+    disponivel: { txt: 'Disponível', cls: 'pago' },
+    usado:      { txt: 'Usado',      cls: 'atendido' },
+    expirado:   { txt: 'Expirado',   cls: 'cancelado' },
+    inativo:    { txt: 'Inativo',    cls: 'pendente' },
+  };
+
+  async function carregarCupons() {
+    if (!cuponsWrap || !cuponsLista) return;
+    const { data, error } = await window.supabase.rpc('meus_cupons');
+    if (error || !data?.length) {
+      cuponsWrap.hidden = true;
+      cuponsLista.innerHTML = '';
+      return;
+    }
+    cuponsLista.innerHTML = '';
+    data.forEach(c => {
+      const st   = STATUS_CUPOM[c.status] || STATUS_CUPOM.inativo;
+      const card = document.createElement('div');
+      card.className = 'conta-cupom-card' + (c.status !== 'disponivel' ? ' conta-cupom-card--off' : '');
+
+      const head = document.createElement('div');
+      head.className = 'conta-historico-head';
+      const cod  = document.createElement('strong');
+      cod.className = 'conta-cupom-codigo';
+      cod.textContent = c.codigo;
+      const badge = document.createElement('span');
+      badge.className = `conta-historico-status conta-historico-status--${st.cls}`;
+      badge.textContent = st.txt;
+      head.append(cod, badge);
+
+      const meta = document.createElement('p');
+      meta.className = 'conta-historico-meta';
+      // expira_em vem em UTC; formata no fuso de SP (cortar a string ISO
+      // mostraria o dia seguinte pra quem expira às 23:59 de Brasília).
+      const validade = c.expira_em
+        ? ` · válido até ${new Date(c.expira_em).toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' })}`
+        : '';
+      meta.textContent = `${_brl(c.valor_desconto)} de desconto${validade} · digite o código na revisão do pedido`;
+
+      card.append(head, meta);
+      cuponsLista.appendChild(card);
+    });
+    cuponsWrap.hidden = false;
+  }
+
+  // ============================================================
+  // Configurações — cliente edita nome/nascimento/whatsapp e a
+  // preferência de e-mails (que também é o "descadastrar" LGPD:
+  // o rodapé dos e-mails automáticos aponta pra cá).
+  // ============================================================
+  const formConfig   = document.getElementById('contaFormConfig');
+  const configNome   = document.getElementById('conta-config-nome');
+  const configNasc   = document.getElementById('conta-config-nasc');
+  const configDdi    = document.getElementById('conta-config-ddi');
+  const configFone   = document.getElementById('conta-config-fone');
+  const configEmails = document.getElementById('conta-config-emails');
+  const configEmailsEstado = document.getElementById('contaConfigEmailsEstado');
+  const configErro   = document.getElementById('contaConfigErro');
+  const configBtn    = document.getElementById('contaConfigBtn');
+  const configAbrir  = document.getElementById('contaConfigAbrirBtn');
+  const configVoltar = document.getElementById('contaConfigVoltar');
+
+  ligarMascaraFone(configDdi, configFone);
+  if (typeof aplicarMascaraData === 'function' && configNasc) aplicarMascaraData(configNasc);
+
+  // O interruptor mostra o estado por extenso — some a dúvida de
+  // "marcado significa o quê?".
+  function atualizarEstadoEmails() {
+    if (!configEmailsEstado) return;
+    configEmailsEstado.textContent = configEmails?.checked ? 'Ativados' : 'Desativados';
+    configEmailsEstado.classList.toggle('is-on', !!configEmails?.checked);
+  }
+  configEmails?.addEventListener('change', atualizarEstadoEmails);
+
+  configAbrir?.addEventListener('click', () => {
+    if (!perfilAtual) return; // perfil ainda carregando/falhou: não abre form vazio
+    configNome.value = perfilAtual.nome || '';
+    configNasc.value = _dataBr(perfilAtual.nascimento);
+    // whatsapp salvo como "+55 (27) 99999-9999" → separa DDI do número
+    const m   = String(perfilAtual.whatsapp || '').trim().match(/^(\+\d+)\s+(.*)$/);
+    const ddi = m ? m[1] : '+55';
+    configDdi.value  = Array.from(configDdi.options).some(o => o.value === ddi) ? ddi : '+55';
+    configFone.value = m ? m[2] : String(perfilAtual.whatsapp || '').trim();
+    configEmails.checked = !!perfilAtual.aceita_emails;
+    atualizarEstadoEmails();
+    limparErro(configErro);
+    configBtn.disabled = false;
+    configBtn.textContent = 'Salvar alterações';
+    mostrarTela(telaConfig);
+  });
+
+  configVoltar?.addEventListener('click', () => mostrarTela(telaLogado));
+
+  formConfig?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    limparErro(configErro);
+
+    const nome    = configNome.value.trim();
+    const nascIso = typeof dataBrParaISO === 'function' ? dataBrParaISO(configNasc.value.trim()) : '';
+    const fone    = configFone.value.trim();
+    const quer    = !!configEmails.checked;
+
+    if (nome.length < 3) { mostrarErroEl(configErro, 'Nome deve ter pelo menos 3 caracteres.'); return; }
+    if (!nascIso) { mostrarErroEl(configErro, 'Data de nascimento inválida.'); return; }
+    if (fone.replace(/\D/g, '').length < 6) { mostrarErroEl(configErro, 'Número inválido.'); return; }
+
+    configBtn.disabled = true;
+    configBtn.textContent = 'Salvando…';
+
+    const { data: { user } } = await window.supabase.auth.getUser();
+    if (!user) {
+      configBtn.disabled = false;
+      configBtn.textContent = 'Salvar alterações';
+      return;
+    }
+
+    const whatsapp = `${configDdi.value} ${fone}`;
+    const patch = { nome, nascimento: nascIso, whatsapp, aceita_emails: quer };
+    // Só re-marca o momento do consentimento quando a preferência MUDA.
+    if (quer !== !!perfilAtual?.aceita_emails) patch.aceita_emails_em = new Date().toISOString();
+
+    const { error } = await window.supabase.from('perfis').update(patch).eq('id', user.id);
+    configBtn.disabled = false;
+    configBtn.textContent = 'Salvar alterações';
+    if (error) {
+      mostrarErroEl(configErro, 'Não foi possível salvar. Tente novamente.');
+      return;
+    }
+
+    // Estado local + espelho do autofill + cabeçalho da tela logada.
+    perfilAtual = { ...(perfilAtual || {}), nome, nascimento: nascIso, whatsapp, aceita_emails: quer };
+    if (typeof _lsSet === 'function' && typeof CLIENTE_LOCAL_KEY === 'string') {
+      _lsSet(CLIENTE_LOCAL_KEY, JSON.stringify({
+        nome, nasc: configNasc.value.trim(), ddi: configDdi.value, fone,
+      }));
+    }
+    if (typeof restaurarDadosPessoaisLocal === 'function') restaurarDadosPessoaisLocal();
+    const inicial = (nome || '?').trim().charAt(0).toUpperCase();
+    nomeLogadoEl.textContent = nome;
+    if (avatarLogadoEl) avatarLogadoEl.textContent = inicial;
+    atualizarIconeNav(true, inicial);
+    mostrarTela(telaLogado);
+  });
 
   // Mini-form dentro do card: qtd extra (com o valor da diferença) +
   // texto das perguntas → RPC → paga pelo modal de pagamento normal.
@@ -773,6 +936,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (avatarLogadoEl) avatarLogadoEl.textContent = inicialEmail;
       mostrarTela(telaLogado);
       carregarHistorico();
+      carregarCupons();
       return;
     }
 
@@ -823,6 +987,7 @@ document.addEventListener('DOMContentLoaded', () => {
     atualizarIconeNav(true, inicial);
     mostrarTela(telaLogado);
     carregarHistorico();
+    carregarCupons();
   }
 
   // INITIAL_SESSION já cobre o boot (não precisa de getSession manual — era

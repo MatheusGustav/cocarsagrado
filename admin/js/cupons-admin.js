@@ -17,6 +17,13 @@ function _cupEsc(s) {
     .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 }
 
+// timestamptz -> 'DD/MM/AAAA' no fuso de SP (o valor vem em UTC; cortar a
+// string mostraria o dia seguinte pra quem expira às 23:59 de Brasília)
+function _cupDataBR(iso) {
+  const d = new Date(iso);
+  return isNaN(d) ? '' : d.toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' });
+}
+
 // ============================================================
 // Carregar + renderizar
 // ============================================================
@@ -40,6 +47,14 @@ async function inicializarCupons() {
         <label class="cup-campo cup-campo-desc">
           <span>Descrição (opcional)</span>
           <input type="text" id="cup-novo-desc" class="cup-input" placeholder="ex: Comunidade do Zap" maxlength="80">
+        </label>
+        <label class="cup-campo" title="Preenchido = cupom pessoal: só essa conta consegue usar (e ela vê o cupom no site). O cliente recebe e-mail se tiver ligado as novidades.">
+          <span>E-mail do cliente (opcional)</span>
+          <input type="email" id="cup-novo-email" class="cup-input" placeholder="cupom pessoal" autocomplete="off">
+        </label>
+        <label class="cup-campo" title="Vazio = sem validade. Expira no fim do dia (horário de Brasília).">
+          <span>Validade (opcional)</span>
+          <input type="date" id="cup-novo-validade" class="cup-input">
         </label>
         <label class="cup-campo cup-campo-uso">
           <span>Uso único</span>
@@ -102,7 +117,9 @@ function _renderCupons() {
         <span class="cup-card-codigo">${_cupEsc(rec.codigo)}</span>
         <span class="cup-card-valor">${_cupFmtBRL(rec.valor_desconto)} de desconto</span>
         ${rec.descricao ? `<span class="cup-card-desc">${_cupEsc(rec.descricao)}</span>` : ''}
+        ${rec.expira_em ? `<span class="cup-card-desc">Válido até ${_cupDataBR(rec.expira_em)}</span>` : ''}
         ${rec.uso_unico ? '<span class="cup-card-badge">Uso único</span>' : ''}
+        ${rec.user_id ? '<span class="cup-card-badge">Pessoal</span>' : ''}
       </div>
       <div class="cup-card-acoes">
         <label class="esp-toggle-wrap" title="Liga/desliga o cupom">
@@ -131,16 +148,20 @@ function _renderCupons() {
 // Criar / atualizar / deletar
 // ============================================================
 async function criarCupom() {
-  const inCod  = document.getElementById('cup-novo-codigo');
-  const inVal  = document.getElementById('cup-novo-valor');
-  const inDesc = document.getElementById('cup-novo-desc');
-  const inUso  = document.getElementById('cup-novo-uso');
-  const btn    = document.getElementById('cup-btn-add');
+  const inCod   = document.getElementById('cup-novo-codigo');
+  const inVal   = document.getElementById('cup-novo-valor');
+  const inDesc  = document.getElementById('cup-novo-desc');
+  const inUso   = document.getElementById('cup-novo-uso');
+  const inEmail = document.getElementById('cup-novo-email');
+  const inValid = document.getElementById('cup-novo-validade');
+  const btn     = document.getElementById('cup-btn-add');
 
   const codigo = (inCod?.value || '').trim().toUpperCase();
   const valor  = parseFloat(inVal?.value || '0');
-  const desc   = (inDesc?.value || '').trim() || null;
+  let   desc   = (inDesc?.value || '').trim() || null;
   const usoUnico = !!inUso?.checked;
+  const email    = (inEmail?.value || '').trim();
+  const validade = (inValid?.value || '').trim();
 
   if (!codigo)        { _toastAdmin('Digite um código.', 'erro'); return; }
   if (!(valor > 0))   { _toastAdmin('Valor do desconto deve ser maior que zero.', 'erro'); return; }
@@ -148,9 +169,27 @@ async function criarCupom() {
   btn.disabled = true;
   btn.textContent = 'Criando...';
 
+  // Cupom pessoal: resolve o e-mail pra conta (precisa ter conta no site).
+  let userId = null;
+  if (email) {
+    const { data, error } = await supabase.rpc('admin_user_por_email', { p_email: email });
+    if (error || !data?.length) {
+      btn.disabled = false;
+      btn.textContent = '+ Criar cupom';
+      _toastAdmin(error ? '❌ ' + error.message : '❌ Nenhuma conta com esse e-mail — o cliente precisa criar a conta primeiro.', 'erro');
+      return;
+    }
+    userId = data[0].user_id;
+    // Sem descrição, anota o dono (a tabela não guarda o e-mail).
+    if (!desc) desc = `pessoal: ${data[0].nome || email}`;
+  }
+
+  // Validade: expira no fim do dia escolhido, horário de Brasília.
+  const expiraEm = validade ? new Date(`${validade}T23:59:59-03:00`).toISOString() : null;
+
   const { error } = await supabase
     .from('cupons')
-    .insert({ codigo, valor_desconto: valor, descricao: desc, ativo: true, uso_unico: usoUnico });
+    .insert({ codigo, valor_desconto: valor, descricao: desc, ativo: true, uso_unico: usoUnico, user_id: userId, expira_em: expiraEm });
 
   btn.disabled = false;
   btn.textContent = '+ Criar cupom';
@@ -162,12 +201,14 @@ async function criarCupom() {
   }
 
   inCod.value = ''; inVal.value = ''; inDesc.value = '';
+  if (inEmail) inEmail.value = '';
+  if (inValid) inValid.value = '';
   if (inUso) {
     inUso.checked = false;
     inUso.closest('.esp-toggle-wrap').querySelector('.esp-toggle-txt').textContent = 'Reutilizável';
   }
   await carregarCupons();
-  _toastAdmin('✅ Cupom criado!', 'ok');
+  _toastAdmin('✅ Cupom criado!' + (userId ? ' Pessoal — o cliente vê no site (e recebe e-mail se ligou as novidades).' : ''), 'ok');
 }
 
 async function _toggleCupom(codigo, chk, card) {

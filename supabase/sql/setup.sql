@@ -680,12 +680,15 @@ BEGIN
   SELECT valor INTO v_cfg FROM public.configuracoes WHERE chave = 'descontos';
 
   -- Cupom (R$ fixo no total). Valida cedo pra falhar antes de inserir.
+  -- Cupom pessoal só vale pro dono logado; expirado não passa.
   v_cupom_cod := NULLIF(upper(trim(COALESCE(p_cupom_codigo, ''))), '');
   IF v_cupom_cod IS NOT NULL THEN
     SELECT valor_desconto INTO v_cupom_val
     FROM public.cupons
     WHERE upper(codigo) = v_cupom_cod
-      AND ativo = TRUE;
+      AND ativo = TRUE
+      AND (expira_em IS NULL OR expira_em > now())
+      AND (user_id IS NULL OR user_id = auth.uid());
     IF v_cupom_val IS NULL THEN
       RAISE EXCEPTION 'pedido_invalido: cupom inválido ou inativo';
     END IF;
@@ -932,8 +935,14 @@ CREATE TABLE IF NOT EXISTS public.cupons (
   descricao      TEXT,
   ativo          BOOLEAN NOT NULL DEFAULT TRUE,
   uso_unico      BOOLEAN NOT NULL DEFAULT FALSE,        -- morre ao confirmar pagamento
+  -- Cupom pessoal: só a conta dona usa (e vê no drawer via meus_cupons).
+  -- NULL = global (comunidade). expira_em NULL = sem validade.
+  user_id        uuid REFERENCES auth.users(id) ON DELETE CASCADE,
+  expira_em      TIMESTAMPTZ,
   criado_em      TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+CREATE INDEX IF NOT EXISTS idx_cupons_user
+  ON public.cupons (user_id) WHERE user_id IS NOT NULL;
 
 ALTER TABLE public.cupons ENABLE ROW LEVEL SECURITY;
 
@@ -954,7 +963,9 @@ BEGIN
   SELECT c.valor_desconto INTO v
   FROM public.cupons c
   WHERE upper(c.codigo) = upper(trim(p_codigo))
-    AND c.ativo = TRUE;
+    AND c.ativo = TRUE
+    AND (c.expira_em IS NULL OR c.expira_em > now())
+    AND (c.user_id IS NULL OR c.user_id = auth.uid());
 
   IF v IS NULL THEN
     RETURN QUERY SELECT FALSE, 0::numeric;
@@ -1018,6 +1029,10 @@ CREATE TABLE public.perfis (
   -- conta) aceitam por pedido — trava de UI, não grava aqui.
   termos_versao     text,
   termos_aceitos_em timestamptz,
+  -- Opt-in de e-mails (LGPD): desmarcado por padrão; cliente marca no
+  -- cadastro ou liga/desliga na tela logada. Guarda quando consentiu.
+  aceita_emails     boolean NOT NULL DEFAULT FALSE,
+  aceita_emails_em  timestamptz,
   criado_em  timestamptz NOT NULL DEFAULT now()
 );
 
@@ -1277,3 +1292,268 @@ $$;
 
 REVOKE ALL ON FUNCTION public.criar_pedido_complemento(text, bigint, integer, text) FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION public.criar_pedido_complemento(text, bigint, integer, text) TO authenticated;
+
+-- ============================================================
+-- 12) E-MAILS AUTOMÁTICOS (cupom pessoal ganho + lembrete de recompra)
+--
+-- Só sai e-mail pra quem tem perfis.aceita_emails = TRUE (opt-in LGPD).
+-- O pg_cron chama a edge function emails-cron a cada 15 min; ela pega a
+-- fila em emails_pendentes(), envia via Resend e registra em
+-- emails_enviados (UNIQUE tipo+ref = idempotência).
+-- Secret do cron no Vault: 'cron_emails_secret' (= env CRON_SECRET da função).
+-- ============================================================
+
+-- Log/trava de reenvio — só service_role acessa.
+CREATE TABLE IF NOT EXISTS public.emails_enviados (
+  id         bigserial PRIMARY KEY,
+  tipo       text NOT NULL,           -- 'cupom_ganho' | 'lembrete_recompra'
+  ref        text NOT NULL,           -- 'cupom:CODIGO' | 'leitura:ID'
+  user_id    uuid,
+  email      text NOT NULL,
+  enviado_em timestamptz NOT NULL DEFAULT now(),
+  UNIQUE (tipo, ref)
+);
+ALTER TABLE public.emails_enviados ENABLE ROW LEVEL SECURITY;
+REVOKE ALL ON public.emails_enviados FROM anon, authenticated;
+REVOKE ALL ON SEQUENCE public.emails_enviados_id_seq FROM anon, authenticated;
+
+-- meus_cupons: cupons pessoais da conta logada, com status calculado.
+-- descricao fica de fora (nota interna do admin).
+CREATE OR REPLACE FUNCTION public.meus_cupons()
+RETURNS TABLE (
+  codigo         text,
+  valor_desconto numeric,
+  expira_em      timestamptz,
+  status         text,
+  criado_em      timestamptz
+)
+LANGUAGE sql
+SECURITY DEFINER
+SET search_path = public
+STABLE
+AS $$
+  SELECT
+    c.codigo,
+    c.valor_desconto,
+    c.expira_em,
+    CASE
+      WHEN c.ativo AND (c.expira_em IS NULL OR c.expira_em > now()) THEN 'disponivel'
+      WHEN c.uso_unico AND NOT c.ativo AND EXISTS (
+        SELECT 1 FROM public.pedidos p
+        WHERE upper(p.cupom_codigo) = upper(c.codigo) AND p.status = 'pago'
+      ) THEN 'usado'
+      WHEN c.expira_em IS NOT NULL AND c.expira_em <= now() THEN 'expirado'
+      ELSE 'inativo'
+    END AS status,
+    c.criado_em
+  FROM public.cupons c
+  WHERE auth.uid() IS NOT NULL
+    AND c.user_id = auth.uid()
+  ORDER BY c.criado_em DESC;
+$$;
+
+REVOKE ALL ON FUNCTION public.meus_cupons() FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.meus_cupons() TO authenticated;
+
+-- admin_user_por_email: admin resolve e-mail → conta (cupom pessoal).
+CREATE OR REPLACE FUNCTION public.admin_user_por_email(p_email text)
+RETURNS TABLE (user_id uuid, nome text)
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+STABLE
+AS $$
+BEGIN
+  IF NOT public.is_admin() THEN
+    RAISE EXCEPTION 'acesso negado';
+  END IF;
+  RETURN QUERY
+  SELECT u.id, pf.nome
+  FROM auth.users u
+  LEFT JOIN public.perfis pf ON pf.id = u.id
+  WHERE lower(u.email) = lower(trim(p_email));
+END;
+$$;
+
+REVOKE ALL ON FUNCTION public.admin_user_por_email(text) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.admin_user_por_email(text) TO authenticated;
+
+-- emails_pendentes: fila do cron (só service_role).
+CREATE OR REPLACE FUNCTION public.emails_pendentes()
+RETURNS TABLE (
+  tipo    text,
+  ref     text,
+  user_id uuid,
+  email   text,
+  nome    text,
+  payload jsonb
+)
+LANGUAGE sql
+SECURITY DEFINER
+SET search_path = public
+STABLE
+AS $$
+  WITH agora_sp AS (
+    SELECT (now() AT TIME ZONE 'America/Sao_Paulo')::date          AS hoje,
+           extract(hour FROM now() AT TIME ZONE 'America/Sao_Paulo')::int AS hora
+  ),
+  -- Cupom pessoal ativo cujo dono optou por e-mails e ainda não foi avisado.
+  -- NIVER% = cupom de aniversário: template próprio e só em horário humano.
+  cupom AS (
+    SELECT CASE WHEN c.codigo LIKE 'NIVER%' THEN 'aniversario'
+                ELSE 'cupom_ganho' END     AS tipo,
+           'cupom:' || c.codigo            AS ref,
+           c.user_id,
+           u.email::text                   AS email,
+           pf.nome,
+           jsonb_build_object(
+             'codigo',    c.codigo,
+             'valor',     c.valor_desconto,
+             'expira_em', c.expira_em
+           ) AS payload
+    FROM public.cupons c
+    CROSS JOIN agora_sp h
+    JOIN public.perfis pf ON pf.id = c.user_id AND pf.aceita_emails
+    JOIN auth.users u     ON u.id  = c.user_id
+    WHERE c.user_id IS NOT NULL
+      AND c.ativo
+      AND (c.expira_em IS NULL OR c.expira_em > now())
+      AND (c.codigo NOT LIKE 'NIVER%' OR h.hora BETWEEN 9 AND 20)
+  ),
+  -- Última leitura concluída de cada conta (complementos não contam)
+  ultimas AS (
+    SELECT DISTINCT ON (p.user_id)
+           p.user_id, a.id AS ag_id, a.data_agendamento, t.nome AS tipo_nome
+    FROM public.agendamentos a
+    JOIN public.pedidos p       ON p.id = a.pedido_id
+    JOIN public.tipos_leitura t ON t.id = a.tipo_leitura_id
+    WHERE p.user_id IS NOT NULL
+      AND a.leitura_origem_id IS NULL
+      AND a.status IN ('pago', 'confirmado', 'atendido')
+    ORDER BY p.user_id, a.data_agendamento DESC, a.id DESC
+  ),
+  -- Lembrete de recompra: 30 dias após a última leitura. Janela fecha em
+  -- 44 dias — no lançamento da feature, cliente antigo não é ressuscitado.
+  -- Só em horário humano (9h–20h SP); o dedup fica no NOT EXISTS final.
+  lembrete AS (
+    SELECT 'lembrete_recompra'::text  AS tipo,
+           'leitura:' || ul.ag_id     AS ref,
+           ul.user_id,
+           u.email::text              AS email,
+           pf.nome,
+           jsonb_build_object(
+             'tipo_nome', ul.tipo_nome,
+             'data',      ul.data_agendamento
+           ) AS payload
+    FROM ultimas ul
+    CROSS JOIN agora_sp h
+    JOIN public.perfis pf ON pf.id = ul.user_id AND pf.aceita_emails
+    JOIN auth.users u     ON u.id  = ul.user_id
+    WHERE (h.hoje - ul.data_agendamento) BETWEEN 30 AND 44
+      AND h.hora BETWEEN 9 AND 20
+      AND NOT EXISTS (              -- já tem coisa marcada pra frente? não lembra
+        SELECT 1 FROM public.agendamentos a2
+        JOIN public.pedidos p2 ON p2.id = a2.pedido_id
+        WHERE p2.user_id = ul.user_id
+          AND a2.data_agendamento > ul.data_agendamento
+          AND a2.status IN ('pendente', 'pago', 'confirmado')
+      )
+  )
+  SELECT q.*
+  FROM (SELECT * FROM cupom UNION ALL SELECT * FROM lembrete) q
+  WHERE NOT EXISTS (
+    SELECT 1 FROM public.emails_enviados e
+    WHERE e.tipo = q.tipo AND e.ref = q.ref
+  );
+$$;
+
+REVOKE ALL ON FUNCTION public.emails_pendentes() FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.emails_pendentes() TO service_role;
+
+-- Cron: a cada 15 min chama a edge function emails-cron.
+CREATE EXTENSION IF NOT EXISTS pg_cron;
+CREATE EXTENSION IF NOT EXISTS pg_net WITH SCHEMA extensions;
+
+DO $do$
+BEGIN
+  IF EXISTS (SELECT 1 FROM cron.job WHERE jobname = 'emails-cron') THEN
+    PERFORM cron.unschedule('emails-cron');
+  END IF;
+  PERFORM cron.schedule(
+    'emails-cron',
+    '*/15 * * * *',
+    $job$
+    SELECT net.http_post(
+      url     := 'https://demxedudbislzausvhwx.supabase.co/functions/v1/emails-cron',
+      headers := jsonb_build_object(
+        'Content-Type',  'application/json',
+        'x-cron-secret', (SELECT decrypted_secret FROM vault.decrypted_secrets WHERE name = 'cron_emails_secret')
+      ),
+      body    := '{}'::jsonb
+    );
+    $job$
+  );
+END
+$do$;
+
+-- ============================================================
+-- 13) CUPOM DE ANIVERSÁRIO
+-- No dia do aniversário (SP), todo cliente com conta ganha 1 cupom
+-- pessoal de uso único de R$ 15, válido por 15 dias. Cron diário
+-- 'cupons-aniversario' às 00:05 SP; e-mail de parabéns via fluxo
+-- de emails_pendentes (tipo 'aniversario', só com opt-in, 9h–20h).
+-- ============================================================
+CREATE OR REPLACE FUNCTION public.gerar_cupons_aniversario()
+RETURNS integer
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_hoje     date := (now() AT TIME ZONE 'America/Sao_Paulo')::date;
+  v_ano      integer := extract(year FROM v_hoje)::integer;
+  v_bissexto boolean := (v_ano % 4 = 0 AND (v_ano % 100 <> 0 OR v_ano % 400 = 0));
+  v_n        integer;
+BEGIN
+  INSERT INTO public.cupons (codigo, valor_desconto, descricao, ativo, uso_unico, user_id, expira_em)
+  SELECT
+    'NIVER' || to_char(v_hoje, 'YY') || '-'
+      || upper(substr(md5(p.id::text || v_ano::text), 1, 6)),
+    15,
+    'aniversário: ' || p.nome,
+    TRUE,
+    TRUE,
+    p.id,
+    -- fim do 7º dia após o aniversário, horário de SP
+    ((v_hoje + 8)::timestamp AT TIME ZONE 'America/Sao_Paulo')
+  FROM public.perfis p
+  WHERE (
+    (extract(month FROM p.nascimento) = extract(month FROM v_hoje)
+     AND extract(day FROM p.nascimento) = extract(day FROM v_hoje))
+    -- nascido em 29/02: em ano não-bissexto comemora em 28/02
+    OR (to_char(p.nascimento, 'MM-DD') = '02-29'
+        AND to_char(v_hoje, 'MM-DD') = '02-28'
+        AND NOT v_bissexto)
+  )
+  ON CONFLICT (codigo) DO NOTHING;  -- idempotente: já ganhou este ano, pula
+
+  GET DIAGNOSTICS v_n = ROW_COUNT;
+  RETURN v_n;
+END;
+$$;
+
+REVOKE ALL ON FUNCTION public.gerar_cupons_aniversario() FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.gerar_cupons_aniversario() TO service_role;
+
+DO $do$
+BEGIN
+  IF EXISTS (SELECT 1 FROM cron.job WHERE jobname = 'cupons-aniversario') THEN
+    PERFORM cron.unschedule('cupons-aniversario');
+  END IF;
+  PERFORM cron.schedule(
+    'cupons-aniversario',
+    '5 3 * * *',
+    'SELECT public.gerar_cupons_aniversario();'
+  );
+END
+$do$;
