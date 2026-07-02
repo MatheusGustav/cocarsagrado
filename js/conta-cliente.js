@@ -349,10 +349,34 @@ document.addEventListener('DOMContentLoaded', () => {
   async function buscarPerfil(userId) {
     const { data } = await window.supabase
       .from('perfis')
-      .select('nome, termos_versao, whatsapp')
+      .select('nome, termos_versao, whatsapp, nascimento')
       .eq('id', userId)
       .maybeSingle();
     return data;
+  }
+
+  // Espelha o perfil no localStorage e roda o autofill + boas-vindas.
+  // Só com sessão ativa (regra: guest não tem dados lembrados) e 1× por
+  // carregamento (onAuthStateChange dispara também em refresh de token).
+  let autofillFeito = false;
+  function espelharERestaurar(perfil) {
+    if (autofillFeito) return;
+    autofillFeito = true;
+    if (typeof _lsSet === 'function' && typeof CLIENTE_LOCAL_KEY === 'string') {
+      // whatsapp salvo como "+55 (27) 99999-9999" → separa DDI do número
+      const wpp  = String(perfil.whatsapp || '').trim();
+      const m    = wpp.match(/^(\+\d+)\s+(.*)$/);
+      const nasc = perfil.nascimento
+        ? (() => { const [y, mo, d] = String(perfil.nascimento).split('-'); return `${d}/${mo}/${y}`; })()
+        : '';
+      _lsSet(CLIENTE_LOCAL_KEY, JSON.stringify({
+        nome: perfil.nome || '',
+        nasc,
+        ddi:  m ? m[1] : '+55',
+        fone: m ? m[2] : wpp,
+      }));
+    }
+    if (typeof restaurarDadosPessoaisLocal === 'function') restaurarDadosPessoaisLocal();
   }
 
   // ============================================================
@@ -618,6 +642,9 @@ document.addEventListener('DOMContentLoaded', () => {
     window._csLogado = !!session;
 
     if (!session) {
+      // Sem conta = sem dados lembrados: apaga o espelho local (logout
+      // inclusive — importante em aparelho compartilhado).
+      if (typeof esquecerDadosPessoaisLocal === 'function') esquecerDadosPessoaisLocal();
       atualizarIconeNav(false, '');
       definirTermosOk(false);
       mostrarTela(telaEmail);
@@ -664,6 +691,7 @@ document.addEventListener('DOMContentLoaded', () => {
     definirTermosOk(true);
 
     perfilAtual = perfil;
+    espelharERestaurar(perfil);
     const inicial = (perfil.nome || email || '?').trim().charAt(0).toUpperCase();
     nomeLogadoEl.textContent  = perfil.nome || email;
     emailLogadoEl.textContent = email;
