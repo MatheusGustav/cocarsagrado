@@ -41,8 +41,6 @@ document.addEventListener('DOMContentLoaded', () => {
   const reaceiteBtn    = document.getElementById('contaReaceiteBtn');
 
   const telaAdmin     = document.getElementById('contaTelaAdmin');
-  const emailAdminEl  = document.getElementById('contaEmailAdmin');
-  const sairAdminBtn  = document.getElementById('contaSairAdminBtn');
 
   const nomeLogadoEl  = document.getElementById('contaNomeLogado');
   const emailLogadoEl = document.getElementById('contaEmailLogado');
@@ -83,10 +81,25 @@ document.addEventListener('DOMContentLoaded', () => {
     // Histórico pode ter mudado desde o login (ex.: complemento pago) —
     // recarrega ao reabrir já na tela de logado.
     if (telaLogado && !telaLogado.hidden) carregarHistorico();
+    // Painel admin embutido só carrega quando o drawer abre de fato.
+    if (telaAdmin && !telaAdmin.hidden) garantirFrameAdmin();
+    // Login admin pode ter concluído dentro do iframe sem evento chegar
+    // aqui — reavalia a sessão (ícone da nav, flag modoLoginAdmin).
+    if (modoLoginAdmin) window.supabase.auth.getSession().then(({ data }) => atualizarUiLogado(data.session));
   }
   function fecharDrawer() {
     overlay.classList.remove('open');
     document.body.classList.remove('conta-drawer-aberto');
+    // Desistiu do login admin antes de enviar a senha? Volta pra tela de
+    // e-mail — senão reabrir o drawer fica preso no login do painel.
+    if (modoLoginAdmin) {
+      window.supabase.auth.getSession().then(({ data }) => {
+        if (!data.session) {
+          modoLoginAdmin = false;
+          mostrarTela(telaEmail);
+        }
+      });
+    }
   }
 
   gatilhos.forEach(el => el.addEventListener('click', abrirDrawer));
@@ -109,8 +122,13 @@ document.addEventListener('DOMContentLoaded', () => {
   const panel  = document.getElementById('contaDrawerPanel');
   const resize = document.getElementById('contaDrawerResize');
   const DRAWER_WIDTH_KEY = 'cocar_drawer_width_v1';
+  // Admin tem largura própria: o painel embutido pede bem mais espaço que
+  // as telas de cliente, e uma não deve herdar o ajuste da outra.
+  const DRAWER_WIDTH_KEY_ADMIN = 'cocar_drawer_width_admin_v1';
+  const DRAWER_ADMIN_PADRAO = 1100;
   const DRAWER_MIN = 320;
   const drawerMax = () => Math.round(window.innerWidth * 0.95);
+  const chaveLarguraAtual = () => (telaAdmin && !telaAdmin.hidden) ? DRAWER_WIDTH_KEY_ADMIN : DRAWER_WIDTH_KEY;
 
   function aplicarLargura(px) {
     const largura = Math.max(DRAWER_MIN, Math.min(px, drawerMax()));
@@ -144,7 +162,7 @@ document.addEventListener('DOMContentLoaded', () => {
       panel.classList.remove('is-resizing');
       document.body.style.userSelect = '';
       const atual = parseInt(panel.style.getPropertyValue('--conta-drawer-width'), 10);
-      if (Number.isFinite(atual) && typeof _lsSet === 'function') _lsSet(DRAWER_WIDTH_KEY, String(atual));
+      if (Number.isFinite(atual) && typeof _lsSet === 'function') _lsSet(chaveLarguraAtual(), String(atual));
     };
 
     resize.addEventListener('mousedown', (e) => { e.preventDefault(); iniciar(e.clientX); });
@@ -159,8 +177,31 @@ document.addEventListener('DOMContentLoaded', () => {
   // ============================================================
   // Trocar de tela dentro do drawer
   // ============================================================
+  const adminFrame = document.getElementById('contaAdminFrame');
+  const ADMIN_FRAME_URL = 'admin/dashboard.html?embed=1';
+
+  function garantirFrameAdmin() {
+    if (!adminFrame) return;
+    if (!(adminFrame.getAttribute('src') || '').includes('dashboard.html')) {
+      adminFrame.setAttribute('src', ADMIN_FRAME_URL);
+    }
+  }
+
   function mostrarTela(tela) {
     [telaEmail, telaCodigo, telaPerfil, telaReaceite, telaLogado, telaAdmin].forEach(t => { if (t) t.hidden = (t !== tela); });
+
+    // Modo admin: painel ocupa o drawer inteiro (sem padding) e a largura
+    // salva/padrão é a do admin; voltando pra cliente, restaura a dele.
+    const ehAdmin = (tela === telaAdmin);
+    if (panel) {
+      panel.classList.toggle('conta-drawer-panel--admin', ehAdmin);
+      const salva = parseInt((typeof _lsGet === 'function'
+        ? _lsGet(ehAdmin ? DRAWER_WIDTH_KEY_ADMIN : DRAWER_WIDTH_KEY) : '') || '', 10);
+      if (Number.isFinite(salva)) aplicarLargura(salva);
+      else if (ehAdmin) aplicarLargura(DRAWER_ADMIN_PADRAO);
+      else panel.style.removeProperty('--conta-drawer-width');
+    }
+    if (ehAdmin && overlay.classList.contains('open')) garantirFrameAdmin();
   }
 
   // ============================================================
@@ -188,6 +229,23 @@ document.addEventListener('DOMContentLoaded', () => {
   function mostrarErroEl(el, msg) { el.textContent = msg; el.hidden = false; }
 
   // ============================================================
+  // Atalho do admin — palavra secreta no campo de e-mail abre o login
+  // do painel (senha + Authenticator) dentro do drawer. Conveniência,
+  // não segurança: a página de login já é pública em admin/dashboard.html.
+  // ============================================================
+  const ADMIN_SEGREDO = 'admincocar';
+  // Enquanto o login acontece no iframe, a sessão passa por aal1 (senha ok,
+  // falta o TOTP) — este flag impede o onAuthStateChange de arrancar o
+  // drawer pro fluxo de cliente no meio do caminho.
+  let modoLoginAdmin = false;
+
+  function abrirLoginAdmin() {
+    modoLoginAdmin = true;
+    inputEmail.value = '';
+    mostrarTela(telaAdmin);
+  }
+
+  // ============================================================
   // Passo 1 — enviar código por e-mail
   // ============================================================
   formEmail?.addEventListener('submit', async (e) => {
@@ -195,6 +253,11 @@ document.addEventListener('DOMContentLoaded', () => {
     limparErro(emailErro);
     const email = inputEmail.value.trim();
     if (!email) return;
+
+    if (email.toLowerCase() === ADMIN_SEGREDO) {
+      abrirLoginAdmin();
+      return;
+    }
 
     emailBtn.disabled = true;
     emailBtn.textContent = 'Enviando…';
@@ -333,7 +396,7 @@ document.addEventListener('DOMContentLoaded', () => {
     btn.disabled = false;
   }
   sairBtn?.addEventListener('click', () => sair(sairBtn));
-  sairAdminBtn?.addEventListener('click', () => sair(sairAdminBtn));
+  // Admin sai pelo "Sair" da sidebar do próprio painel embutido.
 
   // ============================================================
   // Ícone da nav: estado logado/deslogado + inicial do nome
@@ -645,6 +708,9 @@ document.addEventListener('DOMContentLoaded', () => {
       // Sem conta = sem dados lembrados: apaga o espelho local (logout
       // inclusive — importante em aparelho compartilhado).
       if (typeof esquecerDadosPessoaisLocal === 'function') esquecerDadosPessoaisLocal();
+      // Descarrega o painel embutido — o iframe não reage sozinho ao signOut.
+      if (adminFrame?.getAttribute('src')) adminFrame.setAttribute('src', 'about:blank');
+      modoLoginAdmin = false;
       atualizarIconeNav(false, '');
       definirTermosOk(false);
       mostrarTela(telaEmail);
@@ -656,12 +722,16 @@ document.addEventListener('DOMContentLoaded', () => {
     // sem passar pelo fluxo de perfil/carrinho de cliente.
     const { data: ehAdmin } = await window.supabase.rpc('is_admin');
     if (ehAdmin) {
-      emailAdminEl.textContent = email;
+      modoLoginAdmin = false;
       atualizarIconeNav(true, email.trim().charAt(0).toUpperCase());
       definirTermosOk(false);
       mostrarTela(telaAdmin);
       return;
     }
+
+    // Login admin em andamento no iframe (senha ok, aguardando o código do
+    // Authenticator — is_admin só vira true em aal2): mantém a tela como está.
+    if (modoLoginAdmin) return;
 
     const perfil = await buscarPerfil(session.user.id);
 
@@ -702,6 +772,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
   window.supabase.auth.onAuthStateChange((_event, session) => {
     atualizarUiLogado(session);
+  });
+
+  // Dashboard embutido avisa quando o login chega em aal2 — atualiza o
+  // ícone da nav e encerra o modoLoginAdmin (o evento de auth nem sempre
+  // cruza o iframe).
+  window.addEventListener('message', (e) => {
+    if (e.origin !== location.origin || e.data?.tipo !== 'cocar-admin-logado') return;
+    window.supabase.auth.getSession().then(({ data }) => atualizarUiLogado(data.session));
   });
 
   window.supabase.auth.getSession().then(({ data }) => {

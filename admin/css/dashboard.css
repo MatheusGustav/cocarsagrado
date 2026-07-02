@@ -3868,3 +3868,17 @@ body.drawer-aberto { overflow: hidden; }
 }
 .cat-inativas-bloco .cat-card-foto { width: 44px !important; height: 44px !important; }
 .cat-inativas-bloco .cat-card-info { align-items: flex-start; text-align: left; }
+
+/* ============================================================
+   Modo embed (?embed=1) — painel dentro do drawer "Minha conta"
+   do site. "Ver site" vira "Abrir em nova aba"; "Sair" continua
+   na sidebar (o drawer não tem header próprio).
+   ============================================================ */
+#nav-nova-aba { display: none; }
+.is-embed #nav-ver-site { display: none; }
+.is-embed #nav-nova-aba { display: block; }
+
+/* O ✕ do drawer flutua no canto superior direito, sobre o iframe —
+   afasta as ações do header pra não ficarem embaixo dele. */
+.is-embed .adm-main-header { padding-right: 44px; }
+.is-embed .adm-topbar { padding-right: 56px; }

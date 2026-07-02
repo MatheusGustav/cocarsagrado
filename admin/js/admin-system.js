@@ -136,6 +136,11 @@ async function _avaliarSessao() {
 
 function _entrarNoPainel() {
   _admAutenticado = true;
+  // Embutido no drawer do site: avisa o pai que o admin chegou em aal2
+  // (o evento de auth do supabase-js nem sempre propaga entre contextos).
+  if (document.documentElement.classList.contains('is-embed') && window.parent !== window) {
+    window.parent.postMessage({ tipo: 'cocar-admin-logado' }, location.origin);
+  }
   _mostrarAdmin();
   _carregarTerapeutas();
   if (typeof _abrirSecaoInicial === 'function') {
