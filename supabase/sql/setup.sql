@@ -1099,10 +1099,10 @@ AS $$
            ), 0) AS p_total,
            CASE
              WHEN m.t_slug = 'naipes-da-pombo-gira' THEN 4
-             WHEN m.t_grupo = 'amarracao' THEN COALESCE((
+             WHEN m.t_grupo IS NOT NULL THEN COALESCE((
                SELECT max(t2.num_perguntas)::integer
                FROM public.tipos_leitura t2
-               WHERE t2.grupo_slug = 'amarracao' AND t2.ativo
+               WHERE t2.grupo_slug = m.t_grupo AND t2.ativo
              ), 0)
              ELSE 0
            END AS p_max
@@ -1128,7 +1128,7 @@ AS $$
       AND ct.num_perguntas >= 1
       AND (
         ct.t_slug = 'naipes-da-pombo-gira'
-        OR (ct.t_grupo = 'amarracao' AND ct.valor_original = ct.t_preco)
+        OR (ct.t_grupo IS NOT NULL AND ct.valor_original = ct.t_preco)
       )
       AND (now() AT TIME ZONE 'America/Sao_Paulo')::date <= ct.data_agendamento + 1
       AND ct.p_total < ct.p_max
@@ -1228,14 +1228,15 @@ BEGIN
     -- Tabela progressiva atual do naipe (mesma da criar_pedido)
     v_preco_de   := CASE v_atuais     WHEN 1 THEN 30 WHEN 2 THEN 56 WHEN 3 THEN 78 WHEN 4 THEN 96 END;
     v_preco_para := CASE v_novo_total WHEN 1 THEN 30 WHEN 2 THEN 56 WHEN 3 THEN 78 WHEN 4 THEN 96 END;
-  ELSIF v_tipo.grupo_slug = 'amarracao' THEN
-    -- Tiers atuais do catálogo por qtd de perguntas (preço cheio, sem promo/cupom)
+  ELSIF v_tipo.grupo_slug IS NOT NULL THEN
+    -- Qualquer grupo de tiers por nº de perguntas (amarração, mesa cigana
+    -- avulsa, futuros). Tier atual e alvo pelo catálogo ATUAL (preço cheio).
     SELECT t.preco_original INTO v_preco_de
     FROM public.tipos_leitura t
-    WHERE t.grupo_slug = 'amarracao' AND t.ativo AND t.num_perguntas = v_atuais;
+    WHERE t.grupo_slug = v_tipo.grupo_slug AND t.ativo AND t.num_perguntas = v_atuais;
     SELECT t.preco_original INTO v_preco_para
     FROM public.tipos_leitura t
-    WHERE t.grupo_slug = 'amarracao' AND t.ativo AND t.num_perguntas = v_novo_total;
+    WHERE t.grupo_slug = v_tipo.grupo_slug AND t.ativo AND t.num_perguntas = v_novo_total;
   ELSE
     RAISE EXCEPTION 'complemento_invalido: esta leitura não aceita perguntas adicionais';
   END IF;
