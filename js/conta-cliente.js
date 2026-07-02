@@ -276,6 +276,8 @@ document.addEventListener('DOMContentLoaded', () => {
     emailPendente = email;
     codigoEmailRef.textContent = email;
     inputCodigo.value = '';
+    codigoBtn.disabled = false;
+    codigoBtn.textContent = 'Confirmar';
     limparErro(codigoErro);
     mostrarTela(telaCodigo);
   });
@@ -296,14 +298,16 @@ document.addEventListener('DOMContentLoaded', () => {
       token: codigo,
       type: 'email',
     });
-    codigoBtn.disabled = false;
-    codigoBtn.textContent = 'Confirmar';
 
     if (error) {
+      codigoBtn.disabled = false;
+      codigoBtn.textContent = 'Confirmar';
       mostrarErroEl(codigoErro, 'Código inválido ou expirado.');
       return;
     }
-    // onAuthStateChange cuida de atualizar a UI pra tela de logado.
+    // Sucesso: onAuthStateChange troca a tela. Até lá o botão fica travado —
+    // reclicar reenviaria um token já consumido e mostraria "Código inválido"
+    // com o login já feito. (Reset ao reexibir a tela, no submit do e-mail.)
   });
 
   voltarEmailBtn?.addEventListener('click', () => {
@@ -324,14 +328,21 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (nome.length < 3) { mostrarErroEl(perfilErro, 'Nome deve ter pelo menos 3 caracteres.'); return; }
     if (!nascIso) { mostrarErroEl(perfilErro, 'Data de nascimento inválida.'); return; }
-    if (fone.length < 6) { mostrarErroEl(perfilErro, 'Número inválido.'); return; }
+    // Conta dígitos, não caracteres — a máscara BR ("(27) 9") inflaria o total.
+    if (fone.replace(/\D/g, '').length < 6) { mostrarErroEl(perfilErro, 'Número inválido.'); return; }
     if (!perfilTermos?.checked) { mostrarErroEl(perfilErro, 'É preciso aceitar os Termos de Uso.'); return; }
 
-    const { data: { user } } = await window.supabase.auth.getUser();
-    if (!user) return;
-
+    // Trava antes do 1º await — duplo clique gerava 2 inserts (o 2º batia
+    // no PK e mostrava erro mesmo com o perfil salvo).
     perfilBtn.disabled = true;
     perfilBtn.textContent = 'Salvando…';
+
+    const { data: { user } } = await window.supabase.auth.getUser();
+    if (!user) {
+      perfilBtn.disabled = false;
+      perfilBtn.textContent = 'Salvar e continuar';
+      return;
+    }
     const whatsapp = `${perfilDdi.value} ${fone}`;
     const { error } = await window.supabase.from('perfis').insert({
       id: user.id,
@@ -368,11 +379,16 @@ document.addEventListener('DOMContentLoaded', () => {
     limparErro(reaceiteErro);
     if (!reaceiteTermos?.checked) { mostrarErroEl(reaceiteErro, 'É preciso aceitar os Termos de Uso.'); return; }
 
-    const { data: { user } } = await window.supabase.auth.getUser();
-    if (!user) return;
-
+    // Trava antes do 1º await (mesmo motivo do formPerfil).
     reaceiteBtn.disabled = true;
     reaceiteBtn.textContent = 'Salvando…';
+
+    const { data: { user } } = await window.supabase.auth.getUser();
+    if (!user) {
+      reaceiteBtn.disabled = false;
+      reaceiteBtn.textContent = 'Concordar e continuar';
+      return;
+    }
     const { error } = await window.supabase.from('perfis').update({
       termos_versao: window.TERMOS_VERSAO,
       termos_aceitos_em: new Date().toISOString(),
@@ -392,8 +408,11 @@ document.addEventListener('DOMContentLoaded', () => {
   // ============================================================
   async function sair(btn) {
     btn.disabled = true;
-    await window.supabase.auth.signOut();
+    btn.textContent = 'Saindo…';
+    const { error } = await window.supabase.auth.signOut();
     btn.disabled = false;
+    // Sucesso: SIGNED_OUT troca a tela. Falha (ex.: offline): avisa no botão.
+    btn.textContent = error ? 'Não deu — tentar de novo' : 'Sair';
   }
   sairBtn?.addEventListener('click', () => sair(sairBtn));
   // Admin sai pelo "Sair" da sidebar do próprio painel embutido.
@@ -409,13 +428,15 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  // Erro de rede/RLS ≠ perfil inexistente — confundir os dois mandava
+  // cliente antigo pro form de 1º login (e o insert batia no PK).
   async function buscarPerfil(userId) {
-    const { data } = await window.supabase
+    const { data, error } = await window.supabase
       .from('perfis')
       .select('nome, termos_versao, whatsapp, nascimento')
       .eq('id', userId)
       .maybeSingle();
-    return data;
+    return error ? { erro: true } : { perfil: data };
   }
 
   // Espelha o perfil no localStorage e roda o autofill + boas-vindas.
@@ -568,7 +589,8 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }
     if (!opcoes.length) {
-      btnAbrir.disabled = false;
+      // Segue desabilitado — reclicar só re-tentaria em silêncio com o
+      // rótulo errado. Reabrir o drawer re-renderiza e tenta de novo.
       btnAbrir.textContent = 'Indisponível no momento';
       return;
     }
@@ -683,11 +705,15 @@ document.addEventListener('DOMContentLoaded', () => {
           valor_final:       valor,
         }], null);
       } catch (err) {
+        // Nada de carregarHistorico() aqui: re-renderizar a lista apagava a
+        // mensagem de erro e as perguntas digitadas antes do cliente ler.
         erro.textContent = err?.message || 'Não foi possível continuar. Tente novamente.';
         erro.hidden = false;
-        enviar.disabled = false;
         enviar.textContent = 'Ir para o pagamento';
-        carregarHistorico();
+        // Prazo vencido: trava o form (retry falharia igual); senão libera.
+        const expirado = String(err?.message || '').includes('prazo');
+        enviar.disabled = expirado;
+        sel.disabled = expirado;
       }
     });
   }
@@ -733,7 +759,19 @@ document.addEventListener('DOMContentLoaded', () => {
     // Authenticator — is_admin só vira true em aal2): mantém a tela como está.
     if (modoLoginAdmin) return;
 
-    const perfil = await buscarPerfil(session.user.id);
+    const { perfil, erro: perfilErroFetch } = await buscarPerfil(session.user.id);
+
+    // Falha transitória: tela logada mínima (sem termosOk — checkout pede o
+    // aceite). Reabrir o drawer tenta o histórico de novo.
+    if (perfilErroFetch) {
+      atualizarIconeNav(true, (email || '?').trim().charAt(0).toUpperCase());
+      definirTermosOk(false);
+      nomeLogadoEl.textContent  = email;
+      emailLogadoEl.textContent = email;
+      mostrarTela(telaLogado);
+      carregarHistorico();
+      return;
+    }
 
     if (!perfil) {
       // Conta com TOTP verificado = admin a meio caminho (OTP/senha ok,
@@ -783,7 +821,15 @@ document.addEventListener('DOMContentLoaded', () => {
     carregarHistorico();
   }
 
-  window.supabase.auth.onAuthStateChange((_event, session) => {
+  // INITIAL_SESSION já cobre o boot (não precisa de getSession manual — era
+  // init em dobro). TOKEN_REFRESHED (~1h, ou ao refocar a aba) e SIGNED_IN
+  // repetido do mesmo usuário não mudam nada — re-renderizar aqui apagava um
+  // form de complemento em digitação.
+  let userIdSessao = null;
+  window.supabase.auth.onAuthStateChange((event, session) => {
+    if (event === 'TOKEN_REFRESHED') return;
+    if (event === 'SIGNED_IN' && session?.user?.id && session.user.id === userIdSessao) return;
+    userIdSessao = session?.user?.id || null;
     atualizarUiLogado(session);
   });
 
@@ -800,7 +846,4 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  window.supabase.auth.getSession().then(({ data }) => {
-    atualizarUiLogado(data.session);
-  });
 });
