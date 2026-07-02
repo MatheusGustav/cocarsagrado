@@ -765,6 +765,14 @@ body {
   font-size: .62rem !important;
 }
 
+/* Complemento: pergunta adicional vinculada a uma leitura já paga */
+.adm-badge-adicao {
+  background: var(--s-gold-1) !important;
+  color: var(--t-gold-900) !important;
+  border: 1px dashed rgba(184,146,62,0.55) !important;
+  font-size: .62rem !important;
+}
+
 .adm-badge-sm {
   font-size: .6rem !important;
   padding: 2px 7px !important;

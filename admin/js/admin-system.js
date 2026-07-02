@@ -962,6 +962,13 @@ function criarItemAgendamento(ag) {
   const nomeTerapeuta   = ag.terapeuta ? terapeutaNome(ag.terapeuta) : '';
   const badgeTerapeuta  = nomeTerapeuta ? `<span class="adm-badge adm-badge-terapeuta">${_esc(nomeTerapeuta)}</span>` : '';
 
+  // Complemento: pergunta adicional comprada depois, vinculada à leitura
+  // original (leitura_origem_id). Não ocupa vaga — é a mesma sessão.
+  const ehAdicao    = !!ag.leitura_origem_id;
+  const badgeAdicao = ehAdicao
+    ? `<span class="adm-badge adm-badge-adicao" title="Pergunta adicional comprada depois — responder junto com a leitura original">＋ pergunta adicional</span>`
+    : '';
+
   const acoes = montarAcoes(ag);
 
   item.innerHTML = `
@@ -972,6 +979,7 @@ function criarItemAgendamento(ag) {
       </div>
       <div class="adm-item-right">
         <span style="font-weight:700; color:var(--primary)">${_esc(valor)}</span>
+        ${badgeAdicao}
         ${badgeTerapeuta}
         ${badge}
         <span style="font-size:1.1rem; color:var(--text-muted)">▾</span>
@@ -986,6 +994,7 @@ function criarItemAgendamento(ag) {
         <div class="adm-detail-item"><label>Desconto</label><span>R$ ${Number(ag.desconto_aplicado||0).toFixed(2).replace('.', ',')}${ag.aceitou_desconto_10 ? ' <span title="Desconto novo cliente" style="color:var(--primary);font-size:.75rem;">(10% novo cliente)</span>' : ''}</span></div>
         <div class="adm-detail-item"><label>Método pag.</label><span>${_esc(ag.metodo_pagamento || '—')}</span></div>
         <div class="adm-detail-item"><label>Pago em</label><span>${ag.pago_em ? _esc(formatarDatetime(ag.pago_em)) : '—'}</span></div>
+        ${ehAdicao ? `<div class="adm-detail-item"><label>Adição à leitura</label><span>#${_esc(ag.leitura_origem_id)}${ag.num_perguntas ? ` · +${_esc(ag.num_perguntas)} pergunta${ag.num_perguntas > 1 ? 's' : ''}` : ''}</span></div>` : ''}
         ${ag.cliente_observacoes ? `<div class="adm-detail-item" style="grid-column:1/-1"><label>Observações</label><span style="white-space:pre-wrap">${_esc(ag.cliente_observacoes)}</span></div>` : ''}
       </div>
       <div class="adm-item-actions">${acoes}</div>
