@@ -613,6 +613,10 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   async function atualizarUiLogado(session) {
+    // Logado (qualquer estado) nunca vê o checkbox de termos no carrinho —
+    // aceite fica no perfil; versão nova pede re-aceite no login.
+    window._csLogado = !!session;
+
     if (!session) {
       atualizarIconeNav(false, '');
       definirTermosOk(false);
