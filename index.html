@@ -658,6 +658,12 @@
             <div class="conta-drawer-erro" id="contaEmailErro" hidden></div>
             <button type="submit" class="conta-drawer-btn" id="contaEmailBtn">Enviar código</button>
           </form>
+          <!-- E-mail sem conta: confirma antes de criar (typo não vira usuário) -->
+          <div id="contaEmailConfirma" hidden>
+            <p class="conta-drawer-sub">Não achamos conta com <strong id="contaEmailConfirmaRef"></strong>. Está certinho? Contas novas começam por aqui.</p>
+            <button type="button" class="conta-drawer-btn" id="contaEmailCriarBtn">Sim, criar minha conta</button>
+            <button type="button" class="conta-drawer-link" id="contaEmailCorrigir">← Corrigir e-mail</button>
+          </div>
         </div>
       </div>
 
