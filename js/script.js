@@ -333,6 +333,10 @@ function inicializarFiltrosCatalogo() {
         });
         grupo.classList.toggle('cat-group--hidden', !algum);
       });
+
+      // Grupos/cards que voltaram a aparecer precisam remedir o "ver mais"
+      // (descrição oculta media 0×0 e não ganhava o botão).
+      if (typeof _medirVerMais === 'function') _medirVerMais();
   }
 
   botoesFiltro.forEach(botao => {

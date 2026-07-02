@@ -74,6 +74,10 @@ function fecharModal() {
 }
 
 function _resetarModal() {
+  // Reaberto dentro da janela de 360ms (ex.: clicar "Retomar pagamento" logo
+  // após fechar)? Não reseta — senão zera _dadosPagamento e expulsa o cliente
+  // da tela de pagamento recém-aberta de volta pro passo 1.
+  if (document.getElementById('modalAgendamento')?.classList.contains('open')) return;
   if (typeof Estado !== 'undefined') {
     // Preserva carrinho e dadosPessoais entre aberturas (multi-leitura)
     Estado.tipoSelecionado = null;
@@ -169,23 +173,27 @@ window.redirecionarParaPagamento = function(chave, carrinhoSnap, cupomSnap) {
   }
   lista = lista || [];
 
-  const totalFinal = lista.reduce((s, i) => s + (i.valor_final || 0), 0);
-
-  // Cupom (R$ fixo no total). Distribui o desconto proporcionalmente entre os
-  // itens (em centavos) para que a soma dos items[] bata com o total cobrado —
-  // a InfinitePay soma os items e não aceita linha de desconto negativa.
-  const baseCents  = Math.round(totalFinal * 100);
-  const cupomCents = (cupomSnap && baseCents > 0)
-    ? Math.min(Math.round((cupomSnap.valor || 0) * 100), baseCents)
+  // Cupom (R$ fixo). Só as leituras ELEGÍVEIS (não-naipe) entram na base:
+  // Naipes da Pomba Gira não aceita cupom. Cap e rateio ficam em sincronia
+  // com _cupomDesconto (front) e a RPC criar_pedido (que capa e rateia só
+  // entre os filhos elegíveis) — senão o link cobra a menor que o banco e o
+  // webhook nunca confirma. Distribui em centavos entre os itens elegíveis
+  // para a soma dos items[] bater com o total (a InfinitePay soma os items).
+  const cents      = lista.map(i => Math.round((i.valor_final || 0) * 100));
+  const totalCents = cents.reduce((s, c) => s + c, 0);
+  const eligIdx    = lista.map((i, idx) => (!_ehNaipe(i.tipo) ? idx : -1)).filter(idx => idx >= 0);
+  const eligBase   = eligIdx.reduce((s, idx) => s + cents[idx], 0);
+  const cupomCents = (cupomSnap && eligBase > 0)
+    ? Math.min(Math.round((cupomSnap.valor || 0) * 100), eligBase)
     : 0;
 
-  const cents = lista.map(i => Math.round((i.valor_final || 0) * 100));
+  const descCents = cents.map(() => 0);
   let restanteCupom = cupomCents;
-  const descCents = cents.map((c, idx) => {
-    if (idx === cents.length - 1) return restanteCupom;       // último abate o resto
-    const d = baseCents > 0 ? Math.floor(cupomCents * c / baseCents) : 0;
+  eligIdx.forEach((idx, k) => {
+    if (k === eligIdx.length - 1) { descCents[idx] = restanteCupom; return; } // último elegível abate o resto
+    const d = eligBase > 0 ? Math.floor(cupomCents * cents[idx] / eligBase) : 0;
+    descCents[idx] = d;
     restanteCupom -= d;
-    return d;
   });
 
   const items = lista.map((item, idx) => ({
@@ -193,7 +201,7 @@ window.redirecionarParaPagamento = function(chave, carrinhoSnap, cupomSnap) {
     price: ((cents[idx] - descCents[idx]) / 100).toFixed(2),
   }));
   const labelLeitura = items.map(i => i.description).join(' + ');
-  const totalCobrar  = (baseCents - cupomCents) / 100;
+  const totalCobrar  = (totalCents - cupomCents) / 100;
 
   const nome = Estado.dadosPessoais.nome || document.getElementById('f-nome')?.value?.trim() || '';
   const whatsapp = Estado.dadosPessoais.whatsapp || (typeof obterWhatsappCompleto === 'function' ? obterWhatsappCompleto() : '');

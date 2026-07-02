@@ -3,6 +3,11 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 const GROQ_API_KEY = Deno.env.get("GROQ_API_KEY");
 const GROQ_URL = "https://api.groq.com/openai/v1/chat/completions";
 
+// Limites de entrada (endpoint é público, sem auth): barram abuso de custo
+// e injeção via history. O front já corta em 400 chars / 20 itens.
+const MAX_MSG_CHARS = 2000;
+const MAX_HISTORY = 20;
+
 const CORS = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
@@ -126,13 +131,24 @@ serve(async (req) => {
     }
 
     const { message, history } = await req.json();
-    if (!message?.trim()) {
+    if (typeof message !== "string" || !message.trim()) {
       return new Response(JSON.stringify({ error: "message required" }), { status: 400, headers: { ...CORS, "Content-Type": "application/json" } });
     }
+    if (message.length > MAX_MSG_CHARS) {
+      return new Response(JSON.stringify({ error: "message too long" }), { status: 400, headers: { ...CORS, "Content-Type": "application/json" } });
+    }
+
+    // Sanitiza o history vindo do cliente: só user/assistant (nunca system —
+    // senão dá pra reescrever a persona do Pantero), tamanho limitado por item
+    // e nº de itens limitado (barra abuso de custo/injeção no endpoint aberto).
+    const historySafe = (Array.isArray(history) ? history : [])
+      .filter((m) => m && (m.role === "user" || m.role === "assistant") && typeof m.content === "string")
+      .slice(-MAX_HISTORY)
+      .map((m) => ({ role: m.role, content: m.content.slice(0, MAX_MSG_CHARS) }));
 
     const messages = [
       { role: "system", content: SYSTEM_PROMPT },
-      ...(Array.isArray(history) ? history : []),
+      ...historySafe,
       { role: "user", content: message },
     ];
 

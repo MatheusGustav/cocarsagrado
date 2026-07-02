@@ -5,22 +5,27 @@
    - Sem promoção → preço normal
    ============================================================ */
 
-let _configCache = null;
+let _configPromise = null;
 
 async function carregarConfig() {
-  if (_configCache !== null) return _configCache;
-  try {
-    const { data, error } = await supabase
-      .from('configuracoes')
-      .select('valor')
-      .eq('chave', 'descontos')
-      .single();
-    if (error) throw error;
-    _configCache = { promocoes: data.valor.promocoes || [] };
-  } catch {
-    _configCache = { promocoes: [] };
-  }
-  return _configCache;
+  // Cacheia a PROMISE, não o valor: renderizarDescontos é chamada por script.js
+  // e pelo catálogo; sem isto, as duas rodam antes do fetch resolver e disparam
+  // duas queries idênticas em 'configuracoes'.
+  if (_configPromise) return _configPromise;
+  _configPromise = (async () => {
+    try {
+      const { data, error } = await supabase
+        .from('configuracoes')
+        .select('valor')
+        .eq('chave', 'descontos')
+        .single();
+      if (error) throw error;
+      return { promocoes: data.valor.promocoes || [] };
+    } catch {
+      return { promocoes: [] };
+    }
+  })();
+  return _configPromise;
 }
 
 async function carregarPromocoes() {
@@ -133,10 +138,17 @@ async function renderizarDescontos() {
     const footer    = card.querySelector('.cat-footer');
     if (!footer) return;
 
-    if (servico && servico.tipo === 'tiers') {
-      renderizarPrecoTiers(footer, servico.tiers, resultado);
-    } else if (servico && servico.tipo === 'simples') {
-      renderizarPrecoSimples(footer, servico.preco, resultado);
+    // Preço-base SEMPRE de tipos_leitura (data-* do card), nunca de
+    // configuracoes. A promoção contribui só com percentual + badge. Assim o
+    // que o card mostra e o que a RPC cobra (preco_original) não divergem.
+    let baseTiers = null;
+    if (card.dataset.baseTiers) {
+      try { baseTiers = JSON.parse(card.dataset.baseTiers); } catch { baseTiers = null; }
+    }
+    if (Array.isArray(baseTiers) && baseTiers.length) {
+      renderizarPrecoTiers(footer, baseTiers, resultado);
+    } else if (card.dataset.basePrice != null && card.dataset.basePrice !== '') {
+      renderizarPrecoSimples(footer, Number(card.dataset.basePrice), resultado);
     }
   });
 }

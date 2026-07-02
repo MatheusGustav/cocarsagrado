@@ -90,7 +90,12 @@ document.addEventListener('DOMContentLoaded', () => {
   fechar?.addEventListener('click', fecharDrawer);
   overlay.addEventListener('click', (e) => { if (e.target === overlay) fecharDrawer(); });
   document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' && overlay.classList.contains('open')) fecharDrawer();
+    if (e.key !== 'Escape' || !overlay.classList.contains('open')) return;
+    // Modal de Termos por cima? Esc fecha só ele (handler próprio); não fecha o
+    // drawer junto.
+    const termos = document.getElementById('termosModalOverlay');
+    if (termos && !termos.hidden) return;
+    fecharDrawer();
   });
 
   // ============================================================
@@ -111,7 +116,9 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // Restaura largura salva (só faz sentido no desktop; no mobile o CSS força 100%).
-  const larguraSalva = parseInt(_lsGet(DRAWER_WIDTH_KEY) || '', 10);
+  // Guard como na linha ~280: _lsGet vem de agendamento-system.js — se ele falhar
+  // ao carregar, o drawer/login não deve morrer com ReferenceError.
+  const larguraSalva = parseInt((typeof _lsGet === 'function' ? _lsGet(DRAWER_WIDTH_KEY) : '') || '', 10);
   if (Number.isFinite(larguraSalva)) aplicarLargura(larguraSalva);
 
   if (resize && panel) {
@@ -134,7 +141,7 @@ document.addEventListener('DOMContentLoaded', () => {
       panel.classList.remove('is-resizing');
       document.body.style.userSelect = '';
       const atual = parseInt(panel.style.getPropertyValue('--conta-drawer-width'), 10);
-      if (Number.isFinite(atual)) _lsSet(DRAWER_WIDTH_KEY, String(atual));
+      if (Number.isFinite(atual) && typeof _lsSet === 'function') _lsSet(DRAWER_WIDTH_KEY, String(atual));
     };
 
     resize.addEventListener('mousedown', (e) => { e.preventDefault(); iniciar(e.clientX); });

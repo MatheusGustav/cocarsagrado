@@ -995,6 +995,9 @@ function _renderizarCarrinho() {
     btn.addEventListener('click', () => {
       const idx = parseInt(btn.dataset.idx, 10);
       Estado.carrinho.splice(idx, 1);
+      // Carrinho vazio: limpa o cupom para não reaplicar (sem revalidar) num
+      // carrinho novo — evita cupom-fantasma e cobrança a menor no naipe.
+      if (Estado.carrinho.length === 0) Estado.cupom = null;
       _renderizarCarrinho();
       _atualizarBotoesCarrinho();
       if (Estado.carrinho.length === 0) irParaPasso(1);
@@ -1162,6 +1165,7 @@ async function salvarMultiplosAgendamentos(itensPre) {
     desconto_aplicado: item.desconto_aplicado,
     valor_final: item.valor_final,
     agendamento_especial: item.agendamento_especial,
+    num_perguntas: item.num_perguntas ?? null, // naipe: amarra o preço à qtd de perguntas no servidor
   }));
 
   const { error: rpcErr } = await supabase.rpc('criar_pedido', {
@@ -1264,8 +1268,17 @@ async function gerarChavePedido(tentativas = 0) {
 
 function gerarChaveAleatoria() {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-  const bloco = (n) => Array.from({length: n}, () => chars[Math.floor(Math.random() * chars.length)]).join('');
-  return `CS-${bloco(4)}-${bloco(4)}-${bloco(4)}`;
+  // A chave funciona como token do pedido (pedido_status, order_nsu): usa CSPRNG
+  // para não ser previsível/enumerável. Fallback em Math.random só se crypto faltar.
+  const rand = (n) => {
+    if (globalThis.crypto?.getRandomValues) {
+      const buf = new Uint32Array(n);
+      globalThis.crypto.getRandomValues(buf);
+      return Array.from(buf, (v) => chars[v % chars.length]).join('');
+    }
+    return Array.from({length: n}, () => chars[Math.floor(Math.random() * chars.length)]).join('');
+  };
+  return `CS-${rand(4)}-${rand(4)}-${rand(4)}`;
 }
 
 function redirecionarParaPagamento(chave) {
@@ -1451,9 +1464,15 @@ function _catCardHTML(item) {
       <span><span>${_escCat(t.tier_label || t.nome)}</span><strong>${_formatarPrecoCat(t.preco_original)}</strong></span>
     `).join('');
     const bucket = Number(item.tiers[0].preco_original) <= 50 ? ' ate50' : '';
+    // Preço-base dos tiers vem de tipos_leitura (fonte única). A promoção só
+    // aplica percentual/badge por cima (discount-system lê este data-*), então
+    // catálogo e cobrança (RPC usa preco_original) nunca divergem.
+    const baseTiers = _escCat(JSON.stringify(
+      item.tiers.map(t => ({ label: t.tier_label || t.nome, preco: Number(t.preco_original) }))
+    ));
 
     return `
-      <article class="cat-card" data-category="${_escCat(p.terapeuta)} ${_escCat(p.modalidade || 'mensagem')}${bucket}" data-modalidade="${_escCat(p.modalidade || 'mensagem')}" data-service-id="grupo:${_escCat(item.grupo_slug)}">
+      <article class="cat-card" data-category="${_escCat(p.terapeuta)} ${_escCat(p.modalidade || 'mensagem')}${bucket}" data-modalidade="${_escCat(p.modalidade || 'mensagem')}" data-service-id="grupo:${_escCat(item.grupo_slug)}" data-base-tiers="${baseTiers}">
         <div class="cat-card-img">${img}</div>
         <div class="cat-body">
           <h3 class="cat-name">${_escCat(nome)}</h3>
@@ -1475,7 +1494,7 @@ function _catCardHTML(item) {
   const bucket  = Number(t.preco_original) <= 50 ? ' ate50' : '';
 
   return `
-    <article class="cat-card" data-category="${_escCat(t.terapeuta)} ${_escCat(t.modalidade || 'mensagem')}${bucket}" data-modalidade="${_escCat(t.modalidade || 'mensagem')}" data-service-id="${_escCat(slug)}">
+    <article class="cat-card" data-category="${_escCat(t.terapeuta)} ${_escCat(t.modalidade || 'mensagem')}${bucket}" data-modalidade="${_escCat(t.modalidade || 'mensagem')}" data-service-id="${_escCat(slug)}" data-base-price="${Number(t.preco_original)}">
       <div class="cat-card-img">${img}</div>
       <div class="cat-body">
         <h3 class="cat-name">${_escCat(t.nome)}</h3>
@@ -1552,8 +1571,31 @@ async function renderizarCatalogoSite() {
 // Injeta o botão SÓ nos cards cujo texto foi realmente cortado pelo clamp
 // (medição scrollHeight vs clientHeight). Vale pra qualquer descrição do admin,
 // hoje e no futuro — encurtou e coube, o botão some; aumentou e estourou, aparece.
+let _verMaisGrid = null;
+let _verMaisResizeHooked = false;
+
 function _configurarVerMaisCatalogo(grid) {
+  _verMaisGrid = grid;
+  _medirVerMais();
+  // Remede quando a fonte carrega (DM Sans entra via font-display:swap e muda a
+  // altura → clamp pode passar a estourar) e no resize (o clamp corta por nº de
+  // linhas, não de chars). _medirVerMais é idempotente.
+  if (document.fonts?.ready) document.fonts.ready.then(_medirVerMais);
+  if (!_verMaisResizeHooked) {
+    _verMaisResizeHooked = true;
+    let t = null;
+    window.addEventListener('resize', () => { clearTimeout(t); t = setTimeout(_medirVerMais, 150); });
+  }
+}
+
+// Idempotente: limpa os botões antigos e remede. Chamada também pelo filtro do
+// catálogo (script.js) quando um grupo antes oculto volta a aparecer.
+function _medirVerMais() {
+  const grid = _verMaisGrid;
+  if (!grid) return;
+  grid.querySelectorAll('.cat-vermais').forEach(b => b.remove());
   grid.querySelectorAll('.cat-desc').forEach(desc => {
+    if (desc.offsetParent === null) return;                 // grupo oculto (filtro): mede 0×0; remede ao reexibir
     if (desc.scrollHeight - desc.clientHeight <= 2) return; // coube inteiro
     const btn = document.createElement('button');
     btn.type = 'button';
@@ -1591,7 +1633,9 @@ function _abrirDescPop(desc, btn) {
   _descPopEl.innerHTML =
     '<p class="cat-desc-pop-txt"></p>' +
     '<button type="button" class="cat-desc-pop-fechar">ver menos</button>';
-  _descPopEl.querySelector('.cat-desc-pop-txt').textContent = desc.textContent;
+  // innerHTML (não textContent) para preservar os <br> que _escDesc reconstruiu;
+  // o conteúdo do card já vem escapado, então é seguro copiar.
+  _descPopEl.querySelector('.cat-desc-pop-txt').innerHTML = desc.innerHTML;
   _descPopEl.querySelector('.cat-desc-pop-fechar')
     .addEventListener('click', (e) => { e.stopPropagation(); _fecharDescPop(); });
 
@@ -1601,12 +1645,23 @@ function _abrirDescPop(desc, btn) {
   _descPopEl.style.left  = `${rc.left}px`;
   _descPopEl.style.width = `${rc.width}px`;
   _descPopEl.style.top   = `${rd.top}px`;
+  // Descrição longa não pode estourar a viewport: limita a altura e rola por
+  // dentro (o scroll interno não fecha o painel — ver _descPopScroll).
+  _descPopEl.style.maxHeight = `${Math.max(120, window.innerHeight - rd.top - 16)}px`;
+  _descPopEl.style.overflowY = 'auto';
   _descPopEl.classList.add('aberto');
 
   document.addEventListener('click', _descPopOutside, true);
   document.addEventListener('keydown', _descPopEsc);
-  window.addEventListener('scroll', _fecharDescPop, true);
+  window.addEventListener('scroll', _descPopScroll, true);
   window.addEventListener('resize', _fecharDescPop);
+}
+
+// Rolar a PÁGINA fecha (o painel é fixed, ancorado no card, e desalinharia);
+// rolar DENTRO do painel (descrição longa) não fecha.
+function _descPopScroll(e) {
+  if (_descPopEl && _descPopEl.contains(e.target)) return;
+  _fecharDescPop();
 }
 
 function _fecharDescPop() {
@@ -1615,7 +1670,7 @@ function _fecharDescPop() {
   if (_descPopBtn) { _descPopBtn.setAttribute('aria-expanded', 'false'); _descPopBtn = null; }
   document.removeEventListener('click', _descPopOutside, true);
   document.removeEventListener('keydown', _descPopEsc);
-  window.removeEventListener('scroll', _fecharDescPop, true);
+  window.removeEventListener('scroll', _descPopScroll, true);
   window.removeEventListener('resize', _fecharDescPop);
 }
 

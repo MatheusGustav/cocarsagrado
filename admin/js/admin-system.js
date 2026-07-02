@@ -1332,12 +1332,20 @@ function formatarDatetime(str) {
 }
 
 function escapeAttr(s) {
+  // Valor vai para dentro de onclick="fn('...')": escapa as DUAS camadas —
+  // string JS entre aspas simples E atributo HTML entre aspas duplas.
+  // A barra invertida PRECISA vir primeiro: senão um '\' no fim do valor
+  // consome o \' e permite breakout da string JS → XSS armazenado (ex.: nome
+  // de cliente malicioso executando no painel autenticado do admin).
   return String(s ?? '')
+    .replace(/\\/g, '\\\\')
     .replace(/&/g, '&amp;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, "\\'")
     .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;');
+    .replace(/>/g, '&gt;')
+    .replace(/\r/g, '')
+    .replace(/\n/g, ' ');
 }
 
 // ============================================================

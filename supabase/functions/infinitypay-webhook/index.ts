@@ -184,13 +184,22 @@ Deno.serve(async (req) => {
       return json({ error: 'amount below expected', recebido, esperado }, 400)
     }
 
-    const { error: rpcErr } = await supabase.rpc('confirmar_pedido_pago', {
+    const { data: rpcData, error: rpcErr } = await supabase.rpc('confirmar_pedido_pago', {
       p_chave:  chave,
       p_metodo: captureMethod,
     })
     if (rpcErr) {
       await log(chave, 'erro', `confirmar_pedido_pago: ${rpcErr.message}`, body)
       return json({ error: 'update failed', detail: rpcErr.message }, 500)
+    }
+
+    // A RPC é idempotente (FOR UPDATE) e retorna 0 se o pedido já fora
+    // processado — numa reentrega concorrente (ambas passam o check de status
+    // acima antes de qualquer commit) a 2ª pega 0. Sem isto, log 'confirmado' e
+    // Telegram sairiam em dobro.
+    if (Number(rpcData) === 0) {
+      await log(chave, 'ignorado', 'já confirmado (corrida de reentrega)', body)
+      return json({ ok: true, skipped: 'already processed' })
     }
 
     await log(chave, 'confirmado', `pago via ${captureMethod} (recebido ${recebido}, esperado ${esperado})`, body)
