@@ -724,12 +724,11 @@
         <button type="button" class="conta-drawer-btn conta-drawer-btn--sair" id="contaSairBtn">Sair</button>
       </div>
 
-      <!-- Estado: admin -->
-      <div class="conta-drawer-tela" id="contaTelaAdmin" hidden>
-        <h2 class="conta-drawer-titulo">Painel administrativo</h2>
-        <p class="conta-drawer-sub" id="contaEmailAdmin"></p>
-        <a href="admin/dashboard.html" class="conta-drawer-btn" id="contaAbrirPainel">Abrir painel</a>
-        <button type="button" class="conta-drawer-btn conta-drawer-btn--sair" id="contaSairAdminBtn">Sair</button>
+      <!-- Estado: admin — painel embutido no drawer (iframe compartilha a
+           sessão Supabase; se faltar MFA/aal2, o próprio dashboard pede).
+           Sem header próprio: "Sair" e "Nova aba" ficam na sidebar do painel. -->
+      <div class="conta-drawer-tela conta-drawer-tela--admin" id="contaTelaAdmin" hidden>
+        <iframe id="contaAdminFrame" class="conta-admin-frame" title="Painel administrativo"></iframe>
       </div>
     </div>
   </div>
