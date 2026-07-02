@@ -184,7 +184,7 @@ ALTER TABLE public.disponibilidade_especial ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS "anon_select_disp_especial" ON public.disponibilidade_especial;
 CREATE POLICY "anon_select_disp_especial" ON public.disponibilidade_especial
-  FOR SELECT TO anon USING (TRUE);
+  FOR SELECT TO anon, authenticated USING (TRUE);
 
 DROP POLICY IF EXISTS "auth_admin_disp_especial" ON public.disponibilidade_especial;
 CREATE POLICY "auth_admin_disp_especial" ON public.disponibilidade_especial
@@ -237,7 +237,7 @@ ALTER TABLE public.disponibilidade_override ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS "anon_select_disp_override" ON public.disponibilidade_override;
 CREATE POLICY "anon_select_disp_override" ON public.disponibilidade_override
-  FOR SELECT TO anon USING (TRUE);
+  FOR SELECT TO anon, authenticated USING (TRUE);
 
 DROP POLICY IF EXISTS "auth_admin_disp_override" ON public.disponibilidade_override;
 CREATE POLICY "auth_admin_disp_override" ON public.disponibilidade_override
@@ -445,7 +445,7 @@ ALTER TABLE public.agendamentos          ENABLE ROW LEVEL SECURITY;
 -- tipos_leitura (catálogo público; admin edita)
 DROP POLICY IF EXISTS "anon_select_tipos" ON public.tipos_leitura;
 CREATE POLICY "anon_select_tipos" ON public.tipos_leitura
-  FOR SELECT TO anon USING (TRUE);
+  FOR SELECT TO anon, authenticated USING (TRUE);
 
 DROP POLICY IF EXISTS "auth_admin_tipos" ON public.tipos_leitura;
 CREATE POLICY "auth_admin_tipos" ON public.tipos_leitura
@@ -454,7 +454,7 @@ CREATE POLICY "auth_admin_tipos" ON public.tipos_leitura
 -- horarios_disponiveis (anon SÓ lê a disponibilidade; admin gerencia)
 DROP POLICY IF EXISTS "anon_select_horarios" ON public.horarios_disponiveis;
 CREATE POLICY "anon_select_horarios" ON public.horarios_disponiveis
-  FOR SELECT TO anon USING (TRUE);
+  FOR SELECT TO anon, authenticated USING (TRUE);
 
 DROP POLICY IF EXISTS "auth_admin_horarios" ON public.horarios_disponiveis;
 CREATE POLICY "auth_admin_horarios" ON public.horarios_disponiveis
@@ -916,7 +916,7 @@ DROP POLICY IF EXISTS "auth_all_config" ON public.configuracoes;
 DROP POLICY IF EXISTS "auth_admin_config" ON public.configuracoes;
 
 CREATE POLICY "anon_select_config" ON public.configuracoes
-  FOR SELECT TO anon USING (TRUE);
+  FOR SELECT TO anon, authenticated USING (TRUE);
 
 CREATE POLICY "auth_admin_config" ON public.configuracoes
   FOR ALL TO authenticated USING (is_admin()) WITH CHECK (is_admin());
