@@ -262,11 +262,15 @@ CREATE TABLE public.pedidos (
   metodo_pagamento    TEXT,
   txid                TEXT,
   pago_em             TIMESTAMPTZ,
-  criado_em           TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  criado_em           TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  -- vínculo com a conta logada (auth.uid() na criar_pedido); NULL = guest.
+  -- Base do histórico de leituras do cliente (RPC minhas_leituras).
+  user_id             UUID REFERENCES auth.users(id) ON DELETE SET NULL
 );
 CREATE INDEX idx_pedidos_chave     ON public.pedidos (chave_pedido);
 CREATE INDEX idx_pedidos_status    ON public.pedidos (status);
 CREATE INDEX idx_pedidos_whatsapp  ON public.pedidos (regexp_replace(cliente_whatsapp, '\D', '', 'g'));
+CREATE INDEX idx_pedidos_user      ON public.pedidos (user_id) WHERE user_id IS NOT NULL;
 
 -- ============================================================
 -- 4) AGENDAMENTOS (filho — N por pedido)
@@ -295,7 +299,14 @@ CREATE TABLE public.agendamentos (
   agendamento_especial BOOLEAN NOT NULL DEFAULT FALSE,
   pago_em             TIMESTAMPTZ,
   atendido_em         TIMESTAMPTZ,
-  criado_em           TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  criado_em           TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  -- qtd de perguntas do item (naipe: declarada; demais: do catálogo).
+  -- Antes só existia no payload da RPC — necessária p/ complemento.
+  num_perguntas       INTEGER NOT NULL DEFAULT 0
+                      CHECK (num_perguntas >= 0 AND num_perguntas <= 20),
+  -- complemento ("pergunta adicional"): aponta a leitura original.
+  -- Linhas com leitura_origem_id NÃO consomem vaga (ver triggers abaixo).
+  leitura_origem_id   BIGINT REFERENCES public.agendamentos(id) ON DELETE SET NULL
 );
 CREATE INDEX idx_agend_data_hora     ON public.agendamentos (data_agendamento, hora_agendamento);
 CREATE INDEX idx_agend_status        ON public.agendamentos (status);
@@ -303,6 +314,7 @@ CREATE INDEX idx_agend_terapeuta     ON public.agendamentos (terapeuta);
 CREATE INDEX idx_agend_chave         ON public.agendamentos (chave_pedido);
 CREATE INDEX idx_agend_pedido_id     ON public.agendamentos (pedido_id);
 CREATE INDEX idx_agend_whatsapp_norm ON public.agendamentos (regexp_replace(cliente_whatsapp, '\D', '', 'g'));
+CREATE INDEX idx_agend_origem        ON public.agendamentos (leitura_origem_id) WHERE leitura_origem_id IS NOT NULL;
 
 -- Agendamento especial: decrementa vaga em disponibilidade_especial de
 -- forma atômica (FOR UPDATE) e bloqueia o INSERT se não houver vaga.
@@ -315,6 +327,10 @@ AS $$
 DECLARE
   v_restantes INTEGER;
 BEGIN
+  IF NEW.leitura_origem_id IS NOT NULL THEN
+    RETURN NEW; -- complemento: não consome vaga
+  END IF;
+
   IF NEW.agendamento_especial IS NOT TRUE THEN
     RETURN NEW;
   END IF;
@@ -368,6 +384,10 @@ DECLARE
   v_ativo  BOOLEAN;
   v_usadas INTEGER;
 BEGIN
+  IF NEW.leitura_origem_id IS NOT NULL THEN
+    RETURN NEW; -- complemento: não consome vaga
+  END IF;
+
   IF NEW.agendamento_especial IS TRUE THEN
     RETURN NEW;
   END IF;
@@ -392,6 +412,7 @@ BEGIN
   WHERE terapeuta = NEW.terapeuta
     AND data_agendamento = NEW.data_agendamento
     AND agendamento_especial IS NOT TRUE
+    AND leitura_origem_id IS NULL
     AND status IN ('pendente', 'pago', 'confirmado', 'atendido');
 
   IF v_usadas >= v_total THEN
@@ -672,10 +693,11 @@ BEGIN
 
   INSERT INTO public.pedidos (
     chave_pedido, cliente_nome, cliente_nascimento, cliente_whatsapp,
-    cliente_email, valor_total, status, cupom_codigo
+    cliente_email, valor_total, status, cupom_codigo, user_id
   ) VALUES (
     p_chave, p_nome, p_nascimento, p_whatsapp,
-    p_email, p_valor_total, 'pendente', v_cupom_cod
+    p_email, p_valor_total, 'pendente', v_cupom_cod,
+    auth.uid()  -- NULL para guest; base do histórico do cliente logado
   )
   RETURNING id INTO v_pedido_id;
 
@@ -715,6 +737,7 @@ BEGIN
       v_min_final := v_valor_original; -- força valor_final = valor_original
     ELSE
       -- valor_original deve ser múltiplo do preço do catálogo (qty 1–5; especial = 1)
+      v_num_perg := v_tipo.num_perguntas;
       IF v_tipo.preco_original = 0 THEN
         IF v_valor_original <> 0 THEN
           RAISE EXCEPTION 'pedido_invalido: valor não confere com o catálogo';
@@ -753,7 +776,7 @@ BEGIN
       cliente_nome, cliente_nascimento, cliente_whatsapp, cliente_email,
       cliente_observacoes, data_agendamento, hora_agendamento,
       valor_original, desconto_aplicado, valor_final,
-      agendamento_especial, status
+      agendamento_especial, status, num_perguntas
     ) VALUES (
       p_chave,
       v_pedido_id,
@@ -767,7 +790,8 @@ BEGIN
       v_desconto,
       v_valor_final,
       v_tipo.especial,  -- vem do catálogo, não do cliente (impede burlar a trava de vagas)
-      'pendente'
+      'pendente',
+      COALESCE(v_num_perg, 0)
     )
     RETURNING id INTO v_ag_id;
 
@@ -1013,3 +1037,242 @@ CREATE POLICY "perfis_update_own" ON public.perfis
   FOR UPDATE
   USING (id = auth.uid())
   WITH CHECK (id = auth.uid());
+
+-- ============================================================
+-- 11) HISTÓRICO DE LEITURAS + PERGUNTA ADICIONAL (complemento)
+--
+-- Cliente logado vê suas leituras (só pedidos com user_id — guest
+-- antigo fica de fora; casar por WhatsApp seria spoofável) e, nas
+-- elegíveis (Naipes da Pomba Gira / Amarração de Igbo), adiciona
+-- perguntas pagando só a diferença da tabela ATUAL, até o fim do
+-- dia seguinte ao dia agendado (fuso São Paulo).
+--
+-- Complemento é pedido NORMAL (chave/order_nsu próprios): checkout
+-- e webhook (confirmar_pedido_pago) funcionam sem mudança. A linha
+-- filha leva leitura_origem_id e NÃO consome vaga (triggers pulam).
+-- Admin não usa nada disso (só no drawer do cliente).
+-- ============================================================
+
+CREATE OR REPLACE FUNCTION public.minhas_leituras()
+RETURNS TABLE (
+  id                bigint,
+  chave_pedido      text,
+  tipo_nome         text,
+  tipo_slug         text,
+  grupo_slug        text,
+  terapeuta         text,
+  data_agendamento  date,
+  status            text,
+  valor_final       numeric,
+  num_perguntas     integer,
+  perguntas_total   integer,
+  max_perguntas     integer,
+  leitura_origem_id bigint,
+  pode_complementar boolean,
+  criado_em         timestamptz
+)
+LANGUAGE sql
+SECURITY DEFINER
+SET search_path = public
+STABLE
+AS $$
+  WITH minhas AS (
+    SELECT a.*,
+           t.nome  AS t_nome,
+           t.slug  AS t_slug,
+           t.grupo_slug AS t_grupo,
+           t.preco_original AS t_preco
+    FROM public.agendamentos a
+    JOIN public.pedidos p       ON p.id = a.pedido_id
+    JOIN public.tipos_leitura t ON t.id = a.tipo_leitura_id
+    WHERE p.user_id = auth.uid()
+      AND auth.uid() IS NOT NULL
+  ),
+  com_totais AS (
+    SELECT m.*,
+           -- perguntas já garantidas: as da origem + complementos PAGOS
+           m.num_perguntas + COALESCE((
+             SELECT sum(c.num_perguntas)::integer
+             FROM public.agendamentos c
+             WHERE c.leitura_origem_id = m.id
+               AND c.status IN ('pago','confirmado','atendido')
+           ), 0) AS p_total,
+           CASE
+             WHEN m.t_slug = 'naipes-da-pombo-gira' THEN 4
+             WHEN m.t_grupo = 'amarracao' THEN COALESCE((
+               SELECT max(t2.num_perguntas)::integer
+               FROM public.tipos_leitura t2
+               WHERE t2.grupo_slug = 'amarracao' AND t2.ativo
+             ), 0)
+             ELSE 0
+           END AS p_max
+    FROM minhas m
+  )
+  SELECT
+    ct.id,
+    ct.chave_pedido,
+    ct.t_nome,
+    ct.t_slug,
+    ct.t_grupo,
+    ct.terapeuta,
+    ct.data_agendamento,
+    ct.status,
+    ct.valor_final,
+    ct.num_perguntas,
+    ct.p_total,
+    ct.p_max,
+    ct.leitura_origem_id,
+    (
+      ct.leitura_origem_id IS NULL
+      AND ct.status IN ('pago','confirmado','atendido')
+      AND ct.num_perguntas >= 1
+      AND (
+        ct.t_slug = 'naipes-da-pombo-gira'
+        OR (ct.t_grupo = 'amarracao' AND ct.valor_original = ct.t_preco)
+      )
+      AND (now() AT TIME ZONE 'America/Sao_Paulo')::date <= ct.data_agendamento + 1
+      AND ct.p_total < ct.p_max
+    ) AS pode_complementar,
+    ct.criado_em
+  FROM com_totais ct
+  ORDER BY ct.criado_em DESC;
+$$;
+
+REVOKE ALL ON FUNCTION public.minhas_leituras() FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.minhas_leituras() TO authenticated;
+
+-- criar_pedido_complemento: cria o pedido da DIFERENÇA. Valida dono/
+-- janela/elegibilidade e calcula o delta 100% no servidor (tabela
+-- atual, sem cupom/desconto). Front manda só chave nova + origem +
+-- qtd extra + texto das perguntas.
+CREATE OR REPLACE FUNCTION public.criar_pedido_complemento(
+  p_chave             text,
+  p_leitura_origem_id bigint,
+  p_perguntas_extra   integer,
+  p_observacoes       text
+)
+RETURNS jsonb
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_uid        uuid := auth.uid();
+  v_ag         public.agendamentos%ROWTYPE;
+  v_tipo       public.tipos_leitura%ROWTYPE;
+  v_user_ped   uuid;
+  v_atuais     integer;
+  v_novo_total integer;
+  v_preco_de   numeric;
+  v_preco_para numeric;
+  v_delta      numeric;
+  v_pedido_id  bigint;
+BEGIN
+  IF v_uid IS NULL THEN
+    RAISE EXCEPTION 'complemento_invalido: é preciso estar logado';
+  END IF;
+  IF p_perguntas_extra IS NULL OR p_perguntas_extra < 1 OR p_perguntas_extra > 3 THEN
+    RAISE EXCEPTION 'complemento_invalido: quantidade de perguntas inválida';
+  END IF;
+  IF p_chave IS NULL OR length(trim(p_chave)) < 6 THEN
+    RAISE EXCEPTION 'complemento_invalido: chave inválida';
+  END IF;
+
+  -- FOR UPDATE na origem serializa complementos concorrentes da mesma leitura
+  SELECT a.* INTO v_ag
+  FROM public.agendamentos a
+  WHERE a.id = p_leitura_origem_id
+  FOR UPDATE;
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'complemento_invalido: leitura não encontrada';
+  END IF;
+
+  SELECT p.user_id INTO v_user_ped
+  FROM public.pedidos p WHERE p.id = v_ag.pedido_id;
+  IF v_user_ped IS NULL OR v_user_ped <> v_uid THEN
+    RAISE EXCEPTION 'complemento_invalido: leitura não pertence a esta conta';
+  END IF;
+
+  IF v_ag.leitura_origem_id IS NOT NULL THEN
+    RAISE EXCEPTION 'complemento_invalido: complemento não pode ter complemento';
+  END IF;
+  IF v_ag.status NOT IN ('pago','confirmado','atendido') THEN
+    RAISE EXCEPTION 'complemento_invalido: a leitura original ainda não foi paga';
+  END IF;
+
+  -- Janela: até o fim do dia seguinte ao dia agendado (fuso São Paulo)
+  IF (now() AT TIME ZONE 'America/Sao_Paulo')::date > v_ag.data_agendamento + 1 THEN
+    RAISE EXCEPTION 'complemento_expirado: o prazo para adicionar perguntas terminou';
+  END IF;
+
+  SELECT * INTO v_tipo
+  FROM public.tipos_leitura
+  WHERE id = v_ag.tipo_leitura_id;
+
+  -- perguntas já garantidas = origem + complementos pagos
+  SELECT v_ag.num_perguntas + COALESCE(sum(c.num_perguntas)::integer, 0)
+  INTO v_atuais
+  FROM public.agendamentos c
+  WHERE c.leitura_origem_id = v_ag.id
+    AND c.status IN ('pago','confirmado','atendido');
+
+  IF v_atuais < 1 THEN
+    RAISE EXCEPTION 'complemento_invalido: leitura sem registro de perguntas';
+  END IF;
+  v_novo_total := v_atuais + p_perguntas_extra;
+
+  IF v_tipo.slug = 'naipes-da-pombo-gira' THEN
+    IF v_novo_total > 4 THEN
+      RAISE EXCEPTION 'complemento_invalido: o naipe aceita no máximo 4 perguntas';
+    END IF;
+    -- Tabela progressiva atual do naipe (mesma da criar_pedido)
+    v_preco_de   := CASE v_atuais     WHEN 1 THEN 30 WHEN 2 THEN 56 WHEN 3 THEN 78 WHEN 4 THEN 96 END;
+    v_preco_para := CASE v_novo_total WHEN 1 THEN 30 WHEN 2 THEN 56 WHEN 3 THEN 78 WHEN 4 THEN 96 END;
+  ELSIF v_tipo.grupo_slug = 'amarracao' THEN
+    -- Tiers atuais do catálogo por qtd de perguntas (preço cheio, sem promo/cupom)
+    SELECT t.preco_original INTO v_preco_de
+    FROM public.tipos_leitura t
+    WHERE t.grupo_slug = 'amarracao' AND t.ativo AND t.num_perguntas = v_atuais;
+    SELECT t.preco_original INTO v_preco_para
+    FROM public.tipos_leitura t
+    WHERE t.grupo_slug = 'amarracao' AND t.ativo AND t.num_perguntas = v_novo_total;
+  ELSE
+    RAISE EXCEPTION 'complemento_invalido: esta leitura não aceita perguntas adicionais';
+  END IF;
+
+  IF v_preco_de IS NULL OR v_preco_para IS NULL OR v_preco_para <= v_preco_de THEN
+    RAISE EXCEPTION 'complemento_invalido: quantidade indisponível para esta leitura';
+  END IF;
+  v_delta := v_preco_para - v_preco_de;
+
+  INSERT INTO public.pedidos (
+    chave_pedido, cliente_nome, cliente_nascimento, cliente_whatsapp,
+    cliente_email, valor_total, status, user_id
+  ) VALUES (
+    p_chave, v_ag.cliente_nome, v_ag.cliente_nascimento, v_ag.cliente_whatsapp,
+    v_ag.cliente_email, v_delta, 'pendente', v_uid
+  )
+  RETURNING id INTO v_pedido_id;
+
+  INSERT INTO public.agendamentos (
+    chave_pedido, pedido_id, tipo_leitura_id, terapeuta,
+    cliente_nome, cliente_nascimento, cliente_whatsapp, cliente_email,
+    cliente_observacoes, data_agendamento, hora_agendamento,
+    valor_original, desconto_aplicado, valor_final,
+    agendamento_especial, status, num_perguntas, leitura_origem_id
+  ) VALUES (
+    p_chave, v_pedido_id, v_ag.tipo_leitura_id, v_ag.terapeuta,
+    v_ag.cliente_nome, v_ag.cliente_nascimento, v_ag.cliente_whatsapp, v_ag.cliente_email,
+    p_observacoes,
+    v_ag.data_agendamento,  -- mesmo dia/contexto da leitura original
+    v_ag.hora_agendamento,
+    v_delta, 0, v_delta,
+    FALSE, 'pendente', p_perguntas_extra, v_ag.id
+  );
+
+  RETURN jsonb_build_object('chave', p_chave, 'valor', v_delta);
+END;
+$$;
+
+REVOKE ALL ON FUNCTION public.criar_pedido_complemento(text, bigint, integer, text) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.criar_pedido_complemento(text, bigint, integer, text) TO authenticated;
