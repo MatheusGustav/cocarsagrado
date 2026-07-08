@@ -143,6 +143,7 @@
         <a href="#vagas" id="nav-vagas" data-secao="vagas">✦ Vagas</a>
         <a href="#descontos" id="nav-descontos" data-secao="descontos">✦ Descontos</a>
         <a href="#catalogo" id="nav-catalogo" data-secao="catalogo">✦ Catálogo</a>
+        <a href="#audios" id="nav-audios" data-secao="audios">✦ Áudios</a>
         <a href="../index.html" target="_blank" id="nav-ver-site">✦ Ver site</a>
         <a href="dashboard.html" target="_blank" rel="noopener" id="nav-nova-aba">✦ Abrir em nova aba</a>
       </nav>
@@ -322,6 +323,16 @@
         </div>
       </div>
 
+      <!-- ÁUDIOS (gravador para clientes) -->
+      <div id="secao-audios" style="display:none">
+        <header class="adm-main-header">
+          <h1>Áudios</h1>
+        </header>
+        <div id="audios-container">
+          <div class="ag-loading"><div class="ag-spinner"></div> Carregando...</div>
+        </div>
+      </div>
+
     </main>
   </div>
 
@@ -343,6 +354,7 @@
 <script src="js/descontos-admin.js"></script>
 <script src="js/cupons-admin.js"></script>
 <script src="js/catalogo-admin.js"></script>
+<script src="js/audios-admin.js"></script>
 <script>
   // ============================================================
   // Navegação entre seções com rota por hash (#agendamentos, ...)
@@ -353,6 +365,7 @@
     vagas:        { el: 'secao-vagas',        init: () => { inicializarVagas(); inicializarEspecial(); } },
     descontos:    { el: 'secao-descontos',    init: () => { inicializarDescontos(); inicializarCupons(); } },
     catalogo:     { el: 'secao-catalogo',     init: () => inicializarCatalogo() },
+    audios:       { el: 'secao-audios',       init: () => inicializarAudios() },
   };
 
   let _navInit = false;

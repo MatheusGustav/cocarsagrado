@@ -3882,3 +3882,138 @@ body.drawer-aberto { overflow: hidden; }
    afasta as ações do header pra não ficarem embaixo dele. */
 .is-embed .adm-main-header { padding-right: 44px; }
 .is-embed .adm-topbar { padding-right: 56px; }
+
+/* ============================================================
+   Áudios — gravador estilo celular + histórico por agendamento
+   ============================================================ */
+.aud-passo { margin-bottom: 26px; }
+.aud-passo-titulo {
+  font-weight: 700;
+  font-size: .95rem;
+  margin-bottom: 10px;
+}
+.aud-passo > .cup-input { width: 100%; max-width: 420px; margin-bottom: 10px; }
+
+.aud-ag-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 320px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+.aud-ag-item {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 3px;
+  text-align: left;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 10px 14px;
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
+  transition: border-color .2s, box-shadow .2s;
+}
+.aud-ag-item:hover { border-color: rgba(201,168,76,0.45); }
+.aud-ag-item--sel {
+  border-color: var(--secondary, #A67C32);
+  box-shadow: 0 0 0 2px rgba(201,168,76,0.25);
+}
+.aud-ag-nome { font-weight: 600; }
+.aud-ag-meta { font-size: .82rem; color: var(--text-muted, #6b7280); }
+.aud-ag-badge {
+  padding: 1px 8px;
+  border-radius: 999px;
+  font-size: .66rem;
+  font-weight: 700;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+.aud-ag-badge--conta {
+  color: var(--secondary, #A67C32);
+  background: rgba(201,168,76,0.14);
+  border: 1px solid rgba(201,168,76,0.35);
+}
+.aud-ag-badge--guest {
+  color: var(--text-muted, #6b7280);
+  background: rgba(107,114,128,0.10);
+  border: 1px solid rgba(107,114,128,0.25);
+}
+
+.aud-destino { font-size: .9rem; margin-bottom: 10px; }
+
+.aud-gravador {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 26px 18px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  max-width: 460px;
+}
+.aud-timer {
+  font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  font-size: 2.6rem;
+  font-weight: 600;
+  letter-spacing: .06em;
+  font-variant-numeric: tabular-nums;
+}
+.aud-timer--rec { animation: aud-pulso 1.2s ease-in-out infinite; color: var(--t-danger); }
+@keyframes aud-pulso { 50% { opacity: .45; } }
+.aud-estado { font-size: .85rem; color: var(--text-muted, #6b7280); }
+.aud-controles { display: flex; gap: 14px; }
+.aud-btn {
+  width: 62px;
+  height: 62px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--bg, #fff);
+  font-size: 1.5rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform .15s, border-color .2s, background .2s;
+}
+.aud-btn:hover { transform: scale(1.06); border-color: var(--secondary, #A67C32); }
+.aud-btn-rec {
+  background: var(--t-danger);
+  border-color: var(--t-danger);
+  color: #fff;
+}
+.aud-btn-stop { color: var(--t-danger); border-color: rgba(185,28,28,0.4); }
+.aud-preview { width: 100%; display: flex; flex-direction: column; align-items: center; gap: 12px; }
+.aud-preview audio { width: 100%; }
+.aud-preview-acoes { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+.aud-erro { font-size: .85rem; color: var(--t-danger); text-align: center; max-width: 380px; }
+.aud-erro:empty { display: none; }
+
+.aud-lista { margin-top: 18px; max-width: 460px; }
+.aud-lista-titulo { font-weight: 700; font-size: .9rem; margin-bottom: 8px; }
+.aud-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 10px 14px;
+  margin-bottom: 8px;
+}
+.aud-item-info { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.aud-item-nome { font-weight: 600; font-size: .92rem; }
+.aud-item-meta { font-size: .8rem; color: var(--text-muted, #6b7280); }
+.aud-item-acoes { display: flex; align-items: center; gap: 8px; }
+.aud-item-acoes audio { max-width: 220px; height: 36px; }
+
+@media (max-width: 640px) {
+  .aud-item { flex-wrap: wrap; }
+  .aud-item-acoes { width: 100%; }
+  .aud-item-acoes audio { max-width: 100%; flex: 1; }
+}

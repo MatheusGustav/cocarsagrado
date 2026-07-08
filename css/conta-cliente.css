@@ -846,3 +846,51 @@ body.conta-drawer-aberto { overflow: hidden; }
   color: var(--color-text-muted, #837B68);
   margin: -4px 0 10px;
 }
+
+/* Áudios da leitura (gravados pela terapeuta) dentro do card */
+.conta-audios {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px dashed var(--cd-hairline);
+}
+.conta-audios-titulo {
+  margin: 0 0 6px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--color-text-primary, #13251A);
+}
+.conta-audio-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+.conta-audio-meta {
+  font-size: 0.78rem;
+  color: var(--color-text-body, #33473B);
+  white-space: nowrap;
+}
+.conta-audio-play {
+  padding: 5px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--cd-hairline);
+  background: transparent;
+  color: var(--color-text-primary, #13251A);
+  font-family: inherit;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s, border-color 0.2s;
+}
+.conta-audio-play:hover:not(:disabled) {
+  background: var(--color-bg-dark, #142E20);
+  border-color: var(--color-bg-dark, #142E20);
+  color: var(--color-gold-light, #D9B776);
+}
+.conta-audio-play:disabled { opacity: 0.55; cursor: default; }
+.conta-audio-item audio {
+  flex: 1;
+  min-width: 0;
+  height: 34px;
+}
