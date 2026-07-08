@@ -576,18 +576,78 @@ document.addEventListener('DOMContentLoaded', () => {
   async function carregarHistorico() {
     if (!historicoLista) return;
     historicoLista.innerHTML = '<p class="conta-historico-vazio">Carregando…</p>';
-    const { data, error } = await window.supabase.rpc('minhas_leituras');
+    const [{ data, error }, audiosRes] = await Promise.all([
+      window.supabase.rpc('minhas_leituras'),
+      window.supabase.rpc('meus_audios'), // erro aqui só esconde os áudios
+    ]);
     if (error) {
       historicoLista.innerHTML = '<p class="conta-historico-vazio">Não foi possível carregar suas leituras. Tente novamente.</p>';
       return;
     }
-    renderHistorico(data || []);
+    renderHistorico(data || [], audiosRes?.data || []);
   }
 
-  function renderHistorico(rows) {
+  function _audioMmSs(seg) {
+    const s = Math.max(0, Math.round(Number(seg) || 0));
+    return `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
+  }
+
+  // Bloco "🎧 Áudios da leitura" dentro do card. Signed URL só no
+  // primeiro play (o bucket é privado; gerar N urls ao abrir o drawer
+  // seria desperdício).
+  function _blocoAudios(audios) {
+    const bloco = document.createElement('div');
+    bloco.className = 'conta-audios';
+    const titulo = document.createElement('p');
+    titulo.className = 'conta-audios-titulo';
+    titulo.textContent = '🎧 Áudios da leitura';
+    bloco.appendChild(titulo);
+
+    audios.forEach(a => {
+      const linha = document.createElement('div');
+      linha.className = 'conta-audio-item';
+      const meta = document.createElement('span');
+      meta.className = 'conta-audio-meta';
+      const data = new Date(a.criado_em);
+      const dataTxt = isNaN(data) ? '' : data.toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' });
+      meta.textContent = `${dataTxt} · ${_audioMmSs(a.duracao_segundos)}`;
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'conta-audio-play';
+      btn.textContent = '▶ Ouvir';
+      btn.addEventListener('click', async () => {
+        btn.disabled = true;
+        const { data: s, error } = await window.supabase.storage
+          .from('audios')
+          .createSignedUrl(a.storage_path, 3600);
+        if (error || !s?.signedUrl) {
+          btn.disabled = false;
+          btn.textContent = '▶ Tentar de novo';
+          return;
+        }
+        const player = document.createElement('audio');
+        player.controls = true;
+        player.src = s.signedUrl;
+        btn.replaceWith(player);
+        player.play().catch(() => {});
+      });
+      linha.append(meta, btn);
+      bloco.appendChild(linha);
+    });
+    return bloco;
+  }
+
+  function renderHistorico(rows, audios) {
     historicoLista.innerHTML = '';
     const origens      = rows.filter(r => !r.leitura_origem_id);
     const complementos = rows.filter(r => r.leitura_origem_id);
+
+    // Áudios por agendamento (inclui os gravados no complemento —
+    // eles aparecem no card da leitura de origem, que é o único card)
+    const audiosPorAg = {};
+    (audios || []).forEach(a => {
+      (audiosPorAg[a.agendamento_id] ||= []).push(a);
+    });
 
     if (!origens.length) {
       historicoLista.innerHTML = '<p class="conta-historico-vazio">Suas leituras vão aparecer aqui. Pedidos feitos sem a conta conectada não entram na lista.</p>';
@@ -624,6 +684,14 @@ document.addEventListener('DOMContentLoaded', () => {
         linha.textContent = `+ ${c.num_perguntas} pergunta${plural} · ${_brl(c.valor_final)} · ${stc.txt}`;
         card.appendChild(linha);
       });
+
+      const audiosDoCard = [
+        ...(audiosPorAg[row.id] || []),
+        ...complementos
+          .filter(c => c.leitura_origem_id === row.id)
+          .flatMap(c => audiosPorAg[c.id] || []),
+      ];
+      if (audiosDoCard.length) card.appendChild(_blocoAudios(audiosDoCard));
 
       if (row.pode_complementar) {
         const btn = document.createElement('button');
