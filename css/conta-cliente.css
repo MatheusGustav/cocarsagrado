@@ -464,6 +464,9 @@ body.conta-drawer-aberto { overflow: hidden; }
 /* ============================================================
    Aceite de termos — checkbox "Li e concordo" (conta + carrinho)
    ============================================================ */
+/* display:flex acima do [hidden] do navegador escondia o hidden — sem esta
+   regra o checkbox aparecia até pra logado. */
+.termos-aceite[hidden] { display: none; }
 .termos-aceite {
   display: flex;
   align-items: flex-start;
