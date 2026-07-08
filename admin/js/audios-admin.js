@@ -24,6 +24,13 @@ let _audAnalyser     = null;
 let _audAmostra      = null; // buffer reutilizado do analyser
 let _audBarras       = [];   // 1 amplitude (0..1) a cada TICK de gravação
 let _audResizeOk     = false;
+let _audMicDevices    = [];  // audioinputs enumerados
+let _audWakeLock      = null;
+let _audBeforeUnloadOn = false;
+let _audPlayerAudio   = null; // <audio> escondido que toca a prévia
+let _audPlayerRaf     = null;
+let _audPlayerRate    = 1;
+let _audPlayerSeeking = false;
 
 const _AUD_TICK = 50; // ms por barra da onda (20 barras/s)
 
@@ -58,6 +65,50 @@ function _audDataAgend(str) {
   return d ? `${d}/${m}/${a}` : '';
 }
 
+function _audSanitizarNomeArquivo(s) {
+  return String(s || 'audio').replace(/[\\/:*?"<>|]/g, '').replace(/\s+/g, ' ').trim() || 'audio';
+}
+
+// Sugestão pré-preenchida do nome ao compartilhar: "Leitura <tipo> - <cliente> - DD-MM"
+function _audNomeSugerido(nomeCliente, tipoLeitura, dataAgendamentoISO) {
+  const [, mes, dia] = String(dataAgendamentoISO || '').split('-');
+  const ddmm = dia ? `${dia}-${mes}` : '';
+  const base = `Leitura ${tipoLeitura || ''} - ${nomeCliente || ''} - ${ddmm}`.replace(/\s+/g, ' ').trim();
+  return _audSanitizarNomeArquivo(base);
+}
+
+function _audExtDoMime(mime) {
+  return String(mime || '').includes('mp4') ? 'm4a' : 'webm';
+}
+
+// Compartilhar (ou baixar, no fallback) um blob de áudio já pronto.
+async function _audCompartilharBlob(blob, mime, nomeSugestao) {
+  let nome = prompt('Nome do arquivo para compartilhar:', nomeSugestao);
+  if (nome === null) return; // cancelou o rename
+  nome = _audSanitizarNomeArquivo(nome) + '.' + _audExtDoMime(mime);
+
+  const file = new File([blob], nome, { type: mime });
+
+  if (navigator.canShare?.({ files: [file] })) {
+    try {
+      await navigator.share({ files: [file], title: nome });
+    } catch (e) {
+      if (e.name !== 'AbortError') _toastAdmin('❌ Erro ao compartilhar: ' + e.message, 'erro');
+    }
+    return;
+  }
+
+  // Fallback (desktop/sem suporte a share de arquivos): baixa direto
+  const url = URL.createObjectURL(file);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = nome;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
 // ============================================================
 // Init da seção
 // ============================================================
@@ -89,6 +140,7 @@ async function inicializarAudios() {
         <div class="aud-gravador">
           <div class="aud-timer" id="aud-timer">00:00.00</div>
           <div class="aud-estado" id="aud-estado">Pronto para gravar</div>
+          <select class="aud-mic-select" id="aud-mic-select" style="display:none;" onchange="_audEscolherMic(this.value)"></select>
           <canvas class="aud-onda" id="aud-onda"></canvas>
           <div class="aud-controles" id="aud-controles"></div>
           <div class="aud-preview" id="aud-preview"></div>
@@ -110,6 +162,11 @@ async function inicializarAudios() {
   if (!_audResizeOk) {
     _audResizeOk = true;
     window.addEventListener('resize', () => { _audOndaRedimensionar(); _audOndaDesenhar(); });
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible' && _audRecorder?.state === 'recording' && !_audWakeLock) {
+        _audWakeLockPedir();
+      }
+    });
   }
   _audResetGravador();
   await _audCarregarAgendamentos();
@@ -119,9 +176,10 @@ async function inicializarAudios() {
 // Abas: Gravar ⇄ Áudios salvos
 // ============================================================
 function _audTrocarAba(aba) {
-  // Sair da aba Gravar no meio de uma gravação descartaria áudio sem avisar
-  if (aba === 'todos' && _audRecorder && _audRecorder.state !== 'inactive') {
-    if (!confirm('Há uma gravação em andamento. Descartar?')) return;
+  // Sair da aba Gravar com gravação em andamento OU prévia não salva
+  // descartaria áudio sem avisar
+  if (aba === 'todos' && ((_audRecorder && _audRecorder.state !== 'inactive') || _audBlob)) {
+    if (!confirm('Há uma gravação em andamento ou uma prévia não salva. Descartar?')) return;
     _audDescartarGravacao();
   }
   document.getElementById('aud-aba-gravar').style.display = aba === 'gravar' ? '' : 'none';
@@ -234,14 +292,15 @@ async function _audSelecionar(ag) {
   _audResetGravador();
   _audOndaRedimensionar(); // o canvas nasce escondido (display:none); mede agora
   _audOndaDesenhar();
+  _audAtualizarListaMics(); // best-effort; labels só vêm depois da 1ª permissão
   await _audCarregarAudiosDoAgendamento();
   tela.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 function _audVoltarEscolha() {
-  // Voltar no meio de uma gravação descartaria áudio sem avisar
-  if (_audRecorder && _audRecorder.state !== 'inactive') {
-    if (!confirm('Há uma gravação em andamento. Descartar e trocar de atendimento?')) return;
+  // Voltar com gravação em andamento OU prévia não salva descartaria áudio sem avisar
+  if ((_audRecorder && _audRecorder.state !== 'inactive') || _audBlob) {
+    if (!confirm('Há uma gravação em andamento ou uma prévia não salva. Descartar e trocar de atendimento?')) return;
   }
   _audDescartarGravacao();
   _audSelecionado = null;
@@ -356,6 +415,63 @@ function _audFecharAudioCtx() {
   _audAmostra = null;
 }
 
+// ============================================================
+// Seletor de microfone
+// ============================================================
+async function _audAtualizarListaMics() {
+  if (!navigator.mediaDevices?.enumerateDevices) return;
+  let devices;
+  try { devices = await navigator.mediaDevices.enumerateDevices(); } catch (_) { return; }
+  _audMicDevices = devices.filter(d => d.kind === 'audioinput');
+
+  const sel = document.getElementById('aud-mic-select');
+  if (!sel) return;
+  if (_audMicDevices.length < 2) { sel.style.display = 'none'; sel.innerHTML = ''; return; }
+
+  const atual = localStorage.getItem('aud_mic_device_id');
+  sel.innerHTML = _audMicDevices
+    .map((d, i) => `<option value="${_audEsc(d.deviceId)}">${_audEsc(d.label || `Microfone ${i + 1}`)}</option>`)
+    .join('');
+  if (atual && _audMicDevices.some(d => d.deviceId === atual)) sel.value = atual;
+  sel.style.display = '';
+}
+
+function _audEscolherMic(deviceId) {
+  localStorage.setItem('aud_mic_device_id', deviceId);
+}
+
+// ============================================================
+// Wake Lock — mantém a tela acesa enquanto grava
+// ============================================================
+async function _audWakeLockPedir() {
+  try { _audWakeLock = await navigator.wakeLock?.request('screen'); }
+  catch (_) { _audWakeLock = null; }
+}
+
+async function _audWakeLockLiberar() {
+  try { await _audWakeLock?.release(); } catch (_) {}
+  _audWakeLock = null;
+}
+
+// ============================================================
+// beforeunload — só avisa enquanto há algo pra perder
+// ============================================================
+function _audBeforeUnloadHandler(e) {
+  e.preventDefault();
+  e.returnValue = '';
+}
+
+function _audAtualizarBeforeUnload() {
+  const precisaAvisar = (_audRecorder && _audRecorder.state !== 'inactive') || !!_audBlob;
+  if (precisaAvisar && !_audBeforeUnloadOn) {
+    window.addEventListener('beforeunload', _audBeforeUnloadHandler);
+    _audBeforeUnloadOn = true;
+  } else if (!precisaAvisar && _audBeforeUnloadOn) {
+    window.removeEventListener('beforeunload', _audBeforeUnloadHandler);
+    _audBeforeUnloadOn = false;
+  }
+}
+
 function _audBotoes(html) {
   const el = document.getElementById('aud-controles');
   if (el) el.innerHTML = html;
@@ -366,6 +482,8 @@ function _audResetGravador() {
   if (_audStream) { _audStream.getTracks().forEach(t => t.stop()); _audStream = null; }
   if (_audPreviewUrl) { URL.revokeObjectURL(_audPreviewUrl); _audPreviewUrl = null; }
   _audFecharAudioCtx();
+  _audPlayerLimpar();
+  _audWakeLockLiberar();
   _audRecorder = null;
   _audChunks = [];
   _audBlob = null;
@@ -382,6 +500,7 @@ function _audResetGravador() {
     <button type="button" class="aud-btn-anel" onclick="_audComecarGravacao()" title="Gravar" aria-label="Gravar">
       <span class="aud-miolo aud-miolo-rec"></span>
     </button>`);
+  _audAtualizarBeforeUnload();
 }
 
 function _audDescartarGravacao() {
@@ -404,8 +523,16 @@ async function _audComecarGravacao() {
     return;
   }
 
+  const micEscolhido = localStorage.getItem('aud_mic_device_id');
   try {
-    _audStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    _audStream = await navigator.mediaDevices.getUserMedia({
+      audio: {
+        echoCancellation: false,
+        noiseSuppression: false,
+        autoGainControl: false,
+        ...(micEscolhido ? { deviceId: { ideal: micEscolhido } } : {}),
+      },
+    });
   } catch (e) {
     _audSetErro(e.name === 'NotAllowedError'
       ? 'Permissão de microfone negada. Libere o microfone nas configurações do navegador.'
@@ -414,6 +541,7 @@ async function _audComecarGravacao() {
         : 'Não foi possível acessar o microfone: ' + e.message);
     return;
   }
+  _audAtualizarListaMics(); // agora com permissão concedida, os labels vêm certos
 
   _audChunks = [];
   _audBlob = null;
@@ -438,6 +566,7 @@ async function _audComecarGravacao() {
     _audStream?.getTracks().forEach(t => t.stop());
     _audStream = null;
     _audFecharAudioCtx();
+    _audWakeLockLiberar();
     _audBlob = new Blob(_audChunks, { type: _audMime.split(';')[0] });
     _audMostrarPreview();
   };
@@ -446,6 +575,8 @@ async function _audComecarGravacao() {
     _audResetGravador();
   };
   _audRecorder.start(1000); // chunks de 1s: não perde tudo se algo falhar no fim
+  _audWakeLockPedir();
+  _audAtualizarBeforeUnload();
 
   // Timer pause-aware: soma só enquanto está gravando de verdade.
   // (Não dá pra confiar em audio.duration depois: webm do MediaRecorder
@@ -466,7 +597,7 @@ async function _audComecarGravacao() {
 
   _audSetEstado('Gravando…');
   _audBotoes(`
-    <button type="button" class="aud-btn-anel" onclick="_audPararGravacao()" title="Parar" aria-label="Parar">
+    <button type="button" class="aud-btn-anel aud-btn-anel--gravando" id="aud-btn-anel-rec" onclick="_audPararGravacao()" title="Parar" aria-label="Parar">
       <span class="aud-miolo aud-miolo-stop"></span>
     </button>
     <button type="button" class="aud-btn-escuro" onclick="_audPausarRetomar()" id="aud-btn-pausa" title="Pausar" aria-label="Pausar">
@@ -477,9 +608,11 @@ async function _audComecarGravacao() {
 function _audPausarRetomar() {
   if (!_audRecorder) return;
   const btn = document.getElementById('aud-btn-pausa');
+  const anel = document.getElementById('aud-btn-anel-rec');
   if (_audRecorder.state === 'recording') {
     _audRecorder.pause();
     _audSetEstado('Pausado');
+    anel?.classList.remove('aud-btn-anel--gravando');
     if (btn) {
       btn.innerHTML = '<span class="aud-ico-play"></span>';
       btn.title = 'Retomar'; btn.setAttribute('aria-label', 'Retomar');
@@ -487,6 +620,7 @@ function _audPausarRetomar() {
   } else if (_audRecorder.state === 'paused') {
     _audRecorder.resume();
     _audSetEstado('Gravando…');
+    anel?.classList.add('aud-btn-anel--gravando');
     if (btn) {
       btn.innerHTML = '<span class="aud-ico-pausa"></span>';
       btn.title = 'Pausar'; btn.setAttribute('aria-label', 'Pausar');
@@ -503,14 +637,152 @@ function _audMostrarPreview() {
   _audBotoes('');
 
   _audPreviewUrl = URL.createObjectURL(_audBlob);
+  _audPlayerRate = 1;
+
   const preview = document.getElementById('aud-preview');
   preview.innerHTML = `
-    <audio controls src="${_audPreviewUrl}"></audio>
+    <div class="aud-player">
+      <button type="button" class="aud-player-play" id="aud-player-play" title="Tocar" aria-label="Tocar">▶</button>
+      <canvas class="aud-player-onda" id="aud-player-onda"></canvas>
+      <button type="button" class="aud-player-vel" id="aud-player-vel" title="Velocidade">1x</button>
+      <span class="aud-player-tempo" id="aud-player-tempo">00:00 / ${_audMmSs(_audMs / 1000)}</span>
+    </div>
     <div class="aud-preview-acoes">
       <button type="button" class="ag-btn ag-btn-primary" id="aud-btn-salvar" onclick="_audSalvar()">💾 Salvar para o cliente</button>
+      <button type="button" class="ag-btn ag-btn-outline" onclick="_audCompartilharPreview()">📤 Compartilhar</button>
       <button type="button" class="ag-btn ag-btn-outline" onclick="_audResetGravador(); _audComecarGravacao()">🔄 Regravar</button>
       <button type="button" class="ag-btn ag-btn-outline" onclick="_audResetGravador()">✕ Descartar</button>
     </div>`;
+
+  _audPlayerAudio = new Audio(_audPreviewUrl);
+  _audPlayerAudio.preload = 'auto';
+
+  // webm do MediaRecorder reporta duration=Infinity no Chrome; este truque
+  // força o navegador a indexar o arquivo (a duração exibida usa _audMs)
+  _audPlayerAudio.addEventListener('loadedmetadata', () => {
+    if (_audPlayerAudio.duration === Infinity) {
+      try {
+        _audPlayerAudio.currentTime = 1e101;
+        _audPlayerAudio.addEventListener('timeupdate', function corrigirDuracao() {
+          _audPlayerAudio.currentTime = 0;
+          _audPlayerAudio.removeEventListener('timeupdate', corrigirDuracao);
+        });
+      } catch (_) {}
+    }
+  });
+
+  const btnPlay = document.getElementById('aud-player-play');
+  _audPlayerAudio.addEventListener('play', () => {
+    if (btnPlay) { btnPlay.textContent = '⏸'; btnPlay.title = 'Pausar'; }
+    _audPlayerLoop();
+  });
+  _audPlayerAudio.addEventListener('pause', () => {
+    if (btnPlay) { btnPlay.textContent = '▶'; btnPlay.title = 'Tocar'; }
+    _audPlayerAtualizarTempo();
+  });
+  _audPlayerAudio.addEventListener('ended', () => {
+    if (btnPlay) { btnPlay.textContent = '▶'; btnPlay.title = 'Tocar'; }
+  });
+
+  btnPlay.addEventListener('click', _audPlayerTogglePlay);
+  document.getElementById('aud-player-vel').addEventListener('click', _audPlayerCicloVelocidade);
+
+  const onda = document.getElementById('aud-player-onda');
+  _audPlayerRedimensionar(onda);
+  _audPlayerDesenhar(0);
+  onda.addEventListener('pointerdown', e => {
+    _audPlayerSeeking = true;
+    onda.setPointerCapture(e.pointerId);
+    _audPlayerSeekPara(e.clientX);
+  });
+  onda.addEventListener('pointermove', e => { if (_audPlayerSeeking) _audPlayerSeekPara(e.clientX); });
+  onda.addEventListener('pointerup', () => { _audPlayerSeeking = false; });
+
+  _audAtualizarBeforeUnload();
+}
+
+// ============================================================
+// Player custom da prévia — usa a própria onda gravada como barra
+// de progresso clicável/arrastável (seek)
+// ============================================================
+function _audPlayerRedimensionar(c) {
+  if (!c || !c.clientWidth) return;
+  const dpr = window.devicePixelRatio || 1;
+  c.width = Math.round(c.clientWidth * dpr);
+  c.height = Math.round(c.clientHeight * dpr);
+}
+
+function _audPlayerDesenhar(progresso) {
+  const c = document.getElementById('aud-player-onda');
+  if (!c || !c.width || !_audBarras.length) return;
+  const ctx = c.getContext('2d');
+  const dpr = window.devicePixelRatio || 1;
+  const W = c.width, H = c.height;
+  const n = _audBarras.length;
+  const passo = W / n;
+  const larg = Math.max(1.5 * dpr, passo * 0.6);
+  const idxAtual = Math.floor(Math.min(1, Math.max(0, progresso)) * n);
+
+  ctx.clearRect(0, 0, W, H);
+  for (let i = 0; i < n; i++) {
+    const h = Math.max(2 * dpr, _audBarras[i] * H * 0.9);
+    ctx.fillStyle = i <= idxAtual ? 'rgba(226,231,240,0.95)' : 'rgba(255,255,255,0.22)';
+    ctx.fillRect(i * passo, (H - h) / 2, larg, h);
+  }
+}
+
+function _audPlayerAtualizarTempo() {
+  if (!_audPlayerAudio || !_audMs) return;
+  const el = document.getElementById('aud-player-tempo');
+  if (el) el.textContent = `${_audMmSs(_audPlayerAudio.currentTime)} / ${_audMmSs(_audMs / 1000)}`;
+  _audPlayerDesenhar(_audPlayerAudio.currentTime / (_audMs / 1000));
+}
+
+function _audPlayerLoop() {
+  _audPlayerAtualizarTempo();
+  if (_audPlayerAudio && !_audPlayerAudio.paused) {
+    _audPlayerRaf = requestAnimationFrame(_audPlayerLoop);
+  } else {
+    _audPlayerRaf = null;
+  }
+}
+
+function _audPlayerTogglePlay() {
+  if (!_audPlayerAudio) return;
+  if (_audPlayerAudio.paused) _audPlayerAudio.play().catch(() => {});
+  else _audPlayerAudio.pause();
+}
+
+function _audPlayerCicloVelocidade() {
+  const ciclos = [1, 1.5, 2];
+  _audPlayerRate = ciclos[(ciclos.indexOf(_audPlayerRate) + 1) % ciclos.length];
+  if (_audPlayerAudio) _audPlayerAudio.playbackRate = _audPlayerRate;
+  const btn = document.getElementById('aud-player-vel');
+  if (btn) btn.textContent = _audPlayerRate + 'x';
+}
+
+function _audPlayerSeekPara(clientX) {
+  const c = document.getElementById('aud-player-onda');
+  if (!c || !_audPlayerAudio || !_audMs) return;
+  const rect = c.getBoundingClientRect();
+  const frac = Math.min(1, Math.max(0, (clientX - rect.left) / rect.width));
+  _audPlayerAudio.currentTime = frac * (_audMs / 1000);
+  _audPlayerDesenhar(frac);
+  const el = document.getElementById('aud-player-tempo');
+  if (el) el.textContent = `${_audMmSs(_audPlayerAudio.currentTime)} / ${_audMmSs(_audMs / 1000)}`;
+}
+
+function _audPlayerLimpar() {
+  if (_audPlayerRaf) { cancelAnimationFrame(_audPlayerRaf); _audPlayerRaf = null; }
+  if (_audPlayerAudio) { _audPlayerAudio.pause(); _audPlayerAudio.src = ''; _audPlayerAudio = null; }
+  _audPlayerSeeking = false;
+}
+
+// Botão "Compartilhar" no preview (antes de salvar)
+async function _audCompartilharPreview() {
+  if (!_audBlob || !_audSelecionado) return;
+  const nome = _audNomeSugerido(_audSelecionado.cliente_nome, _audSelecionado.tipos_leitura?.nome, _audSelecionado.data_agendamento);
+  await _audCompartilharBlob(_audBlob, _audMime.split(';')[0], nome);
 }
 
 // ============================================================
@@ -575,6 +847,7 @@ function _audCriarItemAudio(a, opts = {}) {
     </div>
     <div class="aud-item-acoes">
       <button type="button" class="ag-btn ag-btn-outline ag-btn-sm aud-item-play">▶ Ouvir</button>
+      <button type="button" class="ag-btn ag-btn-outline ag-btn-sm aud-item-share" title="Compartilhar">📤</button>
       ${opts.aoGravar ? '<button type="button" class="ag-btn ag-btn-outline ag-btn-sm aud-item-gravar" title="Gravar outro pra este atendimento">🎙 Gravar</button>' : ''}
       <button type="button" class="ag-btn ag-btn-outline ag-btn-sm aud-item-del" style="color:var(--t-danger)" title="Apagar">🗑</button>
     </div>`;
@@ -596,6 +869,31 @@ function _audCriarItemAudio(a, opts = {}) {
     player.src = s.signedUrl;
     b.replaceWith(player);
     player.play().catch(() => {});
+  });
+
+  // Compartilhar: baixa o blob via signed URL antes de abrir o menu de share
+  item.querySelector('.aud-item-share').addEventListener('click', async ev => {
+    const b = ev.currentTarget;
+    const original = b.textContent;
+    b.disabled = true;
+    b.textContent = '…';
+    try {
+      const { data: s, error: e } = await supabase.storage
+        .from('audios')
+        .createSignedUrl(a.storage_path, 3600);
+      if (e || !s?.signedUrl) {
+        _toastAdmin('❌ Não deu pra baixar o áudio: ' + (e?.message || 'tente de novo'), 'erro');
+        return;
+      }
+      const resp = await fetch(s.signedUrl);
+      const blob = await resp.blob();
+      await _audCompartilharBlob(blob, a.mime || blob.type, opts.nomeSugestao || 'Áudio');
+    } catch (err) {
+      _toastAdmin('❌ Erro ao preparar o compartilhamento: ' + err.message, 'erro');
+    } finally {
+      b.disabled = false;
+      b.textContent = original;
+    }
   });
 
   if (opts.aoGravar) {
@@ -644,10 +942,12 @@ async function _audCarregarAudiosDoAgendamento() {
   }
 
   lista.innerHTML = '<div class="aud-lista-titulo">Áudios já gravados</div>';
+  const nomeSugestao = _audNomeSugerido(_audSelecionado.cliente_nome, _audSelecionado.tipos_leitura?.nome, _audSelecionado.data_agendamento);
   data.forEach((a, i) => {
     lista.appendChild(_audCriarItemAudio(a, {
       titulo: `🎧 Áudio ${i + 1}`,
       meta: `${_audDataBR(a.criado_em)} · ${_audMmSs(a.duracao_segundos)}`,
+      nomeSugestao,
     }));
   });
 }
@@ -699,6 +999,7 @@ function _audRenderTodos() {
       titulo: _audEsc(ag?.cliente_nome || 'Cliente'),
       meta: `${_audEsc(ag?.tipos_leitura?.nome || 'Leitura')} · ${_audDataAgend(ag?.data_agendamento)} · gravado em ${_audDataBR(a.criado_em)} · ${_audMmSs(a.duracao_segundos)}`,
       aoGravar: ag ? () => { _audTrocarAba('gravar'); _audSelecionar(ag); } : null,
+      nomeSugestao: _audNomeSugerido(ag?.cliente_nome, ag?.tipos_leitura?.nome, ag?.data_agendamento),
     }));
   });
 }
@@ -712,3 +1013,5 @@ window._audVoltarEscolha = _audVoltarEscolha;
 window._audTrocarAba = _audTrocarAba;
 window._audFiltroStatus = _audFiltroStatus;
 window._audSalvar = _audSalvar;
+window._audEscolherMic = _audEscolherMic;
+window._audCompartilharPreview = _audCompartilharPreview;
