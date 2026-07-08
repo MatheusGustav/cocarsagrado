@@ -937,14 +937,41 @@ function renderizarAgendamentos(lista, container) {
   }
   container.innerHTML = '';
   const itens = _agruparPorPedido(lista);
+  const porTerapeuta = _statusAtivo === 'pendente' || _statusAtivo === 'pago';
+  if (porTerapeuta) {
+    const ordemIds = _TERAPEUTAS.map(t => t.id);
+    const idxTerapeuta = item => {
+      const id = (item.tipo === 'grupo' ? item.ags[0] : item.ag).terapeuta || '';
+      const i = ordemIds.indexOf(id);
+      return id ? (i === -1 ? ordemIds.length : i) : ordemIds.length + 1; // sem terapeuta por último
+    };
+    // Estável: mantém a ordem por data (já vinda da query) e só reagrupa por terapeuta dentro de cada dia.
+    itens.sort((a, b) => {
+      if (a.data_agendamento !== b.data_agendamento) return 0;
+      return idxTerapeuta(a) - idxTerapeuta(b);
+    });
+  }
   let dataAtual = null;
+  let terapeutaAtual = undefined;
   itens.forEach(item => {
     if (item.data_agendamento !== dataAtual) {
       dataAtual = item.data_agendamento;
+      terapeutaAtual = undefined;
       const divisor = document.createElement('div');
       divisor.className = 'adm-divisor-dia';
       divisor.innerHTML = `<span>${_esc(_rotuloDivisor(dataAtual))}</span>`;
       container.appendChild(divisor);
+    }
+    if (porTerapeuta) {
+      const idTerapeuta = (item.tipo === 'grupo' ? item.ags[0] : item.ag).terapeuta || '';
+      if (idTerapeuta !== terapeutaAtual) {
+        terapeutaAtual = idTerapeuta;
+        const nome = idTerapeuta ? terapeutaNome(idTerapeuta) : 'Sem terapeuta';
+        const subdivisor = document.createElement('div');
+        subdivisor.className = 'adm-divisor-terapeuta';
+        subdivisor.innerHTML = `<span>${_esc(nome)}</span>`;
+        container.appendChild(subdivisor);
+      }
     }
     if (item.tipo === 'grupo') {
       container.appendChild(criarItemGrupo(item));
