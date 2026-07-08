@@ -4062,6 +4062,19 @@ body.drawer-aberto { overflow: hidden; }
   height: 190px;
   display: block;
 }
+/* Seletor de microfone: só aparece com mais de 1 audioinput */
+.aud-mic-select {
+  align-self: stretch;
+  margin-top: 2px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  border: 1px solid #2c2c35;
+  background: #16161b;
+  color: #d8d8e0;
+  font-size: .78rem;
+  max-width: 260px;
+}
+
 .aud-controles { display: flex; gap: 60px; align-items: center; margin-top: 6px; }
 .aud-controles:empty { display: none; }
 .aud-btn-anel,
@@ -4073,7 +4086,7 @@ body.drawer-aberto { overflow: hidden; }
   padding: 0;
   cursor: pointer;
   position: relative;
-  transition: transform .15s;
+  transition: transform .15s, box-shadow .15s;
 }
 .aud-btn-anel:hover, .aud-btn-escuro:hover { transform: scale(1.06); }
 .aud-btn-anel {
@@ -4086,7 +4099,15 @@ body.drawer-aberto { overflow: hidden; }
   border-radius: 50%;
   background: #0b0b0e;
 }
-.aud-btn-escuro { background: #232329; }
+.aud-btn-escuro { background: #232329; transition: background .15s, transform .15s; }
+
+/* Pulso suave no botão de gravar enquanto a gravação está ativa */
+@keyframes aud-pulso {
+  0%   { box-shadow: 0 0 0 0 rgba(229,72,77,.45); }
+  70%  { box-shadow: 0 0 0 16px rgba(229,72,77,0); }
+  100% { box-shadow: 0 0 0 0 rgba(229,72,77,0); }
+}
+.aud-btn-anel--gravando { animation: aud-pulso 1.6s ease-out infinite; }
 .aud-miolo { position: absolute; inset: 0; margin: auto; display: block; }
 .aud-miolo-rec  { width: 28px; height: 28px; border-radius: 50%; background: #e5484d; }
 .aud-miolo-stop { width: 24px; height: 24px; border-radius: 8px; background: linear-gradient(135deg, #f8cb9d, #c9baff); }
@@ -4105,8 +4126,58 @@ body.drawer-aberto { overflow: hidden; }
   transform: translateX(3px);
 }
 .aud-preview { width: 100%; display: flex; flex-direction: column; align-items: center; gap: 12px; }
-.aud-preview audio { width: 100%; }
 .aud-preview-acoes { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+
+/* Player custom da prévia: play/pause + onda como barra de progresso
+   (seek) + velocidade + tempo. Substitui o <audio controls> nativo. */
+.aud-player {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.aud-player-play {
+  flex: none;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: none;
+  background: #232329;
+  color: #ececf1;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: transform .15s, background .15s;
+}
+.aud-player-play:hover { transform: scale(1.06); background: #2c2c35; }
+.aud-player-onda {
+  flex: 1;
+  min-width: 0;
+  height: 44px;
+  border-radius: 8px;
+  cursor: pointer;
+  touch-action: none;
+}
+.aud-player-vel {
+  flex: none;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid #3a3a45;
+  background: transparent;
+  color: #e8e8ee;
+  font-size: .78rem;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+  transition: background .15s;
+}
+.aud-player-vel:hover { background: #26262e; }
+.aud-player-tempo {
+  flex: none;
+  font-size: .78rem;
+  font-variant-numeric: tabular-nums;
+  color: #9a9aa5;
+  min-width: 92px;
+  text-align: right;
+}
 /* Botões outline do painel são pensados pra fundo claro; dentro do card
    escuro precisam de contraste próprio */
 #admin-content .aud-gravador .ag-btn-outline {
@@ -4132,7 +4203,9 @@ body.drawer-aberto { overflow: hidden; }
   border-radius: 12px;
   padding: 10px 14px;
   margin-bottom: 8px;
+  transition: border-color .2s;
 }
+.aud-item:hover { border-color: rgba(201,168,76,0.35); }
 .aud-item-info { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .aud-item-nome { font-weight: 600; font-size: .92rem; }
 .aud-item-meta { font-size: .8rem; color: var(--text-muted, #6b7280); }
