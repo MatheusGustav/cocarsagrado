@@ -16,6 +16,13 @@ let _audMime         = '';
 let _audMs           = 0;    // duração acumulada (só enquanto grava)
 let _audTimerInt     = null;
 let _audPreviewUrl   = null;
+let _audAudioCtx     = null; // Web Audio só pra desenhar a onda
+let _audAnalyser     = null;
+let _audAmostra      = null; // buffer reutilizado do analyser
+let _audBarras       = [];   // 1 amplitude (0..1) a cada TICK de gravação
+let _audResizeOk     = false;
+
+const _AUD_TICK = 50; // ms por barra da onda (20 barras/s)
 
 function _audEsc(s) {
   return String(s ?? '')
@@ -26,6 +33,14 @@ function _audEsc(s) {
 function _audMmSs(seg) {
   const s = Math.max(0, Math.round(Number(seg) || 0));
   return `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
+}
+
+// Timer grande estilo gravador de celular: MM:SS.cc
+function _audMmSsCc(ms) {
+  const t = Math.max(0, Number(ms) || 0);
+  const s = Math.floor(t / 1000);
+  const cc = Math.floor((t % 1000) / 10);
+  return `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}.${String(cc).padStart(2, '0')}`;
 }
 
 function _audDataBR(iso) {
@@ -63,8 +78,9 @@ async function inicializarAudios() {
       <div class="aud-passo-titulo">2. Grave o áudio</div>
       <div class="aud-destino" id="aud-destino"></div>
       <div class="aud-gravador">
-        <div class="aud-timer" id="aud-timer">00:00</div>
+        <div class="aud-timer" id="aud-timer">00:00.00</div>
         <div class="aud-estado" id="aud-estado">Pronto para gravar</div>
+        <canvas class="aud-onda" id="aud-onda"></canvas>
         <div class="aud-controles" id="aud-controles"></div>
         <div class="aud-preview" id="aud-preview"></div>
         <div class="aud-erro" id="aud-erro"></div>
@@ -73,6 +89,10 @@ async function inicializarAudios() {
     </div>`;
 
   document.getElementById('aud-busca').addEventListener('input', _audFiltrarLista);
+  if (!_audResizeOk) {
+    _audResizeOk = true;
+    window.addEventListener('resize', () => { _audOndaRedimensionar(); _audOndaDesenhar(); });
+  }
   _audResetGravador();
   await _audCarregarAgendamentos();
 }
@@ -151,6 +171,8 @@ async function _audSelecionar(ag) {
   document.getElementById('aud-destino').innerHTML =
     `Gravando para: <strong>${_audEsc(ag.cliente_nome)}</strong> · ${_audEsc(ag.tipos_leitura?.nome || 'Leitura')} · ${_audDataAgend(ag.data_agendamento)}`;
   _audResetGravador();
+  _audOndaRedimensionar(); // o canvas nasce escondido (display:none); mede agora
+  _audOndaDesenhar();
   await _audCarregarAudiosDoAgendamento();
   passo.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
@@ -170,7 +192,95 @@ function _audSetErro(txt) {
 
 function _audAtualizaTimer() {
   const el = document.getElementById('aud-timer');
-  if (el) el.textContent = _audMmSs(_audMs / 1000);
+  if (el) el.textContent = _audMmSsCc(_audMs);
+}
+
+// ============================================================
+// Forma de onda (canvas): barras rolam da direita pra esquerda,
+// cursor fixo no centro, régua de segundos embaixo — igual
+// gravador de celular.
+// ============================================================
+function _audOndaRedimensionar() {
+  const c = document.getElementById('aud-onda');
+  if (!c || !c.clientWidth) return;
+  const dpr = window.devicePixelRatio || 1;
+  c.width  = Math.round(c.clientWidth * dpr);
+  c.height = Math.round(c.clientHeight * dpr);
+}
+
+function _audOndaDesenhar() {
+  const c = document.getElementById('aud-onda');
+  if (!c || !c.width) return;
+  const ctx = c.getContext('2d');
+  const dpr = window.devicePixelRatio || 1;
+  const W = c.width, H = c.height;
+  const regua = 30 * dpr;              // faixa dos rótulos de tempo
+  const meioY = (H - regua) / 2;       // linha de base da onda
+  const passo = 4 * dpr;               // largura de 1 barra + espaço
+  const larg  = 2 * dpr;
+  const pxSeg = passo * (1000 / _AUD_TICK); // px por segundo
+  const cx = W / 2;
+  const elapsed = _audMs / 1000;
+
+  ctx.clearRect(0, 0, W, H);
+
+  // pontilhado de base: à direita do cursor (futuro) e à esquerda do
+  // ponto onde a gravação começou (antes do 00:00)
+  const xInicio = cx - elapsed * pxSeg;
+  ctx.fillStyle = 'rgba(255,255,255,0.20)';
+  for (let x = cx + passo; x < W; x += passo) ctx.fillRect(x, meioY - dpr, larg, 2 * dpr);
+  for (let x = cx - passo; x > 0; x -= passo) {
+    if (x >= xInicio) continue;
+    ctx.fillRect(x, meioY - dpr, larg, 2 * dpr);
+  }
+
+  // barras já gravadas (barra i cobre o instante i*TICK)
+  ctx.fillStyle = 'rgba(226,231,240,0.92)';
+  for (let i = 0; i < _audBarras.length; i++) {
+    const x = cx - (elapsed - (i * _AUD_TICK) / 1000) * pxSeg;
+    if (x < -passo) continue;
+    if (x > cx) break;
+    const h = Math.max(2 * dpr, _audBarras[i] * meioY * 1.5);
+    ctx.fillRect(x, meioY - h / 2, larg, h);
+  }
+
+  // régua de segundos
+  ctx.fillStyle = 'rgba(255,255,255,0.42)';
+  ctx.font = `${11 * dpr}px system-ui, sans-serif`;
+  ctx.textAlign = 'center';
+  const alcance = Math.ceil(cx / pxSeg) + 1;
+  for (let k = Math.max(0, Math.floor(elapsed - alcance)); k <= elapsed + alcance; k++) {
+    const x = cx + (k - elapsed) * pxSeg;
+    if (x < 12 * dpr || x > W - 12 * dpr) continue;
+    ctx.fillText(_audMmSs(k), x, H - 10 * dpr);
+  }
+
+  // cursor central: linha vertical com bolinha nas pontas
+  const topo = 6 * dpr, fundo = H - regua - 2 * dpr;
+  ctx.strokeStyle = 'rgba(255,255,255,0.55)';
+  ctx.lineWidth = dpr;
+  ctx.beginPath(); ctx.moveTo(cx, topo); ctx.lineTo(cx, fundo); ctx.stroke();
+  ctx.fillStyle = 'rgba(255,255,255,0.55)';
+  ctx.beginPath(); ctx.arc(cx, topo, 3 * dpr, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.arc(cx, fundo, 3 * dpr, 0, Math.PI * 2); ctx.fill();
+}
+
+function _audAmplitudeAtual() {
+  if (!_audAnalyser) return 0;
+  _audAnalyser.getByteTimeDomainData(_audAmostra);
+  let pico = 0;
+  for (let i = 0; i < _audAmostra.length; i++) {
+    const v = Math.abs(_audAmostra[i] - 128) / 128;
+    if (v > pico) pico = v;
+  }
+  return Math.min(1, pico * 1.6);
+}
+
+function _audFecharAudioCtx() {
+  if (_audAudioCtx) { _audAudioCtx.close().catch(() => {}); }
+  _audAudioCtx = null;
+  _audAnalyser = null;
+  _audAmostra = null;
 }
 
 function _audBotoes(html) {
@@ -182,18 +292,23 @@ function _audResetGravador() {
   if (_audTimerInt) { clearInterval(_audTimerInt); _audTimerInt = null; }
   if (_audStream) { _audStream.getTracks().forEach(t => t.stop()); _audStream = null; }
   if (_audPreviewUrl) { URL.revokeObjectURL(_audPreviewUrl); _audPreviewUrl = null; }
+  _audFecharAudioCtx();
   _audRecorder = null;
   _audChunks = [];
   _audBlob = null;
   _audMs = 0;
+  _audBarras = [];
 
   const preview = document.getElementById('aud-preview');
   if (preview) preview.innerHTML = '';
   _audSetErro('');
   _audAtualizaTimer();
-  document.getElementById('aud-timer')?.classList.remove('aud-timer--rec');
+  _audOndaDesenhar();
   _audSetEstado('Pronto para gravar');
-  _audBotoes(`<button type="button" class="aud-btn aud-btn-rec" onclick="_audComecarGravacao()" title="Gravar">🎙</button>`);
+  _audBotoes(`
+    <button type="button" class="aud-btn-anel" onclick="_audComecarGravacao()" title="Gravar" aria-label="Gravar">
+      <span class="aud-miolo aud-miolo-rec"></span>
+    </button>`);
 }
 
 function _audDescartarGravacao() {
@@ -230,7 +345,18 @@ async function _audComecarGravacao() {
   _audChunks = [];
   _audBlob = null;
   _audMs = 0;
+  _audBarras = [];
   _audAtualizaTimer();
+  _audOndaRedimensionar();
+
+  // Analyser só pra onda; se falhar, grava mesmo assim (barras ficam no mínimo)
+  try {
+    _audAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    _audAnalyser = _audAudioCtx.createAnalyser();
+    _audAnalyser.fftSize = 512;
+    _audAudioCtx.createMediaStreamSource(_audStream).connect(_audAnalyser);
+    _audAmostra = new Uint8Array(_audAnalyser.fftSize);
+  } catch (_) { _audFecharAudioCtx(); }
 
   _audRecorder = new MediaRecorder(_audStream, { mimeType: _audMime });
   _audRecorder.ondataavailable = e => { if (e.data?.size) _audChunks.push(e.data); };
@@ -238,7 +364,7 @@ async function _audComecarGravacao() {
     if (_audTimerInt) { clearInterval(_audTimerInt); _audTimerInt = null; }
     _audStream?.getTracks().forEach(t => t.stop());
     _audStream = null;
-    document.getElementById('aud-timer')?.classList.remove('aud-timer--rec');
+    _audFecharAudioCtx();
     _audBlob = new Blob(_audChunks, { type: _audMime.split(';')[0] });
     _audMostrarPreview();
   };
@@ -250,20 +376,29 @@ async function _audComecarGravacao() {
 
   // Timer pause-aware: soma só enquanto está gravando de verdade.
   // (Não dá pra confiar em audio.duration depois: webm do MediaRecorder
-  // reporta Infinity no Chrome.)
+  // reporta Infinity no Chrome.) A onda anda no mesmo relógio: 1 barra
+  // por _AUD_TICK de tempo gravado, então pausa congela tudo junto.
   let ultimo = performance.now();
   _audTimerInt = setInterval(() => {
     const agora = performance.now();
-    if (_audRecorder?.state === 'recording') _audMs += agora - ultimo;
+    if (_audRecorder?.state === 'recording') {
+      _audMs += agora - ultimo;
+      const amp = _audAmplitudeAtual();
+      while (_audBarras.length < _audMs / _AUD_TICK) _audBarras.push(amp);
+    }
     ultimo = agora;
     _audAtualizaTimer();
-  }, 250);
+    _audOndaDesenhar();
+  }, _AUD_TICK);
 
-  document.getElementById('aud-timer')?.classList.add('aud-timer--rec');
   _audSetEstado('Gravando…');
   _audBotoes(`
-    <button type="button" class="aud-btn" onclick="_audPausarRetomar()" id="aud-btn-pausa" title="Pausar">⏸</button>
-    <button type="button" class="aud-btn aud-btn-stop" onclick="_audPararGravacao()" title="Parar">⏹</button>`);
+    <button type="button" class="aud-btn-anel" onclick="_audPararGravacao()" title="Parar" aria-label="Parar">
+      <span class="aud-miolo aud-miolo-stop"></span>
+    </button>
+    <button type="button" class="aud-btn-escuro" onclick="_audPausarRetomar()" id="aud-btn-pausa" title="Pausar" aria-label="Pausar">
+      <span class="aud-ico-pausa"></span>
+    </button>`);
 }
 
 function _audPausarRetomar() {
@@ -272,13 +407,17 @@ function _audPausarRetomar() {
   if (_audRecorder.state === 'recording') {
     _audRecorder.pause();
     _audSetEstado('Pausado');
-    document.getElementById('aud-timer')?.classList.remove('aud-timer--rec');
-    if (btn) { btn.textContent = '▶'; btn.title = 'Retomar'; }
+    if (btn) {
+      btn.innerHTML = '<span class="aud-ico-play"></span>';
+      btn.title = 'Retomar'; btn.setAttribute('aria-label', 'Retomar');
+    }
   } else if (_audRecorder.state === 'paused') {
     _audRecorder.resume();
     _audSetEstado('Gravando…');
-    document.getElementById('aud-timer')?.classList.add('aud-timer--rec');
-    if (btn) { btn.textContent = '⏸'; btn.title = 'Pausar'; }
+    if (btn) {
+      btn.innerHTML = '<span class="aud-ico-pausa"></span>';
+      btn.title = 'Pausar'; btn.setAttribute('aria-label', 'Pausar');
+    }
   }
 }
 
