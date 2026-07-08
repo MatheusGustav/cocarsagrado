@@ -7,6 +7,8 @@
    ============================================================ */
 
 let _audAgendamentos = [];   // cache da busca de agendamentos
+let _audContagem     = {};   // agendamento_id -> nº de áudios salvos
+let _audTodos        = [];   // cache da aba "Áudios salvos"
 let _audSelecionado  = null; // agendamento destino
 let _audRecorder     = null;
 let _audStream       = null;
@@ -63,32 +65,43 @@ async function inicializarAudios() {
   if (!container) return;
 
   container.innerHTML = `
-    <div class="desc-bloco-titulo" style="margin-bottom:14px;">Gravar áudio para um cliente</div>
+    <div class="aud-tabs">
+      <button type="button" class="aud-tab aud-tab--on" id="aud-tab-gravar" onclick="_audTrocarAba('gravar')">🎙 Gravar</button>
+      <button type="button" class="aud-tab" id="aud-tab-todos" onclick="_audTrocarAba('todos')">🎧 Áudios salvos</button>
+    </div>
 
-    <div class="aud-passo">
-      <div class="aud-passo-titulo">1. Escolha o agendamento</div>
-      <input type="text" id="aud-busca" class="cup-input" autocomplete="off"
-             placeholder="Buscar por nome, leitura ou WhatsApp…">
-      <div id="aud-ag-lista" class="aud-ag-lista">
-        <div class="ag-loading"><div class="ag-spinner"></div> Carregando…</div>
+    <div id="aud-aba-gravar">
+      <div class="aud-passo" id="aud-tela-escolha">
+        <div class="aud-passo-titulo">Para quem é o áudio?</div>
+        <input type="text" id="aud-busca" class="cup-input" autocomplete="off"
+               placeholder="Buscar por nome, leitura ou WhatsApp…">
+        <div id="aud-ag-lista" class="aud-ag-lista">
+          <div class="ag-loading"><div class="ag-spinner"></div> Carregando…</div>
+        </div>
+      </div>
+
+      <div class="aud-passo" id="aud-tela-gravar" style="display:none;">
+        <div class="aud-gravador">
+          <div class="aud-timer" id="aud-timer">00:00.00</div>
+          <div class="aud-estado" id="aud-estado">Pronto para gravar</div>
+          <canvas class="aud-onda" id="aud-onda"></canvas>
+          <div class="aud-controles" id="aud-controles"></div>
+          <div class="aud-preview" id="aud-preview"></div>
+          <div class="aud-erro" id="aud-erro"></div>
+        </div>
+        <div class="aud-destino" id="aud-destino"></div>
+        <div id="aud-lista" class="aud-lista"></div>
       </div>
     </div>
 
-    <div class="aud-passo" id="aud-passo-gravar" style="display:none;">
-      <div class="aud-passo-titulo">2. Grave o áudio</div>
-      <div class="aud-destino" id="aud-destino"></div>
-      <div class="aud-gravador">
-        <div class="aud-timer" id="aud-timer">00:00.00</div>
-        <div class="aud-estado" id="aud-estado">Pronto para gravar</div>
-        <canvas class="aud-onda" id="aud-onda"></canvas>
-        <div class="aud-controles" id="aud-controles"></div>
-        <div class="aud-preview" id="aud-preview"></div>
-        <div class="aud-erro" id="aud-erro"></div>
-      </div>
-      <div id="aud-lista" class="aud-lista"></div>
+    <div id="aud-aba-todos" style="display:none;">
+      <input type="text" id="aud-busca-todos" class="cup-input" autocomplete="off"
+             placeholder="Buscar por cliente ou leitura…">
+      <div id="aud-todos-lista" class="aud-lista" style="margin-top:10px;"></div>
     </div>`;
 
   document.getElementById('aud-busca').addEventListener('input', _audFiltrarLista);
+  document.getElementById('aud-busca-todos').addEventListener('input', _audRenderTodos);
   if (!_audResizeOk) {
     _audResizeOk = true;
     window.addEventListener('resize', () => { _audOndaRedimensionar(); _audOndaDesenhar(); });
@@ -98,26 +111,50 @@ async function inicializarAudios() {
 }
 
 // ============================================================
+// Abas: Gravar ⇄ Áudios salvos
+// ============================================================
+function _audTrocarAba(aba) {
+  // Sair da aba Gravar no meio de uma gravação descartaria áudio sem avisar
+  if (aba === 'todos' && _audRecorder && _audRecorder.state !== 'inactive') {
+    if (!confirm('Há uma gravação em andamento. Descartar?')) return;
+    _audDescartarGravacao();
+  }
+  document.getElementById('aud-aba-gravar').style.display = aba === 'gravar' ? '' : 'none';
+  document.getElementById('aud-aba-todos').style.display  = aba === 'todos'  ? '' : 'none';
+  document.getElementById('aud-tab-gravar').classList.toggle('aud-tab--on', aba === 'gravar');
+  document.getElementById('aud-tab-todos').classList.toggle('aud-tab--on', aba === 'todos');
+  if (aba === 'todos') _audCarregarTodos();
+}
+
+// ============================================================
 // Passo 1 — seletor de agendamento
 // ============================================================
 async function _audCarregarAgendamentos() {
   const lista = document.getElementById('aud-ag-lista');
   if (!lista) return;
 
-  const { data, error } = await supabase
-    .from('agendamentos')
-    .select('id, cliente_nome, cliente_whatsapp, data_agendamento, status, leitura_origem_id, tipos_leitura(nome), pedidos(user_id)')
-    .in('status', ['pago', 'confirmado', 'atendido'])
-    .order('data_agendamento', { ascending: false })
-    .limit(100);
+  const [ags, cnts] = await Promise.all([
+    supabase
+      .from('agendamentos')
+      .select('id, cliente_nome, cliente_whatsapp, data_agendamento, status, leitura_origem_id, tipos_leitura(nome), pedidos(user_id)')
+      .in('status', ['pago', 'confirmado', 'atendido'])
+      .order('data_agendamento', { ascending: false })
+      .limit(100),
+    supabase.from('audios_cliente').select('agendamento_id'),
+  ]);
 
-  if (error) {
+  if (ags.error) {
     lista.innerHTML = '<div class="ag-empty">Erro ao carregar agendamentos.</div>';
-    console.error('_audCarregarAgendamentos:', error);
+    console.error('_audCarregarAgendamentos:', ags.error);
     return;
   }
 
-  _audAgendamentos = data || [];
+  _audContagem = {};
+  (cnts.data || []).forEach(r => {
+    _audContagem[r.agendamento_id] = (_audContagem[r.agendamento_id] || 0) + 1;
+  });
+
+  _audAgendamentos = ags.data || [];
   _audRenderLista(_audAgendamentos);
 }
 
@@ -146,11 +183,15 @@ function _audRenderLista(ags) {
     const item = document.createElement('button');
     item.type = 'button';
     item.className = 'aud-ag-item' + (_audSelecionado?.id === ag.id ? ' aud-ag-item--sel' : '');
+    const n = _audContagem[ag.id] || 0;
     item.innerHTML = `
       <span class="aud-ag-nome">${_audEsc(ag.cliente_nome)}</span>
       <span class="aud-ag-meta">${_audEsc(ag.tipos_leitura?.nome || 'Leitura')}${ag.leitura_origem_id ? ' (＋ pergunta adicional)' : ''} · ${_audDataAgend(ag.data_agendamento)}</span>
-      <span class="aud-ag-badge ${temConta ? 'aud-ag-badge--conta' : 'aud-ag-badge--guest'}">
-        ${temConta ? 'com conta' : 'sem conta — não aparece no site'}
+      <span class="aud-ag-badges">
+        <span class="aud-ag-badge ${temConta ? 'aud-ag-badge--conta' : 'aud-ag-badge--guest'}">
+          ${temConta ? 'com conta' : 'sem conta — não aparece no site'}
+        </span>
+        ${n ? `<span class="aud-ag-badge aud-ag-badge--audios">🎧 ${n} áudio${n > 1 ? 's' : ''}</span>` : ''}
       </span>`;
     item.addEventListener('click', () => _audSelecionar(ag));
     lista.appendChild(item);
@@ -158,23 +199,35 @@ function _audRenderLista(ags) {
 }
 
 async function _audSelecionar(ag) {
-  // Trocar de cliente no meio de uma gravação descartaria áudio sem avisar
-  if (_audRecorder && _audRecorder.state !== 'inactive') {
-    if (!confirm('Há uma gravação em andamento. Descartar e trocar de agendamento?')) return;
-    _audDescartarGravacao();
-  }
   _audSelecionado = ag;
-  _audFiltrarLista(); // re-render mantendo o filtro (marca o selecionado)
 
-  const passo = document.getElementById('aud-passo-gravar');
-  passo.style.display = '';
-  document.getElementById('aud-destino').innerHTML =
-    `Gravando para: <strong>${_audEsc(ag.cliente_nome)}</strong> · ${_audEsc(ag.tipos_leitura?.nome || 'Leitura')} · ${_audDataAgend(ag.data_agendamento)}`;
+  // A tela de escolha some; fica só o gravador + destino + histórico
+  document.getElementById('aud-tela-escolha').style.display = 'none';
+  const tela = document.getElementById('aud-tela-gravar');
+  tela.style.display = '';
+  document.getElementById('aud-destino').innerHTML = `
+    <div class="aud-destino-info">
+      <span class="aud-destino-nome">${_audEsc(ag.cliente_nome)}</span>
+      <span class="aud-destino-meta">${_audEsc(ag.tipos_leitura?.nome || 'Leitura')}${ag.leitura_origem_id ? ' (＋ pergunta adicional)' : ''} · ${_audDataAgend(ag.data_agendamento)}</span>
+    </div>
+    <button type="button" class="ag-btn ag-btn-outline ag-btn-sm" onclick="_audVoltarEscolha()">↩ Trocar</button>`;
   _audResetGravador();
   _audOndaRedimensionar(); // o canvas nasce escondido (display:none); mede agora
   _audOndaDesenhar();
   await _audCarregarAudiosDoAgendamento();
-  passo.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  tela.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function _audVoltarEscolha() {
+  // Voltar no meio de uma gravação descartaria áudio sem avisar
+  if (_audRecorder && _audRecorder.state !== 'inactive') {
+    if (!confirm('Há uma gravação em andamento. Descartar e trocar de atendimento?')) return;
+  }
+  _audDescartarGravacao();
+  _audSelecionado = null;
+  document.getElementById('aud-tela-gravar').style.display = 'none';
+  document.getElementById('aud-tela-escolha').style.display = '';
+  _audFiltrarLista(); // re-render sem seleção marcada
 }
 
 // ============================================================
@@ -482,10 +535,68 @@ async function _audSalvar() {
     return;
   }
 
+  _audContagem[_audSelecionado.id] = (_audContagem[_audSelecionado.id] || 0) + 1;
   const temConta = !!_audSelecionado.pedidos?.user_id;
   _toastAdmin('✅ Áudio salvo!' + (temConta ? ' O cliente já vê na conta dele.' : ' Cliente sem conta — fica só aqui no painel.'), 'ok');
   _audResetGravador();
   await _audCarregarAudiosDoAgendamento();
+}
+
+// ============================================================
+// Item de áudio (usado nas duas listas): ouvir lazy + apagar
+// ============================================================
+function _audCriarItemAudio(a, opts = {}) {
+  const item = document.createElement('div');
+  item.className = 'aud-item';
+  item.innerHTML = `
+    <div class="aud-item-info">
+      <span class="aud-item-nome">${opts.titulo}</span>
+      <span class="aud-item-meta">${opts.meta}</span>
+    </div>
+    <div class="aud-item-acoes">
+      <button type="button" class="ag-btn ag-btn-outline ag-btn-sm aud-item-play">▶ Ouvir</button>
+      ${opts.aoGravar ? '<button type="button" class="ag-btn ag-btn-outline ag-btn-sm aud-item-gravar" title="Gravar outro pra este atendimento">🎙 Gravar</button>' : ''}
+      <button type="button" class="ag-btn ag-btn-outline ag-btn-sm aud-item-del" style="color:var(--t-danger)" title="Apagar">🗑</button>
+    </div>`;
+
+  // Player lazy: signed URL só quando pedir pra ouvir
+  item.querySelector('.aud-item-play').addEventListener('click', async ev => {
+    const b = ev.currentTarget;
+    b.disabled = true;
+    const { data: s, error: e } = await supabase.storage
+      .from('audios')
+      .createSignedUrl(a.storage_path, 3600);
+    if (e || !s?.signedUrl) {
+      b.disabled = false;
+      _toastAdmin('❌ Não deu pra abrir o áudio: ' + (e?.message || 'tente de novo'), 'erro');
+      return;
+    }
+    const player = document.createElement('audio');
+    player.controls = true;
+    player.src = s.signedUrl;
+    b.replaceWith(player);
+    player.play().catch(() => {});
+  });
+
+  if (opts.aoGravar) {
+    item.querySelector('.aud-item-gravar').addEventListener('click', opts.aoGravar);
+  }
+
+  item.querySelector('.aud-item-del').addEventListener('click', async () => {
+    if (!confirm('Apagar este áudio? O cliente deixa de vê-lo na conta.')) return;
+    // Linha primeiro (é a fonte de verdade pro cliente); órfão no bucket
+    // privado é inofensivo se o remove falhar.
+    const { error: e } = await supabase.from('audios_cliente').delete().eq('id', a.id);
+    if (e) { _toastAdmin('❌ ' + e.message, 'erro'); return; }
+    const { error: eSt } = await supabase.storage.from('audios').remove([a.storage_path]);
+    if (eSt) console.warn('arquivo órfão no bucket audios:', a.storage_path, eSt);
+    if (_audContagem[a.agendamento_id]) _audContagem[a.agendamento_id]--;
+    _audTodos = _audTodos.filter(t => t.id !== a.id);
+    item.remove();
+    _toastAdmin('✅ Áudio apagado.', 'ok');
+  });
+
+  return item;
 }
 
 // ============================================================
@@ -514,50 +625,61 @@ async function _audCarregarAudiosDoAgendamento() {
 
   lista.innerHTML = '<div class="aud-lista-titulo">Áudios já gravados</div>';
   data.forEach((a, i) => {
-    const item = document.createElement('div');
-    item.className = 'aud-item';
-    item.innerHTML = `
-      <div class="aud-item-info">
-        <span class="aud-item-nome">🎧 Áudio ${i + 1}</span>
-        <span class="aud-item-meta">${_audDataBR(a.criado_em)} · ${_audMmSs(a.duracao_segundos)}</span>
-      </div>
-      <div class="aud-item-acoes">
-        <button type="button" class="ag-btn ag-btn-outline ag-btn-sm aud-item-play">▶ Ouvir</button>
-        <button type="button" class="ag-btn ag-btn-outline ag-btn-sm aud-item-del" style="color:var(--t-danger)" title="Apagar">🗑</button>
-      </div>`;
+    lista.appendChild(_audCriarItemAudio(a, {
+      titulo: `🎧 Áudio ${i + 1}`,
+      meta: `${_audDataBR(a.criado_em)} · ${_audMmSs(a.duracao_segundos)}`,
+    }));
+  });
+}
 
-    // Player lazy: signed URL só quando pedir pra ouvir
-    item.querySelector('.aud-item-play').addEventListener('click', async ev => {
-      const b = ev.currentTarget;
-      b.disabled = true;
-      const { data: s, error: e } = await supabase.storage
-        .from('audios')
-        .createSignedUrl(a.storage_path, 3600);
-      if (e || !s?.signedUrl) {
-        b.disabled = false;
-        _toastAdmin('❌ Não deu pra abrir o áudio: ' + (e?.message || 'tente de novo'), 'erro');
-        return;
-      }
-      const player = document.createElement('audio');
-      player.controls = true;
-      player.src = s.signedUrl;
-      b.replaceWith(player);
-      player.play().catch(() => {});
-    });
+// ============================================================
+// Aba "Áudios salvos" — histórico geral, sem escolher cliente
+// ============================================================
+async function _audCarregarTodos() {
+  const lista = document.getElementById('aud-todos-lista');
+  if (!lista) return;
+  lista.innerHTML = '<div class="ag-loading"><div class="ag-spinner"></div> Carregando…</div>';
 
-    item.querySelector('.aud-item-del').addEventListener('click', async () => {
-      if (!confirm('Apagar este áudio? O cliente deixa de vê-lo na conta.')) return;
-      // Linha primeiro (é a fonte de verdade pro cliente); órfão no bucket
-      // privado é inofensivo se o remove falhar.
-      const { error: e } = await supabase.from('audios_cliente').delete().eq('id', a.id);
-      if (e) { _toastAdmin('❌ ' + e.message, 'erro'); return; }
-      const { error: eSt } = await supabase.storage.from('audios').remove([a.storage_path]);
-      if (eSt) console.warn('arquivo órfão no bucket audios:', a.storage_path, eSt);
-      item.remove();
-      _toastAdmin('✅ Áudio apagado.', 'ok');
-    });
+  const { data, error } = await supabase
+    .from('audios_cliente')
+    .select('*, agendamentos(id, cliente_nome, cliente_whatsapp, data_agendamento, leitura_origem_id, tipos_leitura(nome), pedidos(user_id))')
+    .order('criado_em', { ascending: false })
+    .limit(200);
 
-    lista.appendChild(item);
+  if (error) {
+    lista.innerHTML = '<div class="ag-empty">Erro ao carregar os áudios.</div>';
+    console.error('_audCarregarTodos:', error);
+    return;
+  }
+
+  _audTodos = data || [];
+  _audRenderTodos();
+}
+
+function _audRenderTodos() {
+  const lista = document.getElementById('aud-todos-lista');
+  if (!lista) return;
+
+  const termo = (document.getElementById('aud-busca-todos')?.value || '').trim().toLowerCase();
+  const itens = !termo ? _audTodos : _audTodos.filter(a =>
+    (a.agendamentos?.cliente_nome || '').toLowerCase().includes(termo) ||
+    (a.agendamentos?.cliente_whatsapp || '').toLowerCase().includes(termo) ||
+    (a.agendamentos?.tipos_leitura?.nome || '').toLowerCase().includes(termo)
+  );
+
+  if (!itens.length) {
+    lista.innerHTML = `<div class="ag-empty">${termo ? 'Nada encontrado.' : 'Nenhum áudio salvo ainda.'}</div>`;
+    return;
+  }
+
+  lista.innerHTML = '';
+  itens.forEach(a => {
+    const ag = a.agendamentos;
+    lista.appendChild(_audCriarItemAudio(a, {
+      titulo: _audEsc(ag?.cliente_nome || 'Cliente'),
+      meta: `${_audEsc(ag?.tipos_leitura?.nome || 'Leitura')} · ${_audDataAgend(ag?.data_agendamento)} · gravado em ${_audDataBR(a.criado_em)} · ${_audMmSs(a.duracao_segundos)}`,
+      aoGravar: ag ? () => { _audTrocarAba('gravar'); _audSelecionar(ag); } : null,
+    }));
   });
 }
 
@@ -566,4 +688,6 @@ window._audComecarGravacao = _audComecarGravacao;
 window._audPausarRetomar = _audPausarRetomar;
 window._audPararGravacao = _audPararGravacao;
 window._audResetGravador = _audResetGravador;
+window._audVoltarEscolha = _audVoltarEscolha;
+window._audTrocarAba = _audTrocarAba;
 window._audSalvar = _audSalvar;
