@@ -7,6 +7,7 @@
    ============================================================ */
 
 let _audAgendamentos = [];   // cache da busca de agendamentos
+let _audVerTodos     = false; // false = só pago/confirmado (a atender)
 let _audContagem     = {};   // agendamento_id -> nº de áudios salvos
 let _audTodos        = [];   // cache da aba "Áudios salvos"
 let _audSelecionado  = null; // agendamento destino
@@ -73,6 +74,10 @@ async function inicializarAudios() {
     <div id="aud-aba-gravar">
       <div class="aud-passo" id="aud-tela-escolha">
         <div class="aud-passo-titulo">Para quem é o áudio?</div>
+        <div class="aud-filtros">
+          <button type="button" class="aud-filtro aud-filtro--on" id="aud-filtro-pendentes" onclick="_audFiltroStatus(false)">A atender</button>
+          <button type="button" class="aud-filtro" id="aud-filtro-todos" onclick="_audFiltroStatus(true)">Todos (inclui atendidos)</button>
+        </div>
         <input type="text" id="aud-busca" class="cup-input" autocomplete="off"
                placeholder="Buscar por nome, leitura ou WhatsApp…">
         <div id="aud-ag-lista" class="aud-ag-lista">
@@ -129,16 +134,29 @@ function _audTrocarAba(aba) {
 // ============================================================
 // Passo 1 — seletor de agendamento
 // ============================================================
+function _audFiltroStatus(verTodos) {
+  if (verTodos === _audVerTodos) return;
+  _audVerTodos = verTodos;
+  document.getElementById('aud-filtro-pendentes').classList.toggle('aud-filtro--on', !verTodos);
+  document.getElementById('aud-filtro-todos').classList.toggle('aud-filtro--on', verTodos);
+  _audCarregarAgendamentos();
+}
+
 async function _audCarregarAgendamentos() {
   const lista = document.getElementById('aud-ag-lista');
   if (!lista) return;
 
+  lista.innerHTML = '<div class="ag-loading"><div class="ag-spinner"></div> Carregando…</div>';
+
+  // Padrão: fila de quem falta atender. "Todos" inclui atendidos (regravar etc.)
+  const status = _audVerTodos ? ['pago', 'confirmado', 'atendido'] : ['pago', 'confirmado'];
   const [ags, cnts] = await Promise.all([
     supabase
       .from('agendamentos')
       .select('id, cliente_nome, cliente_whatsapp, data_agendamento, status, leitura_origem_id, tipos_leitura(nome), pedidos(user_id)')
-      .in('status', ['pago', 'confirmado', 'atendido'])
-      .order('data_agendamento', { ascending: false })
+      .in('status', status)
+      // fila: mais próximo primeiro; "todos": mais recente primeiro
+      .order('data_agendamento', { ascending: !_audVerTodos })
       .limit(100),
     supabase.from('audios_cliente').select('agendamento_id'),
   ]);
@@ -173,7 +191,9 @@ function _audRenderLista(ags) {
   if (!lista) return;
 
   if (!ags.length) {
-    lista.innerHTML = '<div class="ag-empty">Nenhum agendamento pago encontrado.</div>';
+    lista.innerHTML = `<div class="ag-empty">${_audVerTodos
+      ? 'Nenhum agendamento pago encontrado.'
+      : 'Ninguém na fila 🎉 — todos os pagos já foram atendidos.'}</div>`;
     return;
   }
 
@@ -690,4 +710,5 @@ window._audPararGravacao = _audPararGravacao;
 window._audResetGravador = _audResetGravador;
 window._audVoltarEscolha = _audVoltarEscolha;
 window._audTrocarAba = _audTrocarAba;
+window._audFiltroStatus = _audFiltroStatus;
 window._audSalvar = _audSalvar;
