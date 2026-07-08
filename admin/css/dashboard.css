@@ -3904,6 +3904,25 @@ body.drawer-aberto { overflow: hidden; }
   color: inherit;
   font-weight: 600;
 }
+/* Chips de filtro de status (A atender / Todos) na tela de escolha */
+.aud-filtros { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+.aud-filtro {
+  padding: 4px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-muted, #6b7280);
+  font-size: .78rem;
+  cursor: pointer;
+  transition: border-color .15s, color .15s;
+}
+.aud-filtro:hover { border-color: rgba(201,168,76,0.45); }
+.aud-filtro--on {
+  border-color: rgba(201,168,76,0.6);
+  color: inherit;
+  font-weight: 600;
+}
+
 #aud-aba-todos .cup-input { width: 100%; max-width: 420px; }
 #aud-todos-lista { max-width: 560px; }
 
