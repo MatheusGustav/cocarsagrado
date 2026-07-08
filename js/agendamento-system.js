@@ -256,72 +256,10 @@ function restaurarDadosPessoaisLocal() {
   if (nasc && !nasc.value && dados.nasc) nasc.value = dados.nasc;
   if (ddi  && dados.ddi) ddi.value = dados.ddi;
   if (fone && !fone.value && dados.fone) fone.value = dados.fone;
-
-  mostrarBoasVindas(dados.nome);
 }
 
 function esquecerDadosPessoaisLocal() {
   try { localStorage.removeItem(CLIENTE_LOCAL_KEY); } catch { /* ignore */ }
-}
-
-// Toast verde de boas-vindas pro cliente que já é conhecido neste aparelho.
-// Aparece a cada carregamento da página.
-function mostrarBoasVindas(nome) {
-  if (!nome) return;
-
-  const primeiro = nome.trim().split(/\s+/)[0];
-
-  if (!document.getElementById('cs-bv-style')) {
-    const st = document.createElement('style');
-    st.id = 'cs-bv-style';
-    st.textContent = `
-      .cs-bv {
-        position: fixed; right: 20px; bottom: 20px; z-index: 9998;
-        max-width: 340px; display: flex; gap: 12px; align-items: flex-start;
-        padding: 14px 16px; border-radius: 14px; color: #FFFDF8;
-        background: linear-gradient(135deg, #3E6B45, #213D2C);
-        box-shadow: 0 12px 32px rgba(14,33,23,.32);
-        font-size: 14px; line-height: 1.45; font-family: inherit;
-        animation: csBvIn .45s cubic-bezier(.16,1,.3,1);
-      }
-      .cs-bv.cs-bv-out { animation: csBvOut .35s ease forwards; }
-      .cs-bv__emoji { font-size: 20px; line-height: 1.2; flex-shrink: 0; }
-      .cs-bv__txt strong { font-weight: 700; }
-      .cs-bv__close {
-        background: none; border: 0; color: #ECE3D0; cursor: pointer;
-        font-size: 18px; line-height: 1; padding: 0 0 0 4px; flex-shrink: 0;
-        opacity: .8; transition: opacity .2s;
-      }
-      .cs-bv__close:hover { opacity: 1; }
-      @keyframes csBvIn  { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
-      @keyframes csBvOut { to { opacity: 0; transform: translateY(16px); } }
-      @media (max-width: 520px) {
-        .cs-bv { right: 12px; left: 12px; bottom: 12px; max-width: none; }
-      }
-      @media (prefers-reduced-motion: reduce) {
-        .cs-bv, .cs-bv.cs-bv-out { animation: none; }
-      }`;
-    document.head.appendChild(st);
-  }
-
-  const toast = document.createElement('div');
-  toast.className = 'cs-bv';
-  toast.setAttribute('role', 'status');
-  toast.setAttribute('aria-live', 'polite');
-  toast.innerHTML = `
-    <span class="cs-bv__emoji" aria-hidden="true">🌿</span>
-    <span class="cs-bv__txt">Seja bem-vindo(a) <strong>${_escCat(primeiro)}</strong>, que bom te ver aqui de novo! Seus dados foram salvos e serão preenchidos automaticamente ao criar um pedido ✅</span>
-    <button class="cs-bv__close" aria-label="Fechar">&times;</button>`;
-  document.body.appendChild(toast);
-
-  let saiu = false;
-  const fechar = () => {
-    if (saiu) return; saiu = true;
-    toast.classList.add('cs-bv-out');
-    setTimeout(() => toast.remove(), 360);
-  };
-  toast.querySelector('.cs-bv__close')?.addEventListener('click', fechar);
-  setTimeout(fechar, 8000);
 }
 
 // Localiza a promoção do serviço. O admin salva grupos com id sem prefixo
