@@ -675,6 +675,29 @@ body {
 }
 .adm-divisor-dia:first-child { margin-top: 4px; }
 
+.adm-divisor-terapeuta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 12px 4px 6px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.adm-divisor-terapeuta::before,
+.adm-divisor-terapeuta::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+.adm-divisor-terapeuta span {
+  padding: 0 4px;
+  white-space: nowrap;
+}
+
 .adm-item {
   background: var(--surface) !important;
   border: 1px solid var(--border) !important;
