@@ -3945,52 +3945,93 @@ body.drawer-aberto { overflow: hidden; }
 
 .aud-destino { font-size: .9rem; margin-bottom: 10px; }
 
+/* Card do gravador: visual de app de gravador de celular (tela escura,
+   timer gigante, onda com cursor central, botões redondos) */
 .aud-gravador {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 16px;
-  padding: 26px 18px;
+  background: #0b0b0e;
+  border: 1px solid #23232b;
+  border-radius: 22px;
+  padding: 28px 18px 24px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 10px;
+  gap: 6px;
   max-width: 460px;
+  color: #f2f2f5;
+  color-scheme: dark; /* player nativo da prévia em tema escuro */
+  overflow: hidden;
 }
 .aud-timer {
   font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
-  font-size: 2.6rem;
-  font-weight: 600;
-  letter-spacing: .06em;
+  font-size: 3.1rem;
+  font-weight: 300;
+  letter-spacing: .03em;
   font-variant-numeric: tabular-nums;
-}
-.aud-timer--rec { animation: aud-pulso 1.2s ease-in-out infinite; color: var(--t-danger); }
-@keyframes aud-pulso { 50% { opacity: .45; } }
-.aud-estado { font-size: .85rem; color: var(--text-muted, #6b7280); }
-.aud-controles { display: flex; gap: 14px; }
-.aud-btn {
-  width: 62px;
-  height: 62px;
-  border-radius: 50%;
-  border: 1px solid var(--border);
-  background: var(--bg, #fff);
-  font-size: 1.5rem;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: transform .15s, border-color .2s, background .2s;
-}
-.aud-btn:hover { transform: scale(1.06); border-color: var(--secondary, #A67C32); }
-.aud-btn-rec {
-  background: var(--t-danger);
-  border-color: var(--t-danger);
   color: #fff;
 }
-.aud-btn-stop { color: var(--t-danger); border-color: rgba(185,28,28,0.4); }
+.aud-estado { font-size: .9rem; color: #8f8f99; }
+.aud-onda {
+  width: calc(100% + 36px); /* sangra até a borda do card, como no celular */
+  margin: 4px -18px 0;
+  height: 190px;
+  display: block;
+}
+.aud-controles { display: flex; gap: 60px; align-items: center; margin-top: 6px; }
+.aud-controles:empty { display: none; }
+.aud-btn-anel,
+.aud-btn-escuro {
+  width: 70px;
+  height: 70px;
+  border-radius: 50%;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  position: relative;
+  transition: transform .15s;
+}
+.aud-btn-anel:hover, .aud-btn-escuro:hover { transform: scale(1.06); }
+.aud-btn-anel {
+  background: conic-gradient(from 210deg, #f6bd8b, #ee8b9f, #a89cf5, #8fd0ee, #f6bd8b);
+}
+.aud-btn-anel::before {
+  content: '';
+  position: absolute;
+  inset: 5px;
+  border-radius: 50%;
+  background: #0b0b0e;
+}
+.aud-btn-escuro { background: #232329; }
+.aud-miolo { position: absolute; inset: 0; margin: auto; display: block; }
+.aud-miolo-rec  { width: 28px; height: 28px; border-radius: 50%; background: #e5484d; }
+.aud-miolo-stop { width: 24px; height: 24px; border-radius: 8px; background: linear-gradient(135deg, #f8cb9d, #c9baff); }
+.aud-ico-pausa {
+  position: absolute; inset: 0; margin: auto;
+  width: 17px; height: 20px;
+  border-left: 5px solid #ececf1;
+  border-right: 5px solid #ececf1;
+}
+.aud-ico-play {
+  position: absolute; inset: 0; margin: auto;
+  width: 0; height: 0;
+  border-left: 17px solid #ececf1;
+  border-top: 10px solid transparent;
+  border-bottom: 10px solid transparent;
+  transform: translateX(3px);
+}
 .aud-preview { width: 100%; display: flex; flex-direction: column; align-items: center; gap: 12px; }
 .aud-preview audio { width: 100%; }
 .aud-preview-acoes { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
-.aud-erro { font-size: .85rem; color: var(--t-danger); text-align: center; max-width: 380px; }
+/* Botões outline do painel são pensados pra fundo claro; dentro do card
+   escuro precisam de contraste próprio */
+#admin-content .aud-gravador .ag-btn-outline {
+  border-color: #3a3a45;
+  color: #e8e8ee;
+}
+#admin-content .aud-gravador .ag-btn-outline:hover:not(:disabled) {
+  background: #26262e;
+  color: #fff;
+}
+.aud-erro { font-size: .85rem; color: #ff8f8f; text-align: center; max-width: 380px; }
 .aud-erro:empty { display: none; }
 
 .aud-lista { margin-top: 18px; max-width: 460px; }
