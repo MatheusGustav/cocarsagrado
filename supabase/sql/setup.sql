@@ -262,6 +262,11 @@ CREATE TABLE public.pedidos (
   metodo_pagamento    TEXT,
   txid                TEXT,
   pago_em             TIMESTAMPTZ,
+  -- Prova de aceite dos Termos NO ATO do pedido: logado herda a versão do
+  -- perfil (fonte da verdade), guest leva o que o checkout coletou.
+  -- NULL = sem registro (pedidos anteriores a 14/07/2026 ficam NULL —
+  -- não se inventa aceite retroativo).
+  termos_versao       TEXT,
   criado_em           TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   -- vínculo com a conta logada (auth.uid() na criar_pedido); NULL = guest.
   -- Base do histórico de leituras do cliente (RPC minhas_leituras).
@@ -642,14 +647,15 @@ GRANT EXECUTE ON FUNCTION public.confirmar_pedido_pago(text, text) TO service_ro
 -- valor_original = preco_original × qty (1–5; especial = 1); desconto
 -- máximo = promoção ativa do serviço; valor_total = soma dos valor_final.
 CREATE OR REPLACE FUNCTION public.criar_pedido(
-  p_chave        text,
-  p_nome         text,
-  p_nascimento   date,
-  p_whatsapp     text,
-  p_email        text,
-  p_valor_total  numeric,
-  p_itens        jsonb,
-  p_cupom_codigo text DEFAULT NULL
+  p_chave         text,
+  p_nome          text,
+  p_nascimento    date,
+  p_whatsapp      text,
+  p_email         text,
+  p_valor_total   numeric,
+  p_itens         jsonb,
+  p_cupom_codigo  text DEFAULT NULL,
+  p_termos_versao text DEFAULT NULL
 )
 RETURNS text
 LANGUAGE plpgsql
@@ -684,6 +690,7 @@ DECLARE
   v_i              integer;
   v_share_cents    numeric;
   v_resto_cents    numeric;
+  v_termos         text;
 BEGIN
   v_n := COALESCE(jsonb_array_length(p_itens), 0);
   IF v_n < 1 OR v_n > 4 THEN
@@ -720,13 +727,21 @@ BEGIN
     END IF;
   END IF;
 
+  -- Aceite dos Termos gravado no pedido (prova por transação). Logado usa
+  -- a versão do PERFIL (aceita no cadastro/re-aceite — o front nem envia);
+  -- guest e logado-sem-perfil usam o que o checkbox do checkout coletou.
+  -- NULL = nenhum aceite registrado (fica visível, não se mascara).
+  SELECT termos_versao INTO v_termos FROM public.perfis WHERE id = auth.uid();
+  v_termos := COALESCE(v_termos, NULLIF(trim(p_termos_versao), ''));
+
   INSERT INTO public.pedidos (
     chave_pedido, cliente_nome, cliente_nascimento, cliente_whatsapp,
-    cliente_email, valor_total, status, cupom_codigo, user_id
+    cliente_email, valor_total, status, cupom_codigo, user_id, termos_versao
   ) VALUES (
     p_chave, p_nome, p_nascimento, p_whatsapp,
     p_email, p_valor_total, 'pendente', v_cupom_cod,
-    auth.uid()  -- NULL para guest; base do histórico do cliente logado
+    auth.uid(),  -- NULL para guest; base do histórico do cliente logado
+    v_termos
   )
   RETURNING id INTO v_pedido_id;
 
@@ -871,7 +886,7 @@ BEGIN
 END;
 $$;
 
-GRANT EXECUTE ON FUNCTION public.criar_pedido(text, text, date, text, text, numeric, jsonb, text) TO anon;
+GRANT EXECUTE ON FUNCTION public.criar_pedido(text, text, date, text, text, numeric, jsonb, text, text) TO anon;
 
 -- pedidos — anon NÃO tem acesso direto. Criação só via RPC criar_pedido
 -- (SECURITY DEFINER). INSERT direto de anon (WITH CHECK TRUE) permitia
@@ -1324,10 +1339,12 @@ BEGIN
 
   INSERT INTO public.pedidos (
     chave_pedido, cliente_nome, cliente_nascimento, cliente_whatsapp,
-    cliente_email, valor_total, status, user_id
+    cliente_email, valor_total, status, user_id, termos_versao
   ) VALUES (
     p_chave, v_ag.cliente_nome, v_ag.cliente_nascimento, v_ag.cliente_whatsapp,
-    v_ag.cliente_email, v_delta, 'pendente', v_uid
+    v_ag.cliente_email, v_delta, 'pendente', v_uid,
+    -- complemento é sempre logado: prova de aceite vem do perfil
+    (SELECT termos_versao FROM public.perfis WHERE id = v_uid)
   )
   RETURNING id INTO v_pedido_id;
 
