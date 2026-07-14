@@ -626,10 +626,10 @@ async function irParaPagamentoCarrinho() {
     return;
   }
 
-  // Guest precisa aceitar os termos antes de pagar. Logado nunca vê o
-  // checkbox (regra do Matheus): o aceite já fica registrado no perfil.
+  // Sem aceite em dia no perfil, o checkbox é obrigatório antes de pagar
+  // (guest, logado sem perfil ou com termos desatualizados).
   const termosChk = document.getElementById('carrinho-termos');
-  if (!window._csLogado && !window._csTermosOk && !(termosChk && termosChk.checked)) {
+  if (!window._csTermosOk && !(termosChk && termosChk.checked)) {
     mostrarAlerta('Aceite os Termos de Uso para continuar.', 'error');
     return;
   }
@@ -1015,11 +1015,12 @@ function _atualizarBotoesCarrinho() {
   const termosChk = document.getElementById('carrinho-termos');
   if (addBtn) addBtn.disabled = Estado.carrinho.length >= 4;
 
-  // Guest (não logado) precisa aceitar a cada pedido. Logado NUNCA vê o
-  // checkbox (window._csLogado): aceitou ao criar a conta e o re-aceite
-  // de versão nova acontece no login, não no carrinho.
+  // Só quem tem aceite EM DIA no perfil (window._csTermosOk) pula o
+  // checkbox. Guest aceita a cada pedido; logado sem perfil completo ou
+  // com termos desatualizados também vê — sem isso ele pagaria sem
+  // aceite nenhum e o pedido ficaria sem prova no banco.
   const temItens = Estado.carrinho.length > 0;
-  const exigeTermos = temItens && !window._csLogado && !window._csTermosOk;
+  const exigeTermos = temItens && !window._csTermosOk;
   if (termosEl) termosEl.hidden = !exigeTermos;
 
   if (payBtn) {
@@ -1142,6 +1143,11 @@ async function salvarMultiplosAgendamentos(itensPre) {
     p_valor_total: totalCobrar,
     p_itens: payloadItens,
     p_cupom_codigo: Estado.cupom?.codigo || null,
+    // Prova de aceite gravada no pedido. Logado com perfil em dia o
+    // servidor usa a versão do perfil; aqui vai o aceite do checkbox
+    // (guest / logado sem perfil). null = sem aceite — fica registrado.
+    p_termos_versao: (window._csTermosOk || document.getElementById('carrinho-termos')?.checked)
+      ? window.TERMOS_VERSAO : null,
   });
 
   if (rpcErr) {
