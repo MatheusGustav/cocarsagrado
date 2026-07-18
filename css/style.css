@@ -224,10 +224,6 @@ button:focus-visible,
   display: block;
 }
 
-[data-theme="dark"] .eyebrow {
-  color: var(--color-gold);
-}
-
 .eyebrow--muted {
   color: var(--color-text-muted);
 }
@@ -352,8 +348,6 @@ button:focus-visible,
   background: var(--color-primary);
   color: var(--color-text-on-dark);
 }
-
-
 
 
 /* ============================================================
@@ -551,16 +545,10 @@ body.cs-chat-active .nav-chat-btn { color: var(--color-gold); }
 .nav-account-btn--logged-in .nav-account-icon { display: none; }
 .nav-account-btn--logged-in .nav-account-initial { display: flex; }
 
-/* Mobile: toggle + chat colados ao hambúrguer, empurrados pra direita */
+/* Mobile: conta + chat colados ao hambúrguer, empurrados pra direita */
 @media (max-width: 768px) {
   .nav-links .nav-theme-wrapper { display: none; }
   .header-inner { gap: 0.5rem; }
-  .theme-toggle--mobile {
-    width: 40px;
-    height: 40px;
-    min-width: 40px;
-    font-size: 20px;
-  }
   .nav-chat-btn--mobile {
     width: 40px;
     height: 40px;
@@ -579,7 +567,6 @@ body.cs-chat-active .nav-chat-btn { color: var(--color-gold); }
 @media (min-width: 769px) {
   .nav-chat-btn--mobile { display: none; }
   .nav-account-btn--mobile { display: none; }
-  .theme-toggle.theme-toggle--mobile { display: none; }
   .nav-theme-wrapper { gap: 4px; }
 }
 
@@ -1425,7 +1412,6 @@ body.cs-chat-active .nav-chat-btn { color: var(--color-gold); }
 }
 
 
-
 /* ============================================================
    SEÇÃO CONECTAR (Instagram + Contato)
    Fundo escuro verde — destaque do convite à conexão.
@@ -1829,10 +1815,6 @@ body.cs-chat-active .nav-chat-btn { color: var(--color-gold); }
   letter-spacing: 0.04em;
   color: var(--color-gold-shadow);
   font-style: italic;
-}
-
-[data-theme="dark"] .depos-count {
-  color: var(--color-gold);
 }
 
 /* Carrossel infinito de depoimentos — esteira contínua com cards 4:5. */
@@ -2282,46 +2264,6 @@ body.cs-chat-active .nav-chat-btn { color: var(--color-gold); }
   }
 }
 
-
-/* ============================================================
-   BOTÃO DE TEMA (sol/lua)
-   ============================================================ */
-
-.theme-toggle {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 36px;
-  height: 36px;
-  min-width: 36px;
-  background: transparent;
-  border: none;
-  border-radius: 50%;
-  cursor: pointer;
-  font-size: 18px;
-  line-height: 1;
-  flex-shrink: 0;
-  transition: background 0.2s ease;
-}
-
-.theme-toggle:hover  { background: rgba(255, 255, 255, 0.12); }
-.theme-toggle:active { background: rgba(255, 255, 255, 0.2); }
-.theme-toggle:focus  { outline: none; }
-.theme-toggle:focus-visible { box-shadow: 0 0 0 2px var(--color-focus-ring); }
-
-@keyframes theme-spin {
-  from { transform: rotate(0deg); }
-  to   { transform: rotate(360deg); }
-}
-
-.theme-toggle.rotating { animation: theme-spin 0.4s ease; }
-
-.theme-toggle .icon-dark  { display: none; }
-.theme-toggle .icon-light { display: inline; }
-
-[data-theme="dark"] .theme-toggle .icon-dark  { display: inline; }
-[data-theme="dark"] .theme-toggle .icon-light { display: none; }
-
 .nav-theme-wrapper {
   display: flex;
   flex-direction: column;
@@ -2330,17 +2272,6 @@ body.cs-chat-active .nav-chat-btn { color: var(--color-gold); }
   order: -1;
   padding-bottom: 14px;
   border-bottom: 1px solid rgba(237, 221, 184, 0.12);
-}
-
-.nav-theme-label {
-  font-family: var(--fonte-corpo);
-  font-size: 10px;
-  font-weight: 500;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.5);
-  padding-left: 2px;
-  user-select: none;
 }
 
 @media (min-width: 769px) {
@@ -2352,113 +2283,7 @@ body.cs-chat-active .nav-chat-btn { color: var(--color-gold); }
     border-bottom: none;
     gap: 4px;
   }
-  .nav-theme-label { display: none; }
 }
-
-
-/* ============================================================
-   MODO ESCURO — [data-theme="dark"]
-   ============================================================ */
-
-[data-theme="dark"] {
-  color-scheme: dark;
-  --color-primary:          #3E6B45;
-  --color-primary-hover:    #9DBF94;
-  --color-primary-deep:     #213D2C;
-  --color-primary-light:    #9DBF94;
-  --color-primary-whisper:  #213D2C;
-  --color-bg-page:          #0E1A12;
-  --color-bg-section-alt:   #152215;
-  --color-bg-card:          #18271C;
-  --color-cat-card:         #18271C;
-  --color-bg-dark:          #080F08;
-  --color-bg-dark-deep:     #080F08;
-  --color-text-primary:     #C8BC8A;
-  --color-text-body:        #B8AC7A;
-  --color-text-muted:       #8C8770;
-  --color-text-link:        #D9B776;
-  --color-text-on-dark:     #C8BC8A;
-  --color-neutral-white:    #18271C;
-  --color-neutral-ivory:    #0E1A12;
-  --color-neutral-sand:     #152215;
-  --color-neutral-stone:    #293A2A;
-  --color-neutral-driftwood:#8C8770;
-  --color-gold:             #D9B776;
-  --color-gold-deep:        #C99A4E;
-  --color-gold-light:       #E8D3A0;
-  --color-gold-mist:        #1A1500;
-  --color-focus-ring:       #D9B776;
-  --color-hover-green:      #9DBF94;
-  --color-hover-gold:       #C99A4E;
-  --borda-dourada-translucida: 1px solid rgba(217, 183, 118, 0.22);
-}
-
-.theme-switching *,
-.theme-switching *::before,
-.theme-switching *::after {
-  transition: background-color 0.3s ease, background 0.3s ease,
-              color 0.3s ease, border-color 0.3s ease,
-              box-shadow 0.3s ease !important;
-}
-
-
-/* Ritmo de seções no escuro: preto → verde → preto → verde.
-   O preto profundo abre no hero e emoldura o catálogo; os cards
-   (um degrau mais claro) saltam do fundo. */
-[data-theme="dark"] .hero     { background: var(--color-bg-dark-deep); }
-[data-theme="dark"] .sobre    { background: #152215; }
-[data-theme="dark"] .catalogo { background: var(--color-bg-dark-deep); }
-[data-theme="dark"] .conectar { background: #152215; }
-
-[data-theme="dark"] .hero-quote        { color: var(--color-gold); }
-[data-theme="dark"] .stat-num          { color: var(--color-gold-light); }
-
-[data-theme="dark"] .cat-card {
-  border-color: rgba(217, 183, 118, 0.28);
-  box-shadow: 0 0 12px rgba(201, 154, 78, 0.08);
-}
-[data-theme="dark"] .cat-card:hover {
-  border-color: var(--color-gold);
-  box-shadow: 0 4px 16px rgba(201, 154, 78, 0.12);
-}
-[data-theme="dark"] .cat-footer        { border-top-color: #2A2A2A; }
-[data-theme="dark"] .cat-filters       { border-color: rgba(201, 154, 78, 0.2); }
-[data-theme="dark"] .cat-filter        { color: var(--color-text-muted); }
-[data-theme="dark"] .cat-filter:hover  {
-  background: rgba(245, 240, 232, 0.06);
-  color: var(--color-text-primary);
-  border-color: rgba(245, 240, 232, 0.15);
-}
-[data-theme="dark"] .cat-filter.active { color: var(--color-gold-light); }
-
-[data-theme="dark"] .btn-outline {
-  color: var(--color-gold-light);
-  border-color: rgba(217, 183, 118, 0.5);
-}
-[data-theme="dark"] .btn-outline:hover {
-  background: var(--color-primary);
-  color: var(--color-gold-light);
-  border-color: var(--color-primary);
-}
-
-[data-theme="dark"] .btn-fill          { box-shadow: 0 0 16px rgba(21, 40, 28, 0.3); }
-[data-theme="dark"] .cta-bar-title     { color: var(--color-text-primary); }
-[data-theme="dark"] .depo-card         { border-color: rgba(201, 154, 78, 0.15); }
-
-@media (min-width: 769px) {
-  [data-theme="dark"] .col-ig .ig-handle { color: var(--color-gold); }
-  [data-theme="dark"] .col-ig .btn-outline-small {
-    color: var(--color-gold-light);
-    border-color: var(--color-gold);
-  }
-  [data-theme="dark"] .col-ig .btn-outline-small:hover {
-    background: var(--color-gold);
-    color: var(--color-primary-deep);
-  }
-}
-
-
-
 
 
 /* ============================================================
@@ -2506,11 +2331,6 @@ body.cs-chat-active .nav-chat-btn { color: var(--color-gold); }
 .cat-card--destaque {
   border-color: var(--color-gold-light);
   box-shadow: 0 4px 20px rgba(192, 149, 78, 0.35);
-}
-
-[data-theme="dark"] .cat-card--destaque {
-  border-color: var(--color-gold);
-  box-shadow: 0 0 18px rgba(217, 183, 118, 0.14);
 }
 
 /* Wrapper de preço com desconto (cards simples) */
@@ -2572,12 +2392,6 @@ body.cs-chat-active .nav-chat-btn { color: var(--color-gold); }
   color: var(--color-gold-light);
 }
 
-/* Modo escuro */
-[data-theme="dark"] .cat-price-desconto,
-[data-theme="dark"] .cat-price-desconto-small {
-  color: var(--color-gold-light);
-}
-
 /* Badge de modalidade de atendimento */
 .cat-name-row {
   display: flex;
@@ -2617,17 +2431,6 @@ body.cs-chat-active .nav-chat-btn { color: var(--color-gold); }
   background: rgba(168, 196, 158, 0.14);
   color: #A8C49E;
   border: 1px solid rgba(168, 196, 158, 0.4);
-}
-
-[data-theme="dark"] .cat-badge-atendimento--video {
-  background: var(--color-gold-deep);
-  color: var(--color-bg-page);
-  border-color: rgba(217, 183, 118, 0.4);
-}
-
-[data-theme="dark"] .cat-badge-atendimento--mensagem {
-  background: rgba(33, 61, 44, 0.90);
-  border-color: rgba(217, 183, 118, 0.25);
 }
 
 /* ============================================================
@@ -2699,24 +2502,6 @@ body.cs-chat-active .nav-chat-btn { color: var(--color-gold); }
   letter-spacing: 0.05em;
   vertical-align: middle;
   line-height: 1.4;
-}
-
-[data-theme="dark"] .inapp-card {
-  background: var(--color-bg-card);
-  box-shadow: 0 8px 40px rgba(0,0,0,0.5);
-}
-
-[data-theme="dark"] .inapp-text {
-  color: var(--color-text-primary);
-}
-
-[data-theme="dark"] .inapp-close {
-  color: var(--color-gold);
-}
-
-[data-theme="dark"] .inapp-dots-badge {
-  background: var(--color-neutral-stone);
-  color: var(--color-text-primary);
 }
 
 /* ============================================================

@@ -280,20 +280,6 @@ body.modal-aberto { overflow: hidden; }
   border-right: 8px solid #F5F2E6;
   filter: drop-shadow(-1px 0 0 #ECE3D0);
 }
-[data-theme="dark"] .pag-pantero-balao {
-  background: rgba(217, 183, 118, 0.08);
-  border-color: rgba(217, 183, 118, 0.22);
-  color: #ECE3D0;
-}
-[data-theme="dark"] .pag-pantero-balao strong { color: #E8D3A0; }
-[data-theme="dark"] .pag-pantero-balao::before {
-  border-right-color: rgba(36, 50, 35, 0.95);
-  filter: drop-shadow(-1px 0 0 rgba(217, 183, 118, 0.22));
-}
-[data-theme="dark"] .pag-pantero-avatar {
-  background: #18271C;
-  border-color: #D9B776;
-}
 @media (max-width: 480px) {
   .pag-pantero-avatar { width: 52px; height: 52px; }
   .pag-pantero-balao { font-size: .85rem; padding: 9px 12px; }
@@ -322,72 +308,6 @@ body.modal-aberto { overflow: hidden; }
 }
 
 /* Dark mode — alinhado ao verde-esverdeado do hero (#0E1A12 page / #18271C card) */
-[data-theme="dark"] .modal-container {
-  background: #18271C;
-  border-color: rgba(217, 183, 118, 0.22);
-}
-[data-theme="dark"] .modal-header {
-  background: linear-gradient(180deg, rgba(217, 183, 118, 0.06), transparent);
-  border-color: rgba(217, 183, 118, 0.18);
-}
-[data-theme="dark"] .modal-drag-handle {
-  background: rgba(217, 183, 118, 0.35);
-}
-[data-theme="dark"] .modal-close-btn {
-  background: transparent;
-  border-color: rgba(217, 183, 118, 0.22);
-  color: #8C8770;
-}
-[data-theme="dark"] .modal-tela-step {
-  background: rgba(217, 183, 118, 0.04);
-  border-color: rgba(217, 183, 118, 0.18);
-  color: #8C8770;
-}
-[data-theme="dark"] .pag-voltar-btn {
-  border-color: rgba(217, 183, 118, 0.25);
-  color: #8C8770;
-}
-[data-theme="dark"] .pag-voltar-btn:hover {
-  border-color: #D9B776;
-  color: #E8D3A0;
-  background: rgba(217, 183, 118, 0.08);
-}
-[data-theme="dark"] .modal-overlay {
-  background: rgba(8, 15, 8, 0.82);
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
-}
-[data-theme="dark"] .modal-tela-step .t-num {
-  background: rgba(217, 183, 118, 0.18);
-  color: #8C8770;
-}
-[data-theme="dark"] .modal-tela-step.active {
-  background: rgba(217, 183, 118, 0.14);
-  color: #E8D3A0;
-  border-color: #D9B776;
-  box-shadow: 0 1px 8px rgba(217, 183, 118, 0.22);
-}
-[data-theme="dark"] .modal-tela-step.active .t-num {
-  background: #D9B776;
-  color: #0E1A12;
-}
-[data-theme="dark"] .modal-tela-step.done {
-  background: rgba(168, 196, 158, 0.1);
-  color: #A8C49E;
-  border-color: rgba(168, 196, 158, 0.5);
-}
-[data-theme="dark"] .modal-tela-step.done .t-num {
-  background: #3E6B45;
-  color: #ECE3D0;
-}
-[data-theme="dark"] .modal-progress-sep {
-  color: rgba(217, 183, 118, 0.3);
-}
-[data-theme="dark"] .modal-close-btn:hover {
-  background: rgba(224, 120, 86, 0.12);
-  border-color: rgba(224, 120, 86, 0.5);
-  color: #E07856;
-}
 
 /* ============================================================
    Carrinho — Revisão de múltiplas leituras
@@ -545,15 +465,6 @@ body.modal-aberto { overflow: hidden; }
   padding: 2px 4px;
 }
 .cart-cupom-remover:hover { text-decoration: underline; }
-[data-theme="dark"] .cart-cupom-input {
-  background: rgba(217, 183, 118, 0.05);
-  border-color: rgba(217, 183, 118, 0.3);
-}
-[data-theme="dark"] .cart-cupom-ok {
-  background: rgba(52, 211, 153, 0.1);
-  border-color: rgba(52, 211, 153, 0.25);
-  color: #6ee7b7;
-}
 .ag-btn-spinner {
   display: inline-block;
   width: 14px;
@@ -566,29 +477,6 @@ body.modal-aberto { overflow: hidden; }
   animation: ag-btn-spin .8s linear infinite;
 }
 @keyframes ag-btn-spin { to { transform: rotate(360deg); } }
-[data-theme="dark"] .cart-item {
-  background: rgba(217, 183, 118, 0.05);
-  border-color: rgba(217, 183, 118, 0.2);
-}
-[data-theme="dark"] .cart-item:hover {
-  border-color: rgba(217, 183, 118, 0.45);
-  box-shadow: 0 2px 12px rgba(217, 183, 118, 0.1);
-}
-[data-theme="dark"] .cart-item-header strong { color: #E8D3A0; }
-[data-theme="dark"] .cart-item-price { color: #D9B776; }
-[data-theme="dark"] .cart-total { border-top-color: rgba(217, 183, 118, 0.25); }
-[data-theme="dark"] .cart-total-final {
-  color: #E8D3A0;
-  border-top-color: rgba(217, 183, 118, 0.18);
-}
-[data-theme="dark"] .cart-item-remove { color: #E07856; }
-[data-theme="dark"] .cart-item-remove:hover {
-  background: rgba(224, 120, 86, 0.12);
-}
-[data-theme="dark"] .cart-item-badge-desc {
-  background: rgba(168, 196, 158, 0.14);
-  color: #A8C49E;
-}
 
 /* ============================================================
    Botão flutuante "retomar pedido / continuar carrinho"

@@ -398,42 +398,6 @@ function inicializarScrollSuave() {
 
 
 /* ============================================================
-   7. TOGGLE DE TEMA (CLARO / ESCURO)
-   ============================================================ */
-
-// Mantém a cor da barra do navegador alinhada ao tema atual
-function sincronizarThemeColor() {
-  const dark = document.documentElement.getAttribute('data-theme') === 'dark';
-  document.querySelector('meta[name="theme-color"]')
-    ?.setAttribute('content', dark ? '#080F08' : '#142E20');
-}
-
-function inicializarToggleTema() {
-  const btns = document.querySelectorAll('.theme-toggle');
-  if (!btns.length) return;
-
-  btns.forEach((btn) => {
-    btn.addEventListener('click', () => {
-      const temaAtual = document.documentElement.getAttribute('data-theme') || 'light';
-      const novoTema = temaAtual === 'dark' ? 'light' : 'dark';
-
-      btn.classList.add('rotating');
-      btn.addEventListener('animationend', () => {
-        btn.classList.remove('rotating');
-        btn.blur();
-      }, { once: true });
-
-      document.documentElement.classList.add('theme-switching');
-      document.documentElement.setAttribute('data-theme', novoTema);
-      sincronizarThemeColor();
-      setTimeout(() => document.documentElement.classList.remove('theme-switching'), 350);
-    });
-  });
-}
-
-
-
-/* ============================================================
    9. MODAL NAVEGADOR IN-APP (Instagram / TikTok)
    ============================================================ */
 
@@ -488,10 +452,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // 6. Scroll suave para âncoras
   inicializarScrollSuave();
-
-  // 7. Toggle de tema claro/escuro
-  inicializarToggleTema();
-  sincronizarThemeColor();
 
   // 8. Sistema de descontos (usuários que retornam já com escolha feita)
   if (typeof renderizarDescontos === 'function') {

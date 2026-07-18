@@ -4,70 +4,22 @@
    Tipografia: Cormorant Garamond + DM Sans
    ============================================================ */
 
-/* Override das variáveis para paleta Cocar Sagrado */
+/* Override das variáveis para paleta Cocar Sagrado — tema único escuro */
 :root {
   --primary:   #2D4A2D;
   --secondary: #B8923E;
   --accent:    #D4B254;
-  --bg:        #F5F2E6;
-  --surface:   #FFFFFF;
-  --text:      #1A1410;
-  --text-muted:#8C8478;
-  --border:    #DDD5C8;
-  --danger:    #B91C1C;
-  --radius:    12px;
-  --shadow:    0 2px 12px rgba(1,55,24,0.10);
-  --shadow-lg: 0 8px 28px rgba(1,55,24,0.14);
-
-  /* Tons derivados (claro) — sobrescritos no modo escuro */
-  --bd-gold: #C8B785;
-  --bd-gray-1: #DDD;
-  --bd-gray-2: #AAA;
-  --bd-primary: #2D4A2D;
-  --bd-soft: #EDE8D2;
-  --primary-ink: #2D4A2D;
-  --s-cream-1: #FAF7F2;
-  --s-cream-2: #FFFDF7;
-  --s-cream-3: #FBF8F2;
-  --s-cream-4: #FDFAF5;
-  --s-cream-5: #F7F4EC;
-  --s-cream-6: #F9F6F0;
-  --s-danger: #FEECEC;
-  --s-gold-1: #FDF3DC;
-  --s-gold-2: #FFFCF2;
-  --s-gold-3: #F5EDD5;
-  --s-sand-1: #F0EDE0;
-  --s-sand-2: #F0EDE8;
-  --s-sand-3: #EEE;
-  --s-stone-1: #E8DFC8;
-  --s-stone-2: #EAE5D8;
-  --s-stone-3: #CCC;
-  --secondary-ink: #B8923E;
-  --t-brown: #4A4238;
-  --t-danger: #B91C1C;
-  --t-danger-deep: #991B1B;
-  --t-gold-700: #8A6E28;
-  --t-gold-900: #5A481A;
-  --t-gold-950: #7A5C0A;
-  --t-gray: #888;
-  --t-placeholder: #B8AE9C;
-  --t-sage: #7A9B72;
-  --t-stone: #6B655B;
-  --t-success: #15803D;
-  --t-taupe: #6B5D4D;
-  --t-warn: #B45309;
-}
-/* ============================================================
-   MODO ESCURO — automático por horário (admin-shell.js)
-   ============================================================ */
-[data-theme="dark"] {
   --bg:        #0F1A0F;
   --surface:   #1A2818;
   --text:      #E8E2CC;
   --text-muted:#8A8260;
   --border:    #2A3A28;
+  --danger:    #B91C1C;
+  --radius:    12px;
   --shadow:    0 2px 12px rgba(0,0,0,0.45);
   --shadow-lg: 0 8px 28px rgba(0,0,0,0.55);
+
+  /* Tons derivados */
   --bd-gold: #5A5230;
   --bd-gray-1: #2A3A28;
   --bd-gray-2: #8A8260;
@@ -3451,7 +3403,7 @@ body.drawer-aberto { overflow: hidden; }
   pointer-events: none; /* balão não bloqueia cliques; a bolinha reativa abaixo */
 }
 .mascote-balao {
-  background: #fff; color: #1A1410; border: 1px solid #DDD5C8;
+  background: #1A2818; color: #E8E2CC; border: 1px solid #2A3A28;
   border-radius: 14px; padding: 9px 13px;
   font-size: .82rem; line-height: 1.25; max-width: 210px;
   box-shadow: 0 8px 22px rgba(0,0,0,.22);
@@ -3476,17 +3428,14 @@ body.drawer-aberto { overflow: hidden; }
 /* Cantos esquerdos: bolinha no canto, balão abre pra direita */
 .mascote-chefe.mascote-esquerda { flex-direction: row-reverse; }
 .mascote-chefe.balao-oculto .mascote-balao { opacity: 0; transform: scale(.85); }
-.mascote-pendente .mascote-balao { background: #fff1f1; border-color: #B91C1C; color: #B91C1C; }
+.mascote-pendente .mascote-balao { background: #3A1717; border-color: #B91C1C; color: #FCA5A5; }
 .mascote-pendente { animation: mascote-treme .4s ease-in-out infinite; }
 @keyframes mascote-treme {
   0%,100% { transform: translateX(0); }
   25%     { transform: translateX(-2px); }
   75%     { transform: translateX(2px); }
 }
-.mascote-grana .mascote-balao { background: #fff4d6; border-color: #B8923E; color: #6b5118; }
-[data-theme="dark"] .mascote-balao { background: #1A2818; color: #E8E2CC; border-color: #2A3A28; }
-[data-theme="dark"] .mascote-pendente .mascote-balao { background: #3A1717; border-color: #B91C1C; color: #FCA5A5; }
-[data-theme="dark"] .mascote-grana .mascote-balao { background: #2A2310; border-color: #B8923E; color: #E8C97E; }
+.mascote-grana .mascote-balao { background: #2A2310; border-color: #B8923E; color: #E8C97E; }
 @media (max-width: 700px) {
   .mascote-chefe { right: 10px; bottom: 10px; gap: 6px; }
   .mascote-img { width: 54px; height: 54px; border-width: 2px; }
@@ -3570,13 +3519,6 @@ body.drawer-aberto { overflow: hidden; }
 .adm-janela-info { text-align: center; font-size: .72rem; color: var(--text-muted); margin-top: 4px; }
 
 /* Botão de tema na sidebar */
-.adm-tema-btn {
-  width: 100%; margin-bottom: 8px; padding: 8px;
-  background: transparent; border: 1px solid var(--bd-gray-1, #2a3a2a);
-  border-radius: 8px; cursor: pointer; font-size: .8rem;
-  color: inherit; opacity: .85;
-}
-.adm-tema-btn:hover { opacity: 1; }
 .adm-sidebar-footer { margin-top: auto; }
 .adm-versao { margin-top: 6px; font-size: .7rem; color: #5a5a4a; }
 
