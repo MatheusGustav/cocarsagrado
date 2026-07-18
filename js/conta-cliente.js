@@ -576,6 +576,10 @@ document.addEventListener('DOMContentLoaded', () => {
   async function carregarHistorico() {
     if (!historicoLista) return;
     historicoLista.innerHTML = '<p class="conta-historico-vazio">Carregando…</p>';
+    // Adota pedidos feitos como guest com o e-mail desta conta (verificado
+    // no OTP) ANTES de ler o histórico — aparecem retroativamente. Falha
+    // aqui não derruba o histórico (idempotente, tenta de novo na próxima).
+    await window.supabase.rpc('reivindicar_pedidos');
     const [{ data, error }, audiosRes] = await Promise.all([
       window.supabase.rpc('minhas_leituras'),
       window.supabase.rpc('meus_audios'), // erro aqui só esconde os áudios

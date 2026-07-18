@@ -252,6 +252,8 @@ CREATE TABLE public.pedidos (
   cliente_nome        TEXT NOT NULL,
   cliente_nascimento  DATE,
   cliente_whatsapp    TEXT NOT NULL,
+  -- Normalizado (lower/trim) na criar_pedido. Logado = e-mail do JWT;
+  -- guest = o do checkout, chave da adoção futura (reivindicar_pedidos).
   cliente_email       TEXT,
   valor_total         NUMERIC(10,2) NOT NULL CHECK (valor_total >= 0),
   aceitou_desconto_10 BOOLEAN NOT NULL DEFAULT FALSE,
@@ -276,6 +278,9 @@ CREATE INDEX idx_pedidos_chave     ON public.pedidos (chave_pedido);
 CREATE INDEX idx_pedidos_status    ON public.pedidos (status);
 CREATE INDEX idx_pedidos_whatsapp  ON public.pedidos (regexp_replace(cliente_whatsapp, '\D', '', 'g'));
 CREATE INDEX idx_pedidos_user      ON public.pedidos (user_id) WHERE user_id IS NOT NULL;
+-- Busca da reivindicação: só pedidos órfãos (guest) com e-mail.
+CREATE INDEX idx_pedidos_email_guest ON public.pedidos (lower(trim(cliente_email)))
+  WHERE user_id IS NULL AND cliente_email IS NOT NULL;
 
 -- ============================================================
 -- 4) AGENDAMENTOS (filho — N por pedido)
@@ -691,6 +696,7 @@ DECLARE
   v_share_cents    numeric;
   v_resto_cents    numeric;
   v_termos         text;
+  v_email          text;
 BEGIN
   v_n := COALESCE(jsonb_array_length(p_itens), 0);
   IF v_n < 1 OR v_n > 4 THEN
@@ -734,12 +740,20 @@ BEGIN
   SELECT termos_versao INTO v_termos FROM public.perfis WHERE id = auth.uid();
   v_termos := COALESCE(v_termos, NULLIF(trim(p_termos_versao), ''));
 
+  -- E-mail do pedido: logado usa o e-mail VERIFICADO da conta (JWT);
+  -- guest usa o do checkout. Normalizado (lower/trim) porque é a chave
+  -- da adoção futura em reivindicar_pedidos().
+  v_email := COALESCE(
+    lower(NULLIF(trim(auth.jwt()->>'email'), '')),
+    lower(NULLIF(trim(p_email), ''))
+  );
+
   INSERT INTO public.pedidos (
     chave_pedido, cliente_nome, cliente_nascimento, cliente_whatsapp,
     cliente_email, valor_total, status, cupom_codigo, user_id, termos_versao
   ) VALUES (
     p_chave, p_nome, p_nascimento, p_whatsapp,
-    p_email, p_valor_total, 'pendente', v_cupom_cod,
+    v_email, p_valor_total, 'pendente', v_cupom_cod,
     auth.uid(),  -- NULL para guest; base do histórico do cliente logado
     v_termos
   )
@@ -826,7 +840,7 @@ BEGIN
       v_pedido_id,
       v_tipo.id,
       v_item->>'terapeuta',
-      p_nome, p_nascimento, p_whatsapp, p_email,
+      p_nome, p_nascimento, p_whatsapp, v_email,
       v_item->>'observacoes',
       (v_item->>'data')::date,
       (v_item->>'horario')::time,
@@ -1231,6 +1245,42 @@ $$;
 
 REVOKE ALL ON FUNCTION public.minhas_leituras() FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION public.minhas_leituras() TO authenticated;
+
+-- reivindicar_pedidos: adota pedidos guest cujo cliente_email bate com o
+-- e-mail VERIFICADO da sessão (OTP) — histórico aparece retroativamente.
+-- Seguro porque o vínculo exige provar o e-mail: quem digita e-mail alheio
+-- no checkout DOA o próprio pedido, nunca rouba histórico (diferente do
+-- WhatsApp, não verificado). Idempotente; o front chama antes de
+-- minhas_leituras() ao abrir o drawer.
+CREATE OR REPLACE FUNCTION public.reivindicar_pedidos()
+RETURNS integer
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_email text;
+  v_n     integer;
+BEGIN
+  IF auth.uid() IS NULL THEN
+    RETURN 0;
+  END IF;
+  v_email := lower(NULLIF(trim(auth.jwt()->>'email'), ''));
+  IF v_email IS NULL THEN
+    RETURN 0;
+  END IF;
+
+  UPDATE public.pedidos
+  SET user_id = auth.uid()
+  WHERE user_id IS NULL
+    AND lower(trim(cliente_email)) = v_email;
+  GET DIAGNOSTICS v_n = ROW_COUNT;
+  RETURN v_n;
+END;
+$$;
+
+REVOKE ALL ON FUNCTION public.reivindicar_pedidos() FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.reivindicar_pedidos() TO authenticated;
 
 -- criar_pedido_complemento: cria o pedido da DIFERENÇA. Valida dono/
 -- janela/elegibilidade e calcula o delta 100% no servidor (tabela
