@@ -1397,32 +1397,6 @@ function escapeAttr(s) {
 // ============================================================
 // Init
 // ============================================================
-// ============================================================
-// Tema (auto | claro | escuro) — preferência no localStorage
-// ============================================================
-const _TEMA_ORDEM = ['auto', 'claro', 'escuro'];
-const _TEMA_ICONE = { auto: '🌗', claro: '☀️', escuro: '🌙' };
-
-function _temaAtual() {
-  try { return localStorage.getItem('adm_tema') || 'auto'; } catch { return 'auto'; }
-}
-
-function _ciclarTema() {
-  const prox = _TEMA_ORDEM[(_TEMA_ORDEM.indexOf(_temaAtual()) + 1) % _TEMA_ORDEM.length];
-  try { localStorage.setItem('adm_tema', prox); } catch {}
-  if (typeof window._aplicarTemaAdmin === 'function') window._aplicarTemaAdmin();
-  _atualizarRotuloTema();
-}
-
-function _atualizarRotuloTema() {
-  const btn = document.getElementById('adm-tema-btn');
-  const modo = _temaAtual();
-  if (btn) btn.textContent = `${_TEMA_ICONE[modo]} Tema: ${modo}`;
-}
-
-// ============================================================
-// Init
-// ============================================================
 let _buscaDebounce = null;
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -1444,8 +1418,6 @@ document.addEventListener('DOMContentLoaded', () => {
     _janelaDias = _janelaDias + 180 > 730 ? 0 : _janelaDias + 180;
     carregarAgendamentos();
   });
-  document.getElementById('adm-tema-btn')?.addEventListener('click', _ciclarTema);
-  _atualizarRotuloTema();
   document.getElementById('adm-logout-btn')?.addEventListener('click', _fazerLogout);
   tornarMascoteArrastavel();
   // Trocar de tela (qualquer link da nav) re-sorteia a fala do mascote.

@@ -43,11 +43,6 @@ body.conta-drawer-aberto { overflow: hidden; }
   box-sizing: border-box;
   overflow-y: auto;
 }
-[data-theme="dark"] .conta-drawer-panel {
-  --cd-erro: #E28B84;
-  --cd-hairline: rgba(217, 183, 118, 0.28);
-  --cd-hairline-suave: rgba(217, 183, 118, 0.16);
-}
 .conta-drawer-overlay.open .conta-drawer-panel { transform: translateX(0); }
 
 /* Enquanto arrasta a alça, desliga a transição pra acompanhar o cursor sem lag */
