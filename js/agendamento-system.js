@@ -1052,7 +1052,9 @@ function _prepararDadosPessoais() {
     nome: (document.getElementById('f-nome')?.value || '').trim(),
     nascimento: dataBrParaISO(document.getElementById('f-nasc')?.value || ''),
     whatsapp: obterWhatsappCompleto(),
-    email: '', // não coletado no site; RPC criar_pedido recebe null
+    // Guest: chave da adoção futura do pedido (reivindicar_pedidos).
+    // Logado: o campo fica oculto e o servidor usa o e-mail do JWT.
+    email: (document.getElementById('f-email')?.value || '').trim().toLowerCase(),
   };
 }
 
@@ -1063,7 +1065,9 @@ function validarDadosPessoais() {
     { id: 'f-nasc', date: true, msg: 'Data de nascimento inválida.' },
     { id: 'f-fone', minLen: 6, msg: 'Número inválido.' },
   ];
-  campos.forEach(({ id, minLen, date, msg }) => {
+  // E-mail só é exigido de guest — logado nem vê o campo (vai o da conta).
+  if (!window._csLogado) campos.push({ id: 'f-email', email: true, msg: 'E-mail inválido.' });
+  campos.forEach(({ id, minLen, date, email, msg }) => {
     const el = document.getElementById(id);
     if (!el) return;
     _limparErroField(el);
@@ -1081,7 +1085,9 @@ function validarDadosPessoais() {
           const maxData = new Date(hoje.getFullYear() - 10, hoje.getMonth(), hoje.getDate());
           return d > hoje || d > maxData || d < minData;
         })()
-      : val.length < minLen;
+      : email
+        ? !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(val)
+        : val.length < minLen;
     if (invalido) { el.classList.add('error'); mostrarErroField(el, msg); ok = false; }
   });
   if (!ok) _focarPrimeiroErro();
@@ -1268,6 +1274,13 @@ function irParaPasso(num) {
     const idx = parseInt(s.dataset.passo, 10);
     s.classList.toggle('active', idx === num);
   });
+
+  // Logado não vê o campo de e-mail — o servidor grava o e-mail da conta.
+  // Guest preenche (é o que liga o pedido ao histórico se criar conta depois).
+  if (num === 0) {
+    const emailGroup = document.getElementById('f-email-group');
+    if (emailGroup) emailGroup.hidden = !!window._csLogado;
+  }
 
   if (num === 2) atualizarResumo();
   if (num === 3 && typeof _renderizarCarrinho === 'function') _renderizarCarrinho();

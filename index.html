@@ -493,6 +493,14 @@
                     <input type="tel" id="f-fone" name="fone" placeholder="(27) 99999-9999" required autocomplete="tel-national">
                   </div>
                 </div>
+                <!-- Guest: e-mail liga o pedido ao histórico se um dia criar conta
+                     (reivindicar_pedidos). Logado não vê — o servidor usa o e-mail
+                     da conta. Sem confirmação de código aqui: fricção zero. -->
+                <div class="ag-form-group" id="f-email-group">
+                  <label for="f-email">E-mail *</label>
+                  <input type="email" id="f-email" name="email" placeholder="seu@email.com" required autocomplete="email" inputmode="email">
+                  <small style="display:block;margin-top:4px;color:var(--text-muted);">Por ele você acompanha seu pedido e acessa seu histórico.</small>
+                </div>
                 <button type="button" class="ag-btn ag-btn-primary" onclick="confirmarDadosPessoais()">
                   Continuar →
                 </button>
