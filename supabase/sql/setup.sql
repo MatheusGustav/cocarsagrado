@@ -1275,6 +1275,17 @@ BEGIN
   WHERE user_id IS NULL
     AND lower(trim(cliente_email)) = v_email;
   GET DIAGNOSTICS v_n = ROW_COUNT;
+
+  -- Áudios gravados enquanto o pedido era guest ficaram com
+  -- user_id NULL (trigger é snapshot no INSERT). Propaga a adoção.
+  UPDATE public.audios_cliente ac
+  SET user_id = auth.uid()
+  FROM public.agendamentos a
+  JOIN public.pedidos p ON p.id = a.pedido_id
+  WHERE a.id = ac.agendamento_id
+    AND ac.user_id IS NULL
+    AND p.user_id = auth.uid();
+
   RETURN v_n;
 END;
 $$;

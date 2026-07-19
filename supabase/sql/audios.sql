@@ -1,12 +1,16 @@
 -- ============================================================
 -- ÁUDIOS DAS LEITURAS — estado atual no banco
--- (espelho da migration 20260708120000_audios_cliente.sql)
+-- (espelho das migrations 20260708120000_audios_cliente.sql
+--  + 20260719120000_reivindicar_audios.sql)
 -- ------------------------------------------------------------
 -- Admin grava áudios na aba "Áudios" do painel; arquivo no bucket
 -- privado "audios", metadados em audios_cliente. Cliente logado
 -- ouve no drawer via meus_audios() + createSignedUrl (a policy de
 -- SELECT em storage.objects autoriza só admin e dono).
 -- user_id NULL = pedido guest (não aparece para ninguém no site).
+-- O user_id é snapshot no INSERT (trigger); quando o guest cria
+-- conta, reivindicar_pedidos() (setup.sql) propaga a adoção para
+-- os áudios órfãos — é isso que faz o áudio "cair" na conta.
 -- enviado_whatsapp_em: reservado para o envio automático futuro.
 -- ============================================================
 
