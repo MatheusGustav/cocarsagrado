@@ -172,7 +172,7 @@ async function _enviarResetSenha() {
   if (error) {
     errorEl.textContent = 'Erro ao enviar: ' + error.message;
   } else {
-    errorEl.style.color = '#7a9b72';
+    errorEl.style.color = '#93AC8F';
     errorEl.textContent = '✓ Link de redefinição enviado! Confira seu e-mail.';
   }
   errorEl.style.display = 'block';
@@ -254,7 +254,7 @@ async function _mostrarMFAEnroll() {
     img.src = _normalizarQrCode(data.totp.qr_code);
     // Fallback: se o SVG não renderizar, orienta usar a chave manual abaixo.
     img.onerror = () => {
-      qr.innerHTML = '<p style="color:#d4c9a8;font-size:.8rem;max-width:200px;text-align:center;">' +
+      qr.innerHTML = '<p style="color:#D2BA7C;font-size:.8rem;max-width:200px;text-align:center;">' +
         'Não foi possível exibir o QR. Use a chave manual abaixo no app autenticador.</p>';
     };
     qr.appendChild(img);
