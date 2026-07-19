@@ -5,12 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>Admin — Cocar Sagrado</title>
   <link rel="manifest" href="manifest.json">
-  <meta name="theme-color" content="#0F1A0F">
+  <meta name="theme-color" content="#0E2117">
   <link rel="icon" href="../images/favicon.webp" type="image/webp">
   <link rel="apple-touch-icon" href="../images/apple-touch-icon.png">
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..700;1,9..144,300..700&family=Figtree:ital,wght@0,300..700;1,300..700&display=swap" rel="stylesheet" />
   <script>
     // Modo embed (?embed=1): painel rodando dentro do drawer "Minha conta"
     // do site — esconde "Ver site" e "Sair" (o drawer cuida dos dois).
@@ -25,6 +25,8 @@
 
 <div class="adm-login-screen" id="adm-login-screen">
   <div class="adm-login-card">
+    <svg class="folha folha--login1" viewBox="0 0 40 64" aria-hidden="true"><path d="M20 3 C 33 18, 35 38, 20 61 C 5 38, 7 18, 20 3 Z" /><path d="M20 12 L 20 52" /></svg>
+    <svg class="folha folha--login2" viewBox="0 0 40 64" aria-hidden="true"><path d="M20 3 C 33 18, 35 38, 20 61 C 5 38, 7 18, 20 3 Z" /><path d="M20 12 L 20 52" /></svg>
     <h1>Cocar Sagrado</h1>
     <p>Painel Administrativo — faça login</p>
     <form id="adm-login-form">
@@ -85,6 +87,7 @@
     <button class="adm-hamburger" id="adm-hamburger" type="button" aria-label="Abrir menu" aria-controls="adm-sidebar" aria-expanded="false">
       <span></span><span></span><span></span>
     </button>
+    <svg class="folha folha--topbar" viewBox="0 0 40 64" aria-hidden="true"><path d="M20 3 C 33 18, 35 38, 20 61 C 5 38, 7 18, 20 3 Z" /><path d="M20 12 L 20 52" /></svg>
     <span class="adm-topbar-title">Cocar Sagrado</span>
   </header>
 
@@ -96,18 +99,19 @@
     <!-- Sidebar -->
     <aside class="adm-sidebar" id="adm-sidebar">
       <div>
+        <svg class="folha folha--brand" viewBox="0 0 40 64" aria-hidden="true"><path d="M20 3 C 33 18, 35 38, 20 61 C 5 38, 7 18, 20 3 Z" /><path d="M20 12 L 20 52" /></svg>
         <h2>Cocar Sagrado</h2>
         <p>Painel Administrativo</p>
       </div>
       <nav class="adm-nav" aria-label="Menu admin">
-        <a href="#agendamentos" class="active" id="nav-agendamentos" data-secao="agendamentos">✦ Painel</a>
-        <a href="#financeiro" id="nav-financeiro" data-secao="financeiro">✦ Financeiro</a>
-        <a href="#vagas" id="nav-vagas" data-secao="vagas">✦ Vagas</a>
-        <a href="#descontos" id="nav-descontos" data-secao="descontos">✦ Descontos</a>
-        <a href="#catalogo" id="nav-catalogo" data-secao="catalogo">✦ Catálogo</a>
-        <a href="#audios" id="nav-audios" data-secao="audios">✦ Áudios</a>
-        <a href="../index.html" target="_blank" id="nav-ver-site">✦ Ver site</a>
-        <a href="dashboard.html" target="_blank" rel="noopener" id="nav-nova-aba">✦ Abrir em nova aba</a>
+        <a href="#agendamentos" class="active" id="nav-agendamentos" data-secao="agendamentos">Painel</a>
+        <a href="#financeiro" id="nav-financeiro" data-secao="financeiro">Financeiro</a>
+        <a href="#vagas" id="nav-vagas" data-secao="vagas">Vagas</a>
+        <a href="#descontos" id="nav-descontos" data-secao="descontos">Descontos</a>
+        <a href="#catalogo" id="nav-catalogo" data-secao="catalogo">Catálogo</a>
+        <a href="#audios" id="nav-audios" data-secao="audios">Áudios</a>
+        <a href="../index.html" target="_blank" id="nav-ver-site">Ver site</a>
+        <a href="dashboard.html" target="_blank" rel="noopener" id="nav-nova-aba">Abrir em nova aba</a>
       </nav>
       <div class="adm-sidebar-footer">
         <button class="adm-logout-btn" id="adm-logout-btn">Sair</button>
