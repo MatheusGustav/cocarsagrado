@@ -1093,11 +1093,11 @@ function validarDadosPessoais() {
   const campos = [
     { id: 'f-nome', minLen: 3, msg: 'Nome deve ter pelo menos 3 caracteres.' },
     { id: 'f-nasc', date: true, msg: 'Data de nascimento inválida.' },
-    { id: 'f-fone', minLen: 6, msg: 'Número inválido.' },
+    { id: 'f-fone', fone: true, msg: 'Número inválido.' },
   ];
   // E-mail só é exigido de guest — logado nem vê o campo (vai o da conta).
   if (!window._csLogado) campos.push({ id: 'f-email', email: true, msg: 'E-mail inválido.' });
-  campos.forEach(({ id, minLen, date, email, msg }) => {
+  campos.forEach(({ id, minLen, date, email, fone, msg }) => {
     const el = document.getElementById(id);
     if (!el) return;
     _limparErroField(el);
@@ -1117,7 +1117,17 @@ function validarDadosPessoais() {
         })()
       : email
         ? !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(val)
-        : val.length < minLen;
+        : fone
+          ? (() => {
+              // Conta só dígitos — "(27) 9" tem 6 caracteres mas 3 dígitos,
+              // e passava na regra antiga de minLen (contava a máscara).
+              const digitos = val.replace(/\D/g, '').length;
+              // +55: DDD + 8/9 dígitos. Outros DDIs (campo livre): mínimo 6.
+              return document.getElementById('f-ddi')?.value === '+55'
+                ? digitos < 10
+                : digitos < 6;
+            })()
+          : val.length < minLen;
     if (invalido) { el.classList.add('error'); mostrarErroField(el, msg); ok = false; }
   });
   if (!ok) _focarPrimeiroErro();
