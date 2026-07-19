@@ -1762,7 +1762,9 @@ document.addEventListener('DOMContentLoaded', () => {
   if (nasc) aplicarMascaraData(nasc);
 
   // Autofill de "Seus dados" pra todo mundo (guest incluso — decisão
-  // 2026-07-19); logado ainda re-espelha via conta-cliente.js no login.
+  // 2026-07-19). O drawer "Minha conta" (que re-espelhava o perfil no
+  // login) foi removido — cliente não loga mais; só o que está no
+  // aparelho conta.
   restaurarDadosPessoaisLocal();
 
   // "Trocar" reabre o campo de e-mail escondido (guest lembrado).

@@ -136,11 +136,6 @@ async function _avaliarSessao() {
 
 function _entrarNoPainel() {
   _admAutenticado = true;
-  // Embutido no drawer do site: avisa o pai que o admin chegou em aal2
-  // (o evento de auth do supabase-js nem sempre propaga entre contextos).
-  if (document.documentElement.classList.contains('is-embed') && window.parent !== window) {
-    window.parent.postMessage({ tipo: 'cocar-admin-logado' }, location.origin);
-  }
   _mostrarAdmin();
   _carregarTerapeutas();
   if (typeof _abrirSecaoInicial === 'function') {
@@ -329,11 +324,6 @@ async function _fazerLogout() {
   _mfaFactorId = null;
   await supabase.auth.signOut();
   _admAutenticado = false;
-  // Embutido no drawer do site: avisa o pai pra voltar à tela de e-mail
-  // (o SIGNED_OUT do supabase-js nem sempre cruza o iframe).
-  if (document.documentElement.classList.contains('is-embed') && window.parent !== window) {
-    window.parent.postMessage({ tipo: 'cocar-admin-saiu' }, location.origin);
-  }
   _mostrarLogin();
 }
 

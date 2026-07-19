@@ -3842,20 +3842,6 @@ body.drawer-aberto { overflow: hidden; }
 .cat-inativas-bloco .cat-card-info { align-items: flex-start; text-align: left; }
 
 /* ============================================================
-   Modo embed (?embed=1) — painel dentro do drawer "Minha conta"
-   do site. "Ver site" vira "Abrir em nova aba"; "Sair" continua
-   na sidebar (o drawer não tem header próprio).
-   ============================================================ */
-#nav-nova-aba { display: none; }
-.is-embed #nav-ver-site { display: none; }
-.is-embed #nav-nova-aba { display: block; }
-
-/* O ✕ do drawer flutua no canto superior direito, sobre o iframe —
-   afasta as ações do header pra não ficarem embaixo dele. */
-.is-embed .adm-main-header { padding-right: 44px; }
-.is-embed .adm-topbar { padding-right: 56px; }
-
-/* ============================================================
    Áudios — gravador estilo celular + histórico por agendamento
    ============================================================ */
 /* Abas da seção Áudios: Gravar ⇄ Áudios salvos */
@@ -4263,13 +4249,12 @@ body.drawer-aberto { overflow: hidden; }
 
 /* --- Sidebar: nav com folhinha no lugar do losango --- */
 .adm-nav a {
-  display: flex; /* sem !important: #nav-nova-aba fica escondido fora do embed */
+  display: flex;
   align-items: center;
   gap: 10px;
   border-left-width: 0 !important;
   border-radius: 12px 5px 12px 5px !important;
 }
-.is-embed #nav-nova-aba { display: flex; }
 .adm-nav a::before {
   content: "";
   width: 10px;

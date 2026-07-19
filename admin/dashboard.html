@@ -11,13 +11,6 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..700;1,9..144,300..700&family=Figtree:ital,wght@0,300..700;1,300..700&display=swap" rel="stylesheet" />
-  <script>
-    // Modo embed (?embed=1): painel rodando dentro do drawer "Minha conta"
-    // do site — esconde "Ver site" e "Sair" (o drawer cuida dos dois).
-    if (new URLSearchParams(location.search).has('embed')) {
-      document.documentElement.classList.add('is-embed');
-    }
-  </script>
   <link rel="stylesheet" href="../css/agendamento-styles.css">
   <link rel="stylesheet" href="css/dashboard.css">
 </head>
@@ -111,7 +104,6 @@
         <a href="#catalogo" id="nav-catalogo" data-secao="catalogo">Catálogo</a>
         <a href="#audios" id="nav-audios" data-secao="audios">Áudios</a>
         <a href="../index.html" target="_blank" id="nav-ver-site">Ver site</a>
-        <a href="dashboard.html" target="_blank" rel="noopener" id="nav-nova-aba">Abrir em nova aba</a>
       </nav>
       <div class="adm-sidebar-footer">
         <button class="adm-logout-btn" id="adm-logout-btn">Sair</button>
