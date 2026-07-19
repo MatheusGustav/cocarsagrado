@@ -665,19 +665,6 @@ img { max-width: 100%; }
   justify-content: center;
   padding: 8% 6%;
 }
-/* brilho aquarela suave atrás do livro (puxa a paleta da capa) */
-.ebook-canteiro::before {
-  content: "";
-  position: absolute;
-  inset: -4%;
-  z-index: 0;
-  background: radial-gradient(closest-side,
-    rgba(143, 168, 122, 0.30),
-    rgba(166, 124, 50, 0.12) 58%,
-    transparent 78%);
-  filter: blur(6px);
-  pointer-events: none;
-}
 .ebook-img {
   position: relative;
   z-index: 1;
