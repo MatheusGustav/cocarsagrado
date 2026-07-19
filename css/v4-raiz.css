@@ -665,36 +665,57 @@ img { max-width: 100%; }
   justify-content: center;
   padding: 8% 6%;
 }
-.jardim-blob--livro {
-  inset: 0;
-  background: var(--color-bg-card);
-  border: 1.5px solid var(--v4-sussurro);
-  box-shadow: var(--v4-sombra-dura);
+/* brilho aquarela suave atrás do livro (puxa a paleta da capa) */
+.ebook-canteiro::before {
+  content: "";
+  position: absolute;
+  inset: -4%;
+  z-index: 0;
+  background: radial-gradient(closest-side,
+    rgba(143, 168, 122, 0.30),
+    rgba(166, 124, 50, 0.12) 58%,
+    transparent 78%);
+  filter: blur(6px);
+  pointer-events: none;
 }
 .ebook-img {
   position: relative;
+  z-index: 1;
   width: 100%;
   height: auto;
   filter: drop-shadow(0 22px 24px rgba(24, 42, 30, 0.3));
+  transition: transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.ebook-canteiro:hover .ebook-img {
+  transform: translateY(-6px) rotate(-1deg) scale(1.02);
 }
 .ebook-selo {
-  font-style: italic;
   position: absolute;
-  top: -12px;
-  right: -8px;
-  width: 74px;
-  height: 74px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--color-gold);
-  color: var(--color-neutral-white);
-  font-family: var(--fonte-titulo);
-  font-size: 16px;
-  border-radius: 54% 46% 50% 50% / 48% 52% 48% 52%;
-  transform: rotate(-10deg);
-  box-shadow: 0 10px 22px -10px rgba(107, 85, 38, 0.6);
+  top: 11%;
+  right: 8%;
   z-index: 2;
+  background: var(--color-gold);
+  color: #1b2a1c;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 6px 13px;
+  border-radius: 999px;
+  transform: rotate(8deg);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.28);
+  transition: transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.ebook-canteiro:hover .ebook-selo {
+  transform: rotate(8deg) translateY(-6px) scale(1.02);
+}
+/* flutuar suave (desliga em prefers-reduced-motion) */
+@media (prefers-reduced-motion: no-preference) {
+  .ebook-canteiro { animation: ebook-float 6s ease-in-out infinite; }
+}
+@keyframes ebook-float {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-10px); }
 }
 
 .sobre-body {
