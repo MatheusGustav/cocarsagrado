@@ -187,6 +187,7 @@ img { max-width: 100%; }
   transition: stroke-dashoffset 1.5s ease 0.25s;
 }
 .ramo-path--folha { transition-delay: 0.9s; transition-duration: 0.8s; }
+.catalogo .ramo-path { stroke: var(--color-bg-page); }
 .fade-in-scroll.visible .ramo-path { stroke-dashoffset: 0; }
 
 /* blob que respira */
@@ -785,7 +786,44 @@ img { max-width: 100%; }
    SEÇÃO CATÁLOGO
    ============================================================ */
 .catalogo {
+  position: relative;
+  background: var(--color-primary);
   padding-block: clamp(72px, 9vw, 108px);
+  overflow: hidden;
+}
+
+/* folhinhas desenhadas sobre o verde escuro (mesmas da cta-bar) */
+.folha--cat1 {
+  width: 54px;
+  top: 64px;
+  left: 4%;
+  --rot: 148deg;
+  color: rgba(242, 238, 221, 0.4);
+}
+.folha--cat1 path { fill: rgba(242, 238, 221, 0.08); }
+.folha--cat2 {
+  width: 34px;
+  bottom: -6px;
+  right: 6%;
+  --rot: -30deg;
+  color: rgba(210, 186, 124, 0.6);
+  animation-delay: -4s;
+}
+.folha--cat2 path { fill: rgba(210, 186, 124, 0.12); }
+
+/* textos que ficam direto sobre o fundo escuro */
+.catalogo .section-title,
+.catalogo .cat-group-titulo { color: var(--color-text-on-dark); }
+.catalogo .grifo { color: var(--color-gold); }
+.catalogo .eyebrow { color: var(--color-gold); }
+.catalogo .section-sub { color: rgba(242, 238, 221, 0.72); }
+.catalogo .cat-group-avatar {
+  box-shadow: 0 0 0 2.5px var(--color-primary), 0 0 0 5px var(--v4-salvia);
+}
+.catalogo .cat-filter.active {
+  background: var(--color-gold);
+  border-color: var(--color-gold);
+  color: var(--color-text-on-dark);
 }
 
 /* --- filtros: pílulas orgânicas (sem sublinhado nesta variante) --- */
@@ -1693,7 +1731,7 @@ img { max-width: 100%; }
   .person-card { align-items: flex-start; }
   .cta-bar-inner { justify-content: center; text-align: center; }
   .footer-inner { justify-content: center; text-align: center; }
-  .folha--cta1, .folha--cta2 { display: none; }
+  .folha--cta1, .folha--cta2, .folha--cat1, .folha--cat2 { display: none; }
 }
 
 /* ============================================================
