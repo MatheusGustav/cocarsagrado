@@ -533,28 +533,37 @@ AS $$
   GROUP BY data_agendamento;
 $$;
 
--- leitura_mais_procurada: service_id ('grupo:<slug>' | slug | 'id-<id>') da
--- leitura com mais agendamentos pagos nos últimos 180 dias. Usada pelo site
+-- leitura_mais_procurada: um vencedor POR TERAPEUTA (terapeuta, service_id),
+-- service_id no formato 'grupo:<slug>' | slug | 'id-<id>'. Usada pelo site
 -- para o destaque "Mais procurada" no catálogo (só identificador agregado).
 CREATE OR REPLACE FUNCTION public.leitura_mais_procurada()
-RETURNS text
+RETURNS TABLE (terapeuta text, service_id text)
 LANGUAGE sql
 SECURITY DEFINER
 SET search_path = public
 STABLE
 AS $$
-  SELECT CASE
-           WHEN t.grupo_slug IS NOT NULL THEN 'grupo:' || t.grupo_slug
-           WHEN t.slug IS NOT NULL THEN t.slug
-           ELSE 'id-' || t.id::text
-         END AS service_id
-  FROM public.agendamentos a
-  JOIN public.tipos_leitura t ON t.id = a.tipo_leitura_id
-  WHERE a.status IN ('pago', 'confirmado', 'atendido')
-    AND a.criado_em >= now() - interval '180 days'
-  GROUP BY service_id
-  ORDER BY count(*) DESC, service_id
-  LIMIT 1;
+  SELECT terapeuta, service_id
+  FROM (
+    SELECT
+      t.terapeuta,
+      CASE
+        WHEN t.grupo_slug IS NOT NULL THEN 'grupo:' || t.grupo_slug
+        WHEN t.slug IS NOT NULL THEN t.slug
+        ELSE 'id-' || t.id::text
+      END AS service_id,
+      row_number() OVER (
+        PARTITION BY t.terapeuta
+        ORDER BY count(*) DESC, t.id
+      ) AS rn
+    FROM public.agendamentos a
+    JOIN public.tipos_leitura t ON t.id = a.tipo_leitura_id
+    WHERE a.status IN ('pago', 'confirmado', 'atendido')
+      AND a.criado_em >= now() - interval '180 days'
+      AND t.terapeuta IS NOT NULL
+    GROUP BY t.terapeuta, service_id, t.id
+  ) ranked
+  WHERE rn = 1;
 $$;
 
 -- catalogo_ranking: ordem dos serviços por demanda (agendamentos pagos),
