@@ -33,23 +33,33 @@ function abrirModal(tipo) {
       obsGroup.style.display = 'none';
     } else {
       obsGroup.style.display = '';
+      const hint = document.createElement('p');
+      hint.className = 'ag-obs-hint';
+      hint.textContent = 'Conte a situação com suas palavras e o que você quer saber. Não existe pergunta errada. 🌿';
+      obsGroup.appendChild(hint);
       for (let i = 1; i <= n; i++) {
         const id  = `f-obs-${i}`;
         const lbl = document.createElement('label');
         lbl.htmlFor    = id;
-        lbl.textContent = n === 1 ? 'Pergunta/Questão *' : `Pergunta ${i} *`;
+        lbl.textContent = n === 1 ? 'Sua pergunta *' : `Pergunta ${i} *`;
         const ta = document.createElement('textarea');
         ta.id          = id;
         ta.name        = `obs${i}`;
         ta.required    = true;
         ta.rows        = 3;
-        ta.placeholder = n === 1
-          ? 'Escreva sua pergunta ou questão para a leitura…'
-          : `Escreva a pergunta ${i}…`;
+        ta.placeholder = 'Ex.: Como fica minha vida amorosa nos próximos meses? O que preciso enxergar agora?';
         obsGroup.appendChild(lbl);
         obsGroup.appendChild(ta);
       }
     }
+  }
+
+  // Ajusta o subtítulo da tela de confirmação ao tipo (com/sem perguntas)
+  const sub2 = document.getElementById('secao2-sub');
+  if (sub2) {
+    sub2.textContent = (tipo && (tipo.requerPergunta || _ehNaipe(tipo)))
+      ? 'Escreva suas perguntas com calma — são elas que guiam a leitura.'
+      : 'Confira os detalhes antes de continuar.';
   }
 
   overlay.classList.add('open');
@@ -390,16 +400,16 @@ function _ofereceRetomar(onContinuarNovo) {
   const overlay = document.createElement('div');
   overlay.className = 'modal-overlay open';
   overlay.style.zIndex = '10000';
+  overlay.style.alignItems = 'center';
+  overlay.style.padding = '20px';
   overlay.innerHTML = `
-    <div class="modal-container" style="max-width:440px;">
-      <div class="modal-body" style="padding:28px;">
-        <h3 style="margin-top:0;">⏳ Você tem um pedido pendente</h3>
-        <p style="margin:12px 0;"><strong>Pedido:</strong> ${_escCat(ag.chave)}<br><strong>Leitura:</strong> ${_escCat(ag.tipo)}<br><strong>Valor:</strong> R$ ${_escCat(ag.valor)}</p>
-        <p style="font-size:.9rem;color:var(--cor-texto-suave);">Se você já fez o PIX ou está pagando, retome o pedido atual. Criar um novo vai gerar cobrança duplicada.</p>
-        <div style="display:flex;flex-direction:column;gap:10px;margin-top:18px;">
-          <button class="ag-btn ag-btn-primary" id="_retomarBtn">📲 Retomar pedido pendente</button>
-          <button class="ag-btn" id="_novoBtn" style="background:transparent;border:1px solid var(--border);">Cancelar e criar novo</button>
-        </div>
+    <div class="pendente-card">
+      <h3>Você tem um pedido esperando pagamento</h3>
+      <p><strong>Pedido:</strong> ${_escCat(ag.chave)}<br><strong>Leitura:</strong> ${_escCat(ag.tipo)}<br><strong>Valor:</strong> R$ ${_escCat(ag.valor)}</p>
+      <p class="pendente-aviso">Se você já fez o PIX ou está pagando, continue esse pedido — criar outro pode gerar cobrança em dobro.</p>
+      <div class="pendente-acoes">
+        <button class="ag-btn ag-btn-primary" id="_retomarBtn">Continuar esse pedido</button>
+        <button class="ag-btn ag-btn-ghost" id="_novoBtn">Descartar e começar outro</button>
       </div>
     </div>`;
   document.body.appendChild(overlay);
@@ -470,12 +480,13 @@ function _onVisibilityCheck() {
 }
 
 function _mostrarPagamentoConfirmado() {
-  ['pix', 'cartao'].forEach(m => {
-    const sb = document.getElementById(`${m}-status-box`);
-    if (sb) sb.style.display = 'block';
-  });
+  const flx = document.getElementById('pag-fluxo');
+  const suc = document.getElementById('pag-sucesso');
+  if (flx) flx.hidden = true;
+  if (suc) suc.hidden = false;
   _limparPedidoPendente();
-  mostrarAlerta('✅ Pagamento confirmado!', 'success');
+  document.querySelector('#modalAgendamento .modal-body')
+    ?.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
 function _preencherTelaPagamento() {
@@ -483,26 +494,29 @@ function _preencherTelaPagamento() {
   if (!ag) return;
 
   const set = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
-  set('modal-r-tipo',       ag.tipo);
-  set('modal-r-data',       ag.data);
-  set('modal-r-hora',       ag.hora);
-  set('modal-r-valor',      `R$ ${ag.valor}`);
 
-  ['pix', 'cartao', 'wise'].forEach(m => set(`modal-valor-${m}`, `R$ ${ag.valor}`));
-  // Reset PIX e Cartão (checkout InfinitePay)
-  ['pix', 'cartao'].forEach(m => {
-    const linkBox = document.getElementById(`${m}-link-box`);
-    const errBox  = document.getElementById(`${m}-erro-box`);
-    const stBox   = document.getElementById(`${m}-status-box`);
-    const genBtn  = document.getElementById(`${m}-gerar-btn`);
-    if (linkBox) linkBox.style.display = 'none';
-    if (errBox)  errBox.style.display = 'none';
-    if (stBox)   stBox.style.display = 'none';
-    if (genBtn)  { genBtn.disabled = false; genBtn.textContent = '🔗 Gerar link de pagamento'; }
-  });
+  // Recibo: uma linha por leitura + entrega (quando é 1 leitura só)
+  const itensBox = document.getElementById('pag-resumo-itens');
+  if (itensBox) {
+    const items = Array.isArray(ag.items) ? ag.items : [];
+    let html = items.map(i =>
+      `<div class="pag-resumo-linha"><span>${_escCat(i.description)}</span><strong>R$ ${_escCat(String(i.price).replace('.', ','))}</strong></div>`
+    ).join('');
+    if (!items.length) {
+      html = `<div class="pag-resumo-linha"><span>${_escCat(ag.tipo || 'Leitura')}</span><strong>R$ ${_escCat(ag.valor)}</strong></div>`;
+    }
+    if (items.length <= 1 && ag.data) {
+      html += `<div class="pag-resumo-linha"><span>Entrega</span><strong>${_escCat(ag.data)}</strong></div>`;
+    }
+    itensBox.innerHTML = html;
+  }
+  set('modal-r-valor', `R$ ${ag.valor}`);
+  set('modal-valor-wise', `R$ ${ag.valor}`);
   set('modal-email-wise', MODAL_WISE);
+  const chaveEl = document.getElementById('pag-chave');
+  if (chaveEl) chaveEl.innerHTML = `Pedido <strong>${_escCat(ag.chave)}</strong>`;
 
-  trocarAbaPagamento('pix');
+  _pagVoltarMetodos(); // estado inicial: escolha da forma de pagar
   _iniciarPollStatus();
 }
 
@@ -517,6 +531,11 @@ window.irParaPasso = function(num) {
     _calendarioOk = true;
     carregarCalendario();
   }
+  // Com leituras no pedido, o calendário ganha atalho de volta pra revisão
+  if (num === 1) {
+    const voltar = document.getElementById('cal-voltar-pedido');
+    if (voltar) voltar.hidden = !(typeof Estado !== 'undefined' && Estado.carrinho.length > 0);
+  }
   _irParaPassoBase(num);
   _syncOuterSteps(_passoToOuter(num));
   document.querySelector('#modalAgendamento .modal-body')
@@ -526,17 +545,6 @@ window.irParaPasso = function(num) {
 // ============================================================
 // Funções de pagamento
 // ============================================================
-function trocarAbaPagamento(metodo) {
-  ['pix', 'cartao', 'wise'].forEach(m => {
-    const tab    = document.getElementById(`modal-tab-${m}`);
-    const painel = document.getElementById(`modal-painel-${m}`);
-    const ativo  = m === metodo;
-    tab?.classList.toggle('active', ativo);
-    tab?.setAttribute('aria-selected', ativo);
-    painel?.classList.toggle('active', ativo);
-  });
-}
-
 function _copiarTexto(texto, msg) {
   navigator.clipboard.writeText(texto)
     .then(() => mostrarAlerta(msg, 'success'))
@@ -597,39 +605,96 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // Navegação por setas nas abas de pagamento (padrão ARIA tablist)
-  const tablist = overlay.querySelector('.pag-tabs');
-  if (tablist) {
-    const ordem = ['pix', 'cartao', 'wise'];
-    tablist.addEventListener('keydown', (e) => {
-      if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
-      const atual = ordem.findIndex(m => document.getElementById(`modal-tab-${m}`)?.classList.contains('active'));
-      if (atual < 0) return;
-      e.preventDefault();
-      const delta = e.key === 'ArrowRight' ? 1 : -1;
-      const prox = ordem[(atual + delta + ordem.length) % ordem.length];
-      trocarAbaPagamento(prox);
-      document.getElementById(`modal-tab-${prox}`)?.focus();
-    });
-  }
+  // "Estou fora do Brasil" abre/fecha as instruções da Wise
+  const wiseToggle = document.getElementById('pag-wise-toggle');
+  wiseToggle?.addEventListener('click', () => {
+    const painel = document.getElementById('pag-wise');
+    if (!painel) return;
+    const abrir = painel.hidden;
+    painel.hidden = !abrir;
+    wiseToggle.setAttribute('aria-expanded', String(abrir));
+    if (abrir) painel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  });
 
   // Checa pedido pendente ao carregar (atualiza se foi pago via webhook)
   setTimeout(_verificarPedidoPendenteAoCarregar, 1500);
 });
 
 // ============================================================
-// InfinitePay — link de checkout (PIX e cartão de crédito)
+// InfinitePay — pagamento em 1 toque (PIX e cartão de crédito)
+// A aba é aberta JÁ no clique (gesto do usuário → sem bloqueio de
+// pop-up) e recebe o checkout assim que o link fica pronto. Se o
+// navegador bloquear mesmo assim, a tela de espera oferece o botão
+// "Abrir pagamento".
 // ============================================================
-async function _gerarLinkCheckout(metodo) {
+let _pagMetodoAtual = null;
+
+function _pagVoltarMetodos() {
+  const mostrar = (id, vis) => { const el = document.getElementById(id); if (el) el.hidden = !vis; };
+  mostrar('pag-fluxo', true);
+  mostrar('pag-metodos', true);
+  mostrar('pag-espera', false);
+  mostrar('pag-sucesso', false);
+  mostrar('pag-erro-box', false);
+  mostrar('pag-wise', false);
+  document.getElementById('pag-wise-toggle')?.setAttribute('aria-expanded', 'false');
+  ['pix', 'cartao'].forEach(m => {
+    const b = document.getElementById(`pag-btn-${m}`);
+    if (b) { b.disabled = false; b.classList.remove('carregando'); }
+  });
+}
+window._pagVoltarMetodos = _pagVoltarMetodos;
+
+function _pagMostrarEspera(abriuSozinho, url) {
+  const met = document.getElementById('pag-metodos');
+  const esp = document.getElementById('pag-espera');
+  if (met) met.hidden = true;
+  if (esp) esp.hidden = false;
+
+  const titulo  = document.getElementById('pag-espera-titulo');
+  const txt     = document.getElementById('pag-espera-txt');
+  const reabrir = document.getElementById('pag-reabrir');
+  if (reabrir) reabrir.href = url;
+  if (abriuSozinho) {
+    if (titulo)  titulo.textContent  = 'Seu pagamento abriu em outra aba';
+    if (txt)     txt.textContent     = 'Termine por lá, no seu tempo. Assim que o pagamento cair, esta tela confirma sozinha.';
+    if (reabrir) reabrir.textContent = 'Abrir pagamento de novo';
+  } else {
+    if (titulo)  titulo.textContent  = 'Seu pagamento está pronto';
+    if (txt)     txt.textContent     = 'Toque no botão abaixo para abrir o checkout seguro. Quando o pagamento cair, esta tela confirma sozinha.';
+    if (reabrir) reabrir.textContent = 'Abrir e pagar agora →';
+  }
+  document.querySelector('#modalAgendamento .modal-body')
+    ?.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+async function pagarCom(metodo) {
   const ag = _dadosPagamento;
   if (!ag) return;
-  const btn     = document.getElementById(`${metodo}-gerar-btn`);
-  const linkBox = document.getElementById(`${metodo}-link-box`);
-  const err     = document.getElementById(`${metodo}-erro-box`);
-  btn.disabled     = true;
-  btn.textContent  = '⏳ Gerando…';
-  linkBox.style.display = 'none';
-  err.style.display     = 'none';
+
+  const err = document.getElementById('pag-erro-box');
+  if (err) err.hidden = true;
+
+  // Abre a aba dentro do gesto do clique; o destino chega depois.
+  let win = null;
+  try { win = window.open('', '_blank'); } catch { win = null; }
+  if (win) {
+    try {
+      win.document.write('<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>Preparando pagamento…</title></head><body style="margin:0;display:grid;place-items:center;min-height:100vh;background:#F7F3E8;color:#41513F;font-family:system-ui,sans-serif;font-size:17px"><p>🌿 Preparando seu pagamento seguro…</p></body></html>');
+    } catch { /* melhor uma aba em branco do que quebrar o fluxo */ }
+  }
+
+  const btnAtivo = document.getElementById(`pag-btn-${metodo}`);
+  if (btnAtivo) {
+    btnAtivo.classList.add('carregando');
+    const label = btnAtivo.querySelector('strong');
+    if (label) { btnAtivo.dataset.labelOriginal = label.textContent; label.textContent = 'Preparando…'; }
+  }
+  ['pix', 'cartao'].forEach(m => {
+    const b = document.getElementById(`pag-btn-${m}`);
+    if (b) b.disabled = true;
+  });
+
   try {
     const items = Array.isArray(ag.items) && ag.items.length
       ? ag.items.map(i => ({ description: i.description, price: parseFloat(String(i.price).replace(',', '.')) }))
@@ -642,16 +707,40 @@ async function _gerarLinkCheckout(metodo) {
     });
     const data = await res.json();
     if (!res.ok || data.error) throw new Error(typeof data.error === 'string' ? data.error : 'falha ao gerar link');
-    document.getElementById(`${metodo}-link-btn`).href = data.url;
-    linkBox.style.display = 'block';
-    btn.textContent = '🔄 Gerar novo link';
-    btn.disabled    = false;
+
+    _pagMetodoAtual = metodo;
+    let abriu = false;
+    if (win && !win.closed) {
+      try { win.location = data.url; abriu = true; } catch { /* cai no botão manual */ }
+    }
+    _pagMostrarEspera(abriu, data.url);
   } catch (e) {
-    err.textContent  = 'Não foi possível gerar o link: ' + (e?.message || 'tente novamente.');
-    err.style.display = 'block';
-    btn.textContent  = '🔗 Gerar link de pagamento';
-    btn.disabled     = false;
+    if (win) { try { win.close(); } catch {} }
+    if (err) {
+      err.textContent = 'Não conseguimos preparar o pagamento agora. Espere alguns segundos e tente de novo — nada foi cobrado.';
+      err.hidden = false;
+    }
+  } finally {
+    ['pix', 'cartao'].forEach(m => {
+      const b = document.getElementById(`pag-btn-${m}`);
+      if (!b) return;
+      b.disabled = false;
+      b.classList.remove('carregando');
+      const label = b.querySelector('strong');
+      if (label && b.dataset.labelOriginal) label.textContent = b.dataset.labelOriginal;
+    });
   }
 }
-window.gerarLinkPix    = () => _gerarLinkCheckout('pix');
-window.gerarLinkCartao = () => _gerarLinkCheckout('cartao');
+window.pagarCom = pagarCom;
+// aliases legados (nada mais chama, mas não custa manter)
+window.gerarLinkPix    = () => pagarCom('pix');
+window.gerarLinkCartao = () => pagarCom('cartao');
+
+// Ajuda no meio do pagamento — mensagem neutra (não afirma que pagou)
+window.pagAjudaWhatsApp = function () {
+  const ag = _dadosPagamento;
+  if (!ag) return;
+  const msg = `Olá! 😊 Estou finalizando o pedido *${ag.chave}* (R$ ${ag.valor}) no site e preciso de uma ajudinha com o pagamento.`;
+  const numero = WHATSAPP_TERAPEUTA[ag.terapeuta] || WHATSAPP_TERAPEUTA.camila;
+  window.open(`https://wa.me/${numero}?text=${encodeURIComponent(msg)}`, '_blank');
+};

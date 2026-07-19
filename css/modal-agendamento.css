@@ -1,12 +1,22 @@
 /* ============================================================
-   COCAR SAGRADO — Modal de Agendamento
+   COCAR SAGRADO — Modal de Agendamento · Raiz Viva
+   Papel quente, Fraunces + Figtree, raios assimétricos,
+   sombra dura sálvia e costuras pontilhadas (vibe recibo).
+   Assinatura: o progresso é um ramo — cada etapa é uma folha
+   que se preenche; o caule pontilhado vira sólido ao passar.
    ============================================================ */
+
+/* [hidden] precisa vencer os display das classes utilitárias */
+.modal-overlay [hidden],
+.seletor-overlay [hidden] { display: none !important; }
 
 /* Overlay */
 .modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.6);
+  background: rgba(10, 26, 17, 0.66);
+  -webkit-backdrop-filter: blur(7px);
+  backdrop-filter: blur(7px);
   z-index: 9000;
   display: flex;
   align-items: flex-end;
@@ -24,8 +34,8 @@
 
 /* Sobe como sheet no mobile, centraliza no desktop */
 .modal-container {
-  background: #FFFDF8;
-  border-radius: 20px 20px 0 0;
+  background: var(--color-bg-card, #FFFEF6);
+  border-radius: 24px 24px 0 0;
   width: 100%;
   max-width: 940px;
   max-height: 95vh;
@@ -34,21 +44,22 @@
   overflow: hidden;
   transform: translateY(48px);
   transition: transform 0.35s cubic-bezier(0.34, 1.08, 0.64, 1);
-  box-shadow: 0 -8px 40px rgba(31, 51, 31, 0.25);
-  border-top: 1px solid rgba(201, 154, 78, 0.2);
+  box-shadow: 0 -8px 40px rgba(14, 33, 23, 0.3);
+  border-top: 1px solid rgba(169, 135, 59, 0.28);
 }
 
 @media (min-width: 640px) {
   .modal-overlay {
     align-items: center;
-    padding: 20px;
+    padding: 24px;
   }
   .modal-container {
-    border-radius: 20px;
+    border-radius: 26px 10px 26px 10px;
     max-height: 90vh;
     transform: scale(0.95) translateY(20px);
-    box-shadow: 0 28px 72px rgba(31, 51, 31, 0.32);
-    border: 1px solid rgba(201, 154, 78, 0.22);
+    border: 1.5px solid var(--color-neutral-stone, #D8D2B8);
+    box-shadow: 10px 10px 0 rgba(147, 172, 143, 0.28),
+                0 30px 80px rgba(14, 33, 23, 0.32);
   }
 }
 
@@ -67,7 +78,7 @@
   display: block;
   width: 44px;
   height: 4px;
-  background: rgba(201, 154, 78, 0.35);
+  background: rgba(147, 172, 143, 0.55);
   border-radius: 99px;
   margin: 10px auto 0;
   flex-shrink: 0;
@@ -76,101 +87,101 @@
   .modal-drag-handle { display: none; }
 }
 
-/* Header */
+/* ============================================================
+   Header — o ramo de progresso
+   ============================================================ */
 .modal-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 14px 16px 14px 20px;
-  border-bottom: 1px solid rgba(201, 154, 78, 0.2);
-  background: linear-gradient(180deg, rgba(201, 154, 78, 0.04), transparent);
+  padding: 12px 16px 10px 20px;
+  border-bottom: 2px dotted rgba(147, 172, 143, 0.5);
+  background: var(--color-bg-card, #FFFEF6);
   flex-shrink: 0;
   gap: 12px;
 }
 
-/* Indicador de progresso — 2 telas */
 .modal-progress {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 2px;
   flex: 1;
   min-width: 0;
+  max-width: 460px;
 }
 
+/* cada etapa = uma folha + rótulo */
 .modal-tela-step {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 7px;
-  padding: 6px 13px;
-  border-radius: 99px;
-  font-size: .76rem;
-  font-weight: 600;
-  letter-spacing: .02em;
-  color: #837B68;
-  background: rgba(201, 154, 78, 0.04);
-  border: 1.5px solid rgba(201, 154, 78, 0.18);
-  transition: background 0.25s, color 0.25s, border-color 0.25s, box-shadow 0.25s;
+  gap: 3px;
+  padding: 2px 4px;
+  color: var(--color-text-muted, #85806B);
   white-space: nowrap;
-}
-
-.modal-tela-step .t-num {
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-  background: rgba(201, 154, 78, 0.18);
-  color: #837B68;
-  font-size: .68rem;
-  font-weight: 800;
-  display: flex;
-  align-items: center;
-  justify-content: center;
   flex-shrink: 0;
-  transition: background 0.25s, color 0.25s;
 }
 
-.modal-tela-step.active {
-  background: rgba(201, 154, 78, 0.12);
-  color: #6B5526;
-  border-color: #C99A4E;
-  box-shadow: 0 1px 8px rgba(201, 154, 78, 0.2);
+.m-leaf {
+  width: 17px;
+  height: 27px;
+  display: block;
+  color: var(--color-neutral-stone, #D8D2B8);
+  transform-origin: 50% 100%;
 }
-.modal-tela-step.active .t-num {
-  background: #C99A4E;
-  color: #FCF8EF;
+.m-leaf path {
+  fill: transparent;
+  stroke: currentColor;
+  stroke-width: 3;
+  stroke-linecap: round;
+  transition: fill 0.35s ease, stroke 0.35s ease;
 }
-.modal-tela-step.done {
-  background: rgba(33, 61, 44, 0.08);
-  color: #213D2C;
-  border-color: rgba(33, 61, 44, 0.45);
+.m-leaf path:last-child { stroke-width: 2.4; }
+
+.m-step-label {
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  transition: color 0.3s ease;
 }
-.modal-tela-step.done .t-num {
-  background: #213D2C;
-  color: #ECE3D0;
+
+/* etapa atual: folha dourada que balança de leve */
+.modal-tela-step.active { color: var(--color-gold-shadow, #6B5526); }
+.modal-tela-step.active .m-leaf {
+  color: var(--color-gold-deep, #8A6D2F);
+  animation: folha-balanca 5s ease-in-out infinite;
 }
+.modal-tela-step.active .m-leaf path:first-child {
+  fill: var(--color-gold-mist, #EAE0BE);
+}
+
+/* etapa concluída: folha cheia de sálvia */
+.modal-tela-step.done { color: var(--v4-verde-medio, #2F5C41); }
+.modal-tela-step.done .m-leaf { color: var(--v4-salvia-forte, #6E8F73); }
+.modal-tela-step.done .m-leaf path:first-child {
+  fill: var(--v4-salvia, #93AC8F);
+}
+
+/* caule entre folhas: pontilhado → sólido quando a etapa passa */
 .modal-progress-sep {
-  color: rgba(201, 154, 78, 0.45);
-  font-size: .9rem;
-  flex-shrink: 0;
+  flex: 1;
+  min-width: 12px;
+  max-width: 64px;
+  border-top: 2px dotted rgba(147, 172, 143, 0.55);
+  transform: translateY(-8px);
+  transition: border-color 0.35s ease;
 }
-
-@media (max-width: 480px) {
-  .modal-header {
-    padding: 10px 12px 10px 14px;
-  }
+.modal-tela-step.done + .modal-progress-sep {
+  border-top-style: solid;
+  border-top-color: var(--v4-salvia-forte, #6E8F73);
 }
 
 @media (max-width: 420px) {
-  .modal-tela-step {
-    padding: 4px 8px;
-    font-size: .68rem;
-    gap: 4px;
-  }
-  .modal-tela-step .t-num {
-    width: 16px;
-    height: 16px;
-    font-size: .6rem;
-  }
-  .modal-progress-sep { font-size: .7rem; }
+  .modal-header { padding: 10px 12px 8px 14px; }
+  .m-leaf { width: 14px; height: 23px; }
+  .m-step-label { font-size: 9.5px; letter-spacing: 0.08em; }
+  .modal-progress-sep { min-width: 8px; transform: translateY(-7px); }
 }
 
 /* Botão fechar */
@@ -181,18 +192,18 @@
   align-items: center;
   justify-content: center;
   background: transparent;
-  border: 1.5px solid rgba(201, 154, 78, 0.2);
+  border: 1.5px solid var(--color-neutral-stone, #D8D2B8);
   border-radius: 50%;
   font-size: .95rem;
   cursor: pointer;
-  color: #837B68;
+  color: var(--color-text-muted, #85806B);
   flex-shrink: 0;
-  transition: background 0.2s, border-color 0.2s, color 0.2s, transform 0.15s;
+  transition: background 0.2s, border-color 0.2s, color 0.2s, transform 0.2s;
 }
 .modal-close-btn:hover {
-  background: rgba(139, 58, 30, 0.08);
-  border-color: rgba(139, 58, 30, 0.45);
-  color: #8B3A1E;
+  background: var(--v4-sussurro, #DDE5CC);
+  border-color: var(--v4-salvia-forte, #6E8F73);
+  color: var(--color-primary, #142E20);
   transform: rotate(90deg);
 }
 
@@ -228,38 +239,14 @@
 /* Bloqueia scroll do body quando modal aberto */
 body.modal-aberto { overflow: hidden; }
 
-/* Botão voltar dentro do pagamento */
-.pag-voltar-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  background: none;
-  border: 1.5px solid rgba(201, 154, 78, 0.3);
-  border-radius: 999px;
-  padding: 8px 16px;
-  font-size: .85rem;
-  font-weight: 600;
-  color: #837B68;
-  cursor: pointer;
-  margin-bottom: 20px;
-  transition: border-color 0.2s, color 0.2s, background 0.2s;
-}
-.pag-voltar-btn:hover {
-  border-color: #C99A4E;
-  color: #6B5526;
-  background: rgba(201, 154, 78, 0.06);
-}
-
-/* Dark mode — alinhado ao verde-esverdeado do hero (#0E1A12 page / #18271C card) */
-
 /* ============================================================
    Carrinho — Revisão de múltiplas leituras
    ============================================================ */
 .cart-item {
-  background: rgba(201, 154, 78, 0.05);
-  border: 1px solid rgba(201, 154, 78, 0.22);
-  border-radius: 12px;
-  padding: 14px 16px;
+  background: var(--color-bg-card, #FFFEF6);
+  border: 1.5px solid var(--color-neutral-stone, #D8D2B8);
+  border-radius: 18px 8px 18px 8px;
+  padding: 15px 18px;
   margin-bottom: 10px;
   display: flex;
   flex-direction: column;
@@ -267,94 +254,96 @@ body.modal-aberto { overflow: hidden; }
   transition: border-color .2s, box-shadow .2s;
 }
 .cart-item:hover {
-  border-color: rgba(201, 154, 78, 0.45);
-  box-shadow: 0 2px 10px rgba(201, 154, 78, 0.12);
+  border-color: var(--v4-salvia-forte, #6E8F73);
+  box-shadow: 4px 4px 0 rgba(147, 172, 143, 0.25);
 }
 .cart-item-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 10px;
 }
 .cart-item-header strong {
-  font-family: 'Cormorant Garamond', Georgia, serif;
-  font-size: 1.1rem;
-  font-weight: 600;
-  color: var(--primary, #213D2C);
+  font-family: var(--fonte-titulo, 'Fraunces', Georgia, serif);
+  font-size: 1.12rem;
+  font-weight: 560;
+  color: var(--color-primary, #142E20);
 }
 .cart-item-remove {
   background: none;
-  border: none;
-  color: #ef4444;
+  border: 1px solid transparent;
+  color: var(--color-error, #8B3A1E);
   cursor: pointer;
-  font-size: 1.1rem;
-  padding: 2px 6px;
-  border-radius: 4px;
+  font-size: 1rem;
+  padding: 4px 8px;
+  border-radius: 8px 4px 8px 4px;
   line-height: 1;
+  transition: background .15s, border-color .15s;
 }
 .cart-item-remove:hover {
-  background: #fee2e2;
+  background: rgba(139, 58, 30, 0.1);
+  border-color: rgba(139, 58, 30, 0.3);
 }
 .cart-item-details {
   display: flex;
-  gap: 12px;
-  font-size: .85rem;
-  color: var(--text-muted, #6b7280);
+  gap: 14px;
+  font-size: .87rem;
+  color: var(--color-text-muted, #85806B);
 }
 .cart-item-price {
-  font-weight: 700;
-  font-size: .95rem;
-  color: var(--secondary, #A67C32);
+  font-family: var(--fonte-titulo, 'Fraunces', Georgia, serif);
+  font-weight: 600;
+  font-size: 1.05rem;
+  color: var(--v4-verde-medio, #2F5C41);
 }
 .cart-total {
-  border-top: 1.5px solid rgba(201, 154, 78, 0.3);
+  border-top: 2px dotted rgba(147, 172, 143, 0.55);
   padding-top: 12px;
-  margin-top: 6px;
+  margin-top: 14px;
 }
 .cart-total-row {
   display: flex;
   justify-content: space-between;
-  font-size: .9rem;
+  font-size: .92rem;
   padding: 4px 0;
-  color: var(--text-muted, #6b7280);
+  color: var(--color-text-muted, #85806B);
 }
 .cart-total-desc {
-  color: #065f46;
+  color: var(--color-success, #3E6B45);
+  font-weight: 600;
 }
 .cart-total-final {
-  font-family: 'Cormorant Garamond', Georgia, serif;
-  font-weight: 700;
-  font-size: 1.3rem;
-  color: var(--secondary, #A67C32);
-  border-top: 1px solid rgba(201, 154, 78, 0.2);
+  font-family: var(--fonte-titulo, 'Fraunces', Georgia, serif);
+  font-weight: 600;
+  font-size: 1.45rem;
+  color: var(--color-gold-deep, #8A6D2F);
+  border-top: 2px dotted rgba(169, 135, 59, 0.4);
   padding-top: 10px;
   margin-top: 6px;
 }
-.cart-item-badge-desc {
-  display: inline-block;
-  align-self: flex-start;
-  background: rgba(33, 61, 44, 0.12);
-  color: #213D2C;
-  font-size: .7rem;
-  font-weight: 700;
-  padding: 3px 9px;
-  border-radius: 999px;
-  letter-spacing: .04em;
-  text-transform: uppercase;
-}
 .cart-entrega-aviso {
   margin-top: 14px;
-  font-size: .85rem;
-  color: var(--text-muted, #6b7280);
+  font-size: .87rem;
+  color: var(--color-text-muted, #85806B);
   text-align: center;
-  line-height: 1.4;
+  line-height: 1.5;
 }
 .ag-entrega-aviso {
-  margin: -6px 0 16px;
-  font-size: .82rem;
-  color: var(--text-muted, #6b7280);
+  margin: 14px 0 0;
+  font-size: .85rem;
+  color: var(--color-text-muted, #85806B);
   text-align: center;
-  line-height: 1.4;
+  line-height: 1.5;
 }
+
+/* ações do carrinho: pagar em cima, plantar outra leitura embaixo */
+.carrinho-acoes {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 20px;
+}
+
 /* Cupom de desconto (revisão do carrinho) */
 .cart-cupom {
   display: flex;
@@ -365,43 +354,45 @@ body.modal-aberto { overflow: hidden; }
 .cart-cupom-input {
   flex: 1;
   min-width: 0;
-  padding: 10px 12px;
-  border: 1px solid rgba(201, 154, 78, 0.35);
-  border-radius: 10px;
-  font-size: .95rem;
+  padding: 11px 14px;
+  border: 1.5px solid var(--color-neutral-stone, #D8D2B8);
+  border-radius: 12px 5px 12px 5px;
+  font-size: 1rem;
+  font-family: inherit;
   text-transform: uppercase;
-  background: var(--bg, #fff);
+  background: var(--color-bg-card, #FFFEF6);
   color: inherit;
 }
 .cart-cupom-input:focus {
   outline: none;
-  border-color: var(--secondary, #A67C32);
+  border-color: var(--v4-salvia-forte, #6E8F73);
+  box-shadow: 0 0 0 3px rgba(168, 196, 158, 0.35);
 }
 .cart-cupom-btn {
   flex: 0 0 auto;
   width: auto;
-  padding: 10px 16px;
+  padding: 11px 18px;
   white-space: nowrap;
 }
 .cart-cupom-msg {
   margin: 6px 2px 0;
-  font-size: .82rem;
-  color: #b91c1c;
+  font-size: .84rem;
+  color: var(--color-error, #8B3A1E);
   min-height: 1em;
 }
 .cart-cupom-ok {
   justify-content: space-between;
-  background: rgba(6, 95, 70, 0.08);
-  border: 1px solid rgba(6, 95, 70, 0.2);
-  border-radius: 10px;
-  padding: 10px 14px;
+  background: rgba(221, 229, 204, 0.45);
+  border: 1px solid rgba(110, 143, 115, 0.45);
+  border-radius: 12px 5px 12px 5px;
+  padding: 11px 14px;
   font-size: .9rem;
-  color: #065f46;
+  color: var(--color-success, #3E6B45);
 }
 .cart-cupom-remover {
   background: none;
   border: none;
-  color: #b91c1c;
+  color: var(--color-error, #8B3A1E);
   font-weight: 600;
   cursor: pointer;
   font-size: .85rem;
@@ -422,39 +413,323 @@ body.modal-aberto { overflow: hidden; }
 @keyframes ag-btn-spin { to { transform: rotate(360deg); } }
 
 /* ============================================================
+   TELA DE PAGAMENTO
+   ============================================================ */
+.pag-container {
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 26px 20px 52px;
+}
+
+/* Resumo — recibo de papel */
+.pag-resumo-box {
+  background: var(--color-bg-card, #FFFEF6);
+  border: 1px solid rgba(169, 135, 59, 0.32);
+  border-radius: 18px 8px 18px 8px;
+  padding: 18px 20px;
+  margin-bottom: 26px;
+}
+.pag-resumo-box h3 {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--fonte-corpo, 'Figtree', sans-serif);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--color-gold-deep, #8A6D2F);
+  margin-bottom: 12px;
+}
+.pag-resumo-box h3::before {
+  content: "";
+  width: 22px;
+  height: 1px;
+  background: var(--color-gold, #A9873B);
+  flex-shrink: 0;
+}
+.pag-resumo-linha {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: .93rem;
+  padding: 6px 0;
+  color: var(--color-text-muted, #85806B);
+  border-bottom: 2px dotted rgba(147, 172, 143, 0.4);
+}
+.pag-resumo-linha strong {
+  color: var(--color-text-primary, #182A1E);
+  font-weight: 600;
+  text-align: right;
+}
+.pag-resumo-total {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding-top: 12px;
+  margin-top: 4px;
+  font-size: .95rem;
+  color: var(--color-text-body, #41513F);
+  font-weight: 600;
+}
+.pag-resumo-total strong {
+  font-family: var(--fonte-titulo, 'Fraunces', Georgia, serif);
+  font-weight: 600;
+  font-size: 1.55rem;
+  color: var(--color-gold-deep, #8A6D2F);
+}
+.pag-chave {
+  margin-top: 10px;
+  font-size: .8rem;
+  color: var(--color-text-muted, #85806B);
+  text-align: right;
+}
+.pag-chave strong {
+  color: var(--color-text-body, #41513F);
+  letter-spacing: 0.04em;
+}
+
+/* Escolha do método — botões grandes, um toque */
+.pag-metodos-titulo {
+  font-family: var(--fonte-titulo, 'Fraunces', Georgia, serif);
+  font-weight: 560;
+  font-size: 1.25rem;
+  color: var(--color-text-primary, #182A1E);
+  margin-bottom: 14px;
+}
+.pag-metodo-btn {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  padding: 17px 20px;
+  margin-bottom: 12px;
+  background: var(--color-primary, #142E20);
+  color: var(--color-text-on-dark, #F2EEDD);
+  border: none;
+  border-radius: 20px 8px 20px 8px;
+  box-shadow: 4px 4px 0 rgba(147, 172, 143, 0.4);
+  cursor: pointer;
+  text-align: left;
+  font-family: inherit;
+  transition: background 0.2s, transform 0.2s, box-shadow 0.2s,
+              border-radius 0.45s var(--curva-suave, cubic-bezier(0.22, 1, 0.36, 1));
+}
+.pag-metodo-btn:hover:not(:disabled) {
+  background: var(--color-primary-hover, #1F4530);
+  border-radius: 8px 20px 8px 20px;
+  transform: translate(-2px, -2px);
+  box-shadow: 6px 6px 0 rgba(147, 172, 143, 0.45);
+}
+.pag-metodo-btn:disabled { opacity: .55; cursor: wait; box-shadow: none; }
+.pag-metodo-txt { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.pag-metodo-txt strong { font-size: 1.06rem; font-weight: 700; letter-spacing: .01em; }
+.pag-metodo-txt small { font-size: .84rem; color: var(--color-gold-light, #D2BA7C); font-weight: 500; }
+.pag-metodo-seta { margin-left: auto; font-size: 1.25rem; flex-shrink: 0; }
+
+/* variante cartão: contorno sobre papel */
+.pag-metodo-btn--outline {
+  background: var(--color-bg-card, #FFFEF6);
+  color: var(--color-primary, #142E20);
+  border: 1.5px solid var(--color-primary, #142E20);
+  box-shadow: none;
+}
+.pag-metodo-btn--outline:hover:not(:disabled) {
+  background: var(--v4-sussurro, #DDE5CC);
+  box-shadow: none;
+}
+.pag-metodo-btn--outline .pag-metodo-txt small { color: var(--color-text-muted, #85806B); }
+
+.pag-metodo-btn.carregando .pag-metodo-seta { display: none; }
+
+/* Wise escondido atrás de "estou fora do Brasil" */
+.pag-wise-toggle {
+  display: block;
+  margin: 6px auto 0;
+  background: none;
+  border: none;
+  padding: 8px 10px;
+  font-family: inherit;
+  font-size: .88rem;
+  font-weight: 600;
+  color: var(--color-text-muted, #85806B);
+  text-decoration: underline dotted;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+.pag-wise-toggle:hover { color: var(--color-primary, #142E20); }
+.pag-wise {
+  background: var(--color-neutral-sand, #EDEBD9);
+  border-radius: 16px 7px 16px 7px;
+  padding: 18px;
+  margin-top: 10px;
+  font-size: .92rem;
+}
+.pag-wise p { margin-bottom: 12px; color: var(--color-text-body, #41513F); }
+.pag-wise .ag-btn { width: 100%; margin-top: 8px; }
+
+.pag-pix-chave {
+  background: var(--color-bg-card, #FFFEF6);
+  border: 1.5px dashed rgba(169, 135, 59, 0.5);
+  border-radius: 12px 5px 12px 5px;
+  padding: 13px;
+  text-align: center;
+  font-size: .98rem;
+  font-weight: 700;
+  color: var(--color-gold-deep, #8A6D2F);
+  margin-bottom: 4px;
+  word-break: break-all;
+}
+.pag-instrucoes { list-style: none; display: flex; flex-direction: column; gap: 10px; margin-bottom: 14px; padding: 0; }
+.pag-instrucoes li {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  font-size: .9rem;
+}
+.pag-instrucoes .step-num {
+  min-width: 24px; height: 24px;
+  background: var(--color-gold, #A9873B);
+  color: var(--color-neutral-white, #FFFEF6);
+  border-radius: 50% 40% 50% 40%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: .75rem;
+  font-weight: 800;
+  flex-shrink: 0;
+}
+
+/* Espera — checkout aberto em outra aba */
+.pag-espera {
+  text-align: center;
+  background: var(--color-neutral-sand, #EDEBD9);
+  border: 2px dotted rgba(147, 172, 143, 0.6);
+  border-radius: 22px 9px 22px 9px;
+  padding: 30px 22px 24px;
+}
+.pag-espera-pulso {
+  display: block;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--v4-salvia-forte, #6E8F73);
+  margin: 0 auto 14px;
+  animation: pag-pulsa 1.7s ease-in-out infinite;
+}
+@keyframes pag-pulsa {
+  0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(110, 143, 115, 0.5); }
+  50%      { transform: scale(1.15); box-shadow: 0 0 0 12px rgba(110, 143, 115, 0); }
+}
+.pag-espera h3 {
+  font-family: var(--fonte-titulo, 'Fraunces', Georgia, serif);
+  font-weight: 560;
+  font-size: 1.3rem;
+  color: var(--color-text-primary, #182A1E);
+  margin-bottom: 8px;
+}
+.pag-espera p {
+  font-size: .95rem;
+  color: var(--color-text-body, #41513F);
+  margin-bottom: 18px;
+  line-height: 1.55;
+}
+.pag-espera .ag-btn { width: 100%; }
+.pag-espera .ag-btn + .ag-btn { margin-top: 10px; }
+.pag-ajuda-link {
+  display: block;
+  margin: 14px auto 0;
+  background: none;
+  border: none;
+  padding: 6px;
+  font-family: inherit;
+  font-size: .85rem;
+  font-weight: 600;
+  color: var(--color-text-muted, #85806B);
+  text-decoration: underline dotted;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+.pag-ajuda-link:hover { color: var(--color-primary, #142E20); }
+
+/* Sucesso — a leitura foi plantada */
+.pag-sucesso {
+  text-align: center;
+  padding: 40px 20px 30px;
+}
+.pag-sucesso-selo {
+  width: 78px;
+  height: 78px;
+  margin: 0 auto 18px;
+  border-radius: 58% 42% 55% 45% / 45% 52% 48% 55%;
+  background: var(--v4-sussurro, #DDE5CC);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: selo-nasce 0.5s var(--curva-suave, cubic-bezier(0.22, 1, 0.36, 1));
+}
+.pag-sucesso-selo .m-leaf {
+  width: 26px;
+  height: 42px;
+  color: var(--v4-salvia-forte, #6E8F73);
+}
+.pag-sucesso-selo .m-leaf path:first-child { fill: var(--v4-salvia, #93AC8F); }
+@keyframes selo-nasce {
+  from { transform: scale(0.6); opacity: 0; }
+  to   { transform: scale(1); opacity: 1; }
+}
+.pag-sucesso-titulo {
+  font-family: var(--fonte-titulo, 'Fraunces', Georgia, serif);
+  font-weight: 560;
+  font-size: 1.7rem;
+  color: var(--color-primary, #142E20);
+  margin-bottom: 10px;
+  text-wrap: balance;
+}
+.pag-sucesso-txt {
+  font-size: 1rem;
+  color: var(--color-text-body, #41513F);
+  line-height: 1.6;
+  max-width: 380px;
+  margin: 0 auto 24px;
+}
+.pag-sucesso .ag-btn { max-width: 300px; }
+
+/* Erro do pagamento */
+#pag-erro-box { margin: 4px 0 10px; }
+
+/* ============================================================
    Botão flutuante "retomar pedido / continuar carrinho"
    ============================================================ */
 .btn-retomar-pedido {
   position: fixed;
   right: 18px;
   bottom: 18px;
-  z-index: 9998;
+  z-index: 8998;
   display: none;
   align-items: center;
   gap: 8px;
   padding: 13px 22px;
-  border: 1px solid var(--color-gold-deep, #A67C32);
-  border-radius: 999px;
-  background: var(--color-gold, #C99A4E);
-  color: var(--color-primary-deep, #15281C);
-  font-family: var(--fonte-corpo, inherit);
+  border: none;
+  border-radius: 20px 8px 20px 8px;
+  background: var(--color-gold-deep, #8A6D2F);
+  color: var(--color-neutral-white, #FFFEF6);
+  font-family: var(--fonte-corpo, 'Figtree', sans-serif);
   font-size: .92rem;
   font-weight: 700;
-  letter-spacing: .03em;
+  letter-spacing: .02em;
   cursor: pointer;
-  box-shadow: 0 6px 20px rgba(33, 61, 44, .28);
-  transition: background .2s ease, border-color .2s ease, transform .12s ease, box-shadow .2s ease;
+  box-shadow: 4px 4px 0 rgba(107, 85, 38, 0.4);
+  transition: background .2s ease, transform .2s ease, box-shadow .2s ease,
+              border-radius 0.45s var(--curva-suave, cubic-bezier(0.22, 1, 0.36, 1));
   animation: retomar-pop .28s ease;
 }
 .btn-retomar-pedido.visivel {
   display: inline-flex;
 }
 .btn-retomar-pedido:hover {
-  background: var(--color-gold-deep, #A67C32);
-  border-color: var(--color-gold-deep, #A67C32);
-  color: var(--color-text-on-dark, #ECE3D0);
-  transform: translateY(-2px);
-  box-shadow: 0 8px 26px rgba(33, 61, 44, .36);
+  background: var(--color-gold, #A9873B);
+  border-radius: 8px 20px 8px 20px;
+  transform: translate(-2px, -2px);
+  box-shadow: 6px 6px 0 rgba(107, 85, 38, 0.45);
 }
 .btn-retomar-pedido:active {
   transform: scale(.97);
@@ -470,4 +745,53 @@ body.modal-aberto { overflow: hidden; }
     padding: 11px 16px;
     font-size: .88rem;
   }
+}
+
+/* ============================================================
+   Diálogo "pedido pendente" (_ofereceRetomar)
+   ============================================================ */
+.pendente-card {
+  background: var(--color-bg-card, #FFFEF6);
+  border: 1.5px solid var(--color-neutral-stone, #D8D2B8);
+  border-radius: 22px 9px 22px 9px;
+  box-shadow: 8px 8px 0 rgba(147, 172, 143, 0.3), 0 24px 64px rgba(14, 33, 23, 0.35);
+  max-width: 440px;
+  width: 100%;
+  padding: 26px 24px;
+}
+.pendente-card h3 {
+  font-family: var(--fonte-titulo, 'Fraunces', Georgia, serif);
+  font-weight: 560;
+  font-size: 1.35rem;
+  color: var(--color-primary, #142E20);
+  margin: 0 0 12px;
+}
+.pendente-card p {
+  font-size: .93rem;
+  line-height: 1.55;
+  color: var(--color-text-body, #41513F);
+  margin: 0 0 10px;
+}
+.pendente-card .pendente-aviso {
+  font-size: .87rem;
+  color: var(--color-text-muted, #85806B);
+}
+.pendente-card .pendente-acoes {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+/* ============================================================
+   Movimento reduzido
+   ============================================================ */
+@media (prefers-reduced-motion: reduce) {
+  .modal-container,
+  .modal-screen.active,
+  .modal-screen.slide-esquerda,
+  .pag-sucesso-selo,
+  .btn-retomar-pedido { animation: none; transition: none; }
+  .modal-tela-step.active .m-leaf { animation: none; }
+  .pag-espera-pulso { animation: none; }
 }

@@ -412,8 +412,10 @@
   <!-- SELETOR DE QUANTIDADE -->
   <div id="seletor-overlay" class="seletor-overlay" role="dialog" aria-modal="true" aria-labelledby="seletor-nome">
     <div class="seletor-card" tabindex="-1">
+      <svg class="folha folha--seletor1" viewBox="0 0 40 64" aria-hidden="true"><path d="M20 3 C 33 18, 35 38, 20 61 C 5 38, 7 18, 20 3 Z" /><path d="M20 12 L 20 52" /></svg>
+      <svg class="folha folha--seletor2" viewBox="0 0 40 64" aria-hidden="true"><path d="M20 3 C 33 18, 35 38, 20 61 C 5 38, 7 18, 20 3 Z" /><path d="M20 12 L 20 52" /></svg>
       <button class="seletor-close" onclick="fecharSeletor()" aria-label="Fechar">✕</button>
-      <div class="seletor-icone">🌿</div>
+      <div class="seletor-icone" aria-hidden="true"><svg viewBox="0 0 40 64"><path d="M20 3 C 33 18, 35 38, 20 61 C 5 38, 7 18, 20 3 Z" /><path d="M20 12 L 20 52" /></svg></div>
       <h3 class="seletor-nome" id="seletor-nome">—</h3>
       <p class="seletor-pergunta" id="seletor-pergunta">—</p>
       <div class="seletor-tiers" id="seletor-tiers"></div>
@@ -426,8 +428,8 @@
         <span class="seletor-resumo-preco" id="seletor-preco">—</span>
       </div>
       <div class="seletor-actions">
-        <button class="seletor-btn-cancel" onclick="fecharSeletor()">Cancelar</button>
-        <button class="seletor-btn-confirm" id="seletor-btn-confirm" onclick="confirmarSeletor()">Agendar →</button>
+        <button class="seletor-btn-cancel" onclick="fecharSeletor()">Voltar</button>
+        <button class="seletor-btn-confirm" id="seletor-btn-confirm" onclick="confirmarSeletor()">Continuar →</button>
       </div>
     </div>
   </div>
@@ -436,20 +438,20 @@
     <div class="modal-container" tabindex="-1">
       <div class="modal-drag-handle" aria-hidden="true"></div>
       <div class="modal-header">
-        <div class="modal-progress" role="navigation" aria-label="Etapas">
+        <div class="modal-progress" role="navigation" aria-label="Etapas do agendamento">
           <div class="modal-tela-step active" id="modal-step-1">
-            <span class="t-num">1</span>
-            <span id="modal-title">Data</span>
+            <svg class="m-leaf" viewBox="0 0 40 64" aria-hidden="true"><path d="M20 3 C 33 18, 35 38, 20 61 C 5 38, 7 18, 20 3 Z" /><path d="M20 12 L 20 52" /></svg>
+            <span class="m-step-label" id="modal-title">Data</span>
           </div>
-          <span class="modal-progress-sep" aria-hidden="true">›</span>
+          <span class="modal-progress-sep" aria-hidden="true"></span>
           <div class="modal-tela-step" id="modal-step-2">
-            <span class="t-num">2</span>
-            <span>Leitura</span>
+            <svg class="m-leaf" viewBox="0 0 40 64" aria-hidden="true"><path d="M20 3 C 33 18, 35 38, 20 61 C 5 38, 7 18, 20 3 Z" /><path d="M20 12 L 20 52" /></svg>
+            <span class="m-step-label">Leitura</span>
           </div>
-          <span class="modal-progress-sep" aria-hidden="true">›</span>
+          <span class="modal-progress-sep" aria-hidden="true"></span>
           <div class="modal-tela-step" id="modal-step-3">
-            <span class="t-num">3</span>
-            <span>Pagamento</span>
+            <svg class="m-leaf" viewBox="0 0 40 64" aria-hidden="true"><path d="M20 3 C 33 18, 35 38, 20 61 C 5 38, 7 18, 20 3 Z" /><path d="M20 12 L 20 52" /></svg>
+            <span class="m-step-label">Pagamento</span>
           </div>
         </div>
         <button class="modal-close-btn" onclick="fecharModal()" aria-label="Fechar modal">&#10005;</button>
@@ -462,8 +464,9 @@
 
             <!-- SEÇÃO 0: DADOS PESSOAIS (1× por pedido) -->
             <section class="ag-section active" id="secao-0" data-passo="0" aria-label="Seus dados">
-              <h2 class="ag-section-title">Seus dados</h2>
-              <p style="margin-bottom:16px;color:var(--text-muted);">Preencha seus dados uma vez — eles valem para todas as leituras do pedido.</p>
+              <button type="button" class="ag-voltar-link" onclick="irParaPasso(1)">← Trocar o dia</button>
+              <h2 class="ag-section-title">Agora, seus dados</h2>
+              <p class="ag-section-sub">Você preenche uma vez só — vale para todas as leituras deste pedido.</p>
               <form class="ag-form" id="form-dados-pessoais" novalidate>
                 <div class="ag-form-row">
                   <div class="ag-form-group">
@@ -473,6 +476,7 @@
                   <div class="ag-form-group">
                     <label for="f-nasc">Data de nascimento *</label>
                     <input type="text" id="f-nasc" name="nascimento" placeholder="DD/MM/AAAA" inputmode="numeric" maxlength="10" required autocomplete="bday">
+                    <small class="ag-field-hint">Usamos na hora de abrir a sua leitura.</small>
                   </div>
                 </div>
                 <div class="ag-form-group">
@@ -510,7 +514,7 @@
                 <div class="ag-form-group" id="f-email-group">
                   <label for="f-email">E-mail *</label>
                   <input type="email" id="f-email" name="email" placeholder="seu@email.com" required autocomplete="email" inputmode="email">
-                  <small style="display:block;margin-top:4px;color:var(--text-muted);">Por ele você acompanha seu pedido e acessa seu histórico.</small>
+                  <small class="ag-field-hint">Por ele você acompanha seu pedido e acessa seu histórico.</small>
                 </div>
                 <button type="button" class="ag-btn ag-btn-primary" onclick="confirmarDadosPessoais()">
                   Continuar →
@@ -519,9 +523,10 @@
             </section>
 
             <!-- SEÇÃO 1: CALENDÁRIO (por leitura) -->
-            <section class="ag-section" id="secao-1" data-passo="1" aria-label="Escolha a data">
-              <h2 class="ag-section-title">Escolha a data</h2>
-              <p style="margin-bottom:12px;color:var(--text-muted);" id="secao1-sub">Selecione o dia para esta leitura</p>
+            <section class="ag-section" id="secao-1" data-passo="1" aria-label="Escolha o dia">
+              <button type="button" class="ag-voltar-link" id="cal-voltar-pedido" onclick="irParaPasso(3)" hidden>← Voltar ao meu pedido</button>
+              <h2 class="ag-section-title">Escolha o dia da sua leitura</h2>
+              <p class="ag-section-sub" id="secao1-sub">Nesse dia ela chega prontinha no seu WhatsApp. Toque no dia que preferir:</p>
               <div id="calendario">
                 <div class="ag-loading"><div class="ag-spinner"></div> Carregando…</div>
               </div>
@@ -529,48 +534,46 @@
 
             <!-- SEÇÃO 2: PERGUNTAS + RESUMO + ADICIONAR AO CARRINHO -->
             <section class="ag-section" id="secao-2" data-passo="2" aria-label="Perguntas e confirmação">
-              <div style="display:flex; align-items:center; gap:12px; margin-bottom:24px;">
-                <button class="ag-btn ag-btn-outline ag-btn-sm" onclick="irParaPasso(1)" aria-label="Voltar">← Voltar</button>
-                <h2 class="ag-section-title" style="margin:0">Finalize esta leitura</h2>
-              </div>
+              <button type="button" class="ag-voltar-link" onclick="irParaPasso(1)">← Trocar o dia</button>
+              <h2 class="ag-section-title">Confirme sua leitura</h2>
+              <p class="ag-section-sub" id="secao2-sub">Escreva suas perguntas com calma — são elas que guiam a leitura.</p>
               <div class="ag-resumo" role="region" aria-label="Resumo da leitura">
-                <h3>✦ Resumo da leitura</h3>
+                <h3>Resumo da leitura</h3>
                 <div class="ag-resumo-row"><span>Leitura</span><span id="res-tipo">—</span></div>
-                <div class="ag-resumo-row"><span>Data</span><span id="res-data">—</span></div>
-                <div class="ag-resumo-row"><span>Entrega</span><span id="res-hora">—</span></div>
-                <div class="ag-resumo-row" id="res-desconto-linha" style="display:none; color:#065f46;">
+                <div class="ag-resumo-row"><span>Dia</span><span id="res-data">—</span></div>
+                <div class="ag-resumo-row"><span>Chega no WhatsApp</span><span id="res-hora">—</span></div>
+                <div class="ag-resumo-row" id="res-desconto-linha" style="display:none;">
                   <span>Desconto</span><span id="res-desconto">—</span>
                 </div>
                 <div class="ag-resumo-total"><span>Valor</span><span id="res-valor">—</span></div>
               </div>
-              <p class="ag-entrega-aviso">Sua leitura será enviada por WhatsApp até o horário indicado acima.</p>
               <form class="ag-form" id="form-dados" novalidate>
                 <div class="ag-form-group" id="f-obs-group" style="display:none;">
                   <!-- gerado dinamicamente por abrirModal -->
                 </div>
                 <button type="submit" class="ag-btn ag-btn-primary" id="btn-pagar">
-                  + Adicionar ao pedido
+                  Continuar →
                 </button>
               </form>
             </section>
 
             <!-- SEÇÃO 3: REVISÃO DO CARRINHO -->
-            <section class="ag-section" id="secao-3" data-passo="3" aria-label="Revisão do carrinho">
+            <section class="ag-section" id="secao-3" data-passo="3" aria-label="Revisão do pedido">
               <h2 class="ag-section-title">Seu pedido</h2>
-              <p style="margin-bottom:16px;color:var(--text-muted);" id="secao3-sub">Revise as leituras antes de ir para o pagamento.</p>
+              <p class="ag-section-sub" id="secao3-sub">Confira se está tudo certo. Você paga uma vez só, mesmo com mais de uma leitura.</p>
               <div id="carrinho-lista">
                 <!-- renderizado por _renderizarCarrinho() -->
               </div>
-              <div style="display:flex;flex-direction:column;gap:10px;margin-top:20px;">
-                <button class="ag-btn ag-btn-outline" id="btn-add-leitura" onclick="adicionarOutraLeitura()" style="width:100%;">
-                  + Adicionar outra leitura
-                </button>
+              <div class="carrinho-acoes">
                 <label class="termos-aceite termos-aceite--carrinho" id="termosAceiteCarrinho" hidden>
                   <input type="checkbox" id="carrinho-termos">
                   <span>Li e concordo com os <button type="button" class="termos-link" data-cs-termos>Termos de Uso e a Política de Privacidade</button></span>
                 </label>
                 <button class="ag-btn ag-btn-primary" id="btn-ir-pagar" onclick="irParaPagamentoCarrinho()" style="width:100%;display:none;">
                   Ir para o pagamento →
+                </button>
+                <button class="ag-btn ag-btn-ghost" id="btn-add-leitura" onclick="adicionarOutraLeitura()" style="width:100%;">
+                  + Quero adicionar outra leitura
                 </button>
               </div>
             </section>
@@ -581,63 +584,65 @@
         <!-- TELA 2: PAGAMENTO -->
         <div id="telaPagamento" class="modal-screen">
           <div class="pag-container">
-            <button class="pag-voltar-btn" onclick="_mostrarTela(1)">← Voltar ao agendamento</button>
-            <div class="pag-resumo-box" role="region" aria-label="Resumo do agendamento">
-              <h3>✦ Resumo do agendamento</h3>
-              <div class="pag-resumo-linha"><span>Leitura</span><strong id="modal-r-tipo">—</strong></div>
-              <div class="pag-resumo-linha"><span>Data</span><strong id="modal-r-data">—</strong></div>
-              <div class="pag-resumo-linha" style="border-top:2px solid var(--border); padding-top:10px; margin-top:6px;">
-                <span><strong>Total a pagar</strong></span>
-                <strong id="modal-r-valor" style="color:var(--primary); font-size:1.1rem;">—</strong>
+
+            <!-- Sucesso: aparece quando o webhook confirma -->
+            <div id="pag-sucesso" class="pag-sucesso" hidden>
+              <div class="pag-sucesso-selo" aria-hidden="true">
+                <svg class="m-leaf" viewBox="0 0 40 64"><path d="M20 3 C 33 18, 35 38, 20 61 C 5 38, 7 18, 20 3 Z" /><path d="M20 12 L 20 52" /></svg>
+              </div>
+              <h2 class="pag-sucesso-titulo">Pagamento confirmado!</h2>
+              <p class="pag-sucesso-txt">Sua leitura chega no seu WhatsApp no dia combinado, até o horário indicado. Agora é com a gente. 🌿</p>
+              <button class="ag-btn ag-btn-primary" onclick="fecharModal()">Concluir</button>
+            </div>
+
+            <!-- Fluxo normal de pagamento -->
+            <div id="pag-fluxo">
+              <button type="button" class="ag-voltar-link" onclick="_mostrarTela(1)">← Voltar ao pedido</button>
+              <h2 class="ag-section-title">Pagamento</h2>
+              <p class="ag-section-sub">Falta só este passo. Escolha como pagar:</p>
+
+              <div class="pag-resumo-box" role="region" aria-label="Resumo do pedido">
+                <h3>Resumo do pedido</h3>
+                <div id="pag-resumo-itens"></div>
+                <div class="pag-resumo-total"><span>Total a pagar</span><strong id="modal-r-valor">—</strong></div>
+                <p class="pag-chave" id="pag-chave"></p>
+              </div>
+
+              <div id="pag-metodos">
+                <button type="button" class="pag-metodo-btn" id="pag-btn-pix" onclick="pagarCom('pix')">
+                  <span class="pag-metodo-txt"><strong>Pagar com PIX</strong><small>aprovação em poucos segundos</small></span>
+                  <span class="pag-metodo-seta" aria-hidden="true">→</span>
+                </button>
+                <button type="button" class="pag-metodo-btn pag-metodo-btn--outline" id="pag-btn-cartao" onclick="pagarCom('cartao')">
+                  <span class="pag-metodo-txt"><strong>Pagar com cartão de crédito</strong><small>à vista ou parcelado</small></span>
+                  <span class="pag-metodo-seta" aria-hidden="true">→</span>
+                </button>
+                <div class="ag-alert ag-alert-error" id="pag-erro-box" hidden></div>
+                <button type="button" class="pag-wise-toggle" id="pag-wise-toggle" aria-expanded="false" aria-controls="pag-wise">🌍 Estou fora do Brasil</button>
+                <div id="pag-wise" class="pag-wise" hidden>
+                  <p>De fora do Brasil, aceitamos transferência pela <strong>Wise</strong>. É assim:</p>
+                  <ol class="pag-instrucoes">
+                    <li><span class="step-num">1</span><span>Transfira <strong id="modal-valor-wise">—</strong> para o e-mail abaixo</span></li>
+                    <li><span class="step-num">2</span><span>Na referência, escreva a chave do seu pedido</span></li>
+                    <li><span class="step-num">3</span><span>Depois toque no botão verde para nos avisar</span></li>
+                  </ol>
+                  <div class="pag-pix-chave" id="modal-email-wise">—</div>
+                  <button class="ag-btn ag-btn-copy" onclick="copiarWiseModal()">Copiar e-mail</button>
+                  <button class="ag-btn ag-btn-whatsapp" onclick="avisarWhatsAppModal('wise')">Já transferi — avisar no WhatsApp</button>
+                </div>
+              </div>
+
+              <!-- Espera: checkout aberto em outra aba -->
+              <div id="pag-espera" class="pag-espera" hidden>
+                <span class="pag-espera-pulso" aria-hidden="true"></span>
+                <h3 id="pag-espera-titulo">Seu pagamento abriu em outra aba</h3>
+                <p id="pag-espera-txt">Termine por lá, do jeito que preferir. Assim que o pagamento cair, esta tela confirma sozinha.</p>
+                <a id="pag-reabrir" class="ag-btn ag-btn-primary" href="#" target="_blank" rel="noopener noreferrer">Abrir pagamento de novo</a>
+                <button type="button" class="ag-btn ag-btn-ghost" onclick="_pagVoltarMetodos()">← Escolher outra forma de pagar</button>
+                <button type="button" class="pag-ajuda-link" onclick="pagAjudaWhatsApp()">Precisa de ajuda? Fale com a gente no WhatsApp</button>
               </div>
             </div>
-            <div class="pag-tabs" role="tablist" aria-label="Métodos de pagamento">
-              <button class="pag-tab active" id="modal-tab-pix"    onclick="trocarAbaPagamento('pix')"    role="tab" aria-selected="true"  aria-controls="modal-painel-pix">PIX</button>
-              <button class="pag-tab"        id="modal-tab-cartao" onclick="trocarAbaPagamento('cartao')" role="tab" aria-selected="false" aria-controls="modal-painel-cartao">Cartão</button>
-              <button class="pag-tab"        id="modal-tab-wise"   onclick="trocarAbaPagamento('wise')"   role="tab" aria-selected="false" aria-controls="modal-painel-wise">Wise</button>
-            </div>
-            <div class="pag-panel active pag-metodo-box" id="modal-painel-pix" role="tabpanel" aria-labelledby="modal-tab-pix">
-              <h3>Pagamento via PIX</h3>
-              <p style="color:var(--text-muted);margin-bottom:16px;font-size:.9rem;">Gere o link, pague o PIX pelo checkout que abrir e pronto — a confirmação chega automaticamente.</p>
-              <p style="text-align:center;font-size:1.05rem;margin-bottom:20px;">Valor: <strong id="modal-valor-pix">—</strong></p>
-              <div id="pix-link-box" style="display:none;text-align:center;margin-bottom:16px;">
-                <a id="pix-link-btn" href="#" target="_blank" rel="noopener noreferrer" class="ag-btn ag-btn-primary" style="display:inline-flex;align-items:center;gap:8px;text-decoration:none;">💠 Abrir checkout para pagar</a>
-              </div>
-              <div id="pix-erro-box" class="ag-alert ag-alert-error" style="display:none;margin-bottom:16px;"></div>
-              <div id="pix-status-box" class="ag-alert ag-alert-success" style="display:none;margin-bottom:16px;">✅ Pagamento confirmado! Sua leitura será entregue no dia escolhido, dentro do horário informado.</div>
-              <div class="pag-btns">
-                <button id="pix-gerar-btn" class="ag-btn ag-btn-primary" onclick="gerarLinkPix()">🔗 Gerar link de pagamento</button>
-              </div>
-            </div>
-            <div class="pag-panel pag-metodo-box" id="modal-painel-cartao" role="tabpanel" aria-labelledby="modal-tab-cartao">
-              <h3>Pagamento via cartão de crédito</h3>
-              <p style="color:var(--text-muted);margin-bottom:16px;font-size:.9rem;">Gere o link, pague pelo checkout que abrir e pronto — a confirmação chega automaticamente.</p>
-              <p style="text-align:center;font-size:1.05rem;margin-bottom:20px;">Valor: <strong id="modal-valor-cartao">—</strong></p>
-              <div id="cartao-link-box" style="display:none;text-align:center;margin-bottom:16px;">
-                <a id="cartao-link-btn" href="#" target="_blank" rel="noopener noreferrer" class="ag-btn ag-btn-primary" style="display:inline-flex;align-items:center;gap:8px;text-decoration:none;">💳 Abrir checkout para pagar</a>
-              </div>
-              <div id="cartao-erro-box" class="ag-alert ag-alert-error" style="display:none;margin-bottom:16px;"></div>
-              <div id="cartao-status-box" class="ag-alert ag-alert-success" style="display:none;margin-bottom:16px;">✅ Pagamento confirmado! Sua leitura será entregue no dia escolhido, dentro do horário informado.</div>
-              <div class="pag-btns">
-                <button id="cartao-gerar-btn" class="ag-btn ag-btn-primary" onclick="gerarLinkCartao()">🔗 Gerar link de pagamento</button>
-              </div>
-            </div>
-            <div class="pag-panel pag-metodo-box" id="modal-painel-wise" role="tabpanel" aria-labelledby="modal-tab-wise">
-              <h3>Pagamento via Wise (internacional)</h3>
-              <div class="ag-alert ag-alert-info" style="margin-bottom:20px;">Para pagamentos internacionais aceitamos transferência via Wise.</div>
-              <p style="font-size:.875rem; margin-bottom:8px; font-weight:600;">E-mail para transferência:</p>
-              <div class="pag-pix-chave" id="modal-email-wise">—</div>
-              <button class="ag-btn ag-btn-copy ag-btn-sm" onclick="copiarWiseModal()" style="margin-bottom:20px;">📋 Copiar e-mail Wise</button>
-              <ol class="pag-instrucoes">
-                <li><span class="step-num">1</span><span>Acesse sua conta Wise e transfira para o e-mail acima</span></li>
-                <li><span class="step-num">2</span><span>Valor: <strong id="modal-valor-wise">—</strong></span></li>
-                <li><span class="step-num">3</span><span>Na referência, coloque sua <strong>chave do pedido</strong></span></li>
-                <li><span class="step-num">4</span><span>Após transferir, clique abaixo ✅</span></li>
-              </ol>
-              <div class="pag-btns">
-                <button class="ag-btn ag-btn-whatsapp" onclick="avisarWhatsAppModal('wise')">📱 Avisar sobre pagamento Wise</button>
-              </div>
-            </div>
+
           </div>
         </div>
 

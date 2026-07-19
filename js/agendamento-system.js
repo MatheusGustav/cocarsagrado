@@ -147,6 +147,11 @@ function _renderNaipePerguntas(vals) {
   g.style.display = '';
   g.innerHTML = '';
 
+  const hint = document.createElement('p');
+  hint.className = 'ag-obs-hint';
+  hint.textContent = 'Conte a situação com suas palavras e o que você quer saber. Não existe pergunta errada. 🌿';
+  g.appendChild(hint);
+
   for (let idx = 0; idx < n; idx++) {
     const i = idx + 1;
     const row = document.createElement('div');
@@ -186,7 +191,7 @@ function _renderNaipePerguntas(vals) {
     ta.name = `obs${i}`;
     ta.required = true;
     ta.rows = 3;
-    ta.placeholder = 'Escreva sua pergunta ou questão para a leitura…';
+    ta.placeholder = 'Ex.: Como fica meu relacionamento nos próximos meses?';
     ta.value = vals[idx] || '';
     row.appendChild(ta);
 
@@ -197,7 +202,8 @@ function _renderNaipePerguntas(vals) {
     const add = document.createElement('button');
     add.type = 'button';
     add.className = 'naipe-add-btn';
-    add.innerHTML = '＋ Adicionar pergunta';
+    // Mostra quanto a próxima pergunta custa (cada extra sai mais barata)
+    add.innerHTML = `＋ Adicionar outra pergunta · ${fmtBRL(NAIPE_CUSTO[n])}`;
     add.addEventListener('click', () => {
       const cur = _lerNaipeVals();
       cur.push('');
@@ -360,7 +366,7 @@ async function abrirSeletor(ref) {
 
   document.getElementById('seletor-nome').textContent     = tipo.nome;
   document.getElementById('seletor-pergunta').textContent = tipo.especial
-    ? 'Confirme para escolher a data'
+    ? 'Confirme para escolher o dia'
     : 'Quantas sessões?';
 
   if (tiersEl) { tiersEl.innerHTML = ''; tiersEl.style.display = 'none'; }
@@ -444,7 +450,7 @@ function _abrirSeletorNaipes(tipo) {
   const btnConfirm = document.getElementById('seletor-btn-confirm');
 
   document.getElementById('seletor-nome').textContent     = tipo.nome;
-  document.getElementById('seletor-pergunta').textContent = 'Escolha o naipe (tema) da sua leitura';
+  document.getElementById('seletor-pergunta').textContent = 'Escolha o tema da sua leitura';
 
   const precoBase = fmtBRL(precoNaipe(1));
   tiersEl.innerHTML = '';
@@ -455,7 +461,7 @@ function _abrirSeletorNaipes(tipo) {
     opt.innerHTML = `
       <span class="naipe-top">
         <span class="tier-label"><span class="naipe-simbolo" aria-hidden="true">${naipe.simbolo}</span>${_escCat(naipe.nome)}</span>
-        <span class="tier-preco">${precoBase}</span>
+        <span class="tier-preco"><small>a partir de</small>${precoBase}</span>
       </span>
       <span class="naipe-desc">${_escCat(naipe.desc)}</span>`;
     opt.addEventListener('click', () => {
@@ -574,9 +580,9 @@ async function carregarCalendario() {
       const numero = WHATSAPP_TERAPEUTA[profissional] || '';
       cal.innerHTML = `
         <div class="ag-empty ag-empty-vagas">
-          <p>Sem leituras disponíveis no momento.</p>
-          <p style="font-size:.85rem; margin-top:4px; color:var(--text-muted);">Nossa agenda está temporariamente cheia. Entre em contato pelo WhatsApp para verificar próximas disponibilidades.</p>
-          ${numero ? `<a href="https://wa.me/${numero}" target="_blank" rel="noopener" class="ag-btn ag-btn-whatsapp" style="margin-top:14px; display:inline-flex;">💬 Verificar disponibilidade</a>` : ''}
+          <p><strong>Nossa agenda está cheia por agora.</strong></p>
+          <p style="font-size:.87rem; margin-top:4px;">Chame a gente no WhatsApp que avisamos assim que abrir um novo dia.</p>
+          ${numero ? `<a href="https://wa.me/${numero}" target="_blank" rel="noopener" class="ag-btn ag-btn-whatsapp" style="margin-top:14px; display:inline-flex;">💬 Avisar quando abrir vaga</a>` : ''}
         </div>`;
       return;
     }
@@ -590,8 +596,8 @@ async function carregarCalendario() {
       const card = document.createElement('div');
       card.className = 'ag-vagas-card';
 
-      const horarioLabel = ate_horario ? `entrega até ${ate_horario.slice(0, 5)}` : '';
-      const vagasText    = vagas === 1 ? '1 leitura disponível' : `${vagas} leituras disponíveis`;
+      const entregaLabel = ate_horario ? `Chega até as ${ate_horario.slice(0, 5)}` : 'Chega ao longo do dia';
+      const vagasText    = vagas === 1 ? 'Última vaga!' : (vagas <= 2 ? `Restam só ${vagas} vagas` : `${vagas} vagas`);
       const cls          = vagas <= 2 ? 'vagas-poucas' : 'vagas-ok';
 
       card.innerHTML = `
@@ -603,9 +609,10 @@ async function carregarCalendario() {
           </div>
         </div>
         <div class="ag-vagas-info ${cls}">
-          <span class="ag-vagas-badge">${vagasText}${horarioLabel ? ' (' + horarioLabel + ')' : ''}</span>
+          <span class="ag-vagas-entrega">${entregaLabel}</span>
+          <span class="ag-vagas-badge">${vagasText}</span>
         </div>
-        <span class="ag-vagas-action" aria-hidden="true">→</span>`;
+        <span class="ag-vagas-action" aria-hidden="true">Escolher →</span>`;
 
       card.setAttribute('role', 'button');
       card.setAttribute('tabindex', '0');
@@ -856,7 +863,7 @@ function _renderizarCarrinho() {
   if (!container) return;
 
   if (Estado.carrinho.length === 0) {
-    container.innerHTML = '<p class="ag-empty" style="padding:16px;">Nenhuma leitura adicionada ainda.</p>';
+    container.innerHTML = '<p class="ag-empty" style="padding:16px;">Seu pedido está vazio por enquanto. 🌱</p>';
     _atualizarBotoesCarrinho();
     return;
   }
@@ -873,8 +880,8 @@ function _renderizarCarrinho() {
     const d = new Date(aY, aM - 1, aD);
     const nome = item.tipo.tier_label || item.tipo.nome;
     const entregaLabel = item.horario && item.horario !== '00:00'
-      ? `Entrega até ${item.horario.slice(0,5)}`
-      : 'Entrega no dia';
+      ? `Chega até as ${item.horario.slice(0,5)}`
+      : 'Chega no dia';
     html += `
       <div class="cart-item">
         <div class="cart-item-header">
@@ -1033,7 +1040,7 @@ function _atualizarBotoesCarrinho() {
       payBtn.style.display = '';
       // Trava o botão até aceitar os termos (quando exigido).
       payBtn.disabled = exigeTermos && !(termosChk && termosChk.checked);
-      payBtn.innerHTML = `💳 Pagar ${fmtBRL(total)} (${label})`;
+      payBtn.innerHTML = `Pagar ${fmtBRL(total)} · ${label} →`;
     } else {
       payBtn.style.display = 'none';
     }
