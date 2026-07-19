@@ -508,13 +508,17 @@
                     <input type="tel" id="f-fone" name="fone" placeholder="(27) 99999-9999" required autocomplete="tel-national">
                   </div>
                 </div>
-                <!-- Guest: e-mail liga o pedido ao histórico se um dia criar conta
-                     (reivindicar_pedidos). Logado não vê — o servidor usa o e-mail
-                     da conta. Sem confirmação de código aqui: fricção zero. -->
+                <!-- Guest: e-mail liga pedido e áudios ao histórico se um dia criar
+                     conta (reivindicar_pedidos). Digitado 1× — depois fica lembrado
+                     no aparelho e o campo dá lugar ao aviso com "Trocar". Logado não
+                     vê nada — o servidor usa o e-mail da conta. Sem código: fricção zero. -->
                 <div class="ag-form-group" id="f-email-group">
                   <label for="f-email">E-mail *</label>
                   <input type="email" id="f-email" name="email" placeholder="seu@email.com" required autocomplete="email" inputmode="email">
                   <small class="ag-field-hint">Por ele você acompanha seu pedido e acessa seu histórico.</small>
+                </div>
+                <div class="ag-form-group" id="f-email-lembrado" hidden>
+                  <small class="ag-field-hint">Suas leituras e áudios ficam guardados no e-mail <strong id="f-email-salvo">—</strong>. <button type="button" class="termos-link" id="f-email-trocar">Trocar</button></small>
                 </div>
                 <button type="button" class="ag-btn ag-btn-primary" onclick="confirmarDadosPessoais()">
                   Continuar →
