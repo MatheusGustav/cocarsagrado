@@ -187,7 +187,8 @@ img { max-width: 100%; }
   transition: stroke-dashoffset 1.5s ease 0.25s;
 }
 .ramo-path--folha { transition-delay: 0.9s; transition-duration: 0.8s; }
-.catalogo .ramo-path { stroke: var(--color-bg-page); }
+.catalogo .ramo-path,
+.depoimentos .ramo-path { stroke: var(--color-bg-page); }
 .fade-in-scroll.visible .ramo-path { stroke-dashoffset: 0; }
 
 /* blob que respira */
@@ -810,6 +811,96 @@ img { max-width: 100%; }
   animation-delay: -4s;
 }
 .folha--cat2 path { fill: rgba(210, 186, 124, 0.12); }
+.folha--cat3 {
+  width: 42px;
+  top: 22%;
+  right: 3%;
+  --rot: -156deg;
+  color: rgba(242, 238, 221, 0.35);
+  animation-delay: -2s;
+}
+.folha--cat3 path { fill: rgba(242, 238, 221, 0.07); }
+.folha--cat4 {
+  width: 30px;
+  top: 42%;
+  left: 2%;
+  --rot: 24deg;
+  color: rgba(210, 186, 124, 0.55);
+  animation-delay: -5s;
+}
+.folha--cat4 path { fill: rgba(210, 186, 124, 0.1); }
+.folha--cat5 {
+  width: 28px;
+  top: 60%;
+  right: 5%;
+  --rot: -18deg;
+  color: rgba(210, 186, 124, 0.5);
+  animation-delay: -7s;
+}
+.folha--cat5 path { fill: rgba(210, 186, 124, 0.1); }
+.folha--cat6 {
+  width: 46px;
+  top: 78%;
+  left: 4%;
+  --rot: 140deg;
+  color: rgba(242, 238, 221, 0.38);
+  animation-delay: -3s;
+}
+.folha--cat6 path { fill: rgba(242, 238, 221, 0.08); }
+.folha--cat7 {
+  width: 26px;
+  top: 12%;
+  left: 9%;
+  --rot: -40deg;
+  color: rgba(242, 238, 221, 0.32);
+  animation-delay: -1.5s;
+}
+.folha--cat7 path { fill: rgba(242, 238, 221, 0.06); }
+.folha--cat8 {
+  width: 36px;
+  top: 30%;
+  left: 5%;
+  --rot: 160deg;
+  color: rgba(210, 186, 124, 0.5);
+  animation-delay: -6s;
+}
+.folha--cat8 path { fill: rgba(210, 186, 124, 0.1); }
+.folha--cat9 {
+  width: 32px;
+  top: 50%;
+  right: 9%;
+  --rot: 20deg;
+  color: rgba(242, 238, 221, 0.35);
+  animation-delay: -8s;
+}
+.folha--cat9 path { fill: rgba(242, 238, 221, 0.07); }
+.folha--cat10 {
+  width: 24px;
+  top: 68%;
+  left: 8%;
+  --rot: -150deg;
+  color: rgba(210, 186, 124, 0.55);
+  animation-delay: -2.5s;
+}
+.folha--cat10 path { fill: rgba(210, 186, 124, 0.1); }
+.folha--cat11 {
+  width: 40px;
+  top: 88%;
+  right: 3%;
+  --rot: -25deg;
+  color: rgba(242, 238, 221, 0.38);
+  animation-delay: -4.5s;
+}
+.folha--cat11 path { fill: rgba(242, 238, 221, 0.08); }
+.folha--cat12 {
+  width: 26px;
+  top: 7%;
+  right: 10%;
+  --rot: 35deg;
+  color: rgba(210, 186, 124, 0.5);
+  animation-delay: -3.5s;
+}
+.folha--cat12 path { fill: rgba(210, 186, 124, 0.1); }
 
 /* textos que ficam direto sobre o fundo escuro */
 .catalogo .section-title,
@@ -1410,9 +1501,62 @@ img { max-width: 100%; }
    SEÇÃO DEPOIMENTOS — HERBÁRIO
    ============================================================ */
 .depoimentos {
-  background: var(--color-bg-page);
+  position: relative;
+  background: var(--color-primary);
   padding-block: clamp(72px, 9vw, 108px);
+  overflow: hidden;
 }
+
+/* folhinhas sobre o verde escuro (espelhadas em relação ao catálogo) */
+.folha--dep1 {
+  width: 54px;
+  top: 48px;
+  right: 4%;
+  --rot: -148deg;
+  color: rgba(242, 238, 221, 0.55);
+}
+.folha--dep1 path { fill: rgba(242, 238, 221, 0.12); }
+.folha--dep2 {
+  width: 34px;
+  bottom: -6px;
+  left: 6%;
+  --rot: 30deg;
+  color: rgba(210, 186, 124, 0.75);
+  animation-delay: -4s;
+}
+.folha--dep2 path { fill: rgba(210, 186, 124, 0.18); }
+.folha--dep3 {
+  width: 28px;
+  top: 26%;
+  left: 3%;
+  --rot: -20deg;
+  color: rgba(210, 186, 124, 0.68);
+  animation-delay: -2s;
+}
+.folha--dep3 path { fill: rgba(210, 186, 124, 0.16); }
+.folha--dep4 {
+  width: 32px;
+  top: 52%;
+  right: 2%;
+  --rot: 150deg;
+  color: rgba(242, 238, 221, 0.5);
+  animation-delay: -6s;
+}
+.folha--dep4 path { fill: rgba(242, 238, 221, 0.11); }
+.folha--dep5 {
+  width: 24px;
+  bottom: 28px;
+  right: 14%;
+  --rot: 18deg;
+  color: rgba(210, 186, 124, 0.68);
+  animation-delay: -7.5s;
+}
+.folha--dep5 path { fill: rgba(210, 186, 124, 0.16); }
+
+/* textos direto sobre o fundo escuro */
+.depoimentos .section-title { color: var(--color-text-on-dark); }
+.depoimentos .eyebrow { color: var(--color-gold); }
+.depoimentos .depos-count { color: rgba(242, 238, 221, 0.72); }
 .depos-header {
   text-align: center;
   max-width: 620px;
@@ -1498,28 +1642,10 @@ img { max-width: 100%; }
    ============================================================ */
 .cta-bar {
   position: relative;
-  background: var(--color-primary);
+  background: var(--color-bg-page);
   padding-block: 52px;
   overflow: hidden;
 }
-.folha--cta1 {
-  width: 54px;
-  top: -8px;
-  left: 4%;
-  --rot: 148deg;
-  color: rgba(242, 238, 221, 0.4);
-}
-.folha--cta1 path { fill: rgba(242, 238, 221, 0.08); }
-.folha--cta2 {
-  width: 34px;
-  bottom: -6px;
-  right: 6%;
-  --rot: -30deg;
-  color: rgba(210, 186, 124, 0.6);
-  animation-delay: -4s;
-}
-.folha--cta2 path { fill: rgba(210, 186, 124, 0.12); }
-
 .cta-bar-inner {
   position: relative;
   display: flex;
@@ -1532,12 +1658,12 @@ img { max-width: 100%; }
   font-family: var(--fonte-titulo);
   font-weight: 570;
   font-size: clamp(1.4rem, 2.4vw, 1.85rem);
-  color: var(--color-text-on-dark);
+  color: var(--color-text-primary);
   margin-bottom: 4px;
 }
 .cta-bar-sub {
   font-size: 14.5px;
-  color: rgba(242, 238, 221, 0.72);
+  color: var(--color-text-muted);
 }
 
 /* ============================================================
@@ -1731,7 +1857,7 @@ img { max-width: 100%; }
   .person-card { align-items: flex-start; }
   .cta-bar-inner { justify-content: center; text-align: center; }
   .footer-inner { justify-content: center; text-align: center; }
-  .folha--cta1, .folha--cta2, .folha--cat1, .folha--cat2 { display: none; }
+  [class*="folha--cat"], [class*="folha--dep"] { display: none; }
 }
 
 /* ============================================================
