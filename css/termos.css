@@ -1,0 +1,132 @@
+/* ============================================================
+   COCAR SAGRADO — Termos de Uso (aceite no carrinho + modal)
+   Herdado do antigo conta-cliente.css quando o drawer "Minha
+   conta" foi removido (jul/2026) — só sobrou o que o checkout usa.
+   ============================================================ */
+
+/* Aceite de termos — checkbox "Li e concordo" (carrinho) */
+/* display:flex acima do [hidden] do navegador escondia o hidden — sem esta
+   regra o checkbox aparecia até pra logado. */
+.termos-aceite[hidden] { display: none; }
+.termos-aceite {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  font-size: 0.85rem;
+  line-height: 1.4;
+  margin: 12px 0 4px;
+  cursor: pointer;
+  color: var(--color-text-primary, #13251A);
+}
+.termos-aceite input[type="checkbox"] {
+  flex: 0 0 auto;
+  width: 18px;
+  height: 18px;
+  margin: 1px 0 0;
+  accent-color: var(--color-primary, #142E20);
+  cursor: pointer;
+}
+.termos-link {
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  color: var(--color-gold-deep, #9A742F);
+  font-weight: 600;
+  text-decoration: underline;
+  cursor: pointer;
+}
+.termos-link:hover { opacity: 0.85; }
+
+/* Versão no carrinho: card sutil pra destacar o ponto de compromisso */
+.termos-aceite--carrinho {
+  background: rgba(201, 154, 78, 0.08);
+  border: 1px solid rgba(201, 154, 78, 0.25);
+  border-radius: 10px;
+  padding: 12px 14px;
+  margin: 0;
+}
+
+/* ============================================================
+   Modal de Termos de Uso (acima do modal de agendamento)
+   ============================================================ */
+.termos-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(8, 15, 8, 0.55);
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  box-sizing: border-box;
+}
+.termos-modal-overlay[hidden] { display: none; }
+
+.termos-modal {
+  position: relative;
+  background: var(--color-bg-card, #FFFDF8);
+  border: 1px solid rgba(201, 154, 78, 0.3);
+  border-radius: 14px;
+  box-shadow: 0 20px 60px rgba(14, 33, 23, 0.35);
+  width: 100%;
+  max-width: 600px;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  padding: 28px 26px 24px;
+  box-sizing: border-box;
+}
+.termos-modal-fechar {
+  position: absolute;
+  top: 14px;
+  right: 16px;
+  background: none;
+  border: none;
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+  color: var(--color-text-primary, #13251A);
+  opacity: 0.6;
+  transition: opacity 0.2s;
+}
+.termos-modal-fechar:hover { opacity: 1; }
+.termos-modal-titulo {
+  font-family: var(--fonte-titulo);
+  font-size: 1.4rem;
+  margin: 0 30px 14px 0;
+  color: var(--color-text-primary, #13251A);
+}
+.termos-modal-corpo {
+  overflow-y: auto;
+  font-size: 0.92rem;
+  line-height: 1.6;
+  color: var(--color-text-body, #33473B);
+}
+.termos-modal-corpo p { margin: 0 0 12px; }
+.termos-modal-corpo h3 {
+  font-family: var(--fonte-titulo);
+  font-size: 1.12rem;
+  color: var(--color-text-primary, #13251A);
+  margin: 22px 0 10px;
+  padding-top: 14px;
+  border-top: 1px solid rgba(201, 154, 78, 0.25);
+}
+.termos-modal-corpo h4 {
+  font-size: 0.98rem;
+  font-weight: 700;
+  color: var(--color-text-primary, #13251A);
+  margin: 18px 0 8px;
+}
+.termos-modal-corpo ul { margin: 0 0 12px; padding-left: 20px; }
+.termos-modal-corpo li { margin-bottom: 6px; }
+.termos-modal-corpo strong { color: var(--color-text-primary, #13251A); }
+.termos-meta { font-size: 0.82rem; opacity: 0.65; margin-bottom: 16px !important; }
+.termos-fecho {
+  margin-top: 18px !important;
+  padding-top: 14px;
+  border-top: 1px solid rgba(201, 154, 78, 0.25);
+  font-style: italic;
+  font-size: 0.88rem;
+  opacity: 0.85;
+}
