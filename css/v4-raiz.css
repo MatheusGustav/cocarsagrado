@@ -413,8 +413,7 @@ img { max-width: 100%; }
   margin-left: 6px;
 }
 
-.nav-account-btn,
-.nav-chat-btn {
+.nav-account-btn {
   width: 38px;
   height: 38px;
   border-radius: 46% 54% 52% 48%;
@@ -428,13 +427,11 @@ img { max-width: 100%; }
   position: relative;
   transition: background var(--transicao), border-color var(--transicao);
 }
-.nav-account-btn:hover,
-.nav-chat-btn:hover {
+.nav-account-btn:hover {
   background: var(--v4-sussurro);
   border-color: var(--v4-salvia);
 }
-.nav-account-icon,
-.nav-chat-icon {
+.nav-account-icon {
   width: 19px;
   height: 19px;
   fill: currentColor;
@@ -469,7 +466,6 @@ img { max-width: 100%; }
 }
 
 .nav-account-btn--mobile,
-.nav-chat-btn--mobile,
 .hamburger { display: none; }
 
 .hamburger {
@@ -1824,7 +1820,6 @@ img { max-width: 100%; }
   .nav-theme-wrapper { display: none; }
   .btn-nav { margin-left: auto; }
   .nav-account-btn--mobile { display: inline-flex; }
-  .nav-chat-btn--mobile { display: inline-flex; }
   .hamburger { display: inline-flex; }
 }
 

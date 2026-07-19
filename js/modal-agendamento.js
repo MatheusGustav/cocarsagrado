@@ -535,18 +535,6 @@ function trocarAbaPagamento(metodo) {
     tab?.setAttribute('aria-selected', ativo);
     painel?.classList.toggle('active', ativo);
   });
-  _atualizarPantero(metodo);
-}
-
-function _atualizarPantero(metodo) {
-  const balao = document.getElementById('pag-pantero-balao');
-  if (!balao) return;
-  const msgs = {
-    pix:    'Gere o link, pague o PIX pelo checkout que abrir e pronto — a confirmação chega automaticamente 🖤',
-    cartao: 'Gere o link, pague pelo checkout que abrir e pronto — a confirmação chega automaticamente 🖤',
-    wise:   'Depois de fazer a transferência, volte para esta página e clique em <strong>"Avisar sobre pagamento Wise"</strong>.',
-  };
-  balao.innerHTML = msgs[metodo] || msgs.pix;
 }
 
 function _copiarTexto(texto, msg) {
