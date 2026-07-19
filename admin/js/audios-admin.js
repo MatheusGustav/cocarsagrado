@@ -516,7 +516,10 @@ async function _audComecarGravacao() {
     return;
   }
 
-  const MIMES = ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4'];
+  // m4a (audio/mp4) primeiro: toca nativo em Android E iPhone — essencial
+  // agora que o áudio vai anexado no e-mail. webm é fallback (Chrome antigo/
+  // Firefox, que não gravam mp4); nesses o anexo pode não tocar em iOS.
+  const MIMES = ['audio/mp4', 'audio/webm;codecs=opus', 'audio/webm'];
   _audMime = MIMES.find(m => MediaRecorder.isTypeSupported(m)) || '';
   if (!_audMime) {
     _audSetErro('Nenhum formato de gravação suportado neste navegador.');
