@@ -811,13 +811,13 @@ async function _audSalvar() {
     return;
   }
 
-  const { error: dbErr } = await supabase.from('audios_cliente').insert({
+  const { data: novo, error: dbErr } = await supabase.from('audios_cliente').insert({
     agendamento_id: _audSelecionado.id,
     storage_path: path,
     duracao_segundos: seg,
     tamanho_bytes: _audBlob.size,
     mime: contentType,
-  });
+  }).select('id').single();
 
   if (dbErr) {
     await supabase.storage.from('audios').remove([path]); // não deixar arquivo órfão
@@ -828,10 +828,21 @@ async function _audSalvar() {
   }
 
   _audContagem[_audSelecionado.id] = (_audContagem[_audSelecionado.id] || 0) + 1;
-  const temConta = !!_audSelecionado.pedidos?.user_id;
-  _toastAdmin('✅ Áudio salvo!' + (temConta ? ' O cliente já vê na conta dele.' : ' Cliente sem conta — fica só aqui no painel.'), 'ok');
+  _toastAdmin('✅ Áudio salvo! Enviando por e-mail…', 'ok');
   _audResetGravador();
   await _audCarregarAudiosDoAgendamento();
+
+  // Envio imediato pro e-mail do cliente. Se falhar (rede etc.), o cron
+  // audio-email-cron reenvia sozinho em até 10 min — não trava o painel.
+  try {
+    const { error: fnErr } = await supabase.functions.invoke('audio-email', {
+      body: { audio_id: novo.id },
+    });
+    if (fnErr) throw fnErr;
+    _toastAdmin('📧 Leitura enviada pro e-mail do cliente.', 'ok');
+  } catch (_) {
+    _toastAdmin('⚠️ E-mail não saiu agora — reenvio automático em até 10 min.', 'erro');
+  }
 }
 
 // ============================================================

@@ -1,17 +1,23 @@
 -- ============================================================
 -- ÁUDIOS DAS LEITURAS — estado atual no banco
 -- (espelho das migrations 20260708120000_audios_cliente.sql
---  + 20260719120000_reivindicar_audios.sql)
+--  + 20260719120000_reivindicar_audios.sql
+--  + 20260719150000_audio_email.sql)
 -- ------------------------------------------------------------
--- Admin grava áudios na aba "Áudios" do painel; arquivo no bucket
--- privado "audios", metadados em audios_cliente. Cliente logado
--- ouve no drawer via meus_audios() + createSignedUrl (a policy de
--- SELECT em storage.objects autoriza só admin e dono).
--- user_id NULL = pedido guest (não aparece para ninguém no site).
--- O user_id é snapshot no INSERT (trigger); quando o guest cria
--- conta, reivindicar_pedidos() (setup.sql) propaga a adoção para
--- os áudios órfãos — é isso que faz o áudio "cair" na conta.
--- enviado_whatsapp_em: reservado para o envio automático futuro.
+-- ENTREGA OFICIAL (2026-07-19): E-MAIL COM ANEXO. Admin grava na
+-- aba "Áudios" do painel → bucket privado "audios" + linha em
+-- audios_cliente → edge function audio-email envia na hora (painel
+-- chama com JWT admin) e o cron 'audio-email-cron' (*/10 min, gate
+-- x-cron-secret) varre o que ficou pra trás. Anexo até ~24MB;
+-- maior vai como link assinado de 90 dias. Só envia com pedido
+-- pago e e-mail presente; enviado_email_em marca o envio.
+--
+-- LEGADO (conta no site morreu pro cliente em 2026-07-19, entrada
+-- da UI removida): user_id snapshot no INSERT (trigger), adoção
+-- via reivindicar_pedidos() (setup.sql), meus_audios() e policies
+-- de dono continuam no banco — inofensivos e prontos se a conta
+-- um dia voltar.
+-- enviado_whatsapp_em: reservado para envio por WhatsApp futuro.
 -- ============================================================
 
 -- Tabela ---------------------------------------------------------------
@@ -24,11 +30,13 @@ CREATE TABLE public.audios_cliente (
   tamanho_bytes       BIGINT,
   mime                TEXT NOT NULL DEFAULT 'audio/webm',
   enviado_whatsapp_em TIMESTAMPTZ,
+  enviado_email_em    TIMESTAMPTZ,  -- NULL = ainda não foi por e-mail (fila do cron)
   criado_em           TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
 CREATE INDEX idx_audios_agendamento ON public.audios_cliente (agendamento_id);
 CREATE INDEX idx_audios_user ON public.audios_cliente (user_id) WHERE user_id IS NOT NULL;
+CREATE INDEX idx_audios_email_pendente ON public.audios_cliente (id) WHERE enviado_email_em IS NULL;
 
 -- Trigger: resolve user_id no banco (front não manda) --------------------
 CREATE OR REPLACE FUNCTION public.audio_seta_user_id()
@@ -118,3 +126,8 @@ $$;
 
 REVOKE ALL ON FUNCTION public.meus_audios() FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION public.meus_audios() TO authenticated;
+
+-- Cron de entrega por e-mail (varredura de pendentes; reusa o secret
+-- 'cron_emails_secret' do Vault — mesmo gate do emails-cron) -------------
+-- cron.schedule('audio-email-cron', '*/10 * * * *', net.http_post →
+--   functions/v1/audio-email com header x-cron-secret)
