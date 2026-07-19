@@ -1722,21 +1722,24 @@ function _descPopEsc(e) {
   if (e.key === 'Escape') _fecharDescPop();
 }
 
-// Destaca o card da leitura com mais agendamentos pagos (RPC agregada;
-// anon não lê agendamentos). Falha silenciosa: sem dado, sem badge.
+// Destaca o card da leitura com mais agendamentos pagos, UM POR TERAPEUTA
+// (RPC agregada; anon não lê agendamentos). Falha silenciosa: sem dado, sem badge.
 async function _destacarMaisProcurada() {
   try {
     const { data, error } = await supabase.rpc('leitura_mais_procurada');
     if (error || !data) return;
-    const card = document.querySelector(`.cat-card[data-service-id="${CSS.escape(data)}"]`);
-    if (!card) return;
-    card.classList.add('cat-card--destaque');
-    const imgWrap = card.querySelector('.cat-card-img');
-    if (imgWrap && !imgWrap.querySelector('.cat-badge--top')) {
-      const b = document.createElement('span');
-      b.className = 'cat-badge cat-badge--top';
-      b.textContent = '✦ Mais procurada';
-      imgWrap.appendChild(b);
+    for (const { service_id } of data) {
+      if (!service_id) continue;
+      const card = document.querySelector(`.cat-card[data-service-id="${CSS.escape(service_id)}"]`);
+      if (!card) continue;
+      card.classList.add('cat-card--destaque');
+      const imgWrap = card.querySelector('.cat-card-img');
+      if (imgWrap && !imgWrap.querySelector('.cat-badge--top')) {
+        const b = document.createElement('span');
+        b.className = 'cat-badge cat-badge--top';
+        b.textContent = '✦ Mais procurada';
+        imgWrap.appendChild(b);
+      }
     }
   } catch { /* destaque é opcional */ }
 }

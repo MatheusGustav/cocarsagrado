@@ -1,16 +1,17 @@
 /* ============================================================
    COCAR SAGRADO — Admin: Áudios das leituras
-   Gravador estilo celular (MediaRecorder): a admin escolhe o
-   agendamento, grava (pausa/retoma), ouve o preview e salva no
-   bucket privado "audios" + tabela audios_cliente (user_id vem
-   de trigger no banco). Cliente logado ouve no drawer do site.
+   Gravador estilo celular (MediaRecorder): a admin grava direto
+   (pausa/retoma), ouve o preview e SÓ ENTÃO escolhe o agendamento
+   destino — salva no bucket privado "audios" + tabela
+   audios_cliente. A entrega ao cliente é por e-mail (edge
+   audio-email + cron de reenvio).
    ============================================================ */
 
 let _audAgendamentos = [];   // cache da busca de agendamentos
 let _audVerTodos     = false; // false = só pago/confirmado (a atender)
 let _audContagem     = {};   // agendamento_id -> nº de áudios salvos
 let _audTodos        = [];   // cache da aba "Áudios salvos"
-let _audSelecionado  = null; // agendamento destino
+let _audSalvando     = false; // trava anti duplo-clique no salvar
 let _audRecorder     = null;
 let _audStream       = null;
 let _audChunks       = [];
@@ -123,20 +124,7 @@ async function inicializarAudios() {
     </div>
 
     <div id="aud-aba-gravar">
-      <div class="aud-passo" id="aud-tela-escolha">
-        <div class="aud-passo-titulo">Para quem é o áudio?</div>
-        <div class="aud-filtros">
-          <button type="button" class="aud-filtro aud-filtro--on" id="aud-filtro-pendentes" onclick="_audFiltroStatus(false)">A atender</button>
-          <button type="button" class="aud-filtro" id="aud-filtro-todos" onclick="_audFiltroStatus(true)">Todos (inclui atendidos)</button>
-        </div>
-        <input type="text" id="aud-busca" class="cup-input" autocomplete="off"
-               placeholder="Buscar por nome, leitura ou WhatsApp…">
-        <div id="aud-ag-lista" class="aud-ag-lista">
-          <div class="ag-loading"><div class="ag-spinner"></div> Carregando…</div>
-        </div>
-      </div>
-
-      <div class="aud-passo" id="aud-tela-gravar" style="display:none;">
+      <div class="aud-passo" id="aud-tela-gravar">
         <div class="aud-gravador">
           <div class="aud-timer" id="aud-timer">00:00.00</div>
           <div class="aud-estado" id="aud-estado">Pronto para gravar</div>
@@ -146,8 +134,22 @@ async function inicializarAudios() {
           <div class="aud-preview" id="aud-preview"></div>
           <div class="aud-erro" id="aud-erro"></div>
         </div>
-        <div class="aud-destino" id="aud-destino"></div>
-        <div id="aud-lista" class="aud-lista"></div>
+      </div>
+
+      <div class="aud-passo" id="aud-tela-escolha" style="display:none;">
+        <div class="aud-escolha-topo">
+          <div class="aud-passo-titulo">Para quem enviar este áudio?</div>
+          <button type="button" class="ag-btn ag-btn-outline ag-btn-sm" onclick="_audVoltarGravador()">↩ Voltar</button>
+        </div>
+        <div class="aud-filtros">
+          <button type="button" class="aud-filtro aud-filtro--on" id="aud-filtro-pendentes" onclick="_audFiltroStatus(false)">A atender</button>
+          <button type="button" class="aud-filtro" id="aud-filtro-todos" onclick="_audFiltroStatus(true)">Todos (inclui atendidos)</button>
+        </div>
+        <input type="text" id="aud-busca" class="cup-input" autocomplete="off"
+               placeholder="Buscar por nome, leitura ou WhatsApp…">
+        <div id="aud-ag-lista" class="aud-ag-lista">
+          <div class="ag-loading"><div class="ag-spinner"></div> Carregando…</div>
+        </div>
       </div>
     </div>
 
@@ -168,8 +170,9 @@ async function inicializarAudios() {
       }
     });
   }
+  _audOndaRedimensionar();
   _audResetGravador();
-  await _audCarregarAgendamentos();
+  _audAtualizarListaMics(); // best-effort; labels só vêm depois da 1ª permissão
 }
 
 // ============================================================
@@ -190,8 +193,24 @@ function _audTrocarAba(aba) {
 }
 
 // ============================================================
-// Passo 1 — seletor de agendamento
+// Passo 2 — escolher o destino (aparece DEPOIS de gravar)
 // ============================================================
+function _audAbrirEscolha() {
+  if (!_audBlob) return; // sem prévia não há o que enviar
+  document.getElementById('aud-tela-gravar').style.display = 'none';
+  const tela = document.getElementById('aud-tela-escolha');
+  tela.style.display = '';
+  const busca = document.getElementById('aud-busca');
+  if (busca) busca.value = '';
+  _audCarregarAgendamentos();
+  tela.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function _audVoltarGravador() {
+  document.getElementById('aud-tela-escolha').style.display = 'none';
+  document.getElementById('aud-tela-gravar').style.display = '';
+}
+
 function _audFiltroStatus(verTodos) {
   if (verTodos === _audVerTodos) return;
   _audVerTodos = verTodos;
@@ -211,7 +230,7 @@ async function _audCarregarAgendamentos() {
   const [ags, cnts] = await Promise.all([
     supabase
       .from('agendamentos')
-      .select('id, cliente_nome, cliente_whatsapp, data_agendamento, status, leitura_origem_id, tipos_leitura(nome), pedidos(user_id)')
+      .select('id, cliente_nome, cliente_whatsapp, data_agendamento, status, leitura_origem_id, tipos_leitura(nome)')
       .in('status', status)
       // fila: mais próximo primeiro; "todos": mais recente primeiro
       .order('data_agendamento', { ascending: !_audVerTodos })
@@ -257,60 +276,21 @@ function _audRenderLista(ags) {
 
   lista.innerHTML = '';
   ags.forEach(ag => {
-    const temConta = !!ag.pedidos?.user_id;
     const item = document.createElement('button');
     item.type = 'button';
-    item.className = 'aud-ag-item' + (_audSelecionado?.id === ag.id ? ' aud-ag-item--sel' : '');
+    item.className = 'aud-ag-item';
     const n = _audContagem[ag.id] || 0;
     item.innerHTML = `
       <span class="aud-ag-nome">${_audEsc(ag.cliente_nome)}</span>
       <span class="aud-ag-meta">${_audEsc(ag.tipos_leitura?.nome || 'Leitura')}${ag.leitura_origem_id ? ' (＋ pergunta adicional)' : ''} · ${_audDataAgend(ag.data_agendamento)}</span>
-      <span class="aud-ag-badges">
-        <span class="aud-ag-badge ${temConta ? 'aud-ag-badge--conta' : 'aud-ag-badge--guest'}">
-          ${temConta ? 'com conta' : 'sem conta — não aparece no site'}
-        </span>
-        ${n ? `<span class="aud-ag-badge aud-ag-badge--audios">🎧 ${n} áudio${n > 1 ? 's' : ''}</span>` : ''}
-      </span>`;
-    item.addEventListener('click', () => _audSelecionar(ag));
+      ${n ? `<span class="aud-ag-badges"><span class="aud-ag-badge aud-ag-badge--audios">🎧 ${n} áudio${n > 1 ? 's' : ''}</span></span>` : ''}`;
+    item.addEventListener('click', () => _audSalvarPara(ag));
     lista.appendChild(item);
   });
 }
 
-async function _audSelecionar(ag) {
-  _audSelecionado = ag;
-
-  // A tela de escolha some; fica só o gravador + destino + histórico
-  document.getElementById('aud-tela-escolha').style.display = 'none';
-  const tela = document.getElementById('aud-tela-gravar');
-  tela.style.display = '';
-  document.getElementById('aud-destino').innerHTML = `
-    <div class="aud-destino-info">
-      <span class="aud-destino-nome">${_audEsc(ag.cliente_nome)}</span>
-      <span class="aud-destino-meta">${_audEsc(ag.tipos_leitura?.nome || 'Leitura')}${ag.leitura_origem_id ? ' (＋ pergunta adicional)' : ''} · ${_audDataAgend(ag.data_agendamento)}</span>
-    </div>
-    <button type="button" class="ag-btn ag-btn-outline ag-btn-sm" onclick="_audVoltarEscolha()">↩ Trocar</button>`;
-  _audResetGravador();
-  _audOndaRedimensionar(); // o canvas nasce escondido (display:none); mede agora
-  _audOndaDesenhar();
-  _audAtualizarListaMics(); // best-effort; labels só vêm depois da 1ª permissão
-  await _audCarregarAudiosDoAgendamento();
-  tela.scrollIntoView({ behavior: 'smooth', block: 'start' });
-}
-
-function _audVoltarEscolha() {
-  // Voltar com gravação em andamento OU prévia não salva descartaria áudio sem avisar
-  if ((_audRecorder && _audRecorder.state !== 'inactive') || _audBlob) {
-    if (!confirm('Há uma gravação em andamento ou uma prévia não salva. Descartar e trocar de atendimento?')) return;
-  }
-  _audDescartarGravacao();
-  _audSelecionado = null;
-  document.getElementById('aud-tela-gravar').style.display = 'none';
-  document.getElementById('aud-tela-escolha').style.display = '';
-  _audFiltrarLista(); // re-render sem seleção marcada
-}
-
 // ============================================================
-// Passo 2 — gravador (idle → gravando ⇄ pausado → preview)
+// Passo 1 — gravador (idle → gravando ⇄ pausado → preview)
 // ============================================================
 function _audSetEstado(txt) {
   const el = document.getElementById('aud-estado');
@@ -490,6 +470,12 @@ function _audResetGravador() {
   _audMs = 0;
   _audBarras = [];
 
+  // Reset sempre volta pra tela do gravador (a escolha só existe com prévia)
+  const escolha = document.getElementById('aud-tela-escolha');
+  const gravar  = document.getElementById('aud-tela-gravar');
+  if (escolha) escolha.style.display = 'none';
+  if (gravar) gravar.style.display = '';
+
   const preview = document.getElementById('aud-preview');
   if (preview) preview.innerHTML = '';
   _audSetErro('');
@@ -651,7 +637,7 @@ function _audMostrarPreview() {
       <span class="aud-player-tempo" id="aud-player-tempo">00:00 / ${_audMmSs(_audMs / 1000)}</span>
     </div>
     <div class="aud-preview-acoes">
-      <button type="button" class="ag-btn ag-btn-primary" id="aud-btn-salvar" onclick="_audSalvar()">💾 Salvar para o cliente</button>
+      <button type="button" class="ag-btn ag-btn-primary" onclick="_audAbrirEscolha()">📨 Enviar para um cliente</button>
       <button type="button" class="ag-btn ag-btn-outline" onclick="_audCompartilharPreview()">📤 Compartilhar</button>
       <button type="button" class="ag-btn ag-btn-outline" onclick="_audResetGravador(); _audComecarGravacao()">🔄 Regravar</button>
       <button type="button" class="ag-btn ag-btn-outline" onclick="_audResetGravador()">✕ Descartar</button>
@@ -781,26 +767,31 @@ function _audPlayerLimpar() {
   _audPlayerSeeking = false;
 }
 
-// Botão "Compartilhar" no preview (antes de salvar)
+// Botão "Compartilhar" no preview (antes de escolher o cliente,
+// então a sugestão de nome leva só a data de hoje)
 async function _audCompartilharPreview() {
-  if (!_audBlob || !_audSelecionado) return;
-  const nome = _audNomeSugerido(_audSelecionado.cliente_nome, _audSelecionado.tipos_leitura?.nome, _audSelecionado.data_agendamento);
-  await _audCompartilharBlob(_audBlob, _audMime.split(';')[0], nome);
+  if (!_audBlob) return;
+  const hoje = new Date();
+  const ddmm = `${String(hoje.getDate()).padStart(2, '0')}-${String(hoje.getMonth() + 1).padStart(2, '0')}`;
+  await _audCompartilharBlob(_audBlob, _audMime.split(';')[0], _audSanitizarNomeArquivo(`Leitura - ${ddmm}`));
 }
 
 // ============================================================
-// Salvar: upload no bucket privado + insert (user_id via trigger)
+// Salvar: clique no cliente → upload no bucket privado + insert
+// + disparo do e-mail
 // ============================================================
-async function _audSalvar() {
-  if (!_audBlob || !_audSelecionado) return;
+async function _audSalvarPara(ag) {
+  if (!_audBlob || _audSalvando) return;
+  const meta = `${ag.tipos_leitura?.nome || 'Leitura'} · ${_audDataAgend(ag.data_agendamento)}`;
+  if (!confirm(`Salvar e enviar por e-mail para ${ag.cliente_nome}?\n(${meta})`)) return;
 
-  const btn = document.getElementById('aud-btn-salvar');
-  btn.disabled = true;
-  btn.textContent = 'Salvando…';
+  _audSalvando = true;
+  const lista = document.getElementById('aud-ag-lista');
+  lista.innerHTML = '<div class="ag-loading"><div class="ag-spinner"></div> Salvando…</div>';
 
   const contentType = _audMime.split(';')[0];
   const ext  = contentType === 'audio/mp4' ? 'm4a' : 'webm';
-  const path = `agendamento-${_audSelecionado.id}/${Date.now()}-${crypto.randomUUID()}.${ext}`;
+  const path = `agendamento-${ag.id}/${Date.now()}-${crypto.randomUUID()}.${ext}`;
   const seg  = Math.max(1, Math.round(_audMs / 1000));
 
   const { error: upErr } = await supabase.storage
@@ -808,14 +799,14 @@ async function _audSalvar() {
     .upload(path, _audBlob, { contentType });
 
   if (upErr) {
-    btn.disabled = false;
-    btn.textContent = '💾 Salvar para o cliente';
+    _audSalvando = false;
     _toastAdmin('❌ Falha no upload: ' + upErr.message, 'erro');
+    _audFiltrarLista(); // volta a lista pra tentar de novo
     return;
   }
 
   const { data: novo, error: dbErr } = await supabase.from('audios_cliente').insert({
-    agendamento_id: _audSelecionado.id,
+    agendamento_id: ag.id,
     storage_path: path,
     duracao_segundos: seg,
     tamanho_bytes: _audBlob.size,
@@ -824,16 +815,16 @@ async function _audSalvar() {
 
   if (dbErr) {
     await supabase.storage.from('audios').remove([path]); // não deixar arquivo órfão
-    btn.disabled = false;
-    btn.textContent = '💾 Salvar para o cliente';
+    _audSalvando = false;
     _toastAdmin('❌ Erro ao salvar: ' + dbErr.message, 'erro');
+    _audFiltrarLista();
     return;
   }
 
-  _audContagem[_audSelecionado.id] = (_audContagem[_audSelecionado.id] || 0) + 1;
+  _audContagem[ag.id] = (_audContagem[ag.id] || 0) + 1;
+  _audSalvando = false;
   _toastAdmin('✅ Áudio salvo! Enviando por e-mail…', 'ok');
-  _audResetGravador();
-  await _audCarregarAudiosDoAgendamento();
+  _audResetGravador(); // limpa a prévia e volta pro microfone
 
   // Envio imediato pro e-mail do cliente. Se falhar (rede etc.), o cron
   // audio-email-cron reenvia sozinho em até 10 min — não trava o painel.
@@ -862,7 +853,6 @@ function _audCriarItemAudio(a, opts = {}) {
     <div class="aud-item-acoes">
       <button type="button" class="ag-btn ag-btn-outline ag-btn-sm aud-item-play">▶ Ouvir</button>
       <button type="button" class="ag-btn ag-btn-outline ag-btn-sm aud-item-share" title="Compartilhar">📤</button>
-      ${opts.aoGravar ? '<button type="button" class="ag-btn ag-btn-outline ag-btn-sm aud-item-gravar" title="Gravar outro pra este atendimento">🎙 Gravar</button>' : ''}
       <button type="button" class="ag-btn ag-btn-outline ag-btn-sm aud-item-del" style="color:var(--t-danger)" title="Apagar">🗑</button>
     </div>`;
 
@@ -910,12 +900,8 @@ function _audCriarItemAudio(a, opts = {}) {
     }
   });
 
-  if (opts.aoGravar) {
-    item.querySelector('.aud-item-gravar').addEventListener('click', opts.aoGravar);
-  }
-
   item.querySelector('.aud-item-del').addEventListener('click', async () => {
-    if (!confirm('Apagar este áudio? O cliente deixa de vê-lo na conta.')) return;
+    if (!confirm('Apagar este áudio? Se o e-mail ainda não saiu, ele não será enviado.')) return;
     // Linha primeiro (é a fonte de verdade pro cliente); órfão no bucket
     // privado é inofensivo se o remove falhar.
     const { error: e } = await supabase.from('audios_cliente').delete().eq('id', a.id);
@@ -932,41 +918,6 @@ function _audCriarItemAudio(a, opts = {}) {
 }
 
 // ============================================================
-// Lista de áudios do agendamento selecionado
-// ============================================================
-async function _audCarregarAudiosDoAgendamento() {
-  const lista = document.getElementById('aud-lista');
-  if (!lista || !_audSelecionado) return;
-
-  const { data, error } = await supabase
-    .from('audios_cliente')
-    .select('*')
-    .eq('agendamento_id', _audSelecionado.id)
-    .order('criado_em', { ascending: true });
-
-  if (error) {
-    lista.innerHTML = '<div class="ag-empty">Erro ao carregar os áudios.</div>';
-    console.error('_audCarregarAudiosDoAgendamento:', error);
-    return;
-  }
-
-  if (!data?.length) {
-    lista.innerHTML = '<div class="ag-empty" style="margin-top:12px">Nenhum áudio gravado para este agendamento ainda.</div>';
-    return;
-  }
-
-  lista.innerHTML = '<div class="aud-lista-titulo">Áudios já gravados</div>';
-  const nomeSugestao = _audNomeSugerido(_audSelecionado.cliente_nome, _audSelecionado.tipos_leitura?.nome, _audSelecionado.data_agendamento);
-  data.forEach((a, i) => {
-    lista.appendChild(_audCriarItemAudio(a, {
-      titulo: `🎧 Áudio ${i + 1}`,
-      meta: `${_audDataBR(a.criado_em)} · ${_audMmSs(a.duracao_segundos)}`,
-      nomeSugestao,
-    }));
-  });
-}
-
-// ============================================================
 // Aba "Áudios salvos" — histórico geral, sem escolher cliente
 // ============================================================
 async function _audCarregarTodos() {
@@ -976,7 +927,7 @@ async function _audCarregarTodos() {
 
   const { data, error } = await supabase
     .from('audios_cliente')
-    .select('*, agendamentos(id, cliente_nome, cliente_whatsapp, data_agendamento, leitura_origem_id, tipos_leitura(nome), pedidos(user_id))')
+    .select('*, agendamentos(id, cliente_nome, cliente_whatsapp, data_agendamento, leitura_origem_id, tipos_leitura(nome))')
     .order('criado_em', { ascending: false })
     .limit(200);
 
@@ -1012,7 +963,6 @@ function _audRenderTodos() {
     lista.appendChild(_audCriarItemAudio(a, {
       titulo: _audEsc(ag?.cliente_nome || 'Cliente'),
       meta: `${_audEsc(ag?.tipos_leitura?.nome || 'Leitura')} · ${_audDataAgend(ag?.data_agendamento)} · gravado em ${_audDataBR(a.criado_em)} · ${_audMmSs(a.duracao_segundos)}`,
-      aoGravar: ag ? () => { _audTrocarAba('gravar'); _audSelecionar(ag); } : null,
       nomeSugestao: _audNomeSugerido(ag?.cliente_nome, ag?.tipos_leitura?.nome, ag?.data_agendamento),
     }));
   });
@@ -1023,9 +973,9 @@ window._audComecarGravacao = _audComecarGravacao;
 window._audPausarRetomar = _audPausarRetomar;
 window._audPararGravacao = _audPararGravacao;
 window._audResetGravador = _audResetGravador;
-window._audVoltarEscolha = _audVoltarEscolha;
+window._audAbrirEscolha = _audAbrirEscolha;
+window._audVoltarGravador = _audVoltarGravador;
 window._audTrocarAba = _audTrocarAba;
 window._audFiltroStatus = _audFiltroStatus;
-window._audSalvar = _audSalvar;
 window._audEscolherMic = _audEscolherMic;
 window._audCompartilharPreview = _audCompartilharPreview;

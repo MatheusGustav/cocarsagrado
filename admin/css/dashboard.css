@@ -3401,55 +3401,6 @@ body.drawer-aberto { overflow: hidden; }
 #admin-content { display: none; }
 
 /* ============================================================
-   MASCOTE CHEFE (movido do <style> inline do dashboard.html)
-   ============================================================ */
-.mascote-chefe {
-  position: fixed; right: 18px; bottom: 18px;
-  display: flex; align-items: flex-end; gap: 10px;
-  z-index: 40;
-  pointer-events: none; /* balão não bloqueia cliques; a bolinha reativa abaixo */
-}
-.mascote-balao {
-  background: #142E20; color: #F2EEDD; border: 1px solid #2A4A38;
-  border-radius: 14px; padding: 9px 13px;
-  font-size: .82rem; line-height: 1.25; max-width: 210px;
-  box-shadow: 0 8px 22px rgba(0,0,0,.22);
-  position: relative;
-  font-family: 'Figtree', system-ui, sans-serif;
-  font-weight: 500;
-  transition: opacity .18s ease, transform .18s ease;
-}
-.mascote-img {
-  width: 72px; height: 72px; border-radius: 50%;
-  object-fit: cover; object-position: center 45%;
-  border: 3px solid #D2BA7C;
-  box-shadow: 0 8px 22px rgba(0,0,0,.4);
-  pointer-events: auto;   /* a bolinha é arrastável */
-  cursor: grab;
-  touch-action: none;     /* arrastar no mobile sem rolar a página */
-  -webkit-user-drag: none;
-  user-select: none;
-}
-.mascote-chefe.dragging .mascote-img { cursor: grabbing; }
-.mascote-chefe.snapping { transition: left .3s cubic-bezier(.2,.8,.3,1.1), top .3s cubic-bezier(.2,.8,.3,1.1); }
-/* Cantos esquerdos: bolinha no canto, balão abre pra direita */
-.mascote-chefe.mascote-esquerda { flex-direction: row-reverse; }
-.mascote-chefe.balao-oculto .mascote-balao { opacity: 0; transform: scale(.85); }
-.mascote-pendente .mascote-balao { background: #3A1D12; border-color: #A6432D; color: #EFAF9C; }
-.mascote-pendente { animation: mascote-treme .4s ease-in-out infinite; }
-@keyframes mascote-treme {
-  0%,100% { transform: translateX(0); }
-  25%     { transform: translateX(-2px); }
-  75%     { transform: translateX(2px); }
-}
-.mascote-grana .mascote-balao { background: #2E2712; border-color: #A9873B; color: #EAE0BE; }
-@media (max-width: 700px) {
-  .mascote-chefe { right: 10px; bottom: 10px; gap: 6px; }
-  .mascote-img { width: 54px; height: 54px; border-width: 2px; }
-  .mascote-balao { font-size: .72rem; max-width: 150px; padding: 7px 10px; }
-}
-
-/* ============================================================
    MELHORIAS DO PAINEL — busca, pills, realtime, skeleton,
    semana, financeiro, tema (2026-06)
    ============================================================ */
@@ -3916,10 +3867,6 @@ body.drawer-aberto { overflow: hidden; }
   transition: border-color .2s, box-shadow .2s;
 }
 .aud-ag-item:hover { border-color: rgba(169,135,59,0.45); }
-.aud-ag-item--sel {
-  border-color: var(--secondary, #A9873B);
-  box-shadow: 0 0 0 2px rgba(169,135,59,0.25);
-}
 .aud-ag-nome { font-weight: 600; }
 .aud-ag-meta { font-size: .82rem; color: var(--text-muted, #93AC8F); }
 .aud-ag-badges { display: flex; flex-wrap: wrap; gap: 6px; }
@@ -3931,16 +3878,6 @@ body.drawer-aberto { overflow: hidden; }
   letter-spacing: .04em;
   text-transform: uppercase;
 }
-.aud-ag-badge--conta {
-  color: var(--secondary, #A9873B);
-  background: rgba(169,135,59,0.14);
-  border: 1px solid rgba(169,135,59,0.35);
-}
-.aud-ag-badge--guest {
-  color: var(--text-muted, #93AC8F);
-  background: rgba(147,172,143,0.10);
-  border: 1px solid rgba(147,172,143,0.25);
-}
 .aud-ag-badge--audios {
   text-transform: none;
   color: var(--text-muted, #93AC8F);
@@ -3948,23 +3885,16 @@ body.drawer-aberto { overflow: hidden; }
   border: 1px solid var(--border);
 }
 
-/* Card do destino: fica ABAIXO do gravador, mostra pra quem é o áudio */
-.aud-destino {
+/* Topo da tela de escolha (passo 2): título + botão de voltar pro gravador */
+.aud-escolha-topo {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 10px;
   max-width: 460px;
-  margin-top: 12px;
-  padding: 10px 14px;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  font-size: .9rem;
+  margin-bottom: 6px;
 }
-.aud-destino-info { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
-.aud-destino-nome { font-weight: 700; }
-.aud-destino-meta { font-size: .8rem; color: var(--text-muted, #93AC8F); }
+.aud-escolha-topo .aud-passo-titulo { margin-bottom: 0; }
 
 /* Card do gravador: visual de app de gravador de celular (tela escura,
    timer gigante, onda com cursor central, botões redondos) */
@@ -4127,7 +4057,6 @@ body.drawer-aberto { overflow: hidden; }
 .aud-erro:empty { display: none; }
 
 .aud-lista { margin-top: 18px; max-width: 460px; }
-.aud-lista-titulo { font-weight: 700; font-size: .9rem; margin-bottom: 8px; }
 .aud-item {
   display: flex;
   align-items: center;
@@ -4293,7 +4222,6 @@ body.drawer-aberto { overflow: hidden; }
 .esp-add-form,
 .adm-skeleton-item,
 .aud-ag-item,
-.aud-destino,
 .aud-item {
   border-radius: 18px 8px 18px 8px !important;
 }
@@ -4418,10 +4346,9 @@ body.drawer-aberto { overflow: hidden; }
   .agenda-modal-container { border-radius: 22px 22px 0 0; }
 }
 
-/* --- Toasts e balão do mascote --- */
+/* --- Toasts --- */
 .adm-toast { border-radius: 16px 7px 16px 7px; }
 .vagas-toast { border-radius: 16px 7px 16px 7px; }
-.mascote-balao { border-radius: 14px 6px 14px 6px; }
 
 /* --- Semana strip: chips de papel --- */
 .adm-semana-chip { border-radius: 12px 5px 12px 5px; }
