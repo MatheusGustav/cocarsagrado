@@ -1837,8 +1837,28 @@ img { max-width: 100%; }
   .hero-title { font-size: clamp(2.1rem, 9vw, 2.6rem); }
   .jardim { width: min(250px, 78vw); }
 
-  .cat-filters { gap: 8px; }
-  .cat-filter { font-size: 12.5px; padding: 9px 15px; }
+  /* filtros viram fileira deslizável (uma linha, swipe horizontal) */
+  .cat-filters {
+    gap: 8px;
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    scroll-snap-type: x proximity;
+    margin-inline: calc(-1 * clamp(20px, 4vw, 40px));
+    padding-inline: clamp(20px, 4vw, 40px);
+    padding-block: 4px;
+    -webkit-mask-image: linear-gradient(90deg, transparent, #000 18px, #000 calc(100% - 18px), transparent);
+    mask-image: linear-gradient(90deg, transparent, #000 18px, #000 calc(100% - 18px), transparent);
+  }
+  .cat-filters::-webkit-scrollbar { display: none; }
+  .cat-filter {
+    font-size: 12.5px;
+    padding: 9px 15px;
+    flex: 0 0 auto;
+    scroll-snap-align: start;
+  }
   .cat-grid { grid-template-columns: 1fr 1fr; gap: 12px; }
   .cat-card-img { min-height: 110px; padding: 16px 10px 10px; }
   .cat-card-img::before { width: 96px; height: 88px; }
