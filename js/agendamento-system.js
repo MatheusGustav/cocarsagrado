@@ -222,20 +222,32 @@ function _lsSet(key, val) {
 }
 
 // ============================================================
-// LEMBRAR CLIENTE (localStorage, SÓ com conta logada)
-// Regra do Matheus (2026-07-02): guest não tem dados lembrados. O
-// espelho local é populado pelo login (conta-cliente.js, a partir do
-// perfil) e apagado no logout; o autofill roda só com sessão ativa.
+// LEMBRAR CLIENTE (localStorage)
+// Regra do Matheus (2026-07-19, substitui a de 2026-07-02): guest
+// TAMBÉM é lembrado — nome, dados, E-MAIL e aceite dos termos ficam
+// no aparelho pra não pedir de novo a cada pedido. O e-mail repetido
+// é o que mantém leituras e áudios no mesmo "dono" até ele criar
+// conta (reivindicar_pedidos). Logado espelha o perfil; só o logout
+// REAL apaga tudo (aparelho compartilhado).
 // ============================================================
 const CLIENTE_LOCAL_KEY = 'cocar_cliente_v1';
 
-// Versão dos termos de uso. Quem tem conta aceita 1× e guardamos esta
-// versão no perfil; se mudar aqui, o login pede re-aceite. Guests aceitam
-// a cada pedido (só trava de UI). Incremente manualmente a cada mudança.
+// Versão dos termos de uso. Conta: aceite 1× guardado no perfil; se mudar
+// aqui, o login pede re-aceite. Guest: aceite 1× guardado no aparelho
+// (localStorage), também amarrado à versão. Incremente a cada mudança.
 const TERMOS_VERSAO = '1.0';
 window.TERMOS_VERSAO = TERMOS_VERSAO;
 
+function _clienteLocal() {
+  try { return JSON.parse(_lsGet(CLIENTE_LOCAL_KEY) || '{}') || {}; }
+  catch { return {}; }
+}
+function _mesclarClienteLocal(patch) {
+  _lsSet(CLIENTE_LOCAL_KEY, JSON.stringify({ ..._clienteLocal(), ...patch }));
+}
+
 function salvarDadosPessoaisLocal() {
+  const email = (document.getElementById('f-email')?.value || '').trim().toLowerCase();
   const dados = {
     nome: document.getElementById('f-nome')?.value?.trim() || '',
     nasc: document.getElementById('f-nasc')?.value?.trim() || '',
@@ -243,29 +255,38 @@ function salvarDadosPessoaisLocal() {
     fone: document.getElementById('f-fone')?.value?.trim() || '',
   };
   if (!dados.nome) return;
-  _lsSet(CLIENTE_LOCAL_KEY, JSON.stringify(dados));
+  // Logado tem o campo oculto/vazio — mescla pra não apagar o e-mail salvo.
+  if (email) dados.email = email;
+  _mesclarClienteLocal(dados);
 }
 
 function restaurarDadosPessoaisLocal() {
-  const raw = _lsGet(CLIENTE_LOCAL_KEY);
-  if (!raw) return;
-  let dados;
-  try { dados = JSON.parse(raw); } catch { return; }
-  if (!dados || typeof dados !== 'object') return;
+  const dados = _clienteLocal();
 
   const nome = document.getElementById('f-nome');
   const nasc = document.getElementById('f-nasc');
   const ddi  = document.getElementById('f-ddi');
   const fone = document.getElementById('f-fone');
+  const mail = document.getElementById('f-email');
   // Só preenche campos vazios — nunca sobrescreve o que o cliente já digitou.
   if (nome && !nome.value && dados.nome) nome.value = dados.nome;
   if (nasc && !nasc.value && dados.nasc) nasc.value = dados.nasc;
   if (ddi  && dados.ddi) ddi.value = dados.ddi;
   if (fone && !fone.value && dados.fone) fone.value = dados.fone;
+  if (mail && !mail.value && dados.email) mail.value = dados.email;
 }
 
 function esquecerDadosPessoaisLocal() {
   try { localStorage.removeItem(CLIENTE_LOCAL_KEY); } catch { /* ignore */ }
+}
+
+// Aceite de termos do guest: 1× por aparelho, amarrado à versão atual.
+// Logado nunca usa isso — o aceite dele mora no perfil (_csTermosOk).
+function _termosGuestOk() {
+  return !window._csLogado && _clienteLocal().termos === TERMOS_VERSAO;
+}
+function _salvarTermosLocal() {
+  _mesclarClienteLocal({ termos: TERMOS_VERSAO });
 }
 
 // Localiza a promoção do serviço. O admin salva grupos com id sem prefixo
@@ -633,10 +654,10 @@ async function irParaPagamentoCarrinho() {
     return;
   }
 
-  // Sem aceite em dia no perfil, o checkbox é obrigatório antes de pagar
-  // (guest, logado sem perfil ou com termos desatualizados).
+  // Sem aceite em dia (perfil OU aparelho), o checkbox é obrigatório
+  // antes de pagar (guest novo, logado sem perfil ou termos velhos).
   const termosChk = document.getElementById('carrinho-termos');
-  if (!window._csTermosOk && !(termosChk && termosChk.checked)) {
+  if (!window._csTermosOk && !_termosGuestOk() && !(termosChk && termosChk.checked)) {
     mostrarAlerta('Aceite os Termos de Uso para continuar.', 'error');
     return;
   }
@@ -656,7 +677,9 @@ async function irParaPagamentoCarrinho() {
     const chave = await salvarMultiplosAgendamentos(itens);
     Estado.carrinho = [];
     Estado.cupom = null;
-    if (termosChk) termosChk.checked = false; // próximo pedido pede aceite de novo
+    // Guest: aceite fica no aparelho — próximos pedidos não repetem o checkbox.
+    if (termosChk?.checked) _salvarTermosLocal();
+    if (termosChk) termosChk.checked = false;
     _renderizarCarrinho();
     if (chave) redirecionarParaPagamento(chave, itens, cupomSnap);
   } catch (err) {
@@ -1022,12 +1045,12 @@ function _atualizarBotoesCarrinho() {
   const termosChk = document.getElementById('carrinho-termos');
   if (addBtn) addBtn.disabled = Estado.carrinho.length >= 4;
 
-  // Só quem tem aceite EM DIA no perfil (window._csTermosOk) pula o
-  // checkbox. Guest aceita a cada pedido; logado sem perfil completo ou
-  // com termos desatualizados também vê — sem isso ele pagaria sem
-  // aceite nenhum e o pedido ficaria sem prova no banco.
+  // Aceite em dia pula o checkbox: logado pelo perfil (_csTermosOk),
+  // guest pelo aceite salvo no aparelho (1×, amarrado à versão). Logado
+  // sem perfil completo ou com termos desatualizados vê — sem isso ele
+  // pagaria sem aceite nenhum e o pedido ficaria sem prova no banco.
   const temItens = Estado.carrinho.length > 0;
-  const exigeTermos = temItens && !window._csTermosOk;
+  const exigeTermos = temItens && !window._csTermosOk && !_termosGuestOk();
   if (termosEl) termosEl.hidden = !exigeTermos;
 
   if (payBtn) {
@@ -1108,8 +1131,9 @@ function _focarPrimeiroErro() {
 function confirmarDadosPessoais() {
   if (!validarDadosPessoais()) return;
   _prepararDadosPessoais();
-  // Só quem tem conta é lembrado; guest não deixa rastro no aparelho.
-  if (window._csLogado) salvarDadosPessoaisLocal();
+  // Todo mundo é lembrado no aparelho (guest incluso — decisão 2026-07-19):
+  // e-mail repetido é o que mantém os áudios no mesmo dono.
+  salvarDadosPessoaisLocal();
   irParaPasso(2);
 }
 
@@ -1157,9 +1181,9 @@ async function salvarMultiplosAgendamentos(itensPre) {
     p_itens: payloadItens,
     p_cupom_codigo: Estado.cupom?.codigo || null,
     // Prova de aceite gravada no pedido. Logado com perfil em dia o
-    // servidor usa a versão do perfil; aqui vai o aceite do checkbox
-    // (guest / logado sem perfil). null = sem aceite — fica registrado.
-    p_termos_versao: (window._csTermosOk || document.getElementById('carrinho-termos')?.checked)
+    // servidor usa a versão do perfil; guest vale o aceite do aparelho
+    // ou do checkbox. null = sem aceite — fica registrado.
+    p_termos_versao: (window._csTermosOk || _termosGuestOk() || document.getElementById('carrinho-termos')?.checked)
       ? window.TERMOS_VERSAO : null,
   });
 
@@ -1275,6 +1299,24 @@ function redirecionarParaPagamento(chave) {
 // ============================================================
 // Navegação entre passos (1=Data, 2=Dados)
 // ============================================================
+// Campo de e-mail: logado nunca vê (vai o da conta). Guest digita 1× —
+// nas próximas o campo some e mostra qual e-mail está valendo, com
+// "Trocar" pra abrir o campo de novo (aparelho de outra pessoa).
+function _atualizarCampoEmail(forcarCampo = false) {
+  const grupo    = document.getElementById('f-email-group');
+  const lembrado = document.getElementById('f-email-lembrado');
+  if (!grupo) return;
+  const input = document.getElementById('f-email');
+  const salvo = window._csLogado ? '' : (_clienteLocal().email || '');
+  if (input && !input.value && salvo) input.value = salvo;
+  grupo.hidden = !!window._csLogado || (!!salvo && !forcarCampo);
+  if (lembrado) {
+    lembrado.hidden = !!window._csLogado || !salvo || forcarCampo;
+    const alvo = document.getElementById('f-email-salvo');
+    if (alvo) alvo.textContent = salvo;
+  }
+}
+
 function irParaPasso(num) {
   // num 1 = calendário (primeiro), 0 = dados pessoais, 2 = perguntas/resumo, 3 = revisão carrinho
   document.querySelectorAll('.ag-section').forEach((s) => {
@@ -1282,12 +1324,7 @@ function irParaPasso(num) {
     s.classList.toggle('active', idx === num);
   });
 
-  // Logado não vê o campo de e-mail — o servidor grava o e-mail da conta.
-  // Guest preenche (é o que liga o pedido ao histórico se criar conta depois).
-  if (num === 0) {
-    const emailGroup = document.getElementById('f-email-group');
-    if (emailGroup) emailGroup.hidden = !!window._csLogado;
-  }
+  if (num === 0) _atualizarCampoEmail();
 
   if (num === 2) atualizarResumo();
   if (num === 3 && typeof _renderizarCarrinho === 'function') _renderizarCarrinho();
@@ -1714,8 +1751,15 @@ document.addEventListener('DOMContentLoaded', () => {
   const nasc = document.getElementById('f-nasc');
   if (nasc) aplicarMascaraData(nasc);
 
-  // Autofill de "Seus dados" NÃO roda mais aqui: só com sessão ativa —
-  // conta-cliente.js chama restaurarDadosPessoaisLocal() após confirmar login.
+  // Autofill de "Seus dados" pra todo mundo (guest incluso — decisão
+  // 2026-07-19); logado ainda re-espelha via conta-cliente.js no login.
+  restaurarDadosPessoaisLocal();
+
+  // "Trocar" reabre o campo de e-mail escondido (guest lembrado).
+  document.getElementById('f-email-trocar')?.addEventListener('click', () => {
+    _atualizarCampoEmail(true);
+    document.getElementById('f-email')?.focus();
+  });
 
   const form = document.getElementById('form-dados');
   if (form) form.addEventListener('submit', processarFormulario);

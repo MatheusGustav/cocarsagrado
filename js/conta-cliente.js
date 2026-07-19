@@ -1041,9 +1041,8 @@ document.addEventListener('DOMContentLoaded', () => {
     if (typeof window._csRevalidarCupom === 'function') window._csRevalidarCupom();
 
     if (!session) {
-      // Sem conta = sem dados lembrados: apaga o espelho local (logout
-      // inclusive — importante em aparelho compartilhado).
-      if (typeof esquecerDadosPessoaisLocal === 'function') esquecerDadosPessoaisLocal();
+      // Guest lembrado (decisão 2026-07-19): chegar aqui SEM sessão não
+      // apaga nada — o wipe fica no evento SIGNED_OUT (logout real).
       // Descarrega o painel embutido — o iframe não reage sozinho ao signOut.
       if (adminFrame?.getAttribute('src')) adminFrame.setAttribute('src', 'about:blank');
       modoLoginAdmin = false;
@@ -1144,6 +1143,9 @@ document.addEventListener('DOMContentLoaded', () => {
   let userIdSessao = null;
   window.supabase.auth.onAuthStateChange((event, session) => {
     if (event === 'TOKEN_REFRESHED') return;
+    // Só o logout REAL apaga os dados lembrados (aparelho compartilhado).
+    // Boot sem sessão (guest) preserva — é o que lembra o e-mail dele.
+    if (event === 'SIGNED_OUT' && typeof esquecerDadosPessoaisLocal === 'function') esquecerDadosPessoaisLocal();
     if (event === 'SIGNED_IN' && session?.user?.id && session.user.id === userIdSessao) return;
     userIdSessao = session?.user?.id || null;
     atualizarUiLogado(session);
