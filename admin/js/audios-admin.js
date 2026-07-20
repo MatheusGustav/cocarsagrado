@@ -23,7 +23,6 @@ let _audPreviewUrl   = null;
 let _audAudioCtx     = null; // Web Audio só pra medir a amplitude da voz
 let _audAnalyser     = null;
 let _audAmostra      = null; // buffer reutilizado do analyser
-let _audBarras       = [];   // 1 amplitude (0..1) a cada TICK de gravação
 let _audOrbeAmp      = 0;    // amplitude suavizada que anima o orbe
 let _audOrbeRaf      = null;
 let _audListenersOk  = false;
@@ -34,8 +33,14 @@ let _audPlayerAudio   = null; // <audio> escondido que toca a prévia
 let _audPlayerRaf     = null;
 let _audPlayerRate    = 1;
 let _audPlayerSeeking = false;
+let _audPlayerCtx      = null; // Web Audio da prévia (anima as barrinhas)
+let _audPlayerAnalyser = null;
+let _audPlayerFreq     = null; // buffer de frequências reutilizado
+let _audVisuEls        = null; // as 7 barrinhas montadas no palco
+let _audVisuAlturas    = [];   // altura suavizada de cada barrinha
+let _audVisuRaf        = null;
 
-const _AUD_TICK = 50; // ms por barra da onda (20 barras/s)
+const _AUD_TICK = 50; // resolução (ms) do relógio de duração da gravação
 
 function _audEsc(s) {
   return String(s ?? '')
@@ -122,9 +127,9 @@ async function inicializarAudios() {
         <div class="aud-gravador">
           <div class="aud-controles" id="aud-controles"></div>
           <select class="aud-mic-select" id="aud-mic-select" style="display:none;" onchange="_audEscolherMic(this.value)"></select>
-          <div class="aud-preview" id="aud-preview"></div>
           <div class="aud-erro" id="aud-erro"></div>
         </div>
+        <div class="aud-dock" id="aud-dock"></div>
       </div>
 
       <div class="aud-passo" id="aud-tela-escolha" style="display:none;">
@@ -290,8 +295,6 @@ function _audSetErro(txt) {
 // Orbe que reage à voz (estilo modo voz do ChatGPT): a cada frame
 // lê a amplitude do analyser, suaviza (ataque rápido, soltura
 // lenta) e escreve em --amp no jardim do orbe — o CSS faz o resto.
-// As barras (_audBarras) continuam sendo coletadas no TICK: viram
-// a onda de seek do player da prévia.
 // ============================================================
 function _audOrbeVozIniciar() {
   const jardim = document.querySelector('#aud-controles .aud-orbe-jardim');
@@ -421,7 +424,6 @@ function _audResetGravador() {
   _audChunks = [];
   _audBlob = null;
   _audMs = 0;
-  _audBarras = [];
 
   // Reset sempre volta pra tela do gravador (a escolha só existe com prévia)
   const escolha = document.getElementById('aud-tela-escolha');
@@ -429,8 +431,8 @@ function _audResetGravador() {
   if (escolha) escolha.style.display = 'none';
   if (gravar) gravar.style.display = '';
 
-  const preview = document.getElementById('aud-preview');
-  if (preview) preview.innerHTML = '';
+  const dock = document.getElementById('aud-dock');
+  if (dock) dock.innerHTML = '';
   _audSetErro('');
   _audOrbeVozParar();
   _audBotoes(_audOrbeHtml(false));
@@ -483,10 +485,8 @@ async function _audComecarGravacao() {
   _audChunks = [];
   _audBlob = null;
   _audMs = 0;
-  _audBarras = [];
 
-  // Analyser só pro orbe e pras barras da prévia; se falhar, grava
-  // mesmo assim (orbe fica parado, barras no mínimo)
+  // Analyser só pro orbe; se falhar, grava mesmo assim (orbe parado)
   try {
     _audAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
     _audAnalyser = _audAudioCtx.createAnalyser();
@@ -517,16 +517,11 @@ async function _audComecarGravacao() {
 
   // Duração pause-aware acumulada em _audMs (não dá pra confiar em
   // audio.duration depois: webm do MediaRecorder reporta Infinity no
-  // Chrome). As barras seguem o mesmo relógio: 1 por _AUD_TICK de tempo
-  // gravado — viram a onda de seek do player da prévia.
+  // Chrome).
   let ultimo = performance.now();
   _audTimerInt = setInterval(() => {
     const agora = performance.now();
-    if (_audRecorder?.state === 'recording') {
-      _audMs += agora - ultimo;
-      const amp = _audAmplitudeAtual();
-      while (_audBarras.length < _audMs / _AUD_TICK) _audBarras.push(amp);
-    }
+    if (_audRecorder?.state === 'recording') _audMs += agora - ultimo;
     ultimo = agora;
   }, _AUD_TICK);
 
@@ -539,24 +534,30 @@ function _audPararGravacao() {
 }
 
 function _audMostrarPreview() {
-  _audBotoes('');
+  _audVisuMontar(); // o orbe colapsa e vira as 7 barrinhas
 
   _audPreviewUrl = URL.createObjectURL(_audBlob);
   _audPlayerRate = 1;
 
-  const preview = document.getElementById('aud-preview');
-  preview.innerHTML = `
-    <div class="aud-player">
-      <button type="button" class="aud-player-play" id="aud-player-play" title="Tocar" aria-label="Tocar">▶</button>
-      <canvas class="aud-player-onda" id="aud-player-onda"></canvas>
-      <button type="button" class="aud-player-vel" id="aud-player-vel" title="Velocidade">1x</button>
-      <span class="aud-player-tempo" id="aud-player-tempo">00:00 / ${_audMmSs(_audMs / 1000)}</span>
-    </div>
-    <div class="aud-preview-acoes">
-      <button type="button" class="ag-btn ag-btn-primary" onclick="_audAbrirEscolha()">📨 Enviar para um cliente</button>
-      <button type="button" class="ag-btn ag-btn-outline" onclick="_audCompartilharPreview()">📤 Compartilhar</button>
-      <button type="button" class="ag-btn ag-btn-outline" onclick="_audResetGravador(); _audComecarGravacao()">🔄 Regravar</button>
-      <button type="button" class="ag-btn ag-btn-outline" onclick="_audResetGravador()">✕ Descartar</button>
+  // Painel de controle no fim da página: reprodução + ações juntas,
+  // longe do palco (que fica só com o visualizador)
+  document.getElementById('aud-dock').innerHTML = `
+    <div class="aud-dock-painel">
+      <div class="aud-dock-titulo">Gravação pronta</div>
+      <div class="aud-dock-player">
+        <button type="button" class="aud-dock-play" id="aud-player-play" title="Tocar" aria-label="Tocar">▶</button>
+        <div class="aud-dock-progresso" id="aud-progresso" title="Ir para um ponto do áudio">
+          <div class="aud-dock-progresso-feito" id="aud-progresso-feito"></div>
+        </div>
+        <button type="button" class="aud-dock-vel" id="aud-player-vel" title="Velocidade">1x</button>
+        <span class="aud-dock-tempo" id="aud-player-tempo">00:00 / ${_audMmSs(_audMs / 1000)}</span>
+      </div>
+      <div class="aud-dock-acoes">
+        <button type="button" class="aud-dock-btn aud-dock-btn--enviar" onclick="_audAbrirEscolha()">📨 Enviar para um cliente</button>
+        <button type="button" class="aud-dock-btn" onclick="_audCompartilharPreview()">📤 Compartilhar</button>
+        <button type="button" class="aud-dock-btn" onclick="_audResetGravador(); _audComecarGravacao()">🔄 Regravar</button>
+        <button type="button" class="aud-dock-btn aud-dock-btn--descartar" onclick="_audResetGravador()">✕ Descartar</button>
+      </div>
     </div>`;
 
   _audPlayerAudio = new Audio(_audPreviewUrl);
@@ -578,69 +579,153 @@ function _audMostrarPreview() {
 
   const btnPlay = document.getElementById('aud-player-play');
   _audPlayerAudio.addEventListener('play', () => {
-    if (btnPlay) { btnPlay.textContent = '⏸'; btnPlay.title = 'Pausar'; }
+    if (btnPlay) { btnPlay.textContent = '⏸'; btnPlay.title = 'Pausar'; btnPlay.setAttribute('aria-label', 'Pausar'); }
+    _audVisuLigarAnalyser();
+    _audPlayerCtx?.resume().catch(() => {});
+    _audVisuAcordar();
     _audPlayerLoop();
   });
   _audPlayerAudio.addEventListener('pause', () => {
-    if (btnPlay) { btnPlay.textContent = '▶'; btnPlay.title = 'Tocar'; }
+    if (btnPlay) { btnPlay.textContent = '▶'; btnPlay.title = 'Tocar'; btnPlay.setAttribute('aria-label', 'Tocar'); }
     _audPlayerAtualizarTempo();
-  });
-  _audPlayerAudio.addEventListener('ended', () => {
-    if (btnPlay) { btnPlay.textContent = '▶'; btnPlay.title = 'Tocar'; }
+    _audVisuAcordar(); // deixa as barrinhas assentarem de volta no repouso
   });
 
   btnPlay.addEventListener('click', _audPlayerTogglePlay);
   document.getElementById('aud-player-vel').addEventListener('click', _audPlayerCicloVelocidade);
 
-  const onda = document.getElementById('aud-player-onda');
-  _audPlayerRedimensionar(onda);
-  _audPlayerDesenhar(0);
-  onda.addEventListener('pointerdown', e => {
+  // Seek: clicar/arrastar na linha de progresso do painel
+  const prog = document.getElementById('aud-progresso');
+  prog.addEventListener('pointerdown', e => {
     _audPlayerSeeking = true;
-    onda.setPointerCapture(e.pointerId);
+    prog.setPointerCapture(e.pointerId);
     _audPlayerSeekPara(e.clientX);
   });
-  onda.addEventListener('pointermove', e => { if (_audPlayerSeeking) _audPlayerSeekPara(e.clientX); });
-  onda.addEventListener('pointerup', () => { _audPlayerSeeking = false; });
+  prog.addEventListener('pointermove', e => { if (_audPlayerSeeking) _audPlayerSeekPara(e.clientX); });
+  prog.addEventListener('pointerup', () => { _audPlayerSeeking = false; });
 
   _audAtualizarBeforeUnload();
 }
 
 // ============================================================
-// Player custom da prévia — usa a própria onda gravada como barra
-// de progresso clicável/arrastável (seek)
+// Visualizador da prévia: o orbe colapsa na linha do horizonte e
+// vira 7 barrinhas com as mesmas cores dele, centradas na vertical
+// (crescem pra cima E pra baixo). Tocando, um analyser no <audio>
+// manda a energia por banda: grave no centro, agudos nas pontas
+// (espelhado). Parado, repousam num arco e respiram. Tocar no
+// visualizador dá play/pause.
 // ============================================================
-function _audPlayerRedimensionar(c) {
-  if (!c || !c.clientWidth) return;
-  const dpr = window.devicePixelRatio || 1;
-  c.width = Math.round(c.clientWidth * dpr);
-  c.height = Math.round(c.clientHeight * dpr);
+const _AUD_VISU_CORES = ['ambar', 'coral', 'rosa', 'lavanda', 'rosa', 'coral', 'ambar'];
+const _AUD_VISU_REST  = [20, 34, 48, 58, 48, 34, 20]; // alturas de repouso (px)
+
+function _audVisuMontar() {
+  const jardim = document.querySelector('#aud-controles .aud-orbe-jardim');
+  if (!jardim) return;
+  jardim.classList.remove('aud-orbe-jardim--gravando');
+  jardim.classList.add('aud-orbe-jardim--preview');
+
+  // o orbe deixa de ser botão e sai de cena (animação no CSS)
+  const orbe = jardim.querySelector('.aud-orbe');
+  if (orbe) {
+    orbe.disabled = true;
+    orbe.removeAttribute('onclick');
+    orbe.removeAttribute('title');
+    orbe.setAttribute('aria-hidden', 'true');
+  }
+
+  const visu = document.createElement('button');
+  visu.type = 'button';
+  visu.className = 'aud-visu';
+  visu.title = 'Tocar / pausar';
+  visu.setAttribute('aria-label', 'Tocar ou pausar a prévia');
+  visu.innerHTML = _AUD_VISU_CORES.map((cor, i) => `
+    <span class="aud-visu-coluna">
+      <span class="aud-visu-barra aud-visu-barra--${cor}" style="height:${_AUD_VISU_REST[i]}px"></span>
+    </span>`).join('');
+  visu.addEventListener('click', _audPlayerTogglePlay);
+  jardim.appendChild(visu);
+
+  _audVisuEls = visu.querySelectorAll('.aud-visu-barra');
+  _audVisuAlturas = _AUD_VISU_REST.slice();
 }
 
-function _audPlayerDesenhar(progresso) {
-  const c = document.getElementById('aud-player-onda');
-  if (!c || !c.width || !_audBarras.length) return;
-  const ctx = c.getContext('2d');
-  const dpr = window.devicePixelRatio || 1;
-  const W = c.width, H = c.height;
-  const n = _audBarras.length;
-  const passo = W / n;
-  const larg = Math.max(1.5 * dpr, passo * 0.6);
-  const idxAtual = Math.floor(Math.min(1, Math.max(0, progresso)) * n);
-
-  ctx.clearRect(0, 0, W, H);
-  for (let i = 0; i < n; i++) {
-    const h = Math.max(2 * dpr, _audBarras[i] * H * 0.9);
-    ctx.fillStyle = i <= idxAtual ? 'rgba(226,231,240,0.95)' : 'rgba(255,255,255,0.22)';
-    ctx.fillRect(i * passo, (H - h) / 2, larg, h);
+// Analyser ligado só no 1º play (gesto do usuário → contexto liberado).
+// createMediaElementSource captura o <audio> pra sempre, por isso o
+// roteamento até o destination acontece logo em seguida.
+function _audVisuLigarAnalyser() {
+  if (_audPlayerCtx || !_audPlayerAudio) return;
+  let ctx = null;
+  try {
+    ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const analyser = ctx.createAnalyser();
+    analyser.fftSize = 256;
+    analyser.smoothingTimeConstant = 0.55;
+    const fonte = ctx.createMediaElementSource(_audPlayerAudio);
+    fonte.connect(analyser);
+    analyser.connect(ctx.destination);
+    _audPlayerCtx = ctx;
+    _audPlayerAnalyser = analyser;
+    _audPlayerFreq = new Uint8Array(analyser.frequencyBinCount);
+  } catch (_) {
+    // sem análise, a prévia toca normal e as barrinhas ficam no repouso
+    if (ctx) ctx.close().catch(() => {});
+    _audPlayerAnalyser = null;
+    _audPlayerFreq = null;
   }
 }
 
+// 4 bandas em cortes ~logarítmicos (fftSize 256 → 128 bins) espelhadas
+// nas 7 barrinhas; pesos compensam a energia menor dos agudos na voz
+function _audVisuAmps() {
+  if (!_audPlayerAnalyser) return null;
+  _audPlayerAnalyser.getByteFrequencyData(_audPlayerFreq);
+  const CORTES = [1, 4, 12, 34, 110];
+  const PESOS  = [1, 1.15, 1.35, 1.6];
+  const bandas = [];
+  for (let b = 0; b < 4; b++) {
+    let soma = 0;
+    for (let i = CORTES[b]; i < CORTES[b + 1]; i++) soma += _audPlayerFreq[i];
+    bandas.push(Math.min(1, (soma / (CORTES[b + 1] - CORTES[b]) / 255) * PESOS[b]));
+  }
+  return [bandas[3], bandas[2], bandas[1], bandas[0], bandas[1], bandas[2], bandas[3]];
+}
+
+function _audVisuAcordar() {
+  if (!_audVisuRaf) _audVisuRaf = requestAnimationFrame(_audVisuLoop);
+}
+
+// Lerp por barra (ataque rápido, soltura lenta — mesmo feeling do
+// orbe). O loop dorme sozinho quando tudo assenta no repouso.
+function _audVisuLoop() {
+  if (!_audVisuEls || !_audVisuEls.length) { _audVisuRaf = null; return; }
+  const tocando = _audPlayerAudio && !_audPlayerAudio.paused && !_audPlayerAudio.ended;
+  const amps = tocando ? _audVisuAmps() : null;
+  let mexendo = false;
+  for (let i = 0; i < _audVisuEls.length; i++) {
+    const alvo = amps ? Math.min(148, 14 + amps[i] * 134) : _AUD_VISU_REST[i];
+    const atual = _audVisuAlturas[i];
+    const novo = atual + (alvo - atual) * (alvo > atual ? 0.5 : 0.16);
+    _audVisuAlturas[i] = novo;
+    _audVisuEls[i].style.height = novo.toFixed(1) + 'px';
+    if (Math.abs(alvo - novo) > 0.5) mexendo = true;
+  }
+  _audVisuRaf = (tocando || mexendo) ? requestAnimationFrame(_audVisuLoop) : null;
+}
+
+// ============================================================
+// Player da prévia — os controles moram no painel de controle:
+// tocar/pausar, linha de progresso arrastável (seek), velocidade
+// e tempo. O desenho fica com as barrinhas no palco.
+// ============================================================
 function _audPlayerAtualizarTempo() {
   if (!_audPlayerAudio || !_audMs) return;
   const el = document.getElementById('aud-player-tempo');
   if (el) el.textContent = `${_audMmSs(_audPlayerAudio.currentTime)} / ${_audMmSs(_audMs / 1000)}`;
-  _audPlayerDesenhar(_audPlayerAudio.currentTime / (_audMs / 1000));
+  const feito = document.getElementById('aud-progresso-feito');
+  if (feito) {
+    const frac = Math.min(1, Math.max(0, _audPlayerAudio.currentTime / (_audMs / 1000)));
+    feito.style.width = (frac * 100).toFixed(2) + '%';
+  }
 }
 
 function _audPlayerLoop() {
@@ -667,19 +752,23 @@ function _audPlayerCicloVelocidade() {
 }
 
 function _audPlayerSeekPara(clientX) {
-  const c = document.getElementById('aud-player-onda');
-  if (!c || !_audPlayerAudio || !_audMs) return;
-  const rect = c.getBoundingClientRect();
+  const trilha = document.getElementById('aud-progresso');
+  if (!trilha || !_audPlayerAudio || !_audMs) return;
+  const rect = trilha.getBoundingClientRect();
   const frac = Math.min(1, Math.max(0, (clientX - rect.left) / rect.width));
   _audPlayerAudio.currentTime = frac * (_audMs / 1000);
-  _audPlayerDesenhar(frac);
-  const el = document.getElementById('aud-player-tempo');
-  if (el) el.textContent = `${_audMmSs(_audPlayerAudio.currentTime)} / ${_audMmSs(_audMs / 1000)}`;
+  _audPlayerAtualizarTempo();
 }
 
 function _audPlayerLimpar() {
   if (_audPlayerRaf) { cancelAnimationFrame(_audPlayerRaf); _audPlayerRaf = null; }
+  if (_audVisuRaf) { cancelAnimationFrame(_audVisuRaf); _audVisuRaf = null; }
   if (_audPlayerAudio) { _audPlayerAudio.pause(); _audPlayerAudio.src = ''; _audPlayerAudio = null; }
+  if (_audPlayerCtx) { _audPlayerCtx.close().catch(() => {}); _audPlayerCtx = null; }
+  _audPlayerAnalyser = null;
+  _audPlayerFreq = null;
+  _audVisuEls = null;
+  _audVisuAlturas = [];
   _audPlayerSeeking = false;
 }
 
