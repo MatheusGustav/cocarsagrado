@@ -140,8 +140,8 @@ function _renderEspecial() {
         </label>
       </div>
       <div class="esp-card-acoes">
-        <button class="ag-btn ag-btn-primary ag-btn-sm esp-btn-salvar" title="Salvar">💾 Salvar</button>
-        <button class="ag-btn ag-btn-outline ag-btn-sm esp-btn-del" style="color:var(--t-danger)" title="Remover">✕</button>
+        <button class="ag-btn ag-btn-primary ag-btn-sm esp-btn-salvar" title="Salvar"><svg class="ico" aria-hidden="true"><use href="#ico-guardar"></use></svg> Salvar</button>
+        <button class="ag-btn ag-btn-outline ag-btn-sm esp-btn-del" style="color:var(--t-danger)" title="Remover" aria-label="Remover data"><svg class="ico" aria-hidden="true"><use href="#ico-fechar"></use></svg></button>
       </div>`;
 
     const chk = card.querySelector('.esp-chk-ativo');
@@ -208,11 +208,11 @@ async function adicionarDataEspecial() {
   btn.disabled    = false;
   btn.textContent = '+ Adicionar';
 
-  if (error) { _toastEsp('❌ ' + error.message); return; }
+  if (error) { _toastEsp(error.message, 'erro'); return; }
 
   inputData.value = '';
   await carregarEspecial();
-  _toastEsp('✅ Data adicionada!');
+  _toastEsp('Data adicionada!', 'ok');
 }
 
 // ============================================================
@@ -224,7 +224,6 @@ async function _salvarEspecial(data, card) {
   const hora  = card.querySelector('.esp-sel-hora').value;
   const ativo = card.querySelector('.esp-chk-ativo').checked;
 
-  const orig      = btn.textContent;
   btn.disabled    = true;
   btn.textContent = 'Salvando...';
 
@@ -251,9 +250,9 @@ async function _salvarEspecial(data, card) {
 
   btn.disabled = false;
   if (error) {
-    btn.textContent = '✗ Erro';
-    setTimeout(() => { btn.textContent = orig; }, 2000);
-    _toastEsp('❌ ' + error.message);
+    _admBtnEstado(btn, 'erro');
+    setTimeout(() => _admBtnEstado(btn, 'salvar'), 2000);
+    _toastEsp(error.message, 'erro');
     return;
   }
 
@@ -265,8 +264,8 @@ async function _salvarEspecial(data, card) {
     if (lbl) lbl.textContent = `${restantes} vaga${restantes !== 1 ? 's' : ''} restante${restantes !== 1 ? 's' : ''}`;
   }
 
-  btn.textContent = '✓ Salvo';
-  setTimeout(() => { btn.textContent = orig; }, 2000);
+  _admBtnEstado(btn, 'salvo');
+  setTimeout(() => _admBtnEstado(btn, 'salvar'), 2000);
 }
 
 async function _deletarEspecial(data, card) {
@@ -278,7 +277,7 @@ async function _deletarEspecial(data, card) {
     .eq('profissional', _profEspecial)
     .eq('data', data);
 
-  if (error) { _toastEsp('❌ ' + error.message); return; }
+  if (error) { _toastEsp(error.message, 'erro'); return; }
 
   card.remove();
   _especialCache = _especialCache.filter(r => r.data !== data);
@@ -286,7 +285,7 @@ async function _deletarEspecial(data, card) {
     document.getElementById('esp-lista').innerHTML =
       '<div class="ag-empty" style="margin-top:16px">Nenhuma data configurada ainda.</div>';
   }
-  _toastEsp('✅ Removido.');
+  _toastEsp('Removido.', 'ok');
 }
 
 // ============================================================
@@ -313,10 +312,11 @@ function _espISO(d) {
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 }
 
-function _toastEsp(msg) {
+function _toastEsp(msg, tipo) {
   const t = document.createElement('div');
   t.className = 'vagas-toast';
-  t.textContent = msg;
+  t.innerHTML = `<svg class="ico vagas-toast-ico" aria-hidden="true"><use href="#ico-${ICO_TOAST[tipo] || 'info'}"></use></svg>`;
+  t.appendChild(document.createTextNode(msg));
   document.body.appendChild(t);
   setTimeout(() => t.classList.add('vagas-toast--show'), 10);
   setTimeout(() => { t.classList.remove('vagas-toast--show'); setTimeout(() => t.remove(), 300); }, 2800);

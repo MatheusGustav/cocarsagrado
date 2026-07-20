@@ -132,7 +132,7 @@ function _renderCupons() {
           <span class="esp-toggle-track"><span class="esp-toggle-thumb"></span></span>
           <span class="esp-toggle-txt">${rec.uso_unico ? 'Uso único' : 'Reutilizável'}</span>
         </label>
-        <button class="ag-btn ag-btn-outline ag-btn-sm cup-btn-del" style="color:var(--t-danger)" title="Remover">✕</button>
+        <button class="ag-btn ag-btn-outline ag-btn-sm cup-btn-del" style="color:var(--t-danger)" title="Remover" aria-label="Remover cupom"><svg class="ico" aria-hidden="true"><use href="#ico-fechar"></use></svg></button>
       </div>`;
 
     const chk = card.querySelector('.cup-chk-ativo');
@@ -176,7 +176,7 @@ async function criarCupom() {
     if (error || !data?.length) {
       btn.disabled = false;
       btn.textContent = '+ Criar cupom';
-      _toastAdmin(error ? '❌ ' + error.message : '❌ Nenhuma conta com esse e-mail — o cliente precisa criar a conta primeiro.', 'erro');
+      _toastAdmin(error ? error.message : 'Nenhuma conta com esse e-mail — o cliente precisa criar a conta primeiro.', 'erro');
       return;
     }
     userId = data[0].user_id;
@@ -185,7 +185,7 @@ async function criarCupom() {
     // Conta que nunca confirmou o código: o cupom fica preso a um user
     // que talvez nunca logue (e o cliente não vê nada no site).
     if (data[0].confirmado === false) {
-      _toastAdmin('⚠️ Essa conta nunca concluiu o login — o cliente só verá o cupom depois de entrar com esse e-mail.', 'erro');
+      _toastAdmin('Essa conta nunca concluiu o login — o cliente só verá o cupom depois de entrar com esse e-mail.', 'erro');
     }
   }
 
@@ -201,7 +201,7 @@ async function criarCupom() {
 
   if (error) {
     const msg = /duplicate|unique/i.test(error.message) ? 'Já existe um cupom com esse código.' : error.message;
-    _toastAdmin('❌ ' + msg, 'erro');
+    _toastAdmin(msg, 'erro');
     return;
   }
 
@@ -213,7 +213,7 @@ async function criarCupom() {
     inUso.closest('.esp-toggle-wrap').querySelector('.esp-toggle-txt').textContent = 'Reutilizável';
   }
   await carregarCupons();
-  _toastAdmin('✅ Cupom criado!' + (userId ? ' Pessoal — o cliente vê no site (e recebe e-mail se ligou as novidades).' : ''), 'ok');
+  _toastAdmin('Cupom criado!' + (userId ? ' Pessoal — o cliente vê no site (e recebe e-mail se ligou as novidades).' : ''), 'ok');
 }
 
 async function _toggleCupom(codigo, chk, card) {
@@ -232,7 +232,7 @@ async function _toggleCupom(codigo, chk, card) {
     chk.checked = !ativo;
     txt.textContent = !ativo ? 'Ativo' : 'Inativo';
     card.classList.toggle('cup-card--off', ativo);
-    _toastAdmin('❌ ' + error.message, 'erro');
+    _toastAdmin(error.message, 'erro');
     return;
   }
   const rec = _cuponsCache.find(c => c.codigo === codigo);
@@ -252,7 +252,7 @@ async function _toggleUsoUnico(codigo, chk, card) {
   if (error) {
     chk.checked = !usoUnico;
     txt.textContent = !usoUnico ? 'Uso único' : 'Reutilizável';
-    _toastAdmin('❌ ' + error.message, 'erro');
+    _toastAdmin(error.message, 'erro');
     return;
   }
 
@@ -276,7 +276,7 @@ async function _deletarCupom(codigo, card) {
   if (!confirm(`Remover o cupom ${codigo}?`)) return;
 
   const { error } = await supabase.from('cupons').delete().eq('codigo', codigo);
-  if (error) { _toastAdmin('❌ ' + error.message, 'erro'); return; }
+  if (error) { _toastAdmin(error.message, 'erro'); return; }
 
   card.remove();
   _cuponsCache = _cuponsCache.filter(c => c.codigo !== codigo);
@@ -284,7 +284,7 @@ async function _deletarCupom(codigo, card) {
     document.getElementById('cup-lista').innerHTML =
       '<div class="ag-empty" style="margin-top:16px">Nenhum cupom criado ainda.</div>';
   }
-  _toastAdmin('✅ Removido.', 'ok');
+  _toastAdmin('Removido.', 'ok');
 }
 
 window.inicializarCupons = inicializarCupons;
