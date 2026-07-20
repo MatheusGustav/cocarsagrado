@@ -120,13 +120,13 @@ async function inicializarAudios() {
     <div class="aud-tabs">
       <button type="button" class="aud-tab aud-tab--on" id="aud-tab-gravar" onclick="_audTrocarAba('gravar')">🎙 Gravar</button>
       <button type="button" class="aud-tab" id="aud-tab-todos" onclick="_audTrocarAba('todos')">🎧 Áudios salvos</button>
+      <select class="aud-mic-select" id="aud-mic-select" style="display:none;" onchange="_audEscolherMic(this.value)"></select>
     </div>
 
     <div id="aud-aba-gravar">
       <div class="aud-passo" id="aud-tela-gravar">
         <div class="aud-gravador">
           <div class="aud-controles" id="aud-controles"></div>
-          <select class="aud-mic-select" id="aud-mic-select" style="display:none;" onchange="_audEscolherMic(this.value)"></select>
           <div class="aud-erro" id="aud-erro"></div>
         </div>
         <div class="aud-dock" id="aud-dock"></div>
