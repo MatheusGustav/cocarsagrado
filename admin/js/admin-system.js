@@ -168,7 +168,7 @@ async function _enviarResetSenha() {
     errorEl.textContent = 'Erro ao enviar: ' + error.message;
   } else {
     errorEl.style.color = '#93AC8F';
-    errorEl.textContent = '✓ Link de redefinição enviado! Confira seu e-mail.';
+    errorEl.innerHTML = '<svg class="ico" aria-hidden="true"><use href="#ico-check"></use></svg> Link de redefinição enviado! Confira seu e-mail.';
   }
   errorEl.style.display = 'block';
 }
@@ -375,10 +375,15 @@ const STATUS_LABELS = {
   cancelado:  'Cancelado',
 };
 
+// Ícone do toast sai do tipo, não da mensagem — nenhuma string precisa
+// carregar símbolo e o texto continua entrando como texto puro.
+const ICO_TOAST = { ok: 'check-circulo', erro: 'alerta', info: 'info' };
+
 function _toastAdmin(msg, tipo) {
   const t = document.createElement('div');
   t.className = 'adm-toast adm-toast--' + (tipo || 'info');
-  t.textContent = msg;
+  t.innerHTML = `<svg class="ico adm-toast-ico" aria-hidden="true"><use href="#ico-${ICO_TOAST[tipo] || 'info'}"></use></svg>`;
+  t.appendChild(document.createTextNode(msg));
   document.body.appendChild(t);
   requestAnimationFrame(() => t.classList.add('adm-toast--show'));
   setTimeout(() => {
@@ -635,7 +640,7 @@ function _iniciarRealtime() {
         const velho = payload.old || {};
         // Pagamento confirmado pelo webhook (pendente -> pago)
         if (payload.eventType === 'UPDATE' && velho.status === 'pendente' && novo.status === 'pago') {
-          _toastAdmin('💰 Pagamento confirmado: ' + (novo.cliente_nome || 'cliente'), 'ok');
+          _toastAdmin('Pagamento confirmado: ' + (novo.cliente_nome || 'cliente'), 'ok');
         }
         _agendarRefresh();
       })
@@ -757,7 +762,7 @@ function renderizarAgendamentos(lista, container) {
       document.getElementById('filtro-metodo')?.value);
     container.innerHTML = `<div class="ag-empty">Nenhum agendamento encontrado.${
       temFiltro
-        ? '<div class="adm-empty-acoes"><button class="ag-btn ag-btn-outline ag-btn-sm" onclick="limparFiltros()">✕ Limpar filtros</button></div>'
+        ? '<div class="adm-empty-acoes"><button class="ag-btn ag-btn-outline ag-btn-sm" onclick="limparFiltros()"><svg class="ico" aria-hidden="true"><use href="#ico-fechar"></use></svg> Limpar filtros</button></div>'
         : ''
     }</div>`;
     return;
@@ -846,7 +851,7 @@ function criarItemAgendamento(ag) {
         ${badgeAdicao}
         ${badgeTerapeuta}
         ${badge}
-        <span style="font-size:1.1rem; color:var(--text-muted)">▾</span>
+        <span class="adm-chevron" style="color:var(--text-muted)"><svg class="ico" aria-hidden="true"><use href="#ico-chevron-baixo"></use></svg></span>
       </div>
     </div>
     <div class="adm-item-details">
@@ -915,7 +920,7 @@ function criarItemGrupo(grupo) {
       <div class="adm-item-right">
         <span style="font-weight:700; color:var(--primary)">${_esc(valorStr)}</span>
         ${badge}
-        <span style="font-size:1.1rem; color:var(--text-muted)">▾</span>
+        <span class="adm-chevron" style="color:var(--text-muted)"><svg class="ico" aria-hidden="true"><use href="#ico-chevron-baixo"></use></svg></span>
       </div>
     </div>
     <div class="adm-item-details">
@@ -942,10 +947,10 @@ function montarAcoesGrupo(ags) {
   let html = '';
 
   if (temPendente) {
-    html += `<button class="ag-btn ag-btn-primary ag-btn-sm" onclick="marcarGrupoComoPago(${JSON.stringify(ids)},'${escapeAttr(ags[0].chave_pedido || '')}')">✅ Marcar todos como Pagos</button>`;
+    html += `<button class="ag-btn ag-btn-primary ag-btn-sm" onclick="marcarGrupoComoPago(${JSON.stringify(ids)},'${escapeAttr(ags[0].chave_pedido || '')}')"><svg class="ico" aria-hidden="true"><use href="#ico-check"></use></svg> Marcar todos como Pagos</button>`;
   }
   if (temPago) {
-    html += `<button class="ag-btn ag-btn-secondary ag-btn-sm" onclick="marcarGrupoComoAtendido(${JSON.stringify(ids)})">🌙 Marcar todos como Atendidos</button>`;
+    html += `<button class="ag-btn ag-btn-secondary ag-btn-sm" onclick="marcarGrupoComoAtendido(${JSON.stringify(ids)})"><svg class="ico" aria-hidden="true"><use href="#ico-lua"></use></svg> Marcar todos como Atendidos</button>`;
   }
 
   const comFone = ags.find(a => a.cliente_whatsapp?.replace(/\D/g, '').length >= 10);
@@ -954,7 +959,7 @@ function montarAcoesGrupo(ags) {
     const nome = comFone.cliente_nome || '';
     const qtd  = ags.length;
     const data = formatarData(ags[0].data_agendamento);
-    html += `<button class="ag-btn ag-btn-whatsapp ag-btn-sm" onclick="abrirWhatsApp('${escapeAttr(fone)}','${escapeAttr(nome)}','pedido com ${qtd} leituras','${escapeAttr(data)}','')">📱 WhatsApp</button>`;
+    html += `<button class="ag-btn ag-btn-whatsapp ag-btn-sm" onclick="abrirWhatsApp('${escapeAttr(fone)}','${escapeAttr(nome)}','pedido com ${qtd} leituras','${escapeAttr(data)}','')"><svg class="ico" aria-hidden="true"><use href="#ico-balao"></use></svg> WhatsApp</button>`;
   }
 
   return html;
@@ -971,18 +976,18 @@ function montarAcoes(ag) {
   let html = '';
 
   if (ag.status === 'pendente') {
-    html += `<button class="ag-btn ag-btn-primary ag-btn-sm" onclick="marcarComoPago('${id}','${escapeAttr(ag.chave_pedido||'')}')">✅ Marcar como Pago</button>`;
-    html += `<button class="ag-btn ag-btn-danger ag-btn-sm" onclick="apagarAgendamento('${id}')">🗑 Apagar</button>`;
+    html += `<button class="ag-btn ag-btn-primary ag-btn-sm" onclick="marcarComoPago('${id}','${escapeAttr(ag.chave_pedido||'')}')"><svg class="ico" aria-hidden="true"><use href="#ico-check"></use></svg> Marcar como Pago</button>`;
+    html += `<button class="ag-btn ag-btn-danger ag-btn-sm" onclick="apagarAgendamento('${id}')"><svg class="ico" aria-hidden="true"><use href="#ico-lixeira"></use></svg> Apagar</button>`;
   }
   if (['pago','confirmado'].includes(ag.status)) {
-    html += `<button class="ag-btn ag-btn-secondary ag-btn-sm" onclick="marcarComoAtendido('${id}')">🌙 Marcar como Atendido</button>`;
+    html += `<button class="ag-btn ag-btn-secondary ag-btn-sm" onclick="marcarComoAtendido('${id}')"><svg class="ico" aria-hidden="true"><use href="#ico-lua"></use></svg> Marcar como Atendido</button>`;
   }
   if (ag.status !== 'cancelado' && ag.status !== 'atendido') {
-    html += `<button class="ag-btn ag-btn-danger ag-btn-sm" onclick="cancelarAgendamento('${id}')">✖ Cancelar</button>`;
+    html += `<button class="ag-btn ag-btn-danger ag-btn-sm" onclick="cancelarAgendamento('${id}')"><svg class="ico" aria-hidden="true"><use href="#ico-fechar"></use></svg> Cancelar</button>`;
   }
 
   if (fone.replace(/\D/g,'').length >= 10) {
-    html += `<button class="ag-btn ag-btn-whatsapp ag-btn-sm" onclick="abrirWhatsApp('${escapeAttr(fone)}','${escapeAttr(nome)}','${escapeAttr(tipo)}','${escapeAttr(data)}','${escapeAttr(horaBtn)}')">📱 WhatsApp</button>`;
+    html += `<button class="ag-btn ag-btn-whatsapp ag-btn-sm" onclick="abrirWhatsApp('${escapeAttr(fone)}','${escapeAttr(nome)}','${escapeAttr(tipo)}','${escapeAttr(data)}','${escapeAttr(horaBtn)}')"><svg class="ico" aria-hidden="true"><use href="#ico-balao"></use></svg> WhatsApp</button>`;
   }
 
   return html;
@@ -1007,7 +1012,7 @@ async function marcarComoPago(id, chavePedido) {
     .eq('chave_pedido', chavePedido)
     .eq('status', 'pendente');
   if (errPed) { _toastAdmin('Erro ao atualizar pedido: ' + errPed.message, 'erro'); return; }
-  _toastAdmin('✅ Pedido marcado como pago!', 'ok');
+  _toastAdmin('Pedido marcado como pago!', 'ok');
   carregarAgendamentos();
 }
 
@@ -1016,7 +1021,7 @@ async function marcarComoAtendido(id) {
   if (!confirm('Marcar agendamento como atendido?')) return;
   const { error } = await supabase.from('agendamentos').update({ status: 'atendido', atendido_em: new Date().toISOString() }).eq('id', id);
   if (error) { _toastAdmin('Erro: ' + error.message, 'erro'); return; }
-  _toastAdmin('✅ Marcado como atendido!', 'ok');
+  _toastAdmin('Marcado como atendido!', 'ok');
   carregarAgendamentos();
 }
 
@@ -1037,7 +1042,7 @@ async function cancelarAgendamento(id) {
   const { error } = await supabase.from('agendamentos').update({ status: 'cancelado' }).eq('id', id);
   if (error) { _toastAdmin('Erro: ' + error.message, 'erro'); return; }
   await _devolverVagaEspecialSeAplicavel(ag);
-  _toastAdmin('✅ Agendamento cancelado.', 'ok');
+  _toastAdmin('Agendamento cancelado.', 'ok');
   carregarAgendamentos();
 }
 
@@ -1058,7 +1063,7 @@ async function marcarGrupoComoPago(ids, chavePedido) {
       .eq('status', 'pendente');
     if (errPed) { _toastAdmin('Erro ao atualizar pedido: ' + errPed.message, 'erro'); return; }
   }
-  _toastAdmin('✅ Marcados como pagos!', 'ok');
+  _toastAdmin('Marcados como pagos!', 'ok');
   carregarAgendamentos();
 }
 
@@ -1069,7 +1074,7 @@ async function marcarGrupoComoAtendido(ids) {
     .update({ status: 'atendido', atendido_em: new Date().toISOString() })
     .in('id', ids);
   if (error) { _toastAdmin('Erro: ' + error.message, 'erro'); return; }
-  _toastAdmin('✅ Marcados como atendidos!', 'ok');
+  _toastAdmin('Marcados como atendidos!', 'ok');
   carregarAgendamentos();
 }
 
@@ -1080,7 +1085,7 @@ async function apagarAgendamento(id) {
   const { error } = await supabase.from('agendamentos').delete().eq('id', id);
   if (error) { _toastAdmin('Erro: ' + error.message, 'erro'); return; }
   await _devolverVagaEspecialSeAplicavel(ag);
-  _toastAdmin('✅ Agendamento apagado.', 'ok');
+  _toastAdmin('Agendamento apagado.', 'ok');
   carregarAgendamentos();
 }
 
@@ -1180,17 +1185,31 @@ async function exportarContatos() {
   a.download = `contatos_clientes_${_dataLocalISO()}.csv`;
   a.click();
   URL.revokeObjectURL(url);
-  _toastAdmin(`✅ ${contatos.length} contato${contatos.length === 1 ? '' : 's'} exportado${contatos.length === 1 ? '' : 's'}!`, 'ok');
+  _toastAdmin(`${contatos.length} contato${contatos.length === 1 ? '' : 's'} exportado${contatos.length === 1 ? '' : 's'}!`, 'ok');
 }
 
 // ============================================================
 // UI helpers
 // ============================================================
+// Botão que pisca um estado ("Salvo", "Erro") e volta ao normal.
+// Ícone + texto ficam aqui para nenhum lugar reconstruir o rótulo na mão.
+const _ESTADO_BTN = {
+  salvar: ['guardar', 'Salvar'],
+  salvo:  ['check',   'Salvo'],
+  erro:   ['alerta',  'Erro'],
+};
+function _admBtnEstado(btn, estado) {
+  if (!btn) return;
+  const [nome, txt] = _ESTADO_BTN[estado] || _ESTADO_BTN.salvar;
+  btn.innerHTML = `<svg class="ico" aria-hidden="true"><use href="#ico-${nome}"></use></svg> ${txt}`;
+}
+
 function toggleDetalhes(header) {
   const det = header.nextElementSibling;
   if (!det) return;
   const aberto = det.classList.toggle('open');
-  header.querySelector('span:last-child').textContent = aberto ? '▴' : '▾';
+  const seta = header.querySelector('.adm-chevron use');
+  if (seta) seta.setAttribute('href', aberto ? '#ico-chevron-cima' : '#ico-chevron-baixo');
 }
 
 function formatarData(str) {

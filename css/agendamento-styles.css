@@ -42,7 +42,7 @@
 .ico--maior { width: 1.15em; height: 1.15em; }
 
 /* Botões redondos de fechar: o texto deles é minúsculo (13-16px) só
-   porque o ✕ antigo era uma letra. O traço precisa de corpo próprio. */
+   porque o X antigo era uma letra. O traço precisa de corpo próprio. */
 .seletor-close .ico,
 .inapp-close .ico,
 .termos-modal-fechar .ico { width: 17px; height: 17px; }

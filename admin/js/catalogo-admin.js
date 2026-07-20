@@ -111,7 +111,7 @@ function _catRenderizar() {
       ${btnInativas}
       <span class="cat-count">${totalVisiveis} leitura${totalVisiveis === 1 ? '' : 's'}</span>
     </div>
-    <p class="cat-dnd-dica">⠿ Arraste pela alça para reordenar dentro de cada terapeuta. A ordem do site reflete isto.</p>
+    <p class="cat-dnd-dica"><svg class="ico" aria-hidden="true"><use href="#ico-arrastar"></use></svg> Arraste pela alça para reordenar dentro de cada terapeuta. A ordem do site reflete isto.</p>
   `;
 
   for (const ter of blocos) {
@@ -150,7 +150,7 @@ function _catRenderizar() {
 
 // ============================================================
 // Drag-and-drop: reordena cards DENTRO de cada terapeuta.
-// A alça (⠿) ativa o draggable; soltar persiste a nova ordem.
+// A alça de arrastar ativa o draggable; soltar persiste a nova ordem.
 // ============================================================
 function _catDragAfter(container, y) {
   const els = [...container.querySelectorAll('.cat-card[data-card-kind]:not(.dragging)')];
@@ -223,7 +223,7 @@ async function _catPersistirOrdem(container) {
       supabase.from('tipos_leitura').update({ ordem: u.ordem }).eq('id', u.id)
     ));
     updates.forEach(u => { const it = _catCache.find(x => x.id === u.id); if (it) it.ordem = u.ordem; });
-    _toastAdmin('✅ Ordem salva', 'ok');
+    _toastAdmin('Ordem salva', 'ok');
   } catch (e) {
     _toastAdmin('Erro ao salvar ordem: ' + (e.message || e), 'erro');
     inicializarCatalogo(); // recarrega o estado real
@@ -240,14 +240,14 @@ function _catCardGrupo(g, arrastavel = false) {
   const nome = (p.tier_label && sep > 0) ? p.nome.slice(0, sep) : p.nome;
   const todosInativos = g.tiers.every(t => t.ativo === false);
   const dragAttrs = arrastavel ? `data-card-kind="grupo" data-card-grupo="${_catEsc(g.slug)}"` : '';
-  const handle    = arrastavel ? `<span class="cat-drag-handle" title="Arraste para reordenar" aria-hidden="true">⠿</span>` : '';
+  const handle    = arrastavel ? `<span class="cat-drag-handle" title="Arraste para reordenar" aria-hidden="true"><svg class="ico" aria-hidden="true"><use href="#ico-arrastar"></use></svg></span>` : '';
 
   const terapeutaTag = p.terapeuta
     ? `<span class="cat-card-terapeuta">${_CAT_TERAPEUTA_LABEL[p.terapeuta] || p.terapeuta}</span>`
     : `<span class="cat-card-terapeuta cat-card-terapeuta--missing">sem terapeuta</span>`;
   const img = p.imagem_url
     ? `<img src="${_catEsc(p.imagem_url)}" alt="${_catEsc(nome)}" class="cat-card-foto">`
-    : `<div class="cat-card-foto cat-card-foto--placeholder">✦</div>`;
+    : `<div class="cat-card-foto cat-card-foto--placeholder"><svg class="ico" aria-hidden="true"><use href="#ico-semente"></use></svg></div>`;
 
   const tierRows = g.tiers.map(t => {
     const inativo = t.ativo === false;
@@ -284,19 +284,19 @@ function _catCard(t, arrastavel = false) {
   const preco    = `R$ ${Number(t.preco_original || 0).toFixed(2).replace('.', ',')}`;
   const inativo  = t.ativo === false;
   const dragAttrs = arrastavel ? `data-card-kind="single" data-card-id="${t.id}"` : '';
-  const handle    = arrastavel ? `<span class="cat-drag-handle" title="Arraste para reordenar" aria-hidden="true">⠿</span>` : '';
+  const handle    = arrastavel ? `<span class="cat-drag-handle" title="Arraste para reordenar" aria-hidden="true"><svg class="ico" aria-hidden="true"><use href="#ico-arrastar"></use></svg></span>` : '';
   const terapeutaTag = t.terapeuta
     ? `<span class="cat-card-terapeuta">${_CAT_TERAPEUTA_LABEL[t.terapeuta] || t.terapeuta}</span>`
     : `<span class="cat-card-terapeuta cat-card-terapeuta--missing">sem terapeuta</span>`;
   const badgeTag = t.badge
-    ? `<span class="cat-card-badge cat-card-badge--${t.badge}">● ${_CAT_BADGE_LABEL[t.badge] || t.badge}</span>`
+    ? `<span class="cat-card-badge cat-card-badge--${t.badge}"><svg class="ico" aria-hidden="true"><use href="#ico-ponto"></use></svg> ${_CAT_BADGE_LABEL[t.badge] || t.badge}</span>`
     : '';
   const inativoTag = inativo
     ? `<span class="cat-card-inativo">inativa</span>`
     : '';
   const img      = t.imagem_url
     ? `<img src="${_catEsc(t.imagem_url)}" alt="${_catEsc(t.nome)}" class="cat-card-foto">`
-    : `<div class="cat-card-foto cat-card-foto--placeholder">✦</div>`;
+    : `<div class="cat-card-foto cat-card-foto--placeholder"><svg class="ico" aria-hidden="true"><use href="#ico-semente"></use></svg></div>`;
 
   const acoes = inativo
     ? `<button class="ag-btn ag-btn-primary ag-btn-sm" onclick="cat_reativar(${t.id})">Reativar</button>
@@ -350,7 +350,7 @@ function _catRenderForm(t) {
   const titulo = _catEditandoId ? 'Editar Leitura' : 'Nova Leitura';
   const preview = t.imagem_url
     ? `<img src="${_catEsc(t.imagem_url)}" alt="" class="cat-form-preview">`
-    : `<div class="cat-form-preview cat-form-preview--placeholder">✦</div>`;
+    : `<div class="cat-form-preview cat-form-preview--placeholder"><svg class="ico" aria-hidden="true"><use href="#ico-semente"></use></svg></div>`;
 
   const opt = (val, lbl, sel) => `<option value="${val}"${sel === val ? ' selected' : ''}>${lbl}</option>`;
 
@@ -410,15 +410,15 @@ function _catRenderForm(t) {
             </label>
             <label class="cat-badge-opt cat-badge-opt--buzios">
               <input type="radio" name="cat-badge" value="buzios" ${t.badge === 'buzios' ? 'checked' : ''}>
-              ● Búzios
+              <svg class="ico" aria-hidden="true"><use href="#ico-ponto"></use></svg> Búzios
             </label>
             <label class="cat-badge-opt cat-badge-opt--cartas">
               <input type="radio" name="cat-badge" value="cartas" ${t.badge === 'cartas' ? 'checked' : ''}>
-              ● Cartas
+              <svg class="ico" aria-hidden="true"><use href="#ico-ponto"></use></svg> Cartas
             </label>
             <label class="cat-badge-opt cat-badge-opt--radiestesia">
               <input type="radio" name="cat-badge" value="radiestesia" ${t.badge === 'radiestesia' ? 'checked' : ''}>
-              ● Radiestesia
+              <svg class="ico" aria-hidden="true"><use href="#ico-ponto"></use></svg> Radiestesia
             </label>
           </div>
         </div>
@@ -428,15 +428,15 @@ function _catRenderForm(t) {
           <div class="cat-badge-group">
             <label class="cat-badge-opt">
               <input type="radio" name="cat-modalidade" value="mensagem" ${(t.modalidade || 'mensagem') === 'mensagem' ? 'checked' : ''}>
-              💬 Mensagem
+              <svg class="ico" aria-hidden="true"><use href="#ico-balao"></use></svg> Mensagem
             </label>
             <label class="cat-badge-opt">
               <input type="radio" name="cat-modalidade" value="audio" ${t.modalidade === 'audio' ? 'checked' : ''}>
-              🎙️ Áudio gravado
+              <svg class="ico" aria-hidden="true"><use href="#ico-microfone"></use></svg> Áudio gravado
             </label>
             <label class="cat-badge-opt">
               <input type="radio" name="cat-modalidade" value="video" ${t.modalidade === 'video' ? 'checked' : ''}>
-              📹 Vídeo-chamada
+              <svg class="ico" aria-hidden="true"><use href="#ico-video"></use></svg> Vídeo-chamada
             </label>
           </div>
         </div>
@@ -530,7 +530,7 @@ function cat_removerFoto() {
   _catArquivoNovo    = null;
   _catImagemRemovida = true;
   const wrap = document.getElementById('cat-preview-wrap');
-  if (wrap) wrap.innerHTML = `<div class="cat-form-preview cat-form-preview--placeholder">✦</div>`;
+  if (wrap) wrap.innerHTML = `<div class="cat-form-preview cat-form-preview--placeholder"><svg class="ico" aria-hidden="true"><use href="#ico-semente"></use></svg></div>`;
   const input = document.getElementById('cat-input-foto');
   if (input) input.value = '';
 }
@@ -626,7 +626,7 @@ async function _catSalvar() {
       salvoId = data?.id;
     }
 
-    _toastAdmin('✅ Salvo com sucesso!', 'ok');
+    _toastAdmin('Salvo com sucesso!', 'ok');
     cat_fecharForm();
     await inicializarCatalogo();
   } catch (e) {
@@ -673,7 +673,7 @@ async function cat_excluir(id) {
 
   if (t.imagem_url) await _catRemoverArquivo(t.imagem_url);
 
-  _toastAdmin('✅ Leitura excluída.', 'ok');
+  _toastAdmin('Leitura excluída.', 'ok');
   await inicializarCatalogo();
 }
 
@@ -693,7 +693,7 @@ async function cat_reativar(id) {
     return;
   }
 
-  _toastAdmin('✅ Leitura reativada.', 'ok');
+  _toastAdmin('Leitura reativada.', 'ok');
   await inicializarCatalogo();
 }
 

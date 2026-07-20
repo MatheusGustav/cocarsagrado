@@ -242,7 +242,7 @@ async function salvarDescontos() {
       .upsert({ chave: 'descontos', valor: { promocoes } }, { onConflict: 'chave' });
     if (error) throw error;
     _descConfig = { promocoes };
-    _toastAdmin('✅ Descontos salvos com sucesso!', 'ok');
+    _toastAdmin('Descontos salvos com sucesso!', 'ok');
   } catch (e) {
     _toastAdmin('Erro ao salvar: ' + (e.message || e), 'erro');
   }

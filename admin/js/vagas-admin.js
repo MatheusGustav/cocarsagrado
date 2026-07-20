@@ -162,7 +162,7 @@ function renderizarPadraoSemanal() {
         }).join('')}
       </div>
       <div class="vps-dia-footer">
-        <button class="ag-btn ag-btn-primary ag-btn-sm vps-btn-salvar" data-data="${str}">💾 Salvar</button>
+        <button class="ag-btn ag-btn-primary ag-btn-sm vps-btn-salvar" data-data="${str}"><svg class="ico" aria-hidden="true"><use href="#ico-guardar"></use></svg> Salvar</button>
       </div>`;
 
     profs.forEach(prof => {
@@ -260,15 +260,15 @@ async function salvarDiaData(str, btn) {
   if (btn) {
     btn.disabled = false;
     if (error) {
-      btn.textContent = '✗ Erro';
-      setTimeout(() => { btn.textContent = '💾 Salvar'; }, 2000);
+      _admBtnEstado(btn, 'erro');
+      setTimeout(() => _admBtnEstado(btn, 'salvar'), 2000);
     } else {
-      btn.textContent = '✓ Salvo';
-      setTimeout(() => { btn.textContent = '💾 Salvar'; }, 2000);
+      _admBtnEstado(btn, 'salvo');
+      setTimeout(() => _admBtnEstado(btn, 'salvar'), 2000);
     }
   }
 
-  if (error) { _toastVagas('❌ Erro ao salvar: ' + error.message); return; }
+  if (error) { _toastVagas('Erro ao salvar: ' + error.message, 'erro'); return; }
 
   registros.forEach(r => { _overrideCache[`${r.profissional}_${r.data}`] = r; });
 }
@@ -295,10 +295,11 @@ function _opcoesHorario(sel) {
   return html;
 }
 
-function _toastVagas(msg) {
+function _toastVagas(msg, tipo) {
   const t = document.createElement('div');
   t.className = 'vagas-toast';
-  t.textContent = msg;
+  t.innerHTML = `<svg class="ico vagas-toast-ico" aria-hidden="true"><use href="#ico-${ICO_TOAST[tipo] || 'info'}"></use></svg>`;
+  t.appendChild(document.createTextNode(msg));
   document.body.appendChild(t);
   setTimeout(() => t.classList.add('vagas-toast--show'), 10);
   setTimeout(() => {

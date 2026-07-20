@@ -956,7 +956,7 @@ function _renderizarCarrinho() {
     <p class="cart-cupom-msg" id="cupom-msg" role="alert" aria-live="polite"></p>`;
   }
 
-  html += `<p class="cart-entrega-aviso"><svg class="ico" aria-hidden="true"><use href="#ico-celular"></use></svg> Sua leitura será enviada por WhatsApp até o horário indicado em cada item.</p>`;
+  html += `<p class="cart-entrega-aviso"><svg class="ico" aria-hidden="true"><use href="#ico-balao"></use></svg> Sua leitura será enviada por WhatsApp até o horário indicado em cada item.</p>`;
 
   container.innerHTML = html;
 

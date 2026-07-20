@@ -114,7 +114,7 @@ function _renderFinanceiro(cache, container) {
     const pct = ((atual.total - anterior.total) / anterior.total) * 100;
     const up  = pct >= 0;
     deltaHtml = `<span class="fin-card-delta ${up ? 'fin-card-delta--up' : 'fin-card-delta--down'}">
-      ${up ? '▲' : '▼'} ${Math.abs(pct).toFixed(0)}% vs. mês anterior</span>`;
+      ${up ? '<svg class="ico" aria-hidden="true"><use href="#ico-subiu"></use></svg>' : '<svg class="ico" aria-hidden="true"><use href="#ico-desceu"></use></svg>'} ${Math.abs(pct).toFixed(0)}% vs. mês anterior</span>`;
   }
 
   // ---- Quebras do mês atual ----
@@ -190,7 +190,7 @@ function _renderFinanceiro(cache, container) {
         ? lancDoMes.map(l => `<div class="fin-break-row">
             <span class="fin-break-nome">${_esc(l.descricao)} <em class="fin-lanc-cat">${rotuloCat[l.categoria] || l.categoria}${l.terapeuta ? ' · ' + _esc(typeof terapeutaNome === 'function' ? terapeutaNome(l.terapeuta) : l.terapeuta) : ''}</em></span>
             <span class="fin-break-valor${Number(l.valor) < 0 ? ' fin-break-valor--neg' : ''}">${_esc(_finBRL(l.valor))}</span>
-            <button class="fin-lanc-del" onclick="fin_excluirLancamento(${l.id})" aria-label="Excluir lançamento">✕</button>
+            <button class="fin-lanc-del" onclick="fin_excluirLancamento(${l.id})" aria-label="Excluir lançamento"><svg class="ico" aria-hidden="true"><use href="#ico-fechar"></use></svg></button>
           </div>`).join('')
         : '<div class="fin-break-row"><span class="fin-break-nome">Nenhum lançamento neste mês.</span></div>'}
     </div>`;
@@ -333,7 +333,7 @@ async function fin_salvarLancamento() {
     return;
   }
 
-  _toastAdmin('✅ Lançamento registrado!', 'ok');
+  _toastAdmin('Lançamento registrado!', 'ok');
   fin_fecharLancamento();
   inicializarFinanceiro(true);
 }

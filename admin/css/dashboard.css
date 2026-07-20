@@ -2403,6 +2403,9 @@ body.modal-aberto { overflow: hidden; }
 
 /* Toast */
 .vagas-toast {
+  display: flex;
+  align-items: center;
+  gap: 9px;
   position: fixed;
   bottom: 32px;
   left: 50%;
@@ -2428,6 +2431,9 @@ body.modal-aberto { overflow: hidden; }
 
 /* Toast admin genérico */
 .adm-toast {
+  display: flex;
+  align-items: center;
+  gap: 9px;
   position: fixed;
   bottom: 28px;
   left: 50%;
@@ -4381,6 +4387,12 @@ body.drawer-aberto { overflow: hidden; }
   cursor: pointer;
   transition: transform .15s, background .15s;
 }
+/* o play/pause é só ícone: centraliza e dá corpo ao traço */
+.aud-dock-play { display: flex; align-items: center; justify-content: center; }
+.aud-dock-play .ico { width: 18px; height: 18px; }
+/* checkzinho colado no envelope = "já enviei este" */
+.aud-item-email-ok { width: .8em; height: .8em; margin-left: 1px; }
+
 .aud-dock-play:hover { transform: scale(1.06); background: #1F4530; }
 .aud-dock-play:focus-visible { outline: 2px solid #D2BA7C; outline-offset: 2px; }
 
@@ -4744,6 +4756,7 @@ body.drawer-aberto { overflow: hidden; }
 /* --- Toasts --- */
 .adm-toast { border-radius: 16px 7px 16px 7px; }
 .vagas-toast { border-radius: 16px 7px 16px 7px; }
+.adm-toast-ico, .vagas-toast-ico { width: 1.15em; height: 1.15em; }
 
 /* --- Semana strip: chips de papel --- */
 .adm-semana-chip { border-radius: 12px 5px 12px 5px; }

@@ -5,12 +5,11 @@
       (ou "só gravar", sem cliente, pra compartilhar avulso).
    2. Orbe grava (toque grava, toque para) com o chip "Gravando
       para Fulana" no topo; prévia = barrinhas + dock com player.
-   3. "💾 Salvar para Fulana" sobe pro bucket privado "audios" +
-      audios_cliente e o dock vira o painel de entrega:
-      ✉️ enviar e-mail agora (edge audio-email; o cron de 10 em
-      10 min só re-tenta liberados que falharam), 📤 compartilhar,
-      🎙 nova gravação.
-   A aba "Áudios salvos" é o histórico, com ✉️ de (re)envio.
+   3. "Salvar para Fulana" sobe pro bucket privado "audios" +
+      audios_cliente e o dock vira o painel de entrega: enviar
+      e-mail agora (edge audio-email; o cron de 10 em 10 min só
+      re-tenta liberados que falharam), compartilhar, nova gravação.
+   A aba "Áudios salvos" é o histórico, com (re)envio por e-mail.
    ============================================================ */
 
 let _audAgendamentos = [];   // cache da busca de agendamentos
@@ -149,13 +148,13 @@ function _audMostrarPillEnviar(file, nome) {
   pill.type = 'button';
   pill.id = 'aud-pill-enviar';
   pill.className = 'aud-pill-enviar';
-  pill.innerHTML = '📤 Áudio pronto — <strong>toque pra enviar</strong>';
+  pill.innerHTML = '<svg class="ico" aria-hidden="true"><use href="#ico-compartilhar"></use></svg> Áudio pronto — <strong>toque pra enviar</strong>';
   pill.onclick = async () => {
     pill.remove();
     try {
       await navigator.share({ files: [file], title: nome });
     } catch (e) {
-      if (e.name !== 'AbortError') _toastAdmin('❌ Erro ao compartilhar: ' + e.message, 'erro');
+      if (e.name !== 'AbortError') _toastAdmin('Erro ao compartilhar: ' + e.message, 'erro');
     }
   };
   document.body.appendChild(pill);
@@ -169,7 +168,7 @@ async function _audCompartilharBlob(blob, mime, nomeSugestao) {
   let blobFinal = blob, mimeFinal = mime, ext = _audExtDoMime(mime);
   if (mime !== 'audio/mpeg') {
     try {
-      if (!_audMp3Pronto.has(blob)) _toastAdmin('🎛 Convertendo pra mp3…', 'info');
+      if (!_audMp3Pronto.has(blob)) _toastAdmin('Convertendo pra mp3…', 'info');
       blobFinal = await _audConverterParaMp3(blob);
       mimeFinal = 'audio/mpeg';
       ext = 'mp3';
@@ -191,7 +190,7 @@ async function _audCompartilharBlob(blob, mime, nomeSugestao) {
         // oferece um botão que compartilha na hora com um toque novo
         _audMostrarPillEnviar(file, nome);
       } else if (e.name !== 'AbortError') {
-        _toastAdmin('❌ Erro ao compartilhar: ' + e.message, 'erro');
+        _toastAdmin('Erro ao compartilhar: ' + e.message, 'erro');
       }
     }
     return;
@@ -217,8 +216,8 @@ async function inicializarAudios() {
 
   container.innerHTML = `
     <div class="aud-tabs">
-      <button type="button" class="aud-tab aud-tab--on" id="aud-tab-gravar" onclick="_audTrocarAba('gravar')">🎙 Gravar</button>
-      <button type="button" class="aud-tab" id="aud-tab-todos" onclick="_audTrocarAba('todos')">🎧 Áudios salvos</button>
+      <button type="button" class="aud-tab aud-tab--on" id="aud-tab-gravar" onclick="_audTrocarAba('gravar')"><svg class="ico" aria-hidden="true"><use href="#ico-microfone"></use></svg> Gravar</button>
+      <button type="button" class="aud-tab" id="aud-tab-todos" onclick="_audTrocarAba('todos')"><svg class="ico" aria-hidden="true"><use href="#ico-fone"></use></svg> Áudios salvos</button>
       <select class="aud-mic-select" id="aud-mic-select" style="display:none;" onchange="_audEscolherMic(this.value)"></select>
     </div>
 
@@ -226,7 +225,7 @@ async function inicializarAudios() {
       <div class="aud-passo" id="aud-tela-escolha">
         <div class="aud-escolha-topo">
           <div class="aud-passo-titulo">Pra quem é esta leitura?</div>
-          <button type="button" class="ag-btn ag-btn-outline ag-btn-sm" id="aud-btn-voltar" style="display:none;" onclick="_audVoltarGravador()">↩ Voltar</button>
+          <button type="button" class="ag-btn ag-btn-outline ag-btn-sm" id="aud-btn-voltar" style="display:none;" onclick="_audVoltarGravador()"><svg class="ico" aria-hidden="true"><use href="#ico-voltar"></use></svg> Voltar</button>
         </div>
         <div class="aud-filtros">
           <button type="button" class="aud-filtro aud-filtro--on" id="aud-filtro-pendentes" onclick="_audFiltroStatus(false)">A atender</button>
@@ -237,7 +236,7 @@ async function inicializarAudios() {
         <div id="aud-ag-lista" class="aud-ag-lista">
           <div class="ag-loading"><div class="ag-spinner"></div> Carregando…</div>
         </div>
-        <button type="button" class="aud-escolha-solto" onclick="_audGravarSolto()">🎙 Só gravar — escolho o cliente depois</button>
+        <button type="button" class="aud-escolha-solto" onclick="_audGravarSolto()"><svg class="ico" aria-hidden="true"><use href="#ico-microfone"></use></svg> Só gravar — escolho o cliente depois</button>
       </div>
 
       <div class="aud-passo" id="aud-tela-gravar" style="display:none;">
@@ -340,14 +339,14 @@ function _audChipRender() {
     return;
   }
   chip.innerHTML = `
-    <span>🪶 Gravando para <span class="aud-chip-nome">${_audEsc(ag.cliente_nome)}</span></span>
+    <span><svg class="ico" aria-hidden="true"><use href="#ico-folha"></use></svg> Gravando para <span class="aud-chip-nome">${_audEsc(ag.cliente_nome)}</span></span>
     <span class="aud-chip-meta">${_audEsc(ag.tipos_leitura?.nome || 'Leitura')} · ${_audDataAgend(ag.data_agendamento)}</span>
     <button type="button" class="aud-chip-trocar" onclick="_audIrTrocarCliente()">trocar</button>`;
 }
 
 function _audIrTrocarCliente() {
   if (_audRecorder && _audRecorder.state !== 'inactive') {
-    _toastAdmin('⏹ Pare a gravação antes de trocar o cliente.', 'erro');
+    _toastAdmin('Pare a gravação antes de trocar o cliente.', 'erro');
     return;
   }
   _audAbrirEscolha();
@@ -429,7 +428,7 @@ function _audRenderLista(ags) {
     item.innerHTML = `
       <span class="aud-ag-nome">${_audEsc(ag.cliente_nome)}</span>
       <span class="aud-ag-meta">${_audEsc(ag.tipos_leitura?.nome || 'Leitura')}${ag.leitura_origem_id ? ' (＋ pergunta adicional)' : ''} · ${_audDataAgend(ag.data_agendamento)}</span>
-      ${n ? `<span class="aud-ag-badges"><span class="aud-ag-badge aud-ag-badge--audios">🎧 ${n} áudio${n > 1 ? 's' : ''}</span></span>` : ''}`;
+      ${n ? `<span class="aud-ag-badges"><span class="aud-ag-badge aud-ag-badge--audios"><svg class="ico" aria-hidden="true"><use href="#ico-fone"></use></svg> ${n} áudio${n > 1 ? 's' : ''}</span></span>` : ''}`;
     item.addEventListener('click', () => _audEscolherCliente(ag));
     lista.appendChild(item);
   });
@@ -693,12 +692,21 @@ function _audPararGravacao() {
 function _audDockAcoes() {
   const alvo = _audClienteAlvo;
   const salvar = alvo
-    ? `<button type="button" class="aud-dock-btn aud-dock-btn--enviar" id="aud-btn-salvar" onclick="_audSalvar()">💾 Salvar para ${_audEsc(_audPrimeiroNome(alvo.cliente_nome))}</button>`
-    : `<button type="button" class="aud-dock-btn aud-dock-btn--enviar" id="aud-btn-salvar" onclick="_audAbrirEscolha()">💾 Salvar para um cliente…</button>`;
+    ? `<button type="button" class="aud-dock-btn aud-dock-btn--enviar" id="aud-btn-salvar" onclick="_audSalvar()"><svg class="ico" aria-hidden="true"><use href="#ico-guardar"></use></svg> Salvar para ${_audEsc(_audPrimeiroNome(alvo.cliente_nome))}</button>`
+    : `<button type="button" class="aud-dock-btn aud-dock-btn--enviar" id="aud-btn-salvar" onclick="_audAbrirEscolha()"><svg class="ico" aria-hidden="true"><use href="#ico-guardar"></use></svg> Salvar para um cliente…</button>`;
   return `${salvar}
-        <button type="button" class="aud-dock-btn" onclick="_audCompartilharPreview()">📤 Compartilhar</button>
-        <button type="button" class="aud-dock-btn" onclick="_audResetGravador(); _audComecarGravacao()">🔄 Regravar</button>
-        <button type="button" class="aud-dock-btn aud-dock-btn--descartar" onclick="_audResetGravador()">✕ Descartar</button>`;
+        <button type="button" class="aud-dock-btn" onclick="_audCompartilharPreview()"><svg class="ico" aria-hidden="true"><use href="#ico-compartilhar"></use></svg> Compartilhar</button>
+        <button type="button" class="aud-dock-btn" onclick="_audResetGravador(); _audComecarGravacao()"><svg class="ico" aria-hidden="true"><use href="#ico-atualizar"></use></svg> Regravar</button>
+        <button type="button" class="aud-dock-btn aud-dock-btn--descartar" onclick="_audResetGravador()"><svg class="ico" aria-hidden="true"><use href="#ico-fechar"></use></svg> Descartar</button>`;
+}
+
+// Play e pause são o mesmo botão: troca o símbolo dentro do <use>
+// e o rótulo de leitor de tela junto.
+function _audPlayPintar(btn, tocando) {
+  if (!btn) return;
+  btn.querySelector('use')?.setAttribute('href', tocando ? '#ico-pause' : '#ico-play');
+  btn.title = tocando ? 'Pausar' : 'Tocar';
+  btn.setAttribute('aria-label', btn.title);
 }
 
 function _audMostrarPreview() {
@@ -713,7 +721,7 @@ function _audMostrarPreview() {
     <div class="aud-dock-painel">
       <div class="aud-dock-titulo">Gravação pronta</div>
       <div class="aud-dock-player">
-        <button type="button" class="aud-dock-play" id="aud-player-play" title="Tocar" aria-label="Tocar">▶</button>
+        <button type="button" class="aud-dock-play" id="aud-player-play" title="Tocar" aria-label="Tocar"><svg class="ico" aria-hidden="true"><use href="#ico-play"></use></svg></button>
         <div class="aud-dock-progresso" id="aud-progresso" title="Ir para um ponto do áudio">
           <div class="aud-dock-progresso-feito" id="aud-progresso-feito"></div>
         </div>
@@ -742,14 +750,14 @@ function _audMostrarPreview() {
 
   const btnPlay = document.getElementById('aud-player-play');
   _audPlayerAudio.addEventListener('play', () => {
-    if (btnPlay) { btnPlay.textContent = '⏸'; btnPlay.title = 'Pausar'; btnPlay.setAttribute('aria-label', 'Pausar'); }
+    _audPlayPintar(btnPlay, true);
     _audVisuLigarAnalyser();
     _audPlayerCtx?.resume().catch(() => {});
     _audVisuAcordar();
     _audPlayerLoop();
   });
   _audPlayerAudio.addEventListener('pause', () => {
-    if (btnPlay) { btnPlay.textContent = '▶'; btnPlay.title = 'Tocar'; btnPlay.setAttribute('aria-label', 'Tocar'); }
+    _audPlayPintar(btnPlay, false);
     _audPlayerAtualizarTempo();
     _audVisuAcordar(); // deixa as barrinhas assentarem de volta no repouso
   });
@@ -953,7 +961,7 @@ async function _audCompartilharPreview() {
 
 // ============================================================
 // Salvar pro cliente do chip: upload no bucket privado + insert.
-// NÃO envia e-mail — o dock vira o painel de entrega com o ✉️.
+// NÃO envia e-mail — o dock vira o painel de entrega com o botão.
 // ============================================================
 async function _audSalvar() {
   const ag = _audClienteAlvo;
@@ -961,7 +969,7 @@ async function _audSalvar() {
   _audSalvando = true;
 
   const btn = document.getElementById('aud-btn-salvar');
-  if (btn) { btn.disabled = true; btn.textContent = '⏳ Salvando…'; }
+  if (btn) { btn.disabled = true; btn.innerHTML = '<svg class="ico" aria-hidden="true"><use href="#ico-ampulheta"></use></svg> Salvando…'; }
 
   const contentType = _audMime.split(';')[0];
   const ext  = contentType === 'audio/mp4' ? 'm4a' : 'webm';
@@ -972,7 +980,7 @@ async function _audSalvar() {
     .from('audios')
     .upload(path, _audBlob, { contentType });
 
-  if (upErr) { _audSalvarFalhou('❌ Falha no upload: ' + upErr.message); return; }
+  if (upErr) { _audSalvarFalhou('Falha no upload: ' + upErr.message); return; }
 
   const { data: novo, error: dbErr } = await supabase.from('audios_cliente').insert({
     agendamento_id: ag.id,
@@ -984,7 +992,7 @@ async function _audSalvar() {
 
   if (dbErr) {
     await supabase.storage.from('audios').remove([path]); // não deixar arquivo órfão
-    _audSalvarFalhou('❌ Erro ao salvar: ' + dbErr.message);
+    _audSalvarFalhou('Erro ao salvar: ' + dbErr.message);
     return;
   }
 
@@ -1017,11 +1025,11 @@ function _audMostrarPosSalvar(audioId, ag, blob, mime) {
   const audioRef = { id: audioId, enviado_email_em: null };
   document.getElementById('aud-dock').innerHTML = `
     <div class="aud-dock-painel">
-      <div class="aud-dock-titulo">✅ Salvo para ${_audEsc(_audPrimeiroNome(ag.cliente_nome))}</div>
+      <div class="aud-dock-titulo"><svg class="ico" aria-hidden="true"><use href="#ico-check"></use></svg> Salvo para ${_audEsc(_audPrimeiroNome(ag.cliente_nome))}</div>
       <div class="aud-dock-acoes" style="grid-template-columns:repeat(2,1fr);">
-        <button type="button" class="aud-dock-btn aud-dock-btn--enviar" id="aud-pos-email">✉️ Enviar por e-mail agora</button>
-        <button type="button" class="aud-dock-btn" id="aud-pos-share">📤 Compartilhar</button>
-        <button type="button" class="aud-dock-btn" id="aud-pos-nova">🎙 Nova gravação</button>
+        <button type="button" class="aud-dock-btn aud-dock-btn--enviar" id="aud-pos-email"><svg class="ico" aria-hidden="true"><use href="#ico-envelope"></use></svg> Enviar por e-mail agora</button>
+        <button type="button" class="aud-dock-btn" id="aud-pos-share"><svg class="ico" aria-hidden="true"><use href="#ico-compartilhar"></use></svg> Compartilhar</button>
+        <button type="button" class="aud-dock-btn" id="aud-pos-nova"><svg class="ico" aria-hidden="true"><use href="#ico-microfone"></use></svg> Nova gravação</button>
       </div>
     </div>`;
 
@@ -1030,10 +1038,12 @@ function _audMostrarPosSalvar(audioId, ag, blob, mime) {
     if (audioRef.enviado_email_em &&
         !confirm(`Reenviar o e-mail para ${ag.cliente_nome}?`)) return;
     b.disabled = true;
-    b.textContent = '⏳ Enviando…';
+    b.innerHTML = '<svg class="ico" aria-hidden="true"><use href="#ico-ampulheta"></use></svg> Enviando…';
     const r = await _audDispararEmail(audioRef);
     b.disabled = false;
-    b.textContent = r === 'enviado' ? '📧 Enviado ✓ — reenviar' : '✉️ Enviar por e-mail agora';
+    b.innerHTML = r === 'enviado'
+      ? '<svg class="ico" aria-hidden="true"><use href="#ico-check"></use></svg> Enviado — reenviar'
+      : '<svg class="ico" aria-hidden="true"><use href="#ico-envelope"></use></svg> Enviar por e-mail agora';
   });
 
   document.getElementById('aud-pos-share').addEventListener('click', () =>
@@ -1057,7 +1067,7 @@ async function _audDispararEmail(audioRef) {
     .update({ email_liberado_em: new Date().toISOString(), enviado_email_em: null })
     .eq('id', audioRef.id);
   if (upErr) {
-    _toastAdmin('❌ Não deu pra liberar o envio: ' + upErr.message, 'erro');
+    _toastAdmin('Não deu pra liberar o envio: ' + upErr.message, 'erro');
     return 'erro';
   }
   audioRef.enviado_email_em = null;
@@ -1067,24 +1077,26 @@ async function _audDispararEmail(audioRef) {
     body: { audio_id: audioRef.id },
   });
   if (fnErr) {
-    _toastAdmin('⚠️ E-mail não saiu agora — reenvio automático em até 10 min.', 'erro');
+    _toastAdmin('E-mail não saiu agora — reenvio automático em até 10 min.', 'erro');
     return 'pendente';
   }
   if (data?.enviados >= 1) {
     audioRef.enviado_email_em = new Date().toISOString();
-    _toastAdmin('📧 Leitura enviada pro e-mail do cliente.', 'ok');
+    _toastAdmin('Leitura enviada pro e-mail do cliente.', 'ok');
     return 'enviado';
   }
   // liberado mas pulado: falta e-mail no pedido ou pagamento confirmado
-  _toastAdmin('⚠️ Não enviado: pedido sem e-mail ou não pago. O cron tenta de novo a cada 10 min.', 'erro');
+  _toastAdmin('Não enviado: pedido sem e-mail ou não pago. O cron tenta de novo a cada 10 min.', 'erro');
   return 'pendente';
 }
 
 function _audEmailBtnPintar(btn, a) {
   if (!btn) return;
   const enviado = !!a.enviado_email_em;
-  btn.textContent = enviado ? '✉️✓' : '✉️';
+  btn.innerHTML = '<svg class="ico" aria-hidden="true"><use href="#ico-envelope"></use></svg>' +
+    (enviado ? '<svg class="ico aud-item-email-ok" aria-hidden="true"><use href="#ico-check"></use></svg>' : '');
   btn.title = enviado ? 'E-mail enviado — reenviar' : 'Enviar por e-mail';
+  btn.setAttribute('aria-label', btn.title);
 }
 
 // ============================================================
@@ -1099,13 +1111,13 @@ function _audCriarItemAudio(a, opts = {}) {
       <span class="aud-item-meta">${opts.meta}</span>
     </div>
     <div class="aud-item-acoes">
-      <button type="button" class="ag-btn ag-btn-outline ag-btn-sm aud-item-play">▶ Ouvir</button>
+      <button type="button" class="ag-btn ag-btn-outline ag-btn-sm aud-item-play"><svg class="ico" aria-hidden="true"><use href="#ico-play"></use></svg> Ouvir</button>
       <button type="button" class="ag-btn ag-btn-outline ag-btn-sm aud-item-email"></button>
-      <button type="button" class="ag-btn ag-btn-outline ag-btn-sm aud-item-share" title="Compartilhar">📤</button>
-      <button type="button" class="ag-btn ag-btn-outline ag-btn-sm aud-item-del" style="color:var(--t-danger)" title="Apagar">🗑</button>
+      <button type="button" class="ag-btn ag-btn-outline ag-btn-sm aud-item-share" title="Compartilhar" aria-label="Compartilhar"><svg class="ico" aria-hidden="true"><use href="#ico-compartilhar"></use></svg></button>
+      <button type="button" class="ag-btn ag-btn-outline ag-btn-sm aud-item-del" style="color:var(--t-danger)" title="Apagar" aria-label="Apagar áudio"><svg class="ico" aria-hidden="true"><use href="#ico-lixeira"></use></svg></button>
     </div>`;
 
-  // ✉️ dispara (ou reenvia) o e-mail com a leitura
+  // o envelope dispara (ou reenvia) o e-mail com a leitura
   const btnEmail = item.querySelector('.aud-item-email');
   _audEmailBtnPintar(btnEmail, a);
   btnEmail.addEventListener('click', async () => {
@@ -1129,7 +1141,7 @@ function _audCriarItemAudio(a, opts = {}) {
       .createSignedUrl(a.storage_path, 3600);
     if (e || !s?.signedUrl) {
       b.disabled = false;
-      _toastAdmin('❌ Não deu pra abrir o áudio: ' + (e?.message || 'tente de novo'), 'erro');
+      _toastAdmin('Não deu pra abrir o áudio: ' + (e?.message || 'tente de novo'), 'erro');
       return;
     }
     const player = document.createElement('audio');
@@ -1150,14 +1162,14 @@ function _audCriarItemAudio(a, opts = {}) {
         .from('audios')
         .createSignedUrl(a.storage_path, 3600);
       if (e || !s?.signedUrl) {
-        _toastAdmin('❌ Não deu pra baixar o áudio: ' + (e?.message || 'tente de novo'), 'erro');
+        _toastAdmin('Não deu pra baixar o áudio: ' + (e?.message || 'tente de novo'), 'erro');
         return;
       }
       const resp = await fetch(s.signedUrl);
       const blob = await resp.blob();
       await _audCompartilharBlob(blob, a.mime || blob.type, opts.nomeSugestao || 'Áudio');
     } catch (err) {
-      _toastAdmin('❌ Erro ao preparar o compartilhamento: ' + err.message, 'erro');
+      _toastAdmin('Erro ao preparar o compartilhamento: ' + err.message, 'erro');
     } finally {
       b.disabled = false;
       b.textContent = original;
@@ -1169,13 +1181,13 @@ function _audCriarItemAudio(a, opts = {}) {
     // Linha primeiro (é a fonte de verdade pro cliente); órfão no bucket
     // privado é inofensivo se o remove falhar.
     const { error: e } = await supabase.from('audios_cliente').delete().eq('id', a.id);
-    if (e) { _toastAdmin('❌ ' + e.message, 'erro'); return; }
+    if (e) { _toastAdmin(e.message, 'erro'); return; }
     const { error: eSt } = await supabase.storage.from('audios').remove([a.storage_path]);
     if (eSt) console.warn('arquivo órfão no bucket audios:', a.storage_path, eSt);
     if (_audContagem[a.agendamento_id]) _audContagem[a.agendamento_id]--;
     _audTodos = _audTodos.filter(t => t.id !== a.id);
     item.remove();
-    _toastAdmin('✅ Áudio apagado.', 'ok');
+    _toastAdmin('Áudio apagado.', 'ok');
   });
 
   return item;
