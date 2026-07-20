@@ -81,19 +81,83 @@ function _audExtDoMime(mime) {
   return String(mime || '').includes('mp4') ? 'm4a' : 'webm';
 }
 
+// Conversão pra mp3 antes de compartilhar: o WhatsApp só mostra o áudio
+// como bolha clicável se o codec for um que ele decodifica (mp3/AAC).
+// Chrome grava opus (mesmo dentro de mp4), que o WhatsApp rejeita como
+// "arquivo não suportado" — então todo share passa por mp3.
+const _audMp3Cache = new WeakMap(); // blob original → blob mp3 (evita reconverter no retry)
+
+async function _audConverterParaMp3(blob) {
+  if (_audMp3Cache.has(blob)) return _audMp3Cache.get(blob);
+
+  const ctx = new (window.AudioContext || window.webkitAudioContext)();
+  let buf;
+  try {
+    buf = await ctx.decodeAudioData(await blob.arrayBuffer());
+  } finally {
+    ctx.close();
+  }
+
+  // Downmix pra mono: leitura é voz, e mono corta o arquivo pela metade
+  const canais = [];
+  for (let c = 0; c < buf.numberOfChannels; c++) canais.push(buf.getChannelData(c));
+
+  const enc = new lamejs.Mp3Encoder(1, buf.sampleRate, 128);
+  const BLOCO = 1152;
+  const partes = [];
+  const amostras = new Int16Array(BLOCO);
+  for (let i = 0; i < buf.length; i += BLOCO) {
+    const n = Math.min(BLOCO, buf.length - i);
+    for (let j = 0; j < n; j++) {
+      let v = 0;
+      for (const canal of canais) v += canal[i + j];
+      v /= canais.length;
+      amostras[j] = v < 0 ? Math.max(-1, v) * 0x8000 : Math.min(1, v) * 0x7FFF;
+    }
+    const chunk = enc.encodeBuffer(amostras.subarray(0, n));
+    if (chunk.length) partes.push(chunk);
+  }
+  const fim = enc.flush();
+  if (fim.length) partes.push(fim);
+
+  const mp3 = new Blob(partes, { type: 'audio/mpeg' });
+  _audMp3Cache.set(blob, mp3);
+  return mp3;
+}
+
 // Compartilhar (ou baixar, no fallback) um blob de áudio já pronto.
 async function _audCompartilharBlob(blob, mime, nomeSugestao) {
   let nome = prompt('Nome do arquivo para compartilhar:', nomeSugestao);
   if (nome === null) return; // cancelou o rename
-  nome = _audSanitizarNomeArquivo(nome) + '.' + _audExtDoMime(mime);
 
-  const file = new File([blob], nome, { type: mime });
+  let blobFinal = blob, mimeFinal = mime, ext = _audExtDoMime(mime);
+  if (mime !== 'audio/mpeg') {
+    try {
+      const jaConvertido = _audMp3Cache.has(blob);
+      if (!jaConvertido) _toastAdmin('🎛 Convertendo pra mp3…', 'info');
+      blobFinal = await _audConverterParaMp3(blob);
+      mimeFinal = 'audio/mpeg';
+      ext = 'mp3';
+    } catch (e) {
+      // Sem conversão, segue com o formato original (pode ir como documento)
+      console.warn('Conversão mp3 falhou, compartilhando original:', e);
+    }
+  }
+  nome = _audSanitizarNomeArquivo(nome) + '.' + ext;
+
+  const file = new File([blobFinal], nome, { type: mimeFinal });
 
   if (navigator.canShare?.({ files: [file] })) {
     try {
       await navigator.share({ files: [file], title: nome });
     } catch (e) {
-      if (e.name !== 'AbortError') _toastAdmin('❌ Erro ao compartilhar: ' + e.message, 'erro');
+      if (e.name === 'NotAllowedError') {
+        // Conversão longa consumiu o "clique" que autoriza o share;
+        // o mp3 ficou no cache, então o 2º toque compartilha na hora
+        _toastAdmin('✅ Áudio pronto! Toque em Compartilhar de novo pra enviar.', 'info');
+      } else if (e.name !== 'AbortError') {
+        _toastAdmin('❌ Erro ao compartilhar: ' + e.message, 'erro');
+      }
     }
     return;
   }
