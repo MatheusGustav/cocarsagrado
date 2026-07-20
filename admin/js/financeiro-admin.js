@@ -253,7 +253,7 @@ function fin_abrirLancamento() {
     <div class="agenda-modal-container" role="dialog" aria-modal="true" aria-labelledby="fin-lanc-titulo">
       <div class="agenda-modal-header">
         <h3 class="agenda-modal-titulo" id="fin-lanc-titulo">Novo Lançamento</h3>
-        <button class="agenda-modal-fechar" type="button" onclick="fin_fecharLancamento()" aria-label="Fechar">×</button>
+        <button class="agenda-modal-fechar" type="button" onclick="fin_fecharLancamento()" aria-label="Fechar"><svg class="ico" aria-hidden="true"><use href="#ico-fechar"></use></svg></button>
       </div>
       <div class="agenda-modal-body">
         <div class="ag-form-group">

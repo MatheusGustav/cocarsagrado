@@ -361,7 +361,7 @@ function _catRenderForm(t) {
     <div class="agenda-modal-container cat-modal-container" role="dialog" aria-modal="true" aria-labelledby="cat-modal-titulo">
       <div class="agenda-modal-header">
         <h3 class="agenda-modal-titulo" id="cat-modal-titulo">${titulo}</h3>
-        <button class="agenda-modal-fechar" type="button" onclick="cat_fecharForm()" aria-label="Fechar">×</button>
+        <button class="agenda-modal-fechar" type="button" onclick="cat_fecharForm()" aria-label="Fechar"><svg class="ico" aria-hidden="true"><use href="#ico-fechar"></use></svg></button>
       </div>
       <div class="agenda-modal-body">
         <div class="cat-form-foto-row">
