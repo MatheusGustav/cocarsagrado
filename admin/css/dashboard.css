@@ -3896,6 +3896,54 @@ body.drawer-aberto { overflow: hidden; }
 }
 .aud-escolha-topo .aud-passo-titulo { margin-bottom: 0; }
 
+/* Link discreto pra gravar sem escolher cliente (share avulso) */
+.aud-escolha-solto {
+  display: block;
+  margin: 14px auto 0;
+  background: none;
+  border: none;
+  padding: 6px 10px;
+  color: var(--text-muted, #93AC8F);
+  font-size: .85rem;
+  cursor: pointer;
+  text-decoration: underline dotted;
+  text-underline-offset: 4px;
+}
+.aud-escolha-solto:hover { color: #D2BA7C; }
+
+/* Chip no topo do palco: pra quem esta gravação vai */
+.aud-chip {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 4px 12px;
+  max-width: 460px;
+  margin: 0 auto 14px;
+  padding: 10px 16px;
+  background: rgba(16, 37, 26, 0.55);
+  border: 1px solid rgba(169,135,59,0.30);
+  border-radius: 14px 6px 14px 6px;
+  font-size: .88rem;
+  color: #E1E7D6;
+  animation: aud-dock-sobe 0.4s var(--curva-suave);
+}
+.aud-chip:empty { display: none; }
+.aud-chip-nome { color: #D2BA7C; font-weight: 700; }
+.aud-chip-meta { font-size: .8rem; color: var(--text-muted, #93AC8F); }
+.aud-chip-trocar {
+  background: none;
+  border: none;
+  padding: 2px 4px;
+  color: #D2BA7C;
+  font-size: .8rem;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: underline dotted;
+  text-underline-offset: 3px;
+}
+.aud-chip-trocar:hover { color: #F2EEDD; }
+
 /* A tela do gravador é uma coluna que ocupa a altura útil: o palco
    cresce e o painel de controle (dock) desce pro fim da página */
 #aud-tela-gravar {
