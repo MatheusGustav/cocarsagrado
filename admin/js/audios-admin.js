@@ -1,10 +1,10 @@
 /* ============================================================
    COCAR SAGRADO — Admin: Áudios das leituras
-   Gravador estilo celular (MediaRecorder): a admin grava direto
-   (pausa/retoma), ouve o preview e SÓ ENTÃO escolhe o agendamento
-   destino — salva no bucket privado "audios" + tabela
-   audios_cliente. A entrega ao cliente é por e-mail (edge
-   audio-email + cron de reenvio).
+   Gravador orbe (MediaRecorder): um orbe solto na tela que reage
+   à voz — toque grava, toque de novo para. A admin ouve o preview
+   e SÓ ENTÃO escolhe o agendamento destino — salva no bucket
+   privado "audios" + tabela audios_cliente. A entrega ao cliente
+   é por e-mail (edge audio-email + cron de reenvio).
    ============================================================ */
 
 let _audAgendamentos = [];   // cache da busca de agendamentos
@@ -20,11 +20,13 @@ let _audMime         = '';
 let _audMs           = 0;    // duração acumulada (só enquanto grava)
 let _audTimerInt     = null;
 let _audPreviewUrl   = null;
-let _audAudioCtx     = null; // Web Audio só pra desenhar a onda
+let _audAudioCtx     = null; // Web Audio só pra medir a amplitude da voz
 let _audAnalyser     = null;
 let _audAmostra      = null; // buffer reutilizado do analyser
 let _audBarras       = [];   // 1 amplitude (0..1) a cada TICK de gravação
-let _audResizeOk     = false;
+let _audOrbeAmp      = 0;    // amplitude suavizada que anima o orbe
+let _audOrbeRaf      = null;
+let _audListenersOk  = false;
 let _audMicDevices    = [];  // audioinputs enumerados
 let _audWakeLock      = null;
 let _audBeforeUnloadOn = false;
@@ -44,14 +46,6 @@ function _audEsc(s) {
 function _audMmSs(seg) {
   const s = Math.max(0, Math.round(Number(seg) || 0));
   return `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
-}
-
-// Timer grande estilo gravador de celular: MM:SS.cc
-function _audMmSsCc(ms) {
-  const t = Math.max(0, Number(ms) || 0);
-  const s = Math.floor(t / 1000);
-  const cc = Math.floor((t % 1000) / 10);
-  return `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}.${String(cc).padStart(2, '0')}`;
 }
 
 function _audDataBR(iso) {
@@ -126,11 +120,8 @@ async function inicializarAudios() {
     <div id="aud-aba-gravar">
       <div class="aud-passo" id="aud-tela-gravar">
         <div class="aud-gravador">
-          <div class="aud-timer" id="aud-timer">00:00.00</div>
-          <div class="aud-estado" id="aud-estado">Pronto para gravar</div>
-          <select class="aud-mic-select" id="aud-mic-select" style="display:none;" onchange="_audEscolherMic(this.value)"></select>
-          <canvas class="aud-onda" id="aud-onda"></canvas>
           <div class="aud-controles" id="aud-controles"></div>
+          <select class="aud-mic-select" id="aud-mic-select" style="display:none;" onchange="_audEscolherMic(this.value)"></select>
           <div class="aud-preview" id="aud-preview"></div>
           <div class="aud-erro" id="aud-erro"></div>
         </div>
@@ -161,16 +152,14 @@ async function inicializarAudios() {
 
   document.getElementById('aud-busca').addEventListener('input', _audFiltrarLista);
   document.getElementById('aud-busca-todos').addEventListener('input', _audRenderTodos);
-  if (!_audResizeOk) {
-    _audResizeOk = true;
-    window.addEventListener('resize', () => { _audOndaRedimensionar(); _audOndaDesenhar(); });
+  if (!_audListenersOk) {
+    _audListenersOk = true;
     document.addEventListener('visibilitychange', () => {
       if (document.visibilityState === 'visible' && _audRecorder?.state === 'recording' && !_audWakeLock) {
         _audWakeLockPedir();
       }
     });
   }
-  _audOndaRedimensionar();
   _audResetGravador();
   _audAtualizarListaMics(); // best-effort; labels só vêm depois da 1ª permissão
 }
@@ -290,91 +279,36 @@ function _audRenderLista(ags) {
 }
 
 // ============================================================
-// Passo 1 — gravador (idle → gravando ⇄ pausado → preview)
+// Passo 1 — gravador (orbe: toque grava, toque de novo para → preview)
 // ============================================================
-function _audSetEstado(txt) {
-  const el = document.getElementById('aud-estado');
-  if (el) el.textContent = txt;
-}
-
 function _audSetErro(txt) {
   const el = document.getElementById('aud-erro');
   if (el) el.textContent = txt || '';
 }
 
-function _audAtualizaTimer() {
-  const el = document.getElementById('aud-timer');
-  if (el) el.textContent = _audMmSsCc(_audMs);
+// ============================================================
+// Orbe que reage à voz (estilo modo voz do ChatGPT): a cada frame
+// lê a amplitude do analyser, suaviza (ataque rápido, soltura
+// lenta) e escreve em --amp no jardim do orbe — o CSS faz o resto.
+// As barras (_audBarras) continuam sendo coletadas no TICK: viram
+// a onda de seek do player da prévia.
+// ============================================================
+function _audOrbeVozIniciar() {
+  const jardim = document.querySelector('#aud-controles .aud-orbe-jardim');
+  if (!jardim) return;
+  cancelAnimationFrame(_audOrbeRaf);
+  const passo = () => {
+    const alvo = _audRecorder?.state === 'recording' ? _audAmplitudeAtual() : 0;
+    _audOrbeAmp += (alvo - _audOrbeAmp) * (alvo > _audOrbeAmp ? 0.4 : 0.12);
+    jardim.style.setProperty('--amp', _audOrbeAmp.toFixed(3));
+    _audOrbeRaf = requestAnimationFrame(passo);
+  };
+  _audOrbeRaf = requestAnimationFrame(passo);
 }
 
-// ============================================================
-// Forma de onda (canvas): barras rolam da direita pra esquerda,
-// cursor fixo no centro, régua de segundos embaixo — igual
-// gravador de celular.
-// ============================================================
-function _audOndaRedimensionar() {
-  const c = document.getElementById('aud-onda');
-  if (!c || !c.clientWidth) return;
-  const dpr = window.devicePixelRatio || 1;
-  c.width  = Math.round(c.clientWidth * dpr);
-  c.height = Math.round(c.clientHeight * dpr);
-}
-
-function _audOndaDesenhar() {
-  const c = document.getElementById('aud-onda');
-  if (!c || !c.width) return;
-  const ctx = c.getContext('2d');
-  const dpr = window.devicePixelRatio || 1;
-  const W = c.width, H = c.height;
-  const regua = 30 * dpr;              // faixa dos rótulos de tempo
-  const meioY = (H - regua) / 2;       // linha de base da onda
-  const passo = 4 * dpr;               // largura de 1 barra + espaço
-  const larg  = 2 * dpr;
-  const pxSeg = passo * (1000 / _AUD_TICK); // px por segundo
-  const cx = W / 2;
-  const elapsed = _audMs / 1000;
-
-  ctx.clearRect(0, 0, W, H);
-
-  // pontilhado de base: à direita do cursor (futuro) e à esquerda do
-  // ponto onde a gravação começou (antes do 00:00)
-  const xInicio = cx - elapsed * pxSeg;
-  ctx.fillStyle = 'rgba(255,255,255,0.20)';
-  for (let x = cx + passo; x < W; x += passo) ctx.fillRect(x, meioY - dpr, larg, 2 * dpr);
-  for (let x = cx - passo; x > 0; x -= passo) {
-    if (x >= xInicio) continue;
-    ctx.fillRect(x, meioY - dpr, larg, 2 * dpr);
-  }
-
-  // barras já gravadas (barra i cobre o instante i*TICK)
-  ctx.fillStyle = 'rgba(226,231,240,0.92)';
-  for (let i = 0; i < _audBarras.length; i++) {
-    const x = cx - (elapsed - (i * _AUD_TICK) / 1000) * pxSeg;
-    if (x < -passo) continue;
-    if (x > cx) break;
-    const h = Math.max(2 * dpr, _audBarras[i] * meioY * 1.5);
-    ctx.fillRect(x, meioY - h / 2, larg, h);
-  }
-
-  // régua de segundos
-  ctx.fillStyle = 'rgba(255,255,255,0.42)';
-  ctx.font = `${11 * dpr}px system-ui, sans-serif`;
-  ctx.textAlign = 'center';
-  const alcance = Math.ceil(cx / pxSeg) + 1;
-  for (let k = Math.max(0, Math.floor(elapsed - alcance)); k <= elapsed + alcance; k++) {
-    const x = cx + (k - elapsed) * pxSeg;
-    if (x < 12 * dpr || x > W - 12 * dpr) continue;
-    ctx.fillText(_audMmSs(k), x, H - 10 * dpr);
-  }
-
-  // cursor central: linha vertical com bolinha nas pontas
-  const topo = 6 * dpr, fundo = H - regua - 2 * dpr;
-  ctx.strokeStyle = 'rgba(255,255,255,0.55)';
-  ctx.lineWidth = dpr;
-  ctx.beginPath(); ctx.moveTo(cx, topo); ctx.lineTo(cx, fundo); ctx.stroke();
-  ctx.fillStyle = 'rgba(255,255,255,0.55)';
-  ctx.beginPath(); ctx.arc(cx, topo, 3 * dpr, 0, Math.PI * 2); ctx.fill();
-  ctx.beginPath(); ctx.arc(cx, fundo, 3 * dpr, 0, Math.PI * 2); ctx.fill();
+function _audOrbeVozParar() {
+  if (_audOrbeRaf) { cancelAnimationFrame(_audOrbeRaf); _audOrbeRaf = null; }
+  _audOrbeAmp = 0;
 }
 
 function _audAmplitudeAtual() {
@@ -457,6 +391,25 @@ function _audBotoes(html) {
   if (el) el.innerHTML = html;
 }
 
+// O orbe é o único controle (sem ícones): parado grava, gravando para.
+function _audOrbeHtml(gravando) {
+  return `
+    <div class="aud-orbe-jardim${gravando ? ' aud-orbe-jardim--gravando' : ''}">
+      <span class="aud-orbe-aura aud-orbe-aura--quente"></span>
+      <span class="aud-orbe-aura aud-orbe-aura--fria"></span>
+      <span class="aud-orbe-voz"></span>
+      <button type="button" class="aud-orbe"
+              onclick="${gravando ? '_audPararGravacao()' : '_audComecarGravacao()'}"
+              title="${gravando ? 'Parar' : 'Gravar'}"
+              aria-label="${gravando ? 'Parar gravação' : 'Gravar'}">
+        <span class="aud-orbe-cor aud-orbe-cor--ambar"></span>
+        <span class="aud-orbe-cor aud-orbe-cor--coral"></span>
+        <span class="aud-orbe-cor aud-orbe-cor--rosa"></span>
+        <span class="aud-orbe-cor aud-orbe-cor--lavanda"></span>
+      </button>
+    </div>`;
+}
+
 function _audResetGravador() {
   if (_audTimerInt) { clearInterval(_audTimerInt); _audTimerInt = null; }
   if (_audStream) { _audStream.getTracks().forEach(t => t.stop()); _audStream = null; }
@@ -479,13 +432,8 @@ function _audResetGravador() {
   const preview = document.getElementById('aud-preview');
   if (preview) preview.innerHTML = '';
   _audSetErro('');
-  _audAtualizaTimer();
-  _audOndaDesenhar();
-  _audSetEstado('Pronto para gravar');
-  _audBotoes(`
-    <button type="button" class="aud-btn-anel" onclick="_audComecarGravacao()" title="Gravar" aria-label="Gravar">
-      <span class="aud-miolo aud-miolo-rec"></span>
-    </button>`);
+  _audOrbeVozParar();
+  _audBotoes(_audOrbeHtml(false));
   _audAtualizarBeforeUnload();
 }
 
@@ -536,10 +484,9 @@ async function _audComecarGravacao() {
   _audBlob = null;
   _audMs = 0;
   _audBarras = [];
-  _audAtualizaTimer();
-  _audOndaRedimensionar();
 
-  // Analyser só pra onda; se falhar, grava mesmo assim (barras ficam no mínimo)
+  // Analyser só pro orbe e pras barras da prévia; se falhar, grava
+  // mesmo assim (orbe fica parado, barras no mínimo)
   try {
     _audAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
     _audAnalyser = _audAudioCtx.createAnalyser();
@@ -555,6 +502,7 @@ async function _audComecarGravacao() {
     _audStream?.getTracks().forEach(t => t.stop());
     _audStream = null;
     _audFecharAudioCtx();
+    _audOrbeVozParar();
     _audWakeLockLiberar();
     _audBlob = new Blob(_audChunks, { type: _audMime.split(';')[0] });
     _audMostrarPreview();
@@ -567,10 +515,10 @@ async function _audComecarGravacao() {
   _audWakeLockPedir();
   _audAtualizarBeforeUnload();
 
-  // Timer pause-aware: soma só enquanto está gravando de verdade.
-  // (Não dá pra confiar em audio.duration depois: webm do MediaRecorder
-  // reporta Infinity no Chrome.) A onda anda no mesmo relógio: 1 barra
-  // por _AUD_TICK de tempo gravado, então pausa congela tudo junto.
+  // Duração pause-aware acumulada em _audMs (não dá pra confiar em
+  // audio.duration depois: webm do MediaRecorder reporta Infinity no
+  // Chrome). As barras seguem o mesmo relógio: 1 por _AUD_TICK de tempo
+  // gravado — viram a onda de seek do player da prévia.
   let ultimo = performance.now();
   _audTimerInt = setInterval(() => {
     const agora = performance.now();
@@ -580,41 +528,10 @@ async function _audComecarGravacao() {
       while (_audBarras.length < _audMs / _AUD_TICK) _audBarras.push(amp);
     }
     ultimo = agora;
-    _audAtualizaTimer();
-    _audOndaDesenhar();
   }, _AUD_TICK);
 
-  _audSetEstado('Gravando…');
-  _audBotoes(`
-    <button type="button" class="aud-btn-anel aud-btn-anel--gravando" id="aud-btn-anel-rec" onclick="_audPararGravacao()" title="Parar" aria-label="Parar">
-      <span class="aud-miolo aud-miolo-stop"></span>
-    </button>
-    <button type="button" class="aud-btn-escuro" onclick="_audPausarRetomar()" id="aud-btn-pausa" title="Pausar" aria-label="Pausar">
-      <span class="aud-ico-pausa"></span>
-    </button>`);
-}
-
-function _audPausarRetomar() {
-  if (!_audRecorder) return;
-  const btn = document.getElementById('aud-btn-pausa');
-  const anel = document.getElementById('aud-btn-anel-rec');
-  if (_audRecorder.state === 'recording') {
-    _audRecorder.pause();
-    _audSetEstado('Pausado');
-    anel?.classList.remove('aud-btn-anel--gravando');
-    if (btn) {
-      btn.innerHTML = '<span class="aud-ico-play"></span>';
-      btn.title = 'Retomar'; btn.setAttribute('aria-label', 'Retomar');
-    }
-  } else if (_audRecorder.state === 'paused') {
-    _audRecorder.resume();
-    _audSetEstado('Gravando…');
-    anel?.classList.add('aud-btn-anel--gravando');
-    if (btn) {
-      btn.innerHTML = '<span class="aud-ico-pausa"></span>';
-      btn.title = 'Pausar'; btn.setAttribute('aria-label', 'Pausar');
-    }
-  }
+  _audBotoes(_audOrbeHtml(true));
+  _audOrbeVozIniciar();
 }
 
 function _audPararGravacao() {
@@ -622,7 +539,6 @@ function _audPararGravacao() {
 }
 
 function _audMostrarPreview() {
-  _audSetEstado(`Prévia — ${_audMmSs(_audMs / 1000)}`);
   _audBotoes('');
 
   _audPreviewUrl = URL.createObjectURL(_audBlob);
@@ -970,7 +886,6 @@ function _audRenderTodos() {
 
 window.inicializarAudios = inicializarAudios;
 window._audComecarGravacao = _audComecarGravacao;
-window._audPausarRetomar = _audPausarRetomar;
 window._audPararGravacao = _audPararGravacao;
 window._audResetGravador = _audResetGravador;
 window._audAbrirEscolha = _audAbrirEscolha;
