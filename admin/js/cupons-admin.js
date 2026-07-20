@@ -132,7 +132,7 @@ function _renderCupons() {
           <span class="esp-toggle-track"><span class="esp-toggle-thumb"></span></span>
           <span class="esp-toggle-txt">${rec.uso_unico ? 'Uso único' : 'Reutilizável'}</span>
         </label>
-        <button class="ag-btn ag-btn-outline ag-btn-sm cup-btn-del" style="color:var(--t-danger)" title="Remover" aria-label="Remover cupom"><svg class="ico" aria-hidden="true"><use href="#ico-lixeira"></use></svg></button>
+        <button class="ag-btn ag-btn-outline ag-btn-sm cup-btn-del" style="color:var(--t-danger)" title="Remover cupom" aria-label="Remover cupom"><svg class="ico" aria-hidden="true"><use href="#ico-lixeira"></use></svg></button>
       </div>`;
 
     const chk = card.querySelector('.cup-chk-ativo');

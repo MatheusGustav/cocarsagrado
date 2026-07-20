@@ -37,13 +37,31 @@
   flex: none;
   vertical-align: -0.135em;
   overflow: visible;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: var(--ico-traco, 1.7);
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
-/* Botões redondos de fechar: o texto deles é minúsculo (13-16px) só
-   porque o X antigo era uma letra. O traço precisa de corpo próprio. */
+
+/* O traço é desenhado num grid de 24 e encolhe junto com a fonte:
+   1.7 dentro de um texto de 10px vira 0,7px de tela, ou seja, borrão.
+   Quem vive em letra miúda engrossa o traço pelo --ico-traco. */
+.cat-badge,
+.cart-entrega-aviso,
+.desconto-texto,
+.cart-item-remove,
+.naipe-pergunta-rm { --ico-traco: 2.1; }
+
+/* Botões que são só o ícone: o tamanho não pode depender da fonte
+   do rótulo, porque rótulo não existe. */
 .seletor-close .ico,
 .inapp-close .ico,
 .modal-close-btn .ico,
 .termos-modal-fechar .ico { width: 17px; height: 17px; }
+
+.cart-item-remove .ico,
+.naipe-pergunta-rm .ico { width: 15px; height: 15px; }
 
 /* ---- Reset base ---- */
 *, *::before, *::after { box-sizing: border-box; }
@@ -311,6 +329,8 @@ textarea { resize: vertical; min-height: 96px; }
   line-height: 1.5;
 }
 .ag-alert-ico { width: 1.15em; height: 1.15em; margin-top: .18em; }
+/* flex ganha do display:none que o navegador dá ao [hidden] */
+.ag-alert[hidden] { display: none; }
 .ag-alert-success { background: #DDE5CC; color: #2A4A31; border: 1px solid #93AC8F; }
 .ag-alert-error   { background: #F6E3D9; color: #7A3319; border: 1px solid #D9A88F; }
 .ag-alert-info    { background: #EAE0BE; color: #6B5526; border: 1px solid #D2BA7C; }
@@ -628,16 +648,19 @@ textarea { resize: vertical; min-height: 96px; }
   background: rgba(221, 229, 204, 0.5);
   box-shadow: 0 0 0 3px rgba(168, 196, 158, 0.4);
 }
-.seletor-tier-opt.selected .tier-label::before {
-  content: "";
-  display: inline-block;
-  width: 13px;
-  height: 13px;
-  margin-right: 5px;
-  vertical-align: -0.08em;
-  background: #2F5C41;
-  -webkit-mask: var(--ico-check) center / contain no-repeat;
-          mask: var(--ico-check) center / contain no-repeat;
+/* Sem máscara não existe check: melhor nada do que um quadrado verde. */
+@supports ((-webkit-mask: url("")) or (mask: url(""))) {
+  .seletor-tier-opt.selected .tier-label::before {
+    content: "";
+    display: inline-block;
+    width: 13px;
+    height: 13px;
+    margin-right: 5px;
+    vertical-align: -0.08em;
+    background: #2F5C41;
+    -webkit-mask: var(--ico-check) center / contain no-repeat;
+            mask: var(--ico-check) center / contain no-repeat;
+  }
 }
 .tier-label {
   font-weight: 600;

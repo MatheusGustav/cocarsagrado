@@ -1114,7 +1114,7 @@ function _audCriarItemAudio(a, opts = {}) {
       <button type="button" class="ag-btn ag-btn-outline ag-btn-sm aud-item-play"><svg class="ico" aria-hidden="true"><use href="#ico-play"></use></svg> Ouvir</button>
       <button type="button" class="ag-btn ag-btn-outline ag-btn-sm aud-item-email"></button>
       <button type="button" class="ag-btn ag-btn-outline ag-btn-sm aud-item-share" title="Compartilhar" aria-label="Compartilhar"><svg class="ico" aria-hidden="true"><use href="#ico-compartilhar"></use></svg></button>
-      <button type="button" class="ag-btn ag-btn-outline ag-btn-sm aud-item-del" style="color:var(--t-danger)" title="Apagar" aria-label="Apagar áudio"><svg class="ico" aria-hidden="true"><use href="#ico-lixeira"></use></svg></button>
+      <button type="button" class="ag-btn ag-btn-outline ag-btn-sm aud-item-del" style="color:var(--t-danger)" title="Apagar áudio" aria-label="Apagar áudio"><svg class="ico" aria-hidden="true"><use href="#ico-lixeira"></use></svg></button>
     </div>`;
 
   // o envelope dispara (ou reenvia) o e-mail com a leitura

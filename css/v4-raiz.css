@@ -681,16 +681,18 @@ img { max-width: 100%; }
   padding-left: 28px;
   font-size: 15.5px;
 }
-.ebook-list li::before {
-  content: "";
-  position: absolute;
-  left: 0;
-  top: 5px;
-  width: 16px;
-  height: 16px;
-  background: var(--v4-salvia-forte);
-  -webkit-mask: var(--ico-ornamento) center / contain no-repeat;
-          mask: var(--ico-ornamento) center / contain no-repeat;
+@supports ((-webkit-mask: url("")) or (mask: url(""))) {
+  .ebook-list li::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 5px;
+    width: 16px;
+    height: 16px;
+    background: var(--v4-salvia-forte);
+    -webkit-mask: var(--ico-ornamento) center / contain no-repeat;
+            mask: var(--ico-ornamento) center / contain no-repeat;
+  }
 }
 
 .ebook-autora {
