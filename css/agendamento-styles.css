@@ -18,6 +18,21 @@
   --shadow-lg: 0 8px 24px rgba(24, 42, 30, .14);
 }
 
+/* ---- Ícones (sprite "Raiz Viva", desenhos próprios) ----
+   O sprite mora inline no topo de index.html e admin/dashboard.html.
+   O ícone herda cor e tamanho de onde está: currentColor + 1em.  */
+.ico-sprite { display: none; }
+
+.ico {
+  width: 1em;
+  height: 1em;
+  flex: none;
+  vertical-align: -0.135em;
+  overflow: visible;
+}
+/* ícone sozinho dentro de um botão respira um tico mais */
+.ico--maior { width: 1.15em; height: 1.15em; }
+
 /* ---- Reset base ---- */
 *, *::before, *::after { box-sizing: border-box; }
 
