@@ -3935,6 +3935,36 @@ body.drawer-aberto { overflow: hidden; }
 .aud-controles { display: flex; align-items: center; }
 .aud-controles:empty { display: none; }
 
+/* Pill "toque pra enviar": aparece quando a conversão pra mp3 demorou
+   e o navegador bloqueou o share — um toque novo abre o menu na hora */
+.aud-pill-enviar {
+  position: fixed;
+  left: 50%;
+  bottom: 26px;
+  transform: translateX(-50%);
+  z-index: 2000;
+  padding: 13px 22px;
+  border: none;
+  border-radius: 999px;
+  background: linear-gradient(120deg, #E8A34C, #E0705A 55%, #C96A85);
+  color: #2A1408;
+  font-size: .92rem;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 8px 28px rgba(224, 112, 90, .45);
+  animation: aud-pill-entra .35s ease, aud-pill-pulsa 2.2s ease-in-out .35s infinite;
+  white-space: nowrap;
+}
+.aud-pill-enviar strong { font-weight: 800; }
+@keyframes aud-pill-entra {
+  from { transform: translateX(-50%) translateY(60px); opacity: 0; }
+  to   { transform: translateX(-50%) translateY(0);    opacity: 1; }
+}
+@keyframes aud-pill-pulsa {
+  0%, 100% { box-shadow: 0 8px 28px rgba(224, 112, 90, .45); }
+  50%      { box-shadow: 0 8px 36px rgba(224, 112, 90, .75); }
+}
+
 /* ============================================================
    Orbe pôr-do-sol: nada de círculo genérico — a silhueta é um blob
    que respira (o efeito do jardim do site) e por dentro círculos de
