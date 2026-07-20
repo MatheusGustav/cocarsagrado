@@ -4097,6 +4097,7 @@ body.drawer-aberto { overflow: hidden; }
   animation: aud-orbe-forma calc(12s * var(--vel)) ease-in-out infinite;
   box-shadow: 0 24px 50px -18px rgba(0, 0, 0, 0.7);
   transition: transform .2s ease;
+  -webkit-tap-highlight-color: transparent;
 }
 @keyframes aud-orbe-forma {
   0%, 100% { border-radius: 58% 42% 55% 45% / 45% 52% 48% 55%; }
