@@ -45,11 +45,11 @@ function aplicarDescontoAutomatico() {
   banner.innerHTML = `
     <div class="desconto-inner">
       <span class="desconto-texto">
-        ✨ ${DESCONTO_CONFIG.MENSAGEM}
+        <svg class="ico" aria-hidden="true"><use href="#ico-semente"></use></svg> ${DESCONTO_CONFIG.MENSAGEM}
         Use o código <strong>${DESCONTO_CONFIG.CODIGO}</strong> no WhatsApp.
         <em>${DESCONTO_CONFIG.VALIDADE}</em>
       </span>
-      <button class="desconto-fechar" id="fecharBannerDesconto" aria-label="Fechar banner">✕</button>
+      <button class="desconto-fechar" id="fecharBannerDesconto" aria-label="Fechar banner"><svg class="ico" aria-hidden="true"><use href="#ico-fechar"></use></svg></button>
     </div>
   `;
 

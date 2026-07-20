@@ -175,7 +175,7 @@ function _renderNaipePerguntas(vals) {
       rm.type = 'button';
       rm.className = 'naipe-pergunta-rm';
       rm.setAttribute('aria-label', `Remover pergunta ${i}`);
-      rm.innerHTML = '✕';
+      rm.innerHTML = '<svg class="ico" aria-hidden="true"><use href="#ico-fechar"></use></svg>';
       rm.addEventListener('click', () => {
         const cur = _lerNaipeVals();
         cur.splice(idx, 1);
@@ -603,7 +603,7 @@ async function carregarCalendario() {
         <div class="ag-empty ag-empty-vagas">
           <p><strong>Nossa agenda está cheia por agora.</strong></p>
           <p style="font-size:.87rem; margin-top:4px;">Chame a gente no WhatsApp que avisamos assim que abrir um novo dia.</p>
-          ${numero ? `<a href="https://wa.me/${numero}" target="_blank" rel="noopener" class="ag-btn ag-btn-whatsapp" style="margin-top:14px; display:inline-flex;">💬 Avisar quando abrir vaga</a>` : ''}
+          ${numero ? `<a href="https://wa.me/${numero}" target="_blank" rel="noopener" class="ag-btn ag-btn-whatsapp" style="margin-top:14px; display:inline-flex;"><svg class="ico" aria-hidden="true"><use href="#ico-balao"></use></svg> Avisar quando abrir vaga</a>` : ''}
         </div>`;
       return;
     }
@@ -633,7 +633,7 @@ async function carregarCalendario() {
           <span class="ag-vagas-entrega">${entregaLabel}</span>
           <span class="ag-vagas-badge">${vagasText}</span>
         </div>
-        <span class="ag-vagas-action" aria-hidden="true">Escolher →</span>`;
+        <span class="ag-vagas-action" aria-hidden="true">Escolher <svg class="ico" aria-hidden="true"><use href="#ico-seta-direita"></use></svg></span>`;
 
       card.setAttribute('role', 'button');
       card.setAttribute('tabindex', '0');
@@ -909,7 +909,7 @@ function _renderizarCarrinho() {
       <div class="cart-item">
         <div class="cart-item-header">
           <strong>${_escCat(nome)}</strong>
-          <button class="cart-item-remove" data-idx="${idx}" aria-label="Remover leitura" type="button">✕</button>
+          <button class="cart-item-remove" data-idx="${idx}" aria-label="Remover leitura" type="button"><svg class="ico" aria-hidden="true"><use href="#ico-fechar"></use></svg></button>
         </div>
         <div class="cart-item-details">
           <span>${d.getDate()} de ${MESES_PT[d.getMonth()]}</span>
@@ -944,7 +944,7 @@ function _renderizarCarrinho() {
   // Campo de cupom (comunidade): aplica desconto fixo no total.
   if (Estado.cupom) {
     html += `<div class="cart-cupom cart-cupom-ok">
-      <span>🏷️ Cupom <strong>${_escCat(Estado.cupom.codigo)}</strong> aplicado</span>
+      <span><svg class="ico" aria-hidden="true"><use href="#ico-etiqueta"></use></svg> Cupom <strong>${_escCat(Estado.cupom.codigo)}</strong> aplicado</span>
       <button type="button" class="cart-cupom-remover" onclick="removerCupom()">Remover</button>
     </div>`;
   } else {
@@ -956,7 +956,7 @@ function _renderizarCarrinho() {
     <p class="cart-cupom-msg" id="cupom-msg" role="alert" aria-live="polite"></p>`;
   }
 
-  html += `<p class="cart-entrega-aviso">📲 Sua leitura será enviada por WhatsApp até o horário indicado em cada item.</p>`;
+  html += `<p class="cart-entrega-aviso"><svg class="ico" aria-hidden="true"><use href="#ico-celular"></use></svg> Sua leitura será enviada por WhatsApp até o horário indicado em cada item.</p>`;
 
   container.innerHTML = html;
 
@@ -1063,7 +1063,7 @@ function _atualizarBotoesCarrinho() {
       payBtn.style.display = '';
       // Trava o botão até aceitar os termos (quando exigido).
       payBtn.disabled = exigeTermos && !(termosChk && termosChk.checked);
-      payBtn.innerHTML = `Pagar ${fmtBRL(total)} · ${label} →`;
+      payBtn.innerHTML = `Pagar ${fmtBRL(total)} · ${label} <svg class="ico" aria-hidden="true"><use href="#ico-seta-direita"></use></svg>`;
     } else {
       payBtn.style.display = 'none';
     }
@@ -1348,12 +1348,17 @@ function irParaPasso(num) {
 function dataParaISO(d) {
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 }
+// Ícone do alerta vem do tipo, não da mensagem — assim nenhuma string
+// precisa carregar símbolo e o texto continua entrando como texto puro.
+const ICO_ALERTA = { success: 'check-circulo', error: 'alerta', info: 'info' };
+
 function mostrarAlerta(msg, tipo = 'info') {
   const div = document.createElement('div');
   div.className = `ag-alert ag-alert-${tipo}`;
   div.setAttribute('role', tipo === 'error' ? 'alert' : 'status');
   div.setAttribute('aria-live', 'polite');
-  div.textContent = msg;
+  div.innerHTML = `<svg class="ico ag-alert-ico" aria-hidden="true"><use href="#ico-${ICO_ALERTA[tipo] || 'info'}"></use></svg>`;
+  div.appendChild(document.createTextNode(msg));
   const main = document.querySelector('.ag-container') || document.body;
   main.prepend(div);
   setTimeout(() => div.remove(), 4000);
@@ -1476,7 +1481,7 @@ function _catImg(imagem_url, nome) {
   if (urls.length === 1) {
     return `<img src="${_escCat(urls[0])}" alt="${_escCat(nome)}" class="cat-img" loading="lazy">`;
   }
-  return `<div class="cat-img cat-img--placeholder" aria-hidden="true">✦</div>`;
+  return `<div class="cat-img cat-img--placeholder" aria-hidden="true"><svg class="ico" aria-hidden="true"><use href="#ico-semente"></use></svg></div>`;
 }
 
 // Ranking de demanda (agendamentos pagos) por service_id — só a ordem,
@@ -1737,7 +1742,7 @@ async function _destacarMaisProcurada() {
       if (imgWrap && !imgWrap.querySelector('.cat-badge--top')) {
         const b = document.createElement('span');
         b.className = 'cat-badge cat-badge--top';
-        b.textContent = '✦ Mais procurada';
+        b.innerHTML = '<svg class="ico" aria-hidden="true"><use href="#ico-semente"></use></svg> Mais procurada';
         imgWrap.appendChild(b);
       }
     }
