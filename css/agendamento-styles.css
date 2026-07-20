@@ -45,6 +45,7 @@
    porque o X antigo era uma letra. O traço precisa de corpo próprio. */
 .seletor-close .ico,
 .inapp-close .ico,
+.modal-close-btn .ico,
 .termos-modal-fechar .ico { width: 17px; height: 17px; }
 
 /* ---- Reset base ---- */
