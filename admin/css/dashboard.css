@@ -4304,6 +4304,9 @@ body.drawer-aberto { overflow: hidden; }
   flex: 1;
   border-top: 2px dotted rgba(169,135,59,0.4);
 }
+/* O gap de 12px acima existe para afastar a costura pontilhada.
+   O check é item do flex também, e 12px o soltaria da palavra. */
+.aud-dock-titulo .ico { margin-right: -5px; }
 
 .aud-dock-acoes {
   display: grid;
@@ -4760,6 +4763,37 @@ body.drawer-aberto { overflow: hidden; }
 .adm-toast-ico, .vagas-toast-ico { width: 1.15em; height: 1.15em; }
 /* a setinha de abrir/fechar detalhes tinha font-size 1.1rem no inline style */
 .adm-chevron { display: inline-flex; font-size: 1.1rem; }
+
+/* Letra miúda do painel: sem engrossar, o traço de 1.7 num grid de 24
+   dá menos de 1px de tela e o desenho some (ver .ico em agendamento-styles). */
+#admin-content .ag-btn-sm,
+.aud-ag-badge,
+.aud-dock-btn,
+.aud-item-email-ok,
+.cat-badge-opt,
+.cat-card-badge,
+.cat-dnd-dica,
+.cat-drag-handle,
+.fin-card-delta,
+.fin-lanc-del { --ico-traco: 2.1; }
+
+/* Botões que são só o ícone: tamanho próprio, já que não há rótulo
+   pra herdar. O check de "já enviei" continua sendo o menor de todos. */
+.aud-item-share .ico,
+.aud-item-del .ico,
+.aud-item-email .ico,
+.cup-btn-del .ico,
+.esp-btn-del .ico,
+.fin-lanc-del .ico { width: 16px; height: 16px; }
+.aud-item-email .aud-item-email-ok { width: 12px; height: 12px; }
+
+/* O toast das vagas é uma linha só: sem largura máxima, um erro
+   comprido do Supabase saía pelos dois lados da tela. */
+.vagas-toast {
+  max-width: min(90vw, 480px);
+  white-space: normal;
+  text-align: center;
+}
 
 /* --- Semana strip: chips de papel --- */
 .adm-semana-chip { border-radius: 12px 5px 12px 5px; }
