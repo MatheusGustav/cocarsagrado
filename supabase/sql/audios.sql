@@ -2,15 +2,17 @@
 -- ÁUDIOS DAS LEITURAS — estado atual no banco
 -- (espelho das migrations 20260708120000_audios_cliente.sql
 --  + 20260719120000_reivindicar_audios.sql
---  + 20260719150000_audio_email.sql)
+--  + 20260719150000_audio_email.sql
+--  + 20260720150000_audio_email_manual.sql)
 -- ------------------------------------------------------------
--- ENTREGA OFICIAL (2026-07-19): E-MAIL COM ANEXO. Admin grava na
--- aba "Áudios" do painel → bucket privado "audios" + linha em
--- audios_cliente → edge function audio-email envia na hora (painel
--- chama com JWT admin) e o cron 'audio-email-cron' (*/10 min, gate
--- x-cron-secret) varre o que ficou pra trás. Anexo até ~24MB;
--- maior vai como link assinado de 90 dias. Só envia com pedido
--- pago e e-mail presente; enviado_email_em marca o envio.
+-- ENTREGA OFICIAL (2026-07-19, manual desde 2026-07-20): E-MAIL
+-- COM ANEXO. Admin grava na aba "Áudios" do painel → bucket privado
+-- "audios" + linha em audios_cliente. Salvar NÃO envia: a admin
+-- dispara no ✉️ da aba "Áudios salvos" (seta email_liberado_em e
+-- chama a edge audio-email com JWT admin). O cron 'audio-email-cron'
+-- (*/10 min, gate x-cron-secret) só re-tenta LIBERADOS que falharam.
+-- Anexo até ~24MB; maior vai como link assinado de 90 dias. Só envia
+-- com pedido pago e e-mail presente; enviado_email_em marca o envio.
 --
 -- LEGADO (conta no site morreu pro cliente em 2026-07-19, entrada
 -- da UI removida): user_id snapshot no INSERT (trigger), adoção
@@ -30,13 +32,15 @@ CREATE TABLE public.audios_cliente (
   tamanho_bytes       BIGINT,
   mime                TEXT NOT NULL DEFAULT 'audio/webm',
   enviado_whatsapp_em TIMESTAMPTZ,
-  enviado_email_em    TIMESTAMPTZ,  -- NULL = ainda não foi por e-mail (fila do cron)
+  enviado_email_em    TIMESTAMPTZ,  -- NULL = ainda não foi por e-mail
+  email_liberado_em   TIMESTAMPTZ,  -- NULL = admin não pediu envio (✉️); edge/cron ignoram
   criado_em           TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
 CREATE INDEX idx_audios_agendamento ON public.audios_cliente (agendamento_id);
 CREATE INDEX idx_audios_user ON public.audios_cliente (user_id) WHERE user_id IS NOT NULL;
-CREATE INDEX idx_audios_email_pendente ON public.audios_cliente (id) WHERE enviado_email_em IS NULL;
+CREATE INDEX idx_audios_email_pendente ON public.audios_cliente (id)
+  WHERE enviado_email_em IS NULL AND email_liberado_em IS NOT NULL;
 
 -- Trigger: resolve user_id no banco (front não manda) --------------------
 CREATE OR REPLACE FUNCTION public.audio_seta_user_id()
