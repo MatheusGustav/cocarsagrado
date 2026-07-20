@@ -4,7 +4,9 @@
    à voz — toque grava, toque de novo para. A admin ouve o preview
    e SÓ ENTÃO escolhe o agendamento destino — salva no bucket
    privado "audios" + tabela audios_cliente. A entrega ao cliente
-   é por e-mail (edge audio-email + cron de reenvio).
+   é por e-mail (edge audio-email), disparada MANUALMENTE no ✉️
+   da aba "Áudios salvos"; o cron só re-tenta liberados que
+   falharam (rede etc.).
    ============================================================ */
 
 let _audAgendamentos = [];   // cache da busca de agendamentos
@@ -878,13 +880,14 @@ async function _audCompartilharPreview() {
 }
 
 // ============================================================
-// Salvar: clique no cliente → upload no bucket privado + insert
-// + disparo do e-mail
+// Salvar: clique no cliente → upload no bucket privado + insert.
+// NÃO envia e-mail — o disparo é manual, no ✉️ da aba "Áudios
+// salvos" (pra onde a tela pula depois de salvar).
 // ============================================================
 async function _audSalvarPara(ag) {
   if (!_audBlob || _audSalvando) return;
   const meta = `${ag.tipos_leitura?.nome || 'Leitura'} · ${_audDataAgend(ag.data_agendamento)}`;
-  if (!confirm(`Salvar e enviar por e-mail para ${ag.cliente_nome}?\n(${meta})`)) return;
+  if (!confirm(`Salvar áudio para ${ag.cliente_nome}?\n(${meta})\n\nO e-mail você dispara depois, no ✉️.`)) return;
 
   _audSalvando = true;
   const lista = document.getElementById('aud-ag-lista');
@@ -906,13 +909,13 @@ async function _audSalvarPara(ag) {
     return;
   }
 
-  const { data: novo, error: dbErr } = await supabase.from('audios_cliente').insert({
+  const { error: dbErr } = await supabase.from('audios_cliente').insert({
     agendamento_id: ag.id,
     storage_path: path,
     duracao_segundos: seg,
     tamanho_bytes: _audBlob.size,
     mime: contentType,
-  }).select('id').single();
+  });
 
   if (dbErr) {
     await supabase.storage.from('audios').remove([path]); // não deixar arquivo órfão
@@ -924,20 +927,16 @@ async function _audSalvarPara(ag) {
 
   _audContagem[ag.id] = (_audContagem[ag.id] || 0) + 1;
   _audSalvando = false;
-  _toastAdmin('✅ Áudio salvo! Enviando por e-mail…', 'ok');
-  _audResetGravador(); // limpa a prévia e volta pro microfone
+  _toastAdmin('✅ Áudio salvo! Toque no ✉️ pra enviar por e-mail.', 'ok');
+  _audResetGravador();      // limpa a prévia e volta pro microfone
+  _audTrocarAba('todos');   // já cai na lista onde mora o ✉️
+}
 
-  // Envio imediato pro e-mail do cliente. Se falhar (rede etc.), o cron
-  // audio-email-cron reenvia sozinho em até 10 min — não trava o painel.
-  try {
-    const { error: fnErr } = await supabase.functions.invoke('audio-email', {
-      body: { audio_id: novo.id },
-    });
-    if (fnErr) throw fnErr;
-    _toastAdmin('📧 Leitura enviada pro e-mail do cliente.', 'ok');
-  } catch (_) {
-    _toastAdmin('⚠️ E-mail não saiu agora — reenvio automático em até 10 min.', 'erro');
-  }
+function _audEmailBtnPintar(btn, a) {
+  if (!btn) return;
+  const enviado = !!a.enviado_email_em;
+  btn.textContent = enviado ? '✉️✓' : '✉️';
+  btn.title = enviado ? 'E-mail enviado — reenviar' : 'Enviar por e-mail';
 }
 
 // ============================================================
@@ -953,9 +952,50 @@ function _audCriarItemAudio(a, opts = {}) {
     </div>
     <div class="aud-item-acoes">
       <button type="button" class="ag-btn ag-btn-outline ag-btn-sm aud-item-play">▶ Ouvir</button>
+      <button type="button" class="ag-btn ag-btn-outline ag-btn-sm aud-item-email"></button>
       <button type="button" class="ag-btn ag-btn-outline ag-btn-sm aud-item-share" title="Compartilhar">📤</button>
       <button type="button" class="ag-btn ag-btn-outline ag-btn-sm aud-item-del" style="color:var(--t-danger)" title="Apagar">🗑</button>
     </div>`;
+
+  // ✉️ dispara (ou reenvia) o e-mail com a leitura — o único gatilho
+  // de envio: salvar não envia mais nada sozinho
+  const btnEmail = item.querySelector('.aud-item-email');
+  _audEmailBtnPintar(btnEmail, a);
+  btnEmail.addEventListener('click', async () => {
+    const nome = a.agendamentos?.cliente_nome || 'o cliente';
+    if (!confirm(a.enviado_email_em
+      ? `E-mail já enviado em ${_audDataBR(a.enviado_email_em)}. Reenviar para ${nome}?`
+      : `Enviar este áudio por e-mail para ${nome}?`)) return;
+    btnEmail.disabled = true;
+    btnEmail.textContent = '…';
+    try {
+      // Libera o envio (a edge/cron só olham liberados); reenvio limpa a marca
+      const { error: upErr } = await supabase.from('audios_cliente')
+        .update({ email_liberado_em: new Date().toISOString(), enviado_email_em: null })
+        .eq('id', a.id);
+      if (upErr) {
+        _toastAdmin('❌ Não deu pra liberar o envio: ' + upErr.message, 'erro');
+        return;
+      }
+      a.enviado_email_em = null;
+      a.email_liberado_em = new Date().toISOString();
+      const { data, error: fnErr } = await supabase.functions.invoke('audio-email', {
+        body: { audio_id: a.id },
+      });
+      if (fnErr) {
+        _toastAdmin('⚠️ E-mail não saiu agora — reenvio automático em até 10 min.', 'erro');
+      } else if (data?.enviados >= 1) {
+        a.enviado_email_em = new Date().toISOString();
+        _toastAdmin('📧 Leitura enviada pro e-mail do cliente.', 'ok');
+      } else {
+        // liberado mas pulado: falta e-mail no pedido ou pagamento confirmado
+        _toastAdmin('⚠️ Não enviado: pedido sem e-mail ou não pago. O cron tenta de novo a cada 10 min.', 'erro');
+      }
+    } finally {
+      btnEmail.disabled = false;
+      _audEmailBtnPintar(btnEmail, a);
+    }
+  });
 
   // Player lazy: signed URL só quando pedir pra ouvir
   item.querySelector('.aud-item-play').addEventListener('click', async ev => {

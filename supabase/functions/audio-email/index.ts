@@ -3,13 +3,15 @@
 // áudio anexado É o histórico dele.
 //
 // Chamadas:
-// - Painel admin logo após gravar ({ audio_id }): envio imediato, JWT
-//   admin no Authorization (is_admin exige aal2).
-// - pg_cron a cada 10 min (body {}): varre TODOS os pendentes — retry
+// - Painel admin ao tocar no ✉️ de um áudio salvo ({ audio_id }): envio
+//   imediato, JWT admin no Authorization (is_admin exige aal2).
+// - pg_cron a cada 10 min (body {}): varre os LIBERADOS pendentes — retry
 //   de falha de rede/painel fechado. Gate: header x-cron-secret (mesmo
 //   secret do emails-cron).
 //
 // Garantias:
+// - Salvar não envia nada sozinho: só entra na fila áudio que a admin
+//   liberou no painel (email_liberado_em preenchido).
 // - Só envia com pedido pago (status pago/confirmado/atendido) e com
 //   e-mail no agendamento; o resto fica pendente pro cron re-olhar.
 // - Anexo até ANEXO_MAX_BYTES (~24MB — teto prático do Resend após o
@@ -169,6 +171,7 @@ Deno.serve(async (req) => {
     .select(`id, storage_path, mime, tamanho_bytes, agendamentos!inner(
       cliente_nome, cliente_email, data_agendamento, status, tipos_leitura(nome))`)
     .is('enviado_email_em', null)
+    .not('email_liberado_em', 'is', null)
   if (audioId) query = query.eq('id', audioId)
 
   const { data: fila, error } = await query
