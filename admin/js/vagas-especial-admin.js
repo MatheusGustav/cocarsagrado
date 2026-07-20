@@ -170,10 +170,10 @@ async function adicionarDataEspecial() {
   const vagas = parseInt(inputVagas?.value || '1');
   const hora  = inputHora?.value || '18:00';
 
-  if (!data) { _toastEsp('Selecione uma data.'); return; }
+  if (!data) { _toastEsp('Selecione uma data.', 'erro'); return; }
 
   const hoje = new Date(); hoje.setHours(0, 0, 0, 0);
-  if (new Date(data + 'T00:00:00') < hoje) { _toastEsp('Data no passado.'); return; }
+  if (new Date(data + 'T00:00:00') < hoje) { _toastEsp('Data no passado.', 'erro'); return; }
 
   btn.disabled    = true;
   btn.textContent = 'Adicionando...';
@@ -224,8 +224,8 @@ async function _salvarEspecial(data, card) {
   const hora  = card.querySelector('.esp-sel-hora').value;
   const ativo = card.querySelector('.esp-chk-ativo').checked;
 
-  btn.disabled    = true;
-  btn.textContent = 'Salvando...';
+  btn.disabled = true;
+  _admBtnEstado(btn, 'salvando');
 
   // Recalcula restantes a partir das vagas já ocupadas,
   // para que aumentar o total reabra vagas corretamente.

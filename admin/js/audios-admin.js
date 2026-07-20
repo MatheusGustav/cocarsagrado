@@ -1126,7 +1126,7 @@ function _audCriarItemAudio(a, opts = {}) {
       ? `E-mail já enviado em ${_audDataBR(a.enviado_email_em)}. Reenviar para ${nome}?`
       : `Enviar este áudio por e-mail para ${nome}?`)) return;
     btnEmail.disabled = true;
-    btnEmail.textContent = '…';
+    btnEmail.innerHTML = '<svg class="ico" aria-hidden="true"><use href="#ico-ampulheta"></use></svg>';
     await _audDispararEmail(a);
     btnEmail.disabled = false;
     _audEmailBtnPintar(btnEmail, a);
@@ -1154,9 +1154,9 @@ function _audCriarItemAudio(a, opts = {}) {
   // Compartilhar: baixa o blob via signed URL antes de abrir o menu de share
   item.querySelector('.aud-item-share').addEventListener('click', async ev => {
     const b = ev.currentTarget;
-    const original = b.textContent;
+    const original = b.innerHTML;   // é só o ícone: textContent devolveria vazio
     b.disabled = true;
-    b.textContent = '…';
+    b.innerHTML = '<svg class="ico" aria-hidden="true"><use href="#ico-ampulheta"></use></svg>';
     try {
       const { data: s, error: e } = await supabase.storage
         .from('audios')
@@ -1172,7 +1172,7 @@ function _audCriarItemAudio(a, opts = {}) {
       _toastAdmin('Erro ao preparar o compartilhamento: ' + err.message, 'erro');
     } finally {
       b.disabled = false;
-      b.textContent = original;
+      b.innerHTML = original;
     }
   });
 
