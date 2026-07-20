@@ -427,7 +427,7 @@ function _audRenderLista(ags) {
     const n = _audContagem[ag.id] || 0;
     item.innerHTML = `
       <span class="aud-ag-nome">${_audEsc(ag.cliente_nome)}</span>
-      <span class="aud-ag-meta">${_audEsc(ag.tipos_leitura?.nome || 'Leitura')}${ag.leitura_origem_id ? ' (＋ pergunta adicional)' : ''} · ${_audDataAgend(ag.data_agendamento)}</span>
+      <span class="aud-ag-meta">${_audEsc(ag.tipos_leitura?.nome || 'Leitura')}${ag.leitura_origem_id ? ' (pergunta adicional)' : ''} · ${_audDataAgend(ag.data_agendamento)}</span>
       ${n ? `<span class="aud-ag-badges"><span class="aud-ag-badge aud-ag-badge--audios"><svg class="ico" aria-hidden="true"><use href="#ico-fone"></use></svg> ${n} áudio${n > 1 ? 's' : ''}</span></span>` : ''}`;
     item.addEventListener('click', () => _audEscolherCliente(ag));
     lista.appendChild(item);

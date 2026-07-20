@@ -190,7 +190,7 @@ function _renderFinanceiro(cache, container) {
         ? lancDoMes.map(l => `<div class="fin-break-row">
             <span class="fin-break-nome">${_esc(l.descricao)} <em class="fin-lanc-cat">${rotuloCat[l.categoria] || l.categoria}${l.terapeuta ? ' · ' + _esc(typeof terapeutaNome === 'function' ? terapeutaNome(l.terapeuta) : l.terapeuta) : ''}</em></span>
             <span class="fin-break-valor${Number(l.valor) < 0 ? ' fin-break-valor--neg' : ''}">${_esc(_finBRL(l.valor))}</span>
-            <button class="fin-lanc-del" onclick="fin_excluirLancamento(${l.id})" aria-label="Excluir lançamento"><svg class="ico" aria-hidden="true"><use href="#ico-fechar"></use></svg></button>
+            <button class="fin-lanc-del" onclick="fin_excluirLancamento(${l.id})" aria-label="Excluir lançamento"><svg class="ico" aria-hidden="true"><use href="#ico-lixeira"></use></svg></button>
           </div>`).join('')
         : '<div class="fin-break-row"><span class="fin-break-nome">Nenhum lançamento neste mês.</span></div>'}
     </div>`;
@@ -203,7 +203,7 @@ function _renderFinanceiro(cache, container) {
 
   container.innerHTML = `
     <div class="fin-topbar">
-      <button class="ag-btn ag-btn-primary ag-btn-sm" onclick="fin_abrirLancamento()">+ Lançamento</button>
+      <button class="ag-btn ag-btn-primary ag-btn-sm" onclick="fin_abrirLancamento()"><svg class="ico" aria-hidden="true"><use href="#ico-mais"></use></svg> Lançamento</button>
     </div>
     <div class="fin-cards">
       <div class="fin-card">

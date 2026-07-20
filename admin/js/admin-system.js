@@ -377,6 +377,8 @@ const STATUS_LABELS = {
 
 // Ícone do toast sai do tipo, não da mensagem — nenhuma string precisa
 // carregar símbolo e o texto continua entrando como texto puro.
+// Também usado por vagas-admin.js e vagas-especial-admin.js, que carregam
+// depois deste arquivo em dashboard.html — não inverta a ordem das <script>.
 const ICO_TOAST = { ok: 'check-circulo', erro: 'alerta', info: 'info' };
 
 function _toastAdmin(msg, tipo) {
@@ -835,7 +837,7 @@ function criarItemAgendamento(ag) {
   // original (leitura_origem_id). Não ocupa vaga — é a mesma sessão.
   const ehAdicao    = !!ag.leitura_origem_id;
   const badgeAdicao = ehAdicao
-    ? `<span class="adm-badge adm-badge-adicao" title="Pergunta adicional comprada depois — responder junto com a leitura original">＋ pergunta adicional</span>`
+    ? `<span class="adm-badge adm-badge-adicao" title="Pergunta adicional comprada depois — responder junto com a leitura original"><svg class="ico" aria-hidden="true"><use href="#ico-mais"></use></svg> pergunta adicional</span>`
     : '';
 
   const acoes = montarAcoes(ag);

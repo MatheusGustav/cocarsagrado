@@ -64,7 +64,7 @@ async function inicializarCupons() {
             <span class="esp-toggle-txt">Reutilizável</span>
           </label>
         </label>
-        <button class="ag-btn ag-btn-primary cup-btn-add" id="cup-btn-add" onclick="criarCupom()">+ Criar cupom</button>
+        <button class="ag-btn ag-btn-primary cup-btn-add" id="cup-btn-add" onclick="criarCupom()"><svg class="ico" aria-hidden="true"><use href="#ico-mais"></use></svg> Criar cupom</button>
       </div>
     </div>
     <div id="cup-lista" style="margin-top:20px;">
@@ -132,7 +132,7 @@ function _renderCupons() {
           <span class="esp-toggle-track"><span class="esp-toggle-thumb"></span></span>
           <span class="esp-toggle-txt">${rec.uso_unico ? 'Uso único' : 'Reutilizável'}</span>
         </label>
-        <button class="ag-btn ag-btn-outline ag-btn-sm cup-btn-del" style="color:var(--t-danger)" title="Remover" aria-label="Remover cupom"><svg class="ico" aria-hidden="true"><use href="#ico-fechar"></use></svg></button>
+        <button class="ag-btn ag-btn-outline ag-btn-sm cup-btn-del" style="color:var(--t-danger)" title="Remover" aria-label="Remover cupom"><svg class="ico" aria-hidden="true"><use href="#ico-lixeira"></use></svg></button>
       </div>`;
 
     const chk = card.querySelector('.cup-chk-ativo');
@@ -175,7 +175,7 @@ async function criarCupom() {
     const { data, error } = await supabase.rpc('admin_user_por_email', { p_email: email });
     if (error || !data?.length) {
       btn.disabled = false;
-      btn.textContent = '+ Criar cupom';
+      btn.innerHTML = '<svg class="ico" aria-hidden="true"><use href="#ico-mais"></use></svg> Criar cupom';
       _toastAdmin(error ? error.message : 'Nenhuma conta com esse e-mail — o cliente precisa criar a conta primeiro.', 'erro');
       return;
     }
@@ -197,7 +197,7 @@ async function criarCupom() {
     .insert({ codigo, valor_desconto: valor, descricao: desc, ativo: true, uso_unico: usoUnico, user_id: userId, expira_em: expiraEm });
 
   btn.disabled = false;
-  btn.textContent = '+ Criar cupom';
+  btn.innerHTML = '<svg class="ico" aria-hidden="true"><use href="#ico-mais"></use></svg> Criar cupom';
 
   if (error) {
     const msg = /duplicate|unique/i.test(error.message) ? 'Já existe um cupom com esse código.' : error.message;

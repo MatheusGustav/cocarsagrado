@@ -108,6 +108,13 @@
     <path d="M20.4 12.4C15.6 12.5 10 12.1 4.4 11.5"/>
     <path d="M9.4 6.6C7.8 8.3 6.1 10.1 4.4 11.5 5.8 13.2 7.2 15.2 8.4 17.2"/>
   </symbol>
+  <symbol id="ico-mais" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M12 4.4C12.3 9.4 12.3 14.6 12 19.6"/>
+    <path d="M4.4 12C9.4 12.3 14.6 12.3 19.6 12"/>
+  </symbol>
+  <symbol id="ico-menos" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M4.4 12C9.4 12.3 14.6 12.3 19.6 12"/>
+  </symbol>
   <symbol id="ico-baixar" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
     <path d="M12 3.4C12.4 6.8 12.2 10.5 11.9 14.4"/>
     <path d="M7.9 10.4C9.3 11.6 10.8 13 11.9 14.4 13.2 13.1 14.7 11.8 16.2 10.7"/>
@@ -484,9 +491,9 @@
       <p class="seletor-pergunta" id="seletor-pergunta">—</p>
       <div class="seletor-tiers" id="seletor-tiers"></div>
       <div class="seletor-qty-wrap" id="seletor-qty-wrap" style="display:none">
-        <button class="seletor-qty-btn" onclick="alterarQty(-1)" aria-label="Diminuir">−</button>
+        <button class="seletor-qty-btn" onclick="alterarQty(-1)" aria-label="Diminuir"><svg class="ico" aria-hidden="true"><use href="#ico-menos"></use></svg></button>
         <span class="seletor-qty-num" id="seletor-qty" aria-live="polite">1</span>
-        <button class="seletor-qty-btn" onclick="alterarQty(1)" aria-label="Aumentar">+</button>
+        <button class="seletor-qty-btn" onclick="alterarQty(1)" aria-label="Aumentar"><svg class="ico" aria-hidden="true"><use href="#ico-mais"></use></svg></button>
       </div>
       <div class="seletor-resumo" id="seletor-resumo" style="display:none">
         <span class="seletor-resumo-preco" id="seletor-preco">—</span>
