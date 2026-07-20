@@ -38,9 +38,6 @@
   vertical-align: -0.135em;
   overflow: visible;
 }
-/* ícone sozinho dentro de um botão respira um tico mais */
-.ico--maior { width: 1.15em; height: 1.15em; }
-
 /* Botões redondos de fechar: o texto deles é minúsculo (13-16px) só
    porque o X antigo era uma letra. O traço precisa de corpo próprio. */
 .seletor-close .ico,

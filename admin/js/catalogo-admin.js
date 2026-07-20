@@ -107,7 +107,7 @@ function _catRenderizar() {
 
   let html = `
     <div class="cat-topbar">
-      <button class="ag-btn ag-btn-primary ag-btn-sm" onclick="cat_abrirFormNovo()">+ Nova Leitura</button>
+      <button class="ag-btn ag-btn-primary ag-btn-sm" onclick="cat_abrirFormNovo()"><svg class="ico" aria-hidden="true"><use href="#ico-mais"></use></svg> Nova Leitura</button>
       ${btnInativas}
       <span class="cat-count">${totalVisiveis} leitura${totalVisiveis === 1 ? '' : 's'}</span>
     </div>

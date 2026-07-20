@@ -141,7 +141,7 @@ function _renderEspecial() {
       </div>
       <div class="esp-card-acoes">
         <button class="ag-btn ag-btn-primary ag-btn-sm esp-btn-salvar" title="Salvar"><svg class="ico" aria-hidden="true"><use href="#ico-guardar"></use></svg> Salvar</button>
-        <button class="ag-btn ag-btn-outline ag-btn-sm esp-btn-del" style="color:var(--t-danger)" title="Remover" aria-label="Remover data"><svg class="ico" aria-hidden="true"><use href="#ico-fechar"></use></svg></button>
+        <button class="ag-btn ag-btn-outline ag-btn-sm esp-btn-del" style="color:var(--t-danger)" title="Remover" aria-label="Remover data"><svg class="ico" aria-hidden="true"><use href="#ico-lixeira"></use></svg></button>
       </div>`;
 
     const chk = card.querySelector('.esp-chk-ativo');
@@ -206,7 +206,7 @@ async function adicionarDataEspecial() {
     }, { onConflict: 'profissional,data' });
 
   btn.disabled    = false;
-  btn.textContent = '+ Adicionar';
+  btn.innerHTML = '<svg class="ico" aria-hidden="true"><use href="#ico-mais"></use></svg> Adicionar';
 
   if (error) { _toastEsp(error.message, 'erro'); return; }
 

@@ -203,7 +203,7 @@ function _renderNaipePerguntas(vals) {
     add.type = 'button';
     add.className = 'naipe-add-btn';
     // Mostra quanto a próxima pergunta custa (cada extra sai mais barata)
-    add.innerHTML = `＋ Adicionar outra pergunta · ${fmtBRL(NAIPE_CUSTO[n])}`;
+    add.innerHTML = `<svg class="ico" aria-hidden="true"><use href="#ico-mais"></use></svg> Adicionar outra pergunta · ${fmtBRL(NAIPE_CUSTO[n])}`;
     add.addEventListener('click', () => {
       const cur = _lerNaipeVals();
       cur.push('');
