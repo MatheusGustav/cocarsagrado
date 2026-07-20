@@ -31,6 +31,14 @@ const TG_CHAT        = Deno.env.get('TELEGRAM_CHAT_ID')   || ''
 const ANEXO_MAX_BYTES  = 24 * 1024 * 1024   // acima disso vai link assinado
 const LINK_VALIDADE_S  = 90 * 24 * 60 * 60  // 90 dias
 
+// O painel chama via supabase.functions.invoke (browser): sem CORS o
+// preflight OPTIONS morre e TODO envio imediato falha (só o cron salvava).
+const cors = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-cron-secret',
+}
+
 const supabase = createClient(
   Deno.env.get('SUPABASE_URL')!,
   Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
@@ -39,7 +47,7 @@ const supabase = createClient(
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
     status,
-    headers: { 'Content-Type': 'application/json' },
+    headers: { ...cors, 'Content-Type': 'application/json' },
   })
 }
 
@@ -145,6 +153,8 @@ async function enviarResend(to: string, subject: string, html: string,
 }
 
 Deno.serve(async (req) => {
+  if (req.method === 'OPTIONS') return new Response(null, { headers: cors })
+
   // Gate 1: cron (x-cron-secret). Gate 2: admin logado (JWT + is_admin).
   const ehCron = !!CRON_SECRET && req.headers.get('x-cron-secret') === CRON_SECRET
   if (!ehCron) {
