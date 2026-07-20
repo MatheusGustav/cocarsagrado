@@ -4244,17 +4244,18 @@ body.drawer-aberto { overflow: hidden; }
 /* ============================================================
    Painel de controle da gravação — dock no fim da página.
    A onda fica sozinha no palco; as ações moram neste deck que
-   gruda no rodapé da área útil (sticky), com a assinatura do
+   gruda no rodapé da tela (fixed, imune ao scroll), com a assinatura do
    painel: raio assimétrico, costura dourada, Fraunces no título.
    ============================================================ */
 .aud-dock {
-  position: sticky;
+  position: fixed;
+  left: 50%;
+  transform: translateX(-50%);
   bottom: 0;
   z-index: 5;
-  width: 100%;
-  max-width: 460px;
-  margin-top: auto;
-  padding: 16px 0 max(10px, env(safe-area-inset-bottom));
+  width: min(100%, 460px);
+  box-sizing: border-box;
+  padding: 16px 12px max(10px, env(safe-area-inset-bottom));
   /* véu que funde o painel com o fundo quando a onda rola atrás */
   background: linear-gradient(to top, var(--bg) 62%, transparent);
 }
