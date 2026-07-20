@@ -3796,7 +3796,7 @@ body.drawer-aberto { overflow: hidden; }
    Áudios — gravador estilo celular + histórico por agendamento
    ============================================================ */
 /* Abas da seção Áudios: Gravar ⇄ Áudios salvos */
-.aud-tabs { display: flex; gap: 8px; margin-bottom: 18px; }
+.aud-tabs { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 18px; }
 .aud-tab {
   padding: 8px 18px;
   border-radius: 999px;
@@ -3920,11 +3920,10 @@ body.drawer-aberto { overflow: hidden; }
   color: #F5F3E7;
   color-scheme: dark;
 }
-/* Seletor de microfone: só aparece com mais de 1 audioinput */
+/* Seletor de microfone: só aparece com mais de 1 audioinput;
+   vive na linha das abas, ao lado de "Áudios salvos" */
 .aud-mic-select {
-  align-self: stretch;
-  margin-top: 2px;
-  padding: 6px 10px;
+  padding: 8px 10px;
   border-radius: 999px;
   border: 1px solid #2A4A38;
   background: #10251A;
