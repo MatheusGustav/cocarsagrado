@@ -3896,36 +3896,18 @@ body.drawer-aberto { overflow: hidden; }
 }
 .aud-escolha-topo .aud-passo-titulo { margin-bottom: 0; }
 
-/* Card do gravador: visual de app de gravador de celular (tela escura,
-   timer gigante, onda com cursor central, botões redondos) */
+/* Palco do gravador: sem card, sem cromo — só o orbe solto,
+   centralizado na altura útil da tela */
 .aud-gravador {
-  background: #0A1B12;
-  border: 1px solid #24422F;
-  border-radius: 22px;
-  padding: 28px 18px 24px;
+  min-height: clamp(340px, 58vh, 620px);
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 6px;
+  justify-content: center;
+  gap: 14px;
   max-width: 460px;
   color: #F5F3E7;
-  color-scheme: dark; /* player nativo da prévia em tema escuro */
-  overflow: hidden;
-}
-.aud-timer {
-  font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
-  font-size: 3.1rem;
-  font-weight: 300;
-  letter-spacing: .03em;
-  font-variant-numeric: tabular-nums;
-  color: #fff;
-}
-.aud-estado { font-size: .9rem; color: #93A896; }
-.aud-onda {
-  width: calc(100% + 36px); /* sangra até a borda do card, como no celular */
-  margin: 4px -18px 0;
-  height: 190px;
-  display: block;
+  color-scheme: dark;
 }
 /* Seletor de microfone: só aparece com mais de 1 audioinput */
 .aud-mic-select {
@@ -3940,55 +3922,160 @@ body.drawer-aberto { overflow: hidden; }
   max-width: 260px;
 }
 
-.aud-controles { display: flex; gap: 60px; align-items: center; margin-top: 6px; }
+.aud-controles { display: flex; align-items: center; }
 .aud-controles:empty { display: none; }
-.aud-btn-anel,
-.aud-btn-escuro {
-  width: 70px;
-  height: 70px;
+
+/* ============================================================
+   Orbe pôr-do-sol: nada de círculo genérico — a silhueta é um blob
+   que respira (o efeito do jardim do site) e por dentro círculos de
+   âmbar/coral/rosa/lavanda flutuam desfocados se revezando no brilho.
+   Por fora, aura difusa vazando. Sem ícone: o orbe É o botão.
+   Parado: cores dançam devagar. Gravando (--gravando no jardim):
+   batida de pulso, dança acelera (--vel) e a voz manda na escala
+   via --amp (0..1, setada por JS a cada frame).
+   ============================================================ */
+.aud-orbe-jardim {
+  position: relative;
+  width: 220px;
+  height: 220px;
+  --amp: 0;
+  --vel: 1; /* multiplicador das durações da dança */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.aud-orbe-jardim--gravando {
+  --vel: 0.38;
+  animation: aud-orbe-batida 2.2s ease-in-out infinite;
+}
+@keyframes aud-orbe-batida {
+  0%, 100% { transform: scale(1); }
+  50%      { transform: scale(1.035); }
+}
+
+/* Aura solta: manchas desfocadas vazando pra fora da silhueta */
+.aud-orbe-aura {
+  position: absolute;
+  border-radius: 58% 42% 55% 45% / 45% 52% 48% 55%;
+  filter: blur(26px);
+  pointer-events: none;
+  animation: aud-blob-vaga calc(16s * var(--vel)) ease-in-out infinite;
+}
+.aud-orbe-aura--quente {
+  width: 94%;
+  height: 94%;
+  top: -5%;
+  left: -9%;
+  background: radial-gradient(circle at 35% 35%, rgba(240, 138, 93, 0.5), rgba(240, 138, 93, 0) 70%);
+}
+.aud-orbe-aura--fria {
+  width: 80%;
+  height: 80%;
+  bottom: -7%;
+  right: -10%;
+  background: radial-gradient(circle at 60% 60%, rgba(181, 140, 217, 0.45), rgba(181, 140, 217, 0) 70%);
+  animation-delay: -8s;
+}
+@keyframes aud-blob-vaga {
+  0%, 100% { border-radius: 58% 42% 55% 45% / 45% 52% 48% 55%; transform: translate(0, 0) rotate(0deg); }
+  33%      { border-radius: 45% 55% 48% 52% / 55% 45% 58% 42%; transform: translate(4%, -3%) rotate(6deg); }
+  66%      { border-radius: 52% 48% 42% 58% / 48% 58% 45% 52%; transform: translate(-4%, 3%) rotate(-5deg); }
+}
+
+/* Brilho de voz: só responde ao --amp (sem keyframes, pra não brigar) */
+.aud-orbe-voz {
+  position: absolute;
+  width: 100%;
+  height: 100%;
   border-radius: 50%;
+  background: radial-gradient(circle, rgba(242, 179, 104, 0.5) 0%, rgba(233, 106, 141, 0.25) 42%, transparent 70%);
+  filter: blur(18px);
+  transform: scale(calc(0.85 + var(--amp) * 0.5));
+  opacity: calc(0.15 + var(--amp) * 0.85);
+  pointer-events: none;
+}
+
+/* A silhueta viva: blob respirando, sem anel, sem ícone */
+.aud-orbe {
+  position: relative;
+  width: 150px;
+  height: 150px;
   border: none;
   padding: 0;
   cursor: pointer;
-  position: relative;
-  transition: transform .15s, box-shadow .15s;
+  overflow: hidden;
+  background: #2A1120;
+  border-radius: 58% 42% 55% 45% / 45% 52% 48% 55%;
+  animation: aud-orbe-forma calc(12s * var(--vel)) ease-in-out infinite;
+  box-shadow: 0 24px 50px -18px rgba(0, 0, 0, 0.7);
+  transition: transform .2s ease;
 }
-.aud-btn-anel:hover, .aud-btn-escuro:hover { transform: scale(1.06); }
-.aud-btn-anel {
-  background: conic-gradient(from 210deg, #f6bd8b, #ee8b9f, #a89cf5, #8fd0ee, #f6bd8b);
+@keyframes aud-orbe-forma {
+  0%, 100% { border-radius: 58% 42% 55% 45% / 45% 52% 48% 55%; }
+  33%      { border-radius: 45% 55% 48% 52% / 55% 45% 58% 42%; }
+  66%      { border-radius: 52% 48% 42% 58% / 48% 58% 45% 52%; }
 }
-.aud-btn-anel::before {
-  content: '';
-  position: absolute;
-  inset: 5px;
-  border-radius: 50%;
-  background: #0A1B12;
-}
-.aud-btn-escuro { background: #1E3D2B; transition: background .15s, transform .15s; }
+.aud-orbe:hover { transform: scale(1.04); }
+.aud-orbe:active { transform: scale(0.97); }
 
-/* Pulso suave no botão de gravar enquanto a gravação está ativa */
-@keyframes aud-pulso {
-  0%   { box-shadow: 0 0 0 0 rgba(229,72,77,.45); }
-  70%  { box-shadow: 0 0 0 16px rgba(229,72,77,0); }
-  100% { box-shadow: 0 0 0 0 rgba(229,72,77,0); }
+/* Os círculos de cor: cada um flutua num caminho próprio (--d1) e
+   eles se revezam no brilho (--d2), com delays defasados */
+.aud-orbe-cor {
+  position: absolute;
+  width: 84%;
+  height: 84%;
+  border-radius: 50%;
+  filter: blur(16px);
+  pointer-events: none;
+  animation:
+    aud-cor-flutua calc(var(--d1, 10s) * var(--vel)) ease-in-out infinite,
+    aud-cor-alterna calc(var(--d2, 8s) * var(--vel)) ease-in-out infinite;
 }
-.aud-btn-anel--gravando { animation: aud-pulso 1.6s ease-out infinite; }
-.aud-miolo { position: absolute; inset: 0; margin: auto; display: block; }
-.aud-miolo-rec  { width: 28px; height: 28px; border-radius: 50%; background: #e5484d; }
-.aud-miolo-stop { width: 24px; height: 24px; border-radius: 8px; background: linear-gradient(135deg, #f8cb9d, #c9baff); }
-.aud-ico-pausa {
-  position: absolute; inset: 0; margin: auto;
-  width: 17px; height: 20px;
-  border-left: 5px solid #F2EEDD;
-  border-right: 5px solid #F2EEDD;
+.aud-orbe-cor--ambar {
+  top: -14%;
+  left: -12%;
+  background: radial-gradient(circle at 40% 40%, #F2B368, rgba(242, 179, 104, 0) 72%);
 }
-.aud-ico-play {
-  position: absolute; inset: 0; margin: auto;
-  width: 0; height: 0;
-  border-left: 17px solid #F2EEDD;
-  border-top: 10px solid transparent;
-  border-bottom: 10px solid transparent;
-  transform: translateX(3px);
+.aud-orbe-cor--coral {
+  top: -8%;
+  right: -16%;
+  background: radial-gradient(circle at 55% 45%, #F08A5D, rgba(240, 138, 93, 0) 72%);
+  --d1: 12s;
+  --d2: 8.6s;
+  animation-delay: -2s, -2s;
+}
+.aud-orbe-cor--rosa {
+  bottom: -14%;
+  left: -8%;
+  background: radial-gradient(circle at 45% 60%, #E96A8D, rgba(233, 106, 141, 0) 72%);
+  --d1: 11s;
+  --d2: 7.4s;
+  animation-delay: -5s, -4s;
+}
+.aud-orbe-cor--lavanda {
+  bottom: -10%;
+  right: -10%;
+  background: radial-gradient(circle at 60% 55%, #B58CD9, rgba(181, 140, 217, 0) 72%);
+  --d1: 13s;
+  --d2: 9s;
+  animation-delay: -7s, -6s;
+}
+@keyframes aud-cor-flutua {
+  0%, 100% { transform: translate(0, 0) scale(1) rotate(0deg); }
+  25%      { transform: translate(9%, 6%) scale(1.12) rotate(12deg); }
+  50%      { transform: translate(-5%, 10%) scale(0.92) rotate(-8deg); }
+  75%      { transform: translate(-9%, -6%) scale(1.06) rotate(6deg); }
+}
+@keyframes aud-cor-alterna {
+  0%, 100% { opacity: 0.9; }
+  50%      { opacity: 0.35; }
+}
+
+/* Gravando: a voz manda na escala da silhueta (o lerp já vem suave
+   do JS; transition atrasaria a resposta) */
+.aud-orbe-jardim--gravando .aud-orbe {
+  transform: scale(calc(1 + var(--amp) * 0.14));
+  transition: none;
 }
 .aud-preview { width: 100%; display: flex; flex-direction: column; align-items: center; gap: 12px; }
 .aud-preview-acoes { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
@@ -4043,8 +4130,8 @@ body.drawer-aberto { overflow: hidden; }
   min-width: 92px;
   text-align: right;
 }
-/* Botões outline do painel são pensados pra fundo claro; dentro do card
-   escuro precisam de contraste próprio */
+/* Botões outline do painel são pensados pra fundo claro; no palco
+   escuro do gravador precisam de contraste próprio */
 #admin-content .aud-gravador .ag-btn-outline {
   border-color: #33543F;
   color: #EDF0E2;
@@ -4429,6 +4516,8 @@ body.drawer-aberto { overflow: hidden; }
 /* --- Movimento reduzido --- */
 @media (prefers-reduced-motion: reduce) {
   .folha { animation: none; }
+  .aud-orbe, .aud-orbe-cor, .aud-orbe-aura, .aud-orbe-jardim--gravando { animation: none; }
+  .aud-orbe-voz, .aud-orbe-jardim--gravando .aud-orbe { transform: none; }
   #admin-content .ag-btn,
   .adm-item, .adm-stat-card, .agenda-card-overview,
   .desc-card, .esp-card, .cup-card, .cat-card { transition: none; }
