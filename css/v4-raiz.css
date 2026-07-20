@@ -1832,7 +1832,6 @@ img { max-width: 100%; }
   .person-card { align-items: flex-start; }
   .cta-bar-inner { justify-content: center; text-align: center; }
   .footer-inner { justify-content: center; text-align: center; }
-  [class*="folha--cat"], [class*="folha--dep"] { display: none; }
 }
 
 /* ============================================================
