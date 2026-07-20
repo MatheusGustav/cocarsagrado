@@ -85,11 +85,18 @@ function _audExtDoMime(mime) {
 // como bolha clicável se o codec for um que ele decodifica (mp3/AAC).
 // Chrome grava opus (mesmo dentro de mp4), que o WhatsApp rejeita como
 // "arquivo não suportado" — então todo share passa por mp3.
-const _audMp3Cache = new WeakMap(); // blob original → blob mp3 (evita reconverter no retry)
+const _audMp3Cache  = new WeakMap(); // blob original → Promise<blob mp3>
+const _audMp3Pronto = new WeakSet(); // blobs cuja conversão já terminou
 
-async function _audConverterParaMp3(blob) {
+function _audConverterParaMp3(blob) {
   if (_audMp3Cache.has(blob)) return _audMp3Cache.get(blob);
+  const p = _audConverterParaMp3Interno(blob);
+  _audMp3Cache.set(blob, p);
+  p.then(() => _audMp3Pronto.add(blob), () => _audMp3Cache.delete(blob));
+  return p;
+}
 
+async function _audConverterParaMp3Interno(blob) {
   const ctx = new (window.AudioContext || window.webkitAudioContext)();
   let buf;
   try {
@@ -106,7 +113,10 @@ async function _audConverterParaMp3(blob) {
   const BLOCO = 1152;
   const partes = [];
   const amostras = new Int16Array(BLOCO);
-  for (let i = 0; i < buf.length; i += BLOCO) {
+  for (let i = 0, bloco = 0; i < buf.length; i += BLOCO, bloco++) {
+    // Respiro a cada ~1.5s de áudio: a conversão roda em segundo plano
+    // logo após parar de gravar, e não pode travar as barrinhas da prévia
+    if (bloco % 64 === 63) await new Promise(r => setTimeout(r));
     const n = Math.min(BLOCO, buf.length - i);
     for (let j = 0; j < n; j++) {
       let v = 0;
@@ -120,9 +130,28 @@ async function _audConverterParaMp3(blob) {
   const fim = enc.flush();
   if (fim.length) partes.push(fim);
 
-  const mp3 = new Blob(partes, { type: 'audio/mpeg' });
-  _audMp3Cache.set(blob, mp3);
-  return mp3;
+  return new Blob(partes, { type: 'audio/mpeg' });
+}
+
+// Pill fixo "toque pra enviar": quando a conversão demora, o navegador
+// esquece o toque original e bloqueia o navigator.share — este botão dá
+// um toque novo e compartilha na hora (mp3 já pronto no cache).
+function _audMostrarPillEnviar(file, nome) {
+  document.getElementById('aud-pill-enviar')?.remove();
+  const pill = document.createElement('button');
+  pill.type = 'button';
+  pill.id = 'aud-pill-enviar';
+  pill.className = 'aud-pill-enviar';
+  pill.innerHTML = '📤 Áudio pronto — <strong>toque pra enviar</strong>';
+  pill.onclick = async () => {
+    pill.remove();
+    try {
+      await navigator.share({ files: [file], title: nome });
+    } catch (e) {
+      if (e.name !== 'AbortError') _toastAdmin('❌ Erro ao compartilhar: ' + e.message, 'erro');
+    }
+  };
+  document.body.appendChild(pill);
 }
 
 // Compartilhar (ou baixar, no fallback) um blob de áudio já pronto.
@@ -133,8 +162,7 @@ async function _audCompartilharBlob(blob, mime, nomeSugestao) {
   let blobFinal = blob, mimeFinal = mime, ext = _audExtDoMime(mime);
   if (mime !== 'audio/mpeg') {
     try {
-      const jaConvertido = _audMp3Cache.has(blob);
-      if (!jaConvertido) _toastAdmin('🎛 Convertendo pra mp3…', 'info');
+      if (!_audMp3Pronto.has(blob)) _toastAdmin('🎛 Convertendo pra mp3…', 'info');
       blobFinal = await _audConverterParaMp3(blob);
       mimeFinal = 'audio/mpeg';
       ext = 'mp3';
@@ -152,9 +180,9 @@ async function _audCompartilharBlob(blob, mime, nomeSugestao) {
       await navigator.share({ files: [file], title: nome });
     } catch (e) {
       if (e.name === 'NotAllowedError') {
-        // Conversão longa consumiu o "clique" que autoriza o share;
-        // o mp3 ficou no cache, então o 2º toque compartilha na hora
-        _toastAdmin('✅ Áudio pronto! Toque em Compartilhar de novo pra enviar.', 'info');
+        // Conversão longa consumiu o toque que autoriza o share —
+        // oferece um botão que compartilha na hora com um toque novo
+        _audMostrarPillEnviar(file, nome);
       } else if (e.name !== 'AbortError') {
         _toastAdmin('❌ Erro ao compartilhar: ' + e.message, 'erro');
       }
@@ -478,6 +506,7 @@ function _audOrbeHtml(gravando) {
 }
 
 function _audResetGravador() {
+  document.getElementById('aud-pill-enviar')?.remove(); // pill apontaria pra áudio morto
   if (_audTimerInt) { clearInterval(_audTimerInt); _audTimerInt = null; }
   if (_audStream) { _audStream.getTracks().forEach(t => t.stop()); _audStream = null; }
   if (_audPreviewUrl) { URL.revokeObjectURL(_audPreviewUrl); _audPreviewUrl = null; }
@@ -570,6 +599,9 @@ async function _audComecarGravacao() {
     _audWakeLockLiberar();
     _audBlob = new Blob(_audChunks, { type: _audMime.split(';')[0] });
     _audMostrarPreview();
+    // Já converte pra mp3 em segundo plano: quando tocar em Compartilhar
+    // (depois de ouvir a prévia), o arquivo estará pronto e o menu abre na hora
+    _audConverterParaMp3(_audBlob).catch(() => {});
   };
   _audRecorder.onerror = () => {
     _audSetErro('Erro na gravação. Tente de novo.');
