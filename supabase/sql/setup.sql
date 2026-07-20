@@ -536,6 +536,7 @@ $$;
 -- leitura_mais_procurada: um vencedor POR TERAPEUTA (terapeuta, service_id),
 -- service_id no formato 'grupo:<slug>' | slug | 'id-<id>'. Usada pelo site
 -- para o destaque "Mais procurada" no catálogo (só identificador agregado).
+-- Conta só leituras ATIVAS: inativa não tem card, badge ficaria sem lugar.
 CREATE OR REPLACE FUNCTION public.leitura_mais_procurada()
 RETURNS TABLE (terapeuta text, service_id text)
 LANGUAGE sql
@@ -561,6 +562,7 @@ AS $$
     WHERE a.status IN ('pago', 'confirmado', 'atendido')
       AND a.criado_em >= now() - interval '180 days'
       AND t.terapeuta IS NOT NULL
+      AND t.ativo IS TRUE
     GROUP BY t.terapeuta, service_id, t.id
   ) ranked
   WHERE rn = 1;
