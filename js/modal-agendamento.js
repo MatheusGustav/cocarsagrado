@@ -310,7 +310,7 @@ async function _verificarPedidoPendenteAoCarregar() {
   if (!pend) return;
   const status = await _checarStatusPedido(pend.dados.chave);
   if (status === 'pago') {
-    mostrarAlerta('✅ Pagamento do pedido ' + pend.dados.chave + ' confirmado!', 'success');
+    mostrarAlerta('Pagamento do pedido ' + pend.dados.chave + ' confirmado!', 'success');
     _limparPedidoPendente();
   } else if (status === 'cancelado' || status === null) {
     _limparPedidoPendente();
@@ -385,7 +385,7 @@ function _atualizarBotaoRetomar() {
     btn.innerHTML = '<img src="images/credit-card.webp" alt="" width="18" height="18" style="display:block"><span>Retomar pagamento</span>';
   } else {
     const n = Estado.carrinho.length;
-    btn.innerHTML = `🛒 Continuar pedido (${n})`;
+    btn.innerHTML = `<svg class="ico" aria-hidden="true"><use href="#ico-cesta"></use></svg> Continuar pedido (${n})`;
   }
   btn.classList.add('visivel');
 }
@@ -551,7 +551,7 @@ function _copiarTexto(texto, msg) {
     .catch(() => mostrarAlerta('Copie manualmente: ' + texto, 'info'));
 }
 
-function copiarWiseModal()   { _copiarTexto(MODAL_WISE, '✅ E-mail Wise copiado!'); }
+function copiarWiseModal()   { _copiarTexto(MODAL_WISE, 'E-mail Wise copiado!'); }
 
 function avisarWhatsAppModal(metodo) {
   const ag = _dadosPagamento;
@@ -662,7 +662,7 @@ function _pagMostrarEspera(abriuSozinho, url) {
   } else {
     if (titulo)  titulo.textContent  = 'Seu pagamento está pronto';
     if (txt)     txt.textContent     = 'Toque no botão abaixo para abrir o checkout seguro. Quando o pagamento cair, esta tela confirma sozinha.';
-    if (reabrir) reabrir.textContent = 'Abrir e pagar agora →';
+    if (reabrir) reabrir.innerHTML = 'Abrir e pagar agora <svg class="ico" aria-hidden="true"><use href="#ico-seta-direita"></use></svg>';
   }
   document.querySelector('#modalAgendamento .modal-body')
     ?.scrollTo({ top: 0, behavior: 'smooth' });

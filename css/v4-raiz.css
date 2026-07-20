@@ -682,12 +682,15 @@ img { max-width: 100%; }
   font-size: 15.5px;
 }
 .ebook-list li::before {
-  content: "❧";
+  content: "";
   position: absolute;
   left: 0;
-  top: 0;
-  font-size: 15px;
-  color: var(--v4-salvia-forte);
+  top: 5px;
+  width: 16px;
+  height: 16px;
+  background: var(--v4-salvia-forte);
+  -webkit-mask: var(--ico-ornamento) center / contain no-repeat;
+          mask: var(--ico-ornamento) center / contain no-repeat;
 }
 
 .ebook-autora {
@@ -912,7 +915,7 @@ img { max-width: 100%; }
   border-color: var(--color-primary);
   color: var(--color-text-on-dark);
 }
-.cat-filter-ico { font-size: 13px; }
+.cat-filter-ico { font-size: 15px; display: inline-flex; }
 
 /* --- grupos --- */
 .cat-group { margin-bottom: 54px; }

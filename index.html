@@ -92,7 +92,7 @@
   <!-- ============================
        ÍCONES · sprite "Raiz Viva"
        Desenhos próprios (24×24, traço 1.7, currentColor).
-       Uso: <svg class="ico" aria-hidden="true"><use href="#ico-nome"></use></svg>
+       Uso: svg.ico + use apontando para o id do símbolo (ex.: #ico-fechar).
        Site público.
        ============================ -->
   <svg xmlns="http://www.w3.org/2000/svg" class="ico-sprite" aria-hidden="true" focusable="false">
@@ -172,7 +172,7 @@
        ============================ -->
   <div class="inapp-backdrop" id="inappBackdrop" role="dialog" aria-modal="true" aria-labelledby="inappTitle">
     <div class="inapp-card">
-      <button class="inapp-close" id="inappClose" aria-label="Fechar">✕</button>
+      <button class="inapp-close" id="inappClose" aria-label="Fechar"><svg class="ico" aria-hidden="true"><use href="#ico-fechar"></use></svg></button>
       <p class="inapp-text" id="inappTitle">
         Toque em <span class="inapp-dots-badge">⋯</span> e abra o site no navegador para a melhor experiência
       </p>
@@ -268,8 +268,8 @@
             </div>
           </div>
           <div class="ebook-acoes">
-            <a href="downloads/ebook-clarividencia.pdf" download class="btn-fill ebook-btn">⬇ Baixar e-book (PDF)</a>
-            <a href="downloads/ebook-clarividencia.pdf" target="_blank" rel="noopener" class="ebook-link">ou ler online →</a>
+            <a href="downloads/ebook-clarividencia.pdf" download class="btn-fill ebook-btn"><svg class="ico" aria-hidden="true"><use href="#ico-baixar"></use></svg> Baixar e-book (PDF)</a>
+            <a href="downloads/ebook-clarividencia.pdf" target="_blank" rel="noopener" class="ebook-link">ou ler online <svg class="ico" aria-hidden="true"><use href="#ico-seta-direita"></use></svg></a>
           </div>
           <p class="ebook-meta">PDF · 44 páginas · download imediato</p>
         </div>
@@ -307,10 +307,10 @@
 
         <!-- Filtro por modalidade (pílulas orgânicas — sem sublinhado nesta variante) -->
         <div class="cat-filters" id="catFilters" role="tablist" aria-label="Filtrar por modalidade">
-          <button class="cat-filter active" data-filter="todos"><span class="cat-filter-ico" aria-hidden="true">✦</span> Todos</button>
-          <button class="cat-filter" data-filter="mensagem"><span class="cat-filter-ico" aria-hidden="true">💬</span> Mensagem</button>
-          <button class="cat-filter" data-filter="audio"><span class="cat-filter-ico" aria-hidden="true">🎙️</span> Áudio<span class="cat-filter-extra"> gravado</span></button>
-          <button class="cat-filter" data-filter="video"><span class="cat-filter-ico" aria-hidden="true">📹</span> Vídeo<span class="cat-filter-extra">-chamada</span></button>
+          <button class="cat-filter active" data-filter="todos"><span class="cat-filter-ico" aria-hidden="true"><svg class="ico" aria-hidden="true"><use href="#ico-semente"></use></svg></span> Todos</button>
+          <button class="cat-filter" data-filter="mensagem"><span class="cat-filter-ico" aria-hidden="true"><svg class="ico" aria-hidden="true"><use href="#ico-balao"></use></svg></span> Mensagem</button>
+          <button class="cat-filter" data-filter="audio"><span class="cat-filter-ico" aria-hidden="true"><svg class="ico" aria-hidden="true"><use href="#ico-microfone"></use></svg></span> Áudio<span class="cat-filter-extra"> gravado</span></button>
+          <button class="cat-filter" data-filter="video"><span class="cat-filter-ico" aria-hidden="true"><svg class="ico" aria-hidden="true"><use href="#ico-video"></use></svg></span> Vídeo<span class="cat-filter-extra">-chamada</span></button>
         </div>
 
         <!-- Catálogo agrupado por terapeuta (renderizado por agendamento-system.js) -->
@@ -482,7 +482,7 @@
     <div class="seletor-card" tabindex="-1">
       <svg class="folha folha--seletor1" viewBox="0 0 40 64" aria-hidden="true"><path d="M20 3 C 33 18, 35 38, 20 61 C 5 38, 7 18, 20 3 Z" /><path d="M20 12 L 20 52" /></svg>
       <svg class="folha folha--seletor2" viewBox="0 0 40 64" aria-hidden="true"><path d="M20 3 C 33 18, 35 38, 20 61 C 5 38, 7 18, 20 3 Z" /><path d="M20 12 L 20 52" /></svg>
-      <button class="seletor-close" onclick="fecharSeletor()" aria-label="Fechar">✕</button>
+      <button class="seletor-close" onclick="fecharSeletor()" aria-label="Fechar"><svg class="ico" aria-hidden="true"><use href="#ico-fechar"></use></svg></button>
       <div class="seletor-icone" aria-hidden="true"><svg viewBox="0 0 40 64"><path d="M20 3 C 33 18, 35 38, 20 61 C 5 38, 7 18, 20 3 Z" /><path d="M20 12 L 20 52" /></svg></div>
       <h3 class="seletor-nome" id="seletor-nome">—</h3>
       <p class="seletor-pergunta" id="seletor-pergunta">—</p>
@@ -497,7 +497,7 @@
       </div>
       <div class="seletor-actions">
         <button class="seletor-btn-cancel" onclick="fecharSeletor()">Voltar</button>
-        <button class="seletor-btn-confirm" id="seletor-btn-confirm" onclick="confirmarSeletor()">Continuar →</button>
+        <button class="seletor-btn-confirm" id="seletor-btn-confirm" onclick="confirmarSeletor()">Continuar <svg class="ico" aria-hidden="true"><use href="#ico-seta-direita"></use></svg></button>
       </div>
     </div>
   </div>
@@ -532,7 +532,7 @@
 
             <!-- SEÇÃO 0: DADOS PESSOAIS (1× por pedido) -->
             <section class="ag-section active" id="secao-0" data-passo="0" aria-label="Seus dados">
-              <button type="button" class="ag-voltar-link" onclick="irParaPasso(1)">← Trocar o dia</button>
+              <button type="button" class="ag-voltar-link" onclick="irParaPasso(1)"><svg class="ico" aria-hidden="true"><use href="#ico-seta-esquerda"></use></svg> Trocar o dia</button>
               <h2 class="ag-section-title">Agora, seus dados</h2>
               <p class="ag-section-sub">Você preenche uma vez só — vale para todas as leituras deste pedido.</p>
               <form class="ag-form" id="form-dados-pessoais" novalidate>
@@ -588,14 +588,14 @@
                   <small class="ag-field-hint">Sua leitura em áudio chega no e-mail <strong id="f-email-salvo">—</strong>. <button type="button" class="termos-link" id="f-email-trocar">Trocar</button></small>
                 </div>
                 <button type="button" class="ag-btn ag-btn-primary" onclick="confirmarDadosPessoais()">
-                  Continuar →
+                  Continuar <svg class="ico" aria-hidden="true"><use href="#ico-seta-direita"></use></svg>
                 </button>
               </form>
             </section>
 
             <!-- SEÇÃO 1: CALENDÁRIO (por leitura) -->
             <section class="ag-section" id="secao-1" data-passo="1" aria-label="Escolha o dia">
-              <button type="button" class="ag-voltar-link" id="cal-voltar-pedido" onclick="irParaPasso(3)" hidden>← Voltar ao meu pedido</button>
+              <button type="button" class="ag-voltar-link" id="cal-voltar-pedido" onclick="irParaPasso(3)" hidden><svg class="ico" aria-hidden="true"><use href="#ico-seta-esquerda"></use></svg> Voltar ao meu pedido</button>
               <h2 class="ag-section-title">Escolha o dia da sua leitura</h2>
               <p class="ag-section-sub" id="secao1-sub">Nesse dia ela chega prontinha no seu WhatsApp e no seu e-mail. Toque no dia que preferir:</p>
               <div id="calendario">
@@ -605,7 +605,7 @@
 
             <!-- SEÇÃO 2: PERGUNTAS + RESUMO + ADICIONAR AO CARRINHO -->
             <section class="ag-section" id="secao-2" data-passo="2" aria-label="Perguntas e confirmação">
-              <button type="button" class="ag-voltar-link" onclick="irParaPasso(1)">← Trocar o dia</button>
+              <button type="button" class="ag-voltar-link" onclick="irParaPasso(1)"><svg class="ico" aria-hidden="true"><use href="#ico-seta-esquerda"></use></svg> Trocar o dia</button>
               <h2 class="ag-section-title">Confirme sua leitura</h2>
               <p class="ag-section-sub" id="secao2-sub">Escreva suas perguntas com calma — são elas que guiam a leitura.</p>
               <div class="ag-resumo" role="region" aria-label="Resumo da leitura">
@@ -623,7 +623,7 @@
                   <!-- gerado dinamicamente por abrirModal -->
                 </div>
                 <button type="submit" class="ag-btn ag-btn-primary" id="btn-pagar">
-                  Continuar →
+                  Continuar <svg class="ico" aria-hidden="true"><use href="#ico-seta-direita"></use></svg>
                 </button>
               </form>
             </section>
@@ -641,7 +641,7 @@
                   <span>Li e concordo com os <button type="button" class="termos-link" data-cs-termos>Termos de Uso e a Política de Privacidade</button></span>
                 </label>
                 <button class="ag-btn ag-btn-primary" id="btn-ir-pagar" onclick="irParaPagamentoCarrinho()" style="width:100%;display:none;">
-                  Ir para o pagamento →
+                  Ir para o pagamento <svg class="ico" aria-hidden="true"><use href="#ico-seta-direita"></use></svg>
                 </button>
                 <button class="ag-btn ag-btn-ghost" id="btn-add-leitura" onclick="adicionarOutraLeitura()" style="width:100%;">
                   + Quero adicionar outra leitura
@@ -668,7 +668,7 @@
 
             <!-- Fluxo normal de pagamento -->
             <div id="pag-fluxo">
-              <button type="button" class="ag-voltar-link" onclick="_mostrarTela(1)">← Voltar ao pedido</button>
+              <button type="button" class="ag-voltar-link" onclick="_mostrarTela(1)"><svg class="ico" aria-hidden="true"><use href="#ico-seta-esquerda"></use></svg> Voltar ao pedido</button>
               <h2 class="ag-section-title">Pagamento</h2>
               <p class="ag-section-sub">Falta só este passo. Escolha como pagar:</p>
 
@@ -682,14 +682,14 @@
               <div id="pag-metodos">
                 <button type="button" class="pag-metodo-btn" id="pag-btn-pix" onclick="pagarCom('pix')">
                   <span class="pag-metodo-txt"><strong>Pagar com PIX</strong><small>aprovação em poucos segundos</small></span>
-                  <span class="pag-metodo-seta" aria-hidden="true">→</span>
+                  <span class="pag-metodo-seta" aria-hidden="true"><svg class="ico" aria-hidden="true"><use href="#ico-seta-direita"></use></svg></span>
                 </button>
                 <button type="button" class="pag-metodo-btn pag-metodo-btn--outline" id="pag-btn-cartao" onclick="pagarCom('cartao')">
                   <span class="pag-metodo-txt"><strong>Pagar com cartão de crédito</strong><small>à vista ou parcelado</small></span>
-                  <span class="pag-metodo-seta" aria-hidden="true">→</span>
+                  <span class="pag-metodo-seta" aria-hidden="true"><svg class="ico" aria-hidden="true"><use href="#ico-seta-direita"></use></svg></span>
                 </button>
                 <div class="ag-alert ag-alert-error" id="pag-erro-box" hidden></div>
-                <button type="button" class="pag-wise-toggle" id="pag-wise-toggle" aria-expanded="false" aria-controls="pag-wise">🌍 Estou fora do Brasil</button>
+                <button type="button" class="pag-wise-toggle" id="pag-wise-toggle" aria-expanded="false" aria-controls="pag-wise"><svg class="ico" aria-hidden="true"><use href="#ico-globo"></use></svg> Estou fora do Brasil</button>
                 <div id="pag-wise" class="pag-wise" hidden>
                   <p>De fora do Brasil, aceitamos transferência pela <strong>Wise</strong>. É assim:</p>
                   <ol class="pag-instrucoes">
@@ -709,7 +709,7 @@
                 <h3 id="pag-espera-titulo">Seu pagamento abriu em outra aba</h3>
                 <p id="pag-espera-txt">Termine por lá, do jeito que preferir. Assim que o pagamento cair, esta tela confirma sozinha.</p>
                 <a id="pag-reabrir" class="ag-btn ag-btn-primary" href="#" target="_blank" rel="noopener noreferrer">Abrir pagamento de novo</a>
-                <button type="button" class="ag-btn ag-btn-ghost" onclick="_pagVoltarMetodos()">← Escolher outra forma de pagar</button>
+                <button type="button" class="ag-btn ag-btn-ghost" onclick="_pagVoltarMetodos()"><svg class="ico" aria-hidden="true"><use href="#ico-seta-esquerda"></use></svg> Escolher outra forma de pagar</button>
                 <button type="button" class="pag-ajuda-link" onclick="pagAjudaWhatsApp()">Precisa de ajuda? Fale com a gente no WhatsApp</button>
               </div>
             </div>
@@ -725,7 +725,7 @@
        ============================================================ -->
   <div id="termosModalOverlay" class="termos-modal-overlay" hidden>
     <div class="termos-modal" role="dialog" aria-modal="true" aria-labelledby="termosModalTitulo">
-      <button type="button" class="termos-modal-fechar" id="termosModalFechar" aria-label="Fechar">✕</button>
+      <button type="button" class="termos-modal-fechar" id="termosModalFechar" aria-label="Fechar"><svg class="ico" aria-hidden="true"><use href="#ico-fechar"></use></svg></button>
       <h2 class="termos-modal-titulo" id="termosModalTitulo">Termos de Uso e Política de Privacidade</h2>
       <div class="termos-modal-corpo" id="termosModalCorpo">
         <!-- Ao alterar este texto, incremente TERMOS_VERSAO em

@@ -23,6 +23,14 @@
    O ícone herda cor e tamanho de onde está: currentColor + 1em.  */
 .ico-sprite { display: none; }
 
+/* Dois ícones não cabem no sprite porque nascem de ::before —
+   entram como máscara e o `background` é quem dá a cor.
+   Traço mais grosso: em 13-16px o 1.7 do sprite sumiria. */
+:root {
+  --ico-check: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2.3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4.4 12.6C6.4 14 8.1 15.9 9.5 18.4 12.2 12.4 15.6 7.6 19.8 4.9'/%3E%3C/svg%3E");
+  --ico-ornamento: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2.1' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4.6 20.6C8.4 18.8 10.8 16.2 11.9 12.8'/%3E%3Cpath d='M11.4 13.8C13.8 14.4 16 13.8 17.8 12 19.8 10 20.6 7 20 3.4 16.4 3.6 13.6 4.8 11.8 6.8 10.1 8.7 9.7 11.2 11.4 13.8Z'/%3E%3C/svg%3E");
+}
+
 .ico {
   width: 1em;
   height: 1em;
@@ -32,6 +40,12 @@
 }
 /* ícone sozinho dentro de um botão respira um tico mais */
 .ico--maior { width: 1.15em; height: 1.15em; }
+
+/* Botões redondos de fechar: o texto deles é minúsculo (13-16px) só
+   porque o ✕ antigo era uma letra. O traço precisa de corpo próprio. */
+.seletor-close .ico,
+.inapp-close .ico,
+.termos-modal-fechar .ico { width: 17px; height: 17px; }
 
 /* ---- Reset base ---- */
 *, *::before, *::after { box-sizing: border-box; }
@@ -288,6 +302,9 @@ textarea { resize: vertical; min-height: 96px; }
 
 /* ---- Mensagem de sucesso/erro ---- */
 .ag-alert {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
   border-radius: 14px 6px 14px 6px;
   padding: 14px 18px;
   margin-bottom: 16px;
@@ -295,6 +312,7 @@ textarea { resize: vertical; min-height: 96px; }
   font-weight: 600;
   line-height: 1.5;
 }
+.ag-alert-ico { width: 1.15em; height: 1.15em; margin-top: .18em; }
 .ag-alert-success { background: #DDE5CC; color: #2A4A31; border: 1px solid #93AC8F; }
 .ag-alert-error   { background: #F6E3D9; color: #7A3319; border: 1px solid #D9A88F; }
 .ag-alert-info    { background: #EAE0BE; color: #6B5526; border: 1px solid #D2BA7C; }
@@ -613,9 +631,15 @@ textarea { resize: vertical; min-height: 96px; }
   box-shadow: 0 0 0 3px rgba(168, 196, 158, 0.4);
 }
 .seletor-tier-opt.selected .tier-label::before {
-  content: "✓ ";
-  color: #2F5C41;
-  font-weight: 800;
+  content: "";
+  display: inline-block;
+  width: 13px;
+  height: 13px;
+  margin-right: 5px;
+  vertical-align: -0.08em;
+  background: #2F5C41;
+  -webkit-mask: var(--ico-check) center / contain no-repeat;
+          mask: var(--ico-check) center / contain no-repeat;
 }
 .tier-label {
   font-weight: 600;
