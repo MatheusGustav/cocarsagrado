@@ -4757,6 +4757,8 @@ body.drawer-aberto { overflow: hidden; }
 .adm-toast { border-radius: 16px 7px 16px 7px; }
 .vagas-toast { border-radius: 16px 7px 16px 7px; }
 .adm-toast-ico, .vagas-toast-ico { width: 1.15em; height: 1.15em; }
+/* a setinha de abrir/fechar detalhes tinha font-size 1.1rem no inline style */
+.adm-chevron { display: inline-flex; font-size: 1.1rem; }
 
 /* --- Semana strip: chips de papel --- */
 .adm-semana-chip { border-radius: 12px 5px 12px 5px; }

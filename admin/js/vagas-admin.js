@@ -232,7 +232,7 @@ function verAgendamentosDoDia(dataIso, prof) {
 // Salvar (override por data específica)
 // ============================================================
 async function salvarDiaData(str, btn) {
-  if (btn) { btn.disabled = true; btn.textContent = 'Salvando...'; }
+  if (btn) { btn.disabled = true; _admBtnEstado(btn, 'salvando'); }
 
   const registros = [];
   for (const prof of _profsVagas()) {

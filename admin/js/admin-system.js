@@ -1194,9 +1194,10 @@ async function exportarContatos() {
 // Botão que pisca um estado ("Salvo", "Erro") e volta ao normal.
 // Ícone + texto ficam aqui para nenhum lugar reconstruir o rótulo na mão.
 const _ESTADO_BTN = {
-  salvar: ['guardar', 'Salvar'],
-  salvo:  ['check',   'Salvo'],
-  erro:   ['alerta',  'Erro'],
+  salvar:   ['guardar',   'Salvar'],
+  salvando: ['ampulheta', 'Salvando…'],
+  salvo:    ['check',     'Salvo'],
+  erro:     ['alerta',    'Erro'],
 };
 function _admBtnEstado(btn, estado) {
   if (!btn) return;
