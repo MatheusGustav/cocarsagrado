@@ -57,6 +57,31 @@ function abrirModal(tipo) {
     }
   }
 
+  // Campo "pessoas envolvidas" (fixo no HTML, fora do f-obs-group que é
+  // redesenhado). Leitura COM perguntas: quem faz parte da situação.
+  // Leitura SEM perguntas (ex.: confirmação de orixás): é pra outra pessoa?
+  const pessoasGroup = document.getElementById('f-pessoas-group');
+  if (pessoasGroup) {
+    const temPerguntas = !!tipo && (_ehNaipe(tipo) || (tipo.requerPergunta && _numeroDePerguntas(tipo) > 0));
+    pessoasGroup.style.display = tipo ? '' : 'none';
+    const lbl  = document.getElementById('f-pessoas-label');
+    const hint = document.getElementById('f-pessoas-hint');
+    const ta   = document.getElementById('f-pessoas');
+    if (temPerguntas) {
+      // "Diga de quem é cada uma" só quando pode haver mais de uma pergunta
+      // (naipe adiciona na hora; tier fixo de 1 pergunta não precisa disso).
+      const multi = _ehNaipe(tipo) || _numeroDePerguntas(tipo) > 1;
+      if (lbl)  lbl.textContent  = 'Quem está envolvido na situação? (não é obrigatório)';
+      if (hint) hint.textContent = 'Escreva o nome completo e a data de nascimento de quem faz parte da situação. Não sabe tudo? Tranquilo — ponha só o que souber, mesmo que seja só o primeiro nome.'
+        + (multi ? ' Se tiver mais de uma pergunta, diga de quem é cada uma.' : '');
+      if (ta)   ta.placeholder   = 'Ex.: Maria Souza — 12/03/1990\nJoão (não sei a data de nascimento)';
+    } else {
+      if (lbl)  lbl.textContent  = 'Está pedindo essa leitura para outra pessoa? (não é obrigatório)';
+      if (hint) hint.textContent = 'Se for, escreva aqui o nome completo e a data de nascimento dela — o que você souber já ajuda. Se a leitura é para você, deixe em branco.';
+      if (ta)   ta.placeholder   = 'Ex.: Maria Souza — 12/03/1990';
+    }
+  }
+
   // Ajusta o subtítulo da tela de confirmação ao tipo (com/sem perguntas)
   const sub2 = document.getElementById('secao2-sub');
   if (sub2) {
