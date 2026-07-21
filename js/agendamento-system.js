@@ -1088,7 +1088,54 @@ function _prepararDadosPessoais() {
   };
 }
 
+// ============================================================
+// Trava de menor de idade (decisão 2026-07-21)
+// ============================================================
+// Menor de 18 não segue pro pagamento: o formulário escurece e o caminho
+// vira o zap do terapeuta da leitura, onde o responsável manda a autorização.
+// O atendimento do menor autorizado é combinado manualmente por lá.
+function _calcularIdade(iso) {
+  const [y, m, d] = iso.split('-').map(Number);
+  const hoje = new Date();
+  let idade = hoje.getFullYear() - y;
+  const fezAniversario = (hoje.getMonth() + 1 > m) ||
+    (hoje.getMonth() + 1 === m && hoje.getDate() >= d);
+  if (!fezAniversario) idade--;
+  return idade;
+}
+
+function _ehMenorDeIdade() {
+  const iso = dataBrParaISO(document.getElementById('f-nasc')?.value || '');
+  return iso ? _calcularIdade(iso) < 18 : false;
+}
+
+function _atualizarTravaMenor() {
+  const form  = document.getElementById('form-dados-pessoais');
+  const aviso = document.getElementById('f-nasc-menor');
+  if (!form || !aviso) return;
+  const menor = _ehMenorDeIdade();
+  aviso.hidden = !menor;
+  form.classList.toggle('menor-trava', menor);
+  // pointer-events não segura Tab+Enter — o botão precisa de disabled de verdade
+  const btn = form.querySelector('.ag-btn-primary');
+  if (btn) btn.disabled = menor;
+  if (menor) {
+    const ter    = Estado.tipoSelecionado?.terapeuta;
+    const numero = WHATSAPP_TERAPEUTA[ter] || WHATSAPP_TERAPEUTA.camila;
+    const leitura = Estado.tipoSelecionado?.nome;
+    const msg = `Olá! Quero agendar${leitura ? ` a leitura "${leitura}"` : ' uma leitura'} no Cocar Sagrado, mas tenho menos de 18 anos. Como faço para meu responsável enviar a autorização?`;
+    const link = document.getElementById('f-nasc-menor-zap');
+    if (link) link.href = `https://wa.me/${numero}?text=${encodeURIComponent(msg)}`;
+  }
+}
+
 function validarDadosPessoais() {
+  // Menor: nem valida o resto — devolve o olhar pro aviso.
+  if (_ehMenorDeIdade()) {
+    _atualizarTravaMenor();
+    document.getElementById('f-nasc-menor')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    return false;
+  }
   let ok = true;
   const campos = [
     { id: 'f-nome', minLen: 3, msg: 'Nome deve ter pelo menos 3 caracteres.' },
@@ -1767,13 +1814,18 @@ document.addEventListener('DOMContentLoaded', () => {
   if (fone) aplicarMascaraFone(fone);
 
   const nasc = document.getElementById('f-nasc');
-  if (nasc) aplicarMascaraData(nasc);
+  if (nasc) {
+    aplicarMascaraData(nasc);
+    // Depois da máscara: quando este listener roda, o valor já está DD/MM/AAAA.
+    nasc.addEventListener('input', _atualizarTravaMenor);
+  }
 
   // Autofill de "Seus dados" pra todo mundo (guest incluso — decisão
   // 2026-07-19). O drawer "Minha conta" (que re-espelhava o perfil no
   // login) foi removido — cliente não loga mais; só o que está no
   // aparelho conta.
   restaurarDadosPessoaisLocal();
+  _atualizarTravaMenor(); // autofill preenche sem disparar 'input' — menor lembrado não passa reto
 
   // "Trocar" reabre o campo de e-mail escondido (guest lembrado).
   document.getElementById('f-email-trocar')?.addEventListener('click', () => {

@@ -17,6 +17,9 @@ function abrirModal(tipo) {
   if (tipo) Estado.tipoSelecionado = tipo;
   const overlay = document.getElementById('modalAgendamento');
   if (!overlay) return;
+  // Data lembrada de menor + troca de leitura: re-avalia a trava e refaz o
+  // link do zap pro terapeuta DESTA leitura.
+  if (typeof _atualizarTravaMenor === 'function') _atualizarTravaMenor();
   // Salva foco pra restaurar depois
   if (document.activeElement && document.activeElement !== document.body) {
     document.activeElement.setAttribute('data-last-focus', '');

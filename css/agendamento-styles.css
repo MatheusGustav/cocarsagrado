@@ -172,6 +172,33 @@ input.error, textarea.error, select.error { border-color: var(--danger); }
 
 .ag-error-msg { font-size: .82rem; color: var(--danger); font-weight: 600; }
 
+/* ---- Trava de menor de idade ---- */
+.ag-menor-aviso {
+  background: rgba(234, 224, 190, .45); /* --color-gold-mist suave */
+  border-left: 3px solid var(--color-gold, #A9873B);
+  border-radius: 0 10px 10px 0;
+  padding: 14px 16px;
+  font-size: .9rem;
+  color: var(--color-text-body, #41513F);
+  line-height: 1.55;
+  animation: menorAvisoEntra .25s ease-out;
+}
+.ag-menor-aviso p { margin: 0 0 8px; }
+.ag-menor-titulo { font-weight: 700; color: var(--color-text-primary, #182A1E); }
+.ag-menor-aviso .ag-btn-whatsapp { margin-top: 6px; display: inline-flex; }
+@keyframes menorAvisoEntra {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: none; }
+}
+/* Menor detectado: o que vem depois do aviso escurece e não responde —
+   o único caminho vivo é o botão do zap. */
+.ag-form.menor-trava .ag-menor-aviso ~ * {
+  opacity: .35;
+  pointer-events: none;
+  filter: grayscale(.4);
+  transition: opacity .25s;
+}
+
 .ag-phone-row { display: flex; gap: 8px; align-items: stretch; }
 .ag-ddi-select { width: 108px; min-width: 108px; max-width: 120px; flex: 0 0 108px; padding-right: 8px; }
 .ag-phone-row input { flex: 1; min-width: 0; }
