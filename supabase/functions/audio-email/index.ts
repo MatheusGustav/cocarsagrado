@@ -19,7 +19,9 @@
 // - Idempotência: enviado_email_em marca o envio; a fila só devolve NULL.
 // - Falha num envio não derruba os demais; falhas avisam no Telegram.
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-import { encodeBase64 } from 'https://deno.land/std@0.224.0/encoding/base64.ts'
+// Buffer nativo, não o encodeBase64 da std: o loop de += da std cria
+// milhões de cons-strings e estoura os 256MB do worker já com anexo de 8MB.
+import { Buffer } from 'node:buffer'
 
 const CRON_SECRET    = Deno.env.get('CRON_SECRET')     || ''
 const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY')  || ''
@@ -216,7 +218,7 @@ Deno.serve(async (req) => {
         if (dlErr || !blob) throw new Error(`download: ${dlErr?.message || 'vazio'}`)
         const anexo = {
           filename: `sua-leitura-${dataBR(data).replaceAll('/', '-')}.${EXT[mime] || 'webm'}`,
-          content: encodeBase64(new Uint8Array(await blob.arrayBuffer())),
+          content: Buffer.from(await blob.arrayBuffer()).toString('base64'),
           content_type: mime,
         }
         await enviarResend(email, subject, emailAnexo(nome, tipo, data), anexo)
