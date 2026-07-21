@@ -3903,21 +3903,6 @@ body.drawer-aberto { overflow: hidden; }
 }
 .aud-escolha-topo .aud-passo-titulo { margin-bottom: 0; }
 
-/* Link discreto pra gravar sem escolher cliente (share avulso) */
-.aud-escolha-solto {
-  display: block;
-  margin: 14px auto 0;
-  background: none;
-  border: none;
-  padding: 6px 10px;
-  color: var(--text-muted, #93AC8F);
-  font-size: .85rem;
-  cursor: pointer;
-  text-decoration: underline dotted;
-  text-underline-offset: 4px;
-}
-.aud-escolha-solto:hover { color: #D2BA7C; }
-
 /* Chip no topo do palco: pra quem esta gravação vai */
 .aud-chip {
   display: flex;

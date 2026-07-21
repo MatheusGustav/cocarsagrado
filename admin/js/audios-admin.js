@@ -1,11 +1,12 @@
 /* ============================================================
    COCAR SAGRADO — Admin: Áudios das leituras
-   Fluxo em linha reta, cliente primeiro:
-   1. "Pra quem é esta leitura?" — escolhe o agendamento pago
-      (ou "só gravar", sem cliente, pra compartilhar avulso).
-   2. Orbe grava (toque grava, toque para) com o chip "Gravando
-      para Fulana" no topo; prévia = barrinhas + dock com player.
-   3. "Salvar para Fulana" sobe pro bucket privado "audios" +
+   Fluxo em linha reta, gravação primeiro:
+   1. Orbe grava (toque grava, toque para) direto na entrada;
+      prévia = barrinhas + dock com player. O chip mostra o
+      destino (ou "sem cliente") e deixa escolher/trocar antes.
+   2. "Salvar para um cliente…" abre a lista de agendamentos
+      pagos; escolher com prévia pendente já salva na hora.
+   3. O salvar sobe pro bucket privado "audios" +
       audios_cliente e o dock vira o painel de entrega: enviar
       e-mail agora (edge audio-email; o cron de 10 em 10 min só
       re-tenta liberados que falharam), compartilhar, nova gravação.
@@ -13,7 +14,8 @@
    ============================================================ */
 
 let _audAgendamentos = [];   // cache da busca de agendamentos
-let _audClienteAlvo  = null; // agendamento escolhido no passo 1 (null = gravação solta)
+let _audClienteAlvo  = null; // agendamento escolhido (null = gravação sem cliente ainda)
+let _audEscolhaPraSalvar = false; // lista aberta pelo "Salvar…": escolher já salva
 let _audVerTodos     = false; // false = só pago/confirmado (a atender)
 let _audContagem     = {};   // agendamento_id -> nº de áudios salvos
 let _audTodos        = [];   // cache da aba "Áudios salvos"
@@ -228,7 +230,7 @@ async function inicializarAudios() {
       <div class="aud-passo" id="aud-tela-escolha">
         <div class="aud-escolha-topo">
           <div class="aud-passo-titulo">Pra quem é esta leitura?</div>
-          <button type="button" class="ag-btn ag-btn-outline ag-btn-sm" id="aud-btn-voltar" style="display:none;" onclick="_audVoltarGravador()"><svg class="ico" aria-hidden="true"><use href="#ico-voltar"></use></svg> Voltar</button>
+          <button type="button" class="ag-btn ag-btn-outline ag-btn-sm" id="aud-btn-voltar" onclick="_audVoltarGravador()"><svg class="ico" aria-hidden="true"><use href="#ico-voltar"></use></svg> Voltar</button>
         </div>
         <div class="aud-filtros">
           <button type="button" class="aud-filtro aud-filtro--on" id="aud-filtro-pendentes" onclick="_audFiltroStatus(false)">A atender</button>
@@ -239,7 +241,6 @@ async function inicializarAudios() {
         <div id="aud-ag-lista" class="aud-ag-lista">
           <div class="ag-loading"><div class="ag-spinner"></div> Carregando…</div>
         </div>
-        <button type="button" class="aud-escolha-solto" onclick="_audGravarSolto()"><svg class="ico" aria-hidden="true"><use href="#ico-microfone"></use></svg> Só gravar — escolho o cliente depois</button>
       </div>
 
       <div class="aud-passo" id="aud-tela-gravar" style="display:none;">
@@ -290,17 +291,16 @@ function _audTrocarAba(aba) {
 }
 
 // ============================================================
-// Passo 1 — escolher pra quem é a leitura (ANTES de gravar).
-// Também serve de "trocar cliente" e de escolha tardia quando a
-// gravação nasceu solta.
+// Lista de clientes — abre pelo "Salvar para um cliente…" (aí
+// escolher já salva) ou pelo chip escolher/trocar antes de gravar.
 // ============================================================
-function _audAbrirEscolha() {
+function _audAbrirEscolha(praSalvar) {
+  _audEscolhaPraSalvar = !!praSalvar && !!_audBlob;
   document.getElementById('aud-tela-gravar').style.display = 'none';
   const tela = document.getElementById('aud-tela-escolha');
   tela.style.display = '';
-  // "Voltar" só existe quando há um gravador vivo atrás (trocar/escolha tardia)
-  const voltar = document.getElementById('aud-btn-voltar');
-  if (voltar) voltar.style.display = (_audClienteAlvo || _audBlob) ? '' : 'none';
+  const titulo = tela.querySelector('.aud-passo-titulo');
+  if (titulo) titulo.textContent = _audEscolhaPraSalvar ? 'Salvar para quem?' : 'Pra quem é esta leitura?';
   const busca = document.getElementById('aud-busca');
   if (busca) busca.value = '';
   _audCarregarAgendamentos();
@@ -308,13 +308,11 @@ function _audAbrirEscolha() {
 }
 
 function _audEscolherCliente(ag) {
+  const salvarJa = _audEscolhaPraSalvar && _audBlob;
+  _audEscolhaPraSalvar = false;
   _audClienteAlvo = ag;
   _audMostrarGravar();
-}
-
-function _audGravarSolto() {
-  _audClienteAlvo = null;
-  _audMostrarGravar();
+  if (salvarJa) _audSalvar(); // veio do "Salvar…": escolher conclui o salvar
 }
 
 function _audVoltarGravador() {
@@ -337,8 +335,8 @@ function _audChipRender() {
   const ag = _audClienteAlvo;
   if (!ag) {
     chip.innerHTML = `
-      <span class="aud-chip-meta">Gravação solta — sem cliente</span>
-      <button type="button" class="aud-chip-trocar" onclick="_audIrTrocarCliente()">escolher cliente</button>`;
+      <span class="aud-chip-meta">Sem cliente — dá pra escolher ao salvar</span>
+      <button type="button" class="aud-chip-trocar" onclick="_audIrTrocarCliente()">escolher agora</button>`;
     return;
   }
   chip.innerHTML = `
@@ -579,10 +577,10 @@ function _audResetGravador() {
   _audBotoes(_audOrbeHtml(false));
   _audAtualizarBeforeUnload();
 
-  // Tela conforme o contexto: com cliente escolhido volta pro orbe
-  // (regravar/descartar); sem cliente, recomeça do "pra quem é?"
-  if (_audClienteAlvo) _audMostrarGravar();
-  else _audAbrirEscolha();
+  // Gravação primeiro: a entrada é sempre o orbe; cliente se escolhe
+  // no chip ou na hora de salvar
+  _audEscolhaPraSalvar = false;
+  _audMostrarGravar();
 }
 
 function _audDescartarGravacao() {
@@ -683,12 +681,12 @@ function _audPararGravacao() {
 }
 
 // Ações do dock da prévia. O salvar é o herói e diz o destino no
-// rótulo; gravação solta oferece escolher o cliente na hora.
+// rótulo; sem cliente, abre a lista — e escolher já salva.
 function _audDockAcoes() {
   const alvo = _audClienteAlvo;
   const salvar = alvo
     ? `<button type="button" class="aud-dock-btn aud-dock-btn--enviar" id="aud-btn-salvar" onclick="_audSalvar()"><svg class="ico" aria-hidden="true"><use href="#ico-guardar"></use></svg> Salvar para ${_audEsc(_audPrimeiroNome(alvo.cliente_nome))}</button>`
-    : `<button type="button" class="aud-dock-btn aud-dock-btn--enviar" id="aud-btn-salvar" onclick="_audAbrirEscolha()"><svg class="ico" aria-hidden="true"><use href="#ico-guardar"></use></svg> Salvar para um cliente…</button>`;
+    : `<button type="button" class="aud-dock-btn aud-dock-btn--enviar" id="aud-btn-salvar" onclick="_audAbrirEscolha(true)"><svg class="ico" aria-hidden="true"><use href="#ico-guardar"></use></svg> Salvar para um cliente…</button>`;
   return `${salvar}
         <button type="button" class="aud-dock-btn" onclick="_audCompartilharPreview()"><svg class="ico" aria-hidden="true"><use href="#ico-compartilhar"></use></svg> Compartilhar</button>
         <button type="button" class="aud-dock-btn" onclick="_audResetGravador(); _audComecarGravacao()"><svg class="ico" aria-hidden="true"><use href="#ico-atualizar"></use></svg> Regravar</button>
@@ -1056,7 +1054,7 @@ function _audMostrarPosSalvar(audioId, ag, blob, mime) {
       _audNomeSugerido(ag.cliente_nome, ag.tipos_leitura?.nome, ag.data_agendamento)));
 
   document.getElementById('aud-pos-nova').addEventListener('click', () => {
-    _audClienteAlvo = null;   // próxima leitura recomeça do "pra quem é?"
+    _audClienteAlvo = null;   // próxima leitura recomeça no orbe, sem cliente
     _audResetGravador();
   });
 }
@@ -1255,7 +1253,6 @@ window._audPararGravacao = _audPararGravacao;
 window._audResetGravador = _audResetGravador;
 window._audAbrirEscolha = _audAbrirEscolha;
 window._audVoltarGravador = _audVoltarGravador;
-window._audGravarSolto = _audGravarSolto;
 window._audIrTrocarCliente = _audIrTrocarCliente;
 window._audSalvar = _audSalvar;
 window._audTrocarAba = _audTrocarAba;
