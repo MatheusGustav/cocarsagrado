@@ -552,6 +552,15 @@
                     <small class="ag-field-hint">Usamos na hora de abrir a sua leitura.</small>
                   </div>
                 </div>
+                <!-- Trava de menor: aparece assim que a data completa indica <18.
+                     O resto do formulário escurece e o Continuar desliga — o
+                     caminho vira o zap do terapeuta da leitura. -->
+                <div class="ag-menor-aviso" id="f-nasc-menor" role="alert" hidden>
+                  <p class="ag-menor-titulo">Você tem menos de 18 anos, então falta um passinho antes de agendar:</p>
+                  <p>a gente precisa da <strong>autorização do seu pai, mãe ou responsável</strong>. Toque no botão verde — o WhatsApp já abre com a mensagem pronta, é só enviar. Do outro lado, te explicamos direitinho como o seu responsável autoriza.</p>
+                  <a id="f-nasc-menor-zap" class="ag-btn ag-btn-whatsapp" target="_blank" rel="noopener" href="#">
+                    <svg class="ico" aria-hidden="true"><use href="#ico-balao"></use></svg> Pedir autorização no WhatsApp</a>
+                </div>
                 <div class="ag-form-group">
                   <label for="f-fone">Número (WhatsApp) *</label>
                   <div class="ag-phone-row">
