@@ -844,6 +844,13 @@ function adicionarAoCarrinho() {
   }
 
   let obs = _coletarObservacoes(tipo);
+  // Pessoas envolvidas (campo opcional acima das perguntas): entra no topo
+  // das observações — a Camila vê tudo junto no painel. Leitura sem
+  // perguntas (obs vazia) vira "Leitura para: fulano".
+  const pessoas = document.getElementById('f-pessoas')?.value?.trim();
+  if (pessoas) {
+    obs = obs ? `Pessoas envolvidas:\n${pessoas}\n\n${obs}` : `Leitura para: ${pessoas}`;
+  }
   // Naipes: registra o naipe (tema) escolhido no topo das observações.
   if (_ehNaipe(tipo) && tipo.naipeLabel) {
     const cabecalho = `Naipe: ${tipo.naipeLabel} — ${tipo.naipeDesc}`;
@@ -876,6 +883,8 @@ function adicionarAoCarrinho() {
     const textareas = obsGroup.querySelectorAll('textarea');
     textareas.forEach(ta => ta.value = '');
   }
+  const pessoasEl = document.getElementById('f-pessoas');
+  if (pessoasEl) pessoasEl.value = '';
 
   _renderizarCarrinho();
   irParaPasso(3);
