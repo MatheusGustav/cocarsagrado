@@ -4144,10 +4144,12 @@ body.drawer-aberto { overflow: hidden; }
   0%, 100% { transform: scaleY(1); }
   50%      { transform: scaleY(1.22); }
 }
-.aud-visu-barra--ambar   { --cor: #F2B368; --brilho: rgba(242, 179, 104, 0.5); }
-.aud-visu-barra--coral   { --cor: #F08A5D; --brilho: rgba(240, 138, 93, 0.5); }
-.aud-visu-barra--rosa    { --cor: #E96A8D; --brilho: rgba(233, 106, 141, 0.5); }
-.aud-visu-barra--lavanda { --cor: #B58CD9; --brilho: rgba(181, 140, 217, 0.5); }
+/* Os 4 tons da receita do giz do orbe: cera acumulada nas pontas,
+   papel aparecendo no centro */
+.aud-visu-barra--cera  { --cor: #755C27; --brilho: rgba(117, 92, 39, 0.5); }
+.aud-visu-barra--ouro  { --cor: #9A7B31; --brilho: rgba(154, 123, 49, 0.5); }
+.aud-visu-barra--giz   { --cor: #D4AF4E; --brilho: rgba(212, 175, 78, 0.5); }
+.aud-visu-barra--palha { --cor: #F0E0AC; --brilho: rgba(240, 224, 172, 0.5); }
 
 /* ============================================================
    Painel de controle da gravação — dock no fim da página.

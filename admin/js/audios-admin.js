@@ -778,7 +778,7 @@ function _audMostrarPreview() {
 // (espelhado). Parado, repousam num arco e respiram. Tocar no
 // visualizador dá play/pause.
 // ============================================================
-const _AUD_VISU_CORES = ['ambar', 'coral', 'rosa', 'lavanda', 'rosa', 'coral', 'ambar'];
+const _AUD_VISU_CORES = ['cera', 'ouro', 'giz', 'palha', 'giz', 'ouro', 'cera'];
 const _AUD_VISU_REST  = [20, 34, 48, 58, 48, 34, 20]; // alturas de repouso (px)
 
 function _audVisuMontar() {
