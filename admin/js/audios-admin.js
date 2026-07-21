@@ -84,13 +84,16 @@ function _audNomeSugerido(nomeCliente, tipoLeitura, dataAgendamentoISO) {
 }
 
 function _audExtDoMime(mime) {
-  return String(mime || '').includes('mp4') ? 'm4a' : 'webm';
+  const m = String(mime || '');
+  return m.includes('mpeg') ? 'mp3' : m.includes('mp4') ? 'm4a' : 'webm';
 }
 
-// Conversão pra mp3 antes de compartilhar: o WhatsApp só mostra o áudio
-// como bolha clicável se o codec for um que ele decodifica (mp3/AAC).
-// Chrome grava opus (mesmo dentro de mp4), que o WhatsApp rejeita como
-// "arquivo não suportado" — então todo share passa por mp3.
+// Conversão pra mp3: o WhatsApp só mostra o áudio como bolha clicável se
+// o codec for um que ele decodifica (mp3/AAC), e os navegadores gravam
+// opus (Chrome, mesmo dentro de mp4) ou AAC (só Safari). mp3 é o único
+// formato universal que dá pra gerar aqui — então tudo converge pra ele:
+// a conversão começa em segundo plano assim que para de gravar, e o
+// arquivo SALVO no bucket já é mp3 (e-mail e share saem prontos).
 const _audMp3Cache  = new WeakMap(); // blob original → Promise<blob mp3>
 const _audMp3Pronto = new WeakSet(); // blobs cuja conversão já terminou
 
@@ -595,9 +598,9 @@ async function _audComecarGravacao() {
     return;
   }
 
-  // m4a (audio/mp4) primeiro: toca nativo em Android E iPhone — essencial
-  // agora que o áudio vai anexado no e-mail. webm é fallback (Chrome antigo/
-  // Firefox, que não gravam mp4); nesses o anexo pode não tocar em iOS.
+  // A gravação é só matéria-prima: o que vai pro bucket é o mp3 convertido.
+  // mp4/webm aqui é o que o navegador conseguir gravar; a ordem só importa
+  // no fallback raro de a conversão falhar (mp4 toca nativo em iPhone).
   const MIMES = ['audio/mp4', 'audio/webm;codecs=opus', 'audio/webm'];
   _audMime = MIMES.find(m => MediaRecorder.isTypeSupported(m)) || '';
   if (!_audMime) {
@@ -649,8 +652,8 @@ async function _audComecarGravacao() {
     _audWakeLockLiberar();
     _audBlob = new Blob(_audChunks, { type: _audMime.split(';')[0] });
     _audMostrarPreview();
-    // Já converte pra mp3 em segundo plano: quando tocar em Compartilhar
-    // (depois de ouvir a prévia), o arquivo estará pronto e o menu abre na hora
+    // Já converte pra mp3 em segundo plano: quando salvar ou compartilhar
+    // (depois de ouvir a prévia), o arquivo estará pronto e ninguém espera
     _audConverterParaMp3(_audBlob).catch(() => {});
   };
   _audRecorder.onerror = () => {
@@ -963,14 +966,24 @@ async function _audSalvar() {
   const btn = document.getElementById('aud-btn-salvar');
   if (btn) { btn.disabled = true; btn.innerHTML = '<svg class="ico" aria-hidden="true"><use href="#ico-ampulheta"></use></svg> Salvando…'; }
 
-  const contentType = _audMime.split(';')[0];
-  const ext  = contentType === 'audio/mp4' ? 'm4a' : 'webm';
+  // Sobe o mp3, não a gravação bruta: o arquivo salvo já serve pra e-mail
+  // e WhatsApp sem ninguém ver conversão. Ela roda desde que parou de
+  // gravar — aqui normalmente só pega o resultado pronto. Se tiver
+  // falhado, sobe o original mesmo (o share ainda tenta converter na hora).
+  let blobUp = _audBlob, contentType = _audMime.split(';')[0];
+  try {
+    blobUp = await _audConverterParaMp3(_audBlob);
+    contentType = 'audio/mpeg';
+  } catch (e) {
+    console.warn('Conversão mp3 falhou, salvando original:', e);
+  }
+  const ext  = _audExtDoMime(contentType);
   const path = `agendamento-${ag.id}/${Date.now()}-${crypto.randomUUID()}.${ext}`;
   const seg  = Math.max(1, Math.round(_audMs / 1000));
 
   const { error: upErr } = await supabase.storage
     .from('audios')
-    .upload(path, _audBlob, { contentType });
+    .upload(path, blobUp, { contentType });
 
   if (upErr) { _audSalvarFalhou('Falha no upload: ' + upErr.message); return; }
 
@@ -978,7 +991,7 @@ async function _audSalvar() {
     agendamento_id: ag.id,
     storage_path: path,
     duracao_segundos: seg,
-    tamanho_bytes: _audBlob.size,
+    tamanho_bytes: blobUp.size,
     mime: contentType,
   }).select('id').single();
 
@@ -990,7 +1003,7 @@ async function _audSalvar() {
 
   _audContagem[ag.id] = (_audContagem[ag.id] || 0) + 1;
   _audSalvando = false;
-  _audMostrarPosSalvar(novo.id, ag, _audBlob, contentType);
+  _audMostrarPosSalvar(novo.id, ag, blobUp, contentType);
 }
 
 function _audSalvarFalhou(msg) {
