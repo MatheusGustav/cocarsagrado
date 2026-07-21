@@ -549,18 +549,10 @@ function _audBotoes(html) {
 function _audOrbeHtml(gravando) {
   return `
     <div class="aud-orbe-jardim${gravando ? ' aud-orbe-jardim--gravando' : ''}">
-      <span class="aud-orbe-aura aud-orbe-aura--quente"></span>
-      <span class="aud-orbe-aura aud-orbe-aura--fria"></span>
-      <span class="aud-orbe-voz"></span>
       <button type="button" class="aud-orbe"
               onclick="${gravando ? '_audPararGravacao()' : '_audComecarGravacao()'}"
               title="${gravando ? 'Parar' : 'Gravar'}"
-              aria-label="${gravando ? 'Parar gravação' : 'Gravar'}">
-        <span class="aud-orbe-cor aud-orbe-cor--ambar"></span>
-        <span class="aud-orbe-cor aud-orbe-cor--coral"></span>
-        <span class="aud-orbe-cor aud-orbe-cor--rosa"></span>
-        <span class="aud-orbe-cor aud-orbe-cor--lavanda"></span>
-      </button>
+              aria-label="${gravando ? 'Parar gravação' : 'Gravar'}"></button>
     </div>`;
 }
 
