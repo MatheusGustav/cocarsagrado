@@ -1620,8 +1620,9 @@ async function renderizarCatalogoSite() {
   // Agrupa em cards (grupos de tiers + simples) preservando a ordem do admin.
   const itens = _agruparCatalogo(tipos);
 
-  // Bloca por terapeuta. A ordem dos blocos segue a 1ª aparição na lista já
-  // ordenada por `ordem` — ou seja, o admin controla tudo pela coluna ordem.
+  // Bloca por terapeuta. Dentro do bloco vale a coluna `ordem` do admin;
+  // a ordem DOS BLOCOS é sorteada 50/50 uma vez por sessão (abaixo), pra
+  // nenhum terapeuta ficar sempre com a vitrine de cima.
   const blocos = [];
   const idxBloco = {};
   for (const item of itens) {
@@ -1629,6 +1630,21 @@ async function renderizarCatalogoSite() {
     if (!(ter in idxBloco)) { idxBloco[ter] = blocos.length; blocos.push({ terapeuta: ter, itens: [] }); }
     blocos[idxBloco[ter]].itens.push(item);
   }
+
+  // Sorteio estável na sessão: recarregar a página não embaralha de novo.
+  let primeiro;
+  try {
+    primeiro = sessionStorage.getItem('cs_cat_primeiro');
+    if (!(primeiro in _TERAPEUTA_NOME)) {
+      primeiro = Math.random() < 0.5 ? 'camila' : 'matheus';
+      sessionStorage.setItem('cs_cat_primeiro', primeiro);
+    }
+  } catch (_) {
+    primeiro = Math.random() < 0.5 ? 'camila' : 'matheus';
+  }
+  // sort estável: empates mantêm a ordem do admin; bloco sem terapeuta ('—') vai pro fim.
+  const _rankBloco = t => t === primeiro ? 0 : (t in _TERAPEUTA_NOME ? 1 : 2);
+  blocos.sort((a, b) => _rankBloco(a.terapeuta) - _rankBloco(b.terapeuta));
 
   grid.innerHTML = blocos.map(b => {
     const nome   = _TERAPEUTA_NOME[b.terapeuta] || (b.terapeuta === '—' ? '' : b.terapeuta);
