@@ -80,6 +80,8 @@ function abrirModal(tipo) {
       if (hint) hint.textContent = 'Se for, escreva aqui o nome completo e a data de nascimento dela — o que você souber já ajuda. Se a leitura é para você, deixe em branco.';
       if (ta)   ta.placeholder   = 'Ex.: Maria Souza — 12/03/1990';
     }
+    // Leitura nova = escape de homônimo zerado; reavalia o que sobrou no campo
+    if (typeof _pessoasNomeReset === 'function') _pessoasNomeReset();
   }
 
   // Ajusta o subtítulo da tela de confirmação ao tipo (com/sem perguntas)

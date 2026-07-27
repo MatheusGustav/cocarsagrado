@@ -123,6 +123,151 @@ function _coletarObservacoes(tipo) {
   return partes.length ? partes.join('\n') : null;
 }
 
+// ---- "Pessoas envolvidas": detector de nome próprio repetido -----------
+// O cliente já se apresentou no passo 0; aqui entram só os TERCEIROS da
+// situação. Quem não lê o hint e repete o próprio nome vê o nome em
+// vermelho (espelho atrás do textarea) + aviso com "Tirar meu nome", e o
+// Continuar não passa enquanto o nome estiver lá. Escape para homônimo
+// real (pai/filho com o mesmo nome): "É outra pessoa com esse nome" —
+// morre sozinho quando o nome sai do campo.
+let _pessoasHomonimoOk = false;
+
+// Normaliza preservando os ÍNDICES UTF-16 (o espelho marca posições no
+// texto original): minúsculas + sem acento, caractere a caractere. Se a
+// normalização mudaria o comprimento (ligaturas etc.), mantém o original.
+function _norm1a1(s) {
+  let out = '';
+  for (const ch of s) {
+    let base = ch.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    if (base.length !== ch.length) base = ch;
+    out += base;
+  }
+  return out;
+}
+
+const _CONECTIVOS_NOME = ['de', 'da', 'do', 'das', 'dos', 'e'];
+
+function _tokensNome(nome) {
+  return _norm1a1(nome).split(/[^a-z0-9]+/)
+    .filter(w => w.length >= 2 && !_CONECTIVOS_NOME.includes(w));
+}
+
+// Faixas [início, fim) onde o nome do cliente aparece no texto. Exige 2
+// palavras consecutivas do nome (só "Maria" solta pode ser outra Maria);
+// nome de palavra única casa a palavra inteira.
+function _rangesNomeProprio(texto) {
+  const nome = (typeof Estado !== 'undefined' && Estado.dadosPessoais?.nome)
+    || document.getElementById('f-nome')?.value || '';
+  const toks = _tokensNome(nome);
+  if (!toks.length || !texto) return [];
+
+  const alvo = _norm1a1(texto);
+  // Entre duas partes do nome podem aparecer conectivos e iniciais/letras
+  // soltas ("Maria C. Souza", "José D'Ávila" digitado "jose d avila").
+  const SEP = `[^a-z0-9]+(?:(?:${_CONECTIVOS_NOME.join('|')}|[a-z0-9])[^a-z0-9]+)*`;
+  const padroes = toks.length === 1
+    ? [toks[0]]
+    : toks.slice(0, -1).map((w, i) => `${w}${SEP}${toks[i + 1]}`);
+
+  const ranges = [];
+  padroes.forEach(p => {
+    const re = new RegExp(`(^|[^a-z0-9])(${p})(?![a-z0-9])`, 'g');
+    let m;
+    while ((m = re.exec(alvo)) !== null) {
+      const ini = m.index + m[1].length;
+      ranges.push([ini, ini + m[2].length]);
+      re.lastIndex = ini + 1; // pares consecutivos podem se sobrepor
+    }
+  });
+
+  // Funde sobrepostos ("maria souza" + "souza silva" = uma marca só)
+  ranges.sort((a, b) => a[0] - b[0]);
+  const fusao = [];
+  ranges.forEach(r => {
+    const ult = fusao[fusao.length - 1];
+    if (ult && r[0] <= ult[1]) ult[1] = Math.max(ult[1], r[1]);
+    else fusao.push([r[0], r[1]]);
+  });
+  return fusao;
+}
+
+function _escHl(s) {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+// Reavalia o campo. Retorna true = nome do cliente presente e NÃO
+// liberado (bloqueia o Continuar).
+function _pessoasChecarNome() {
+  const ta     = document.getElementById('f-pessoas');
+  const wrap   = document.getElementById('f-pessoas-wrap');
+  const mirror = document.getElementById('f-pessoas-mirror');
+  const aviso  = document.getElementById('f-pessoas-aviso');
+  if (!ta || !wrap || !mirror || !aviso) return false;
+
+  const ranges = _rangesNomeProprio(ta.value);
+  if (!ranges.length) _pessoasHomonimoOk = false;
+  const ativo = ranges.length > 0 && !_pessoasHomonimoOk;
+
+  wrap.classList.toggle('ativo', ativo);
+  aviso.hidden = !ativo;
+  if (!ativo) {
+    ta.classList.remove('error');
+    mirror.innerHTML = '';
+    return false;
+  }
+
+  const v = ta.value;
+  let html = '', pos = 0;
+  ranges.forEach(([i, f]) => {
+    html += _escHl(v.slice(pos, i))
+      + `<span class="ag-hl-nome">${_escHl(v.slice(i, f))}</span>`;
+    pos = f;
+  });
+  mirror.innerHTML = html + _escHl(v.slice(pos)) + '\u200b';
+  mirror.scrollTop = ta.scrollTop;
+  return true;
+}
+
+// Botão do aviso: apaga o nome sozinho. Linha que era só o nome (+ data,
+// traços) sai inteira; nome no meio de frase sai só o trecho marcado.
+function _pessoasTirarNome() {
+  const ta = document.getElementById('f-pessoas');
+  if (!ta) return;
+  let v = ta.value;
+  const ranges = _rangesNomeProprio(v);
+  for (let k = ranges.length - 1; k >= 0; k--) {
+    const [i, f] = ranges[k];
+    const iniLin = v.lastIndexOf('\n', i - 1) + 1;
+    let fimLin = v.indexOf('\n', f);
+    if (fimLin === -1) fimLin = v.length;
+    const resto = v.slice(iniLin, i) + v.slice(f, fimLin);
+    if (!/[a-z]/.test(_norm1a1(resto))) {
+      v = v.slice(0, iniLin) + v.slice(fimLin < v.length ? fimLin + 1 : fimLin);
+    } else {
+      v = v.slice(0, i) + v.slice(f);
+    }
+  }
+  ta.value = v
+    .replace(/[ \t]{2,}/g, ' ')
+    .replace(/^[ \t]+|[ \t]+$/gm, '')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+  _pessoasChecarNome();
+  ta.focus();
+}
+
+function _pessoasLiberarHomonimo() {
+  _pessoasHomonimoOk = true;
+  _pessoasChecarNome();
+  document.getElementById('f-pessoas')?.focus();
+}
+
+// Nova leitura / modal reaberto: o escape de homônimo não atravessa.
+function _pessoasNomeReset() {
+  _pessoasHomonimoOk = false;
+  _pessoasChecarNome();
+}
+
 // ---- Naipes: perguntas dinâmicas na tela da leitura --------------------
 // Lê os textos já digitados (preserva ao adicionar/remover campos).
 function _lerNaipeVals() {
@@ -885,6 +1030,7 @@ function adicionarAoCarrinho() {
   }
   const pessoasEl = document.getElementById('f-pessoas');
   if (pessoasEl) pessoasEl.value = '';
+  _pessoasNomeReset();
 
   _renderizarCarrinho();
   irParaPasso(3);
@@ -1298,6 +1444,17 @@ function validarFormulario() {
       }
     }
   }
+
+  // Nome do próprio cliente em "pessoas envolvidas"? Não passa — o aviso
+  // embaixo do campo dá os dois caminhos (tirar / homônimo).
+  if (_pessoasChecarNome()) {
+    const ta = document.getElementById('f-pessoas');
+    ta?.classList.add('error');
+    if (ok) document.getElementById('f-pessoas-aviso')
+      ?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    ok = false;
+  }
+
   if (!ok) _focarPrimeiroErro();
   return ok;
 }
@@ -1860,6 +2017,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const form = document.getElementById('form-dados');
   if (form) form.addEventListener('submit', processarFormulario);
+
+  // "Pessoas envolvidas": detector de nome repetido + espelho
+  const pesTa = document.getElementById('f-pessoas');
+  if (pesTa) {
+    pesTa.addEventListener('input', _pessoasChecarNome);
+    pesTa.addEventListener('scroll', () => {
+      const m = document.getElementById('f-pessoas-mirror');
+      if (m) m.scrollTop = pesTa.scrollTop;
+    });
+    document.getElementById('f-pessoas-tirar')
+      ?.addEventListener('click', _pessoasTirarNome);
+    document.getElementById('f-pessoas-homonimo')
+      ?.addEventListener('click', _pessoasLiberarHomonimo);
+  }
 
   const formPessoais = document.getElementById('form-dados-pessoais');
   if (formPessoais) formPessoais.addEventListener('submit', (e) => { e.preventDefault(); confirmarDadosPessoais(); });

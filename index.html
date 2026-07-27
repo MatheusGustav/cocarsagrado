@@ -636,7 +636,21 @@
                 <div class="ag-form-group" id="f-pessoas-group" style="display:none;">
                   <label for="f-pessoas" id="f-pessoas-label">Quem está envolvido na situação? (não é obrigatório)</label>
                   <small class="ag-field-hint" id="f-pessoas-hint">Escreva o nome completo e a data de nascimento de quem faz parte da situação. Não sabe tudo? Tranquilo — ponha só o que souber, mesmo que seja só o primeiro nome.</small>
-                  <textarea id="f-pessoas" name="pessoas" rows="3" placeholder="Ex.: Maria Souza — 12/03/1990&#10;João (não sei a data de nascimento)"></textarea>
+                  <!-- Espelho atrás do textarea: quando o cliente repete o PRÓPRIO
+                       nome (já dado no passo 0), o nome aparece em vermelho e o
+                       aviso abaixo trava o Continuar até tirar (ou confirmar que
+                       é homônimo). -->
+                  <div class="ag-hl-wrap" id="f-pessoas-wrap">
+                    <div class="ag-hl-mirror" id="f-pessoas-mirror" aria-hidden="true"></div>
+                    <textarea id="f-pessoas" name="pessoas" rows="3" placeholder="Ex.: Maria Souza — 12/03/1990&#10;João (não sei a data de nascimento)"></textarea>
+                  </div>
+                  <div class="ag-nome-aviso" id="f-pessoas-aviso" role="alert" hidden>
+                    <p>Esse nome marcado é o seu! 🌿 Não precisa dele de novo — aqui entram só as <strong>outras pessoas</strong> da situação.</p>
+                    <div class="ag-nome-aviso-acoes">
+                      <button type="button" class="ag-btn ag-btn-primary" id="f-pessoas-tirar">Tirar meu nome</button>
+                      <button type="button" class="termos-link" id="f-pessoas-homonimo">É outra pessoa com esse nome</button>
+                    </div>
+                  </div>
                 </div>
                 <div class="ag-form-group" id="f-obs-group" style="display:none;">
                   <!-- gerado dinamicamente por abrirModal -->

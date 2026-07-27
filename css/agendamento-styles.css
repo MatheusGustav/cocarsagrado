@@ -205,6 +205,51 @@ input.error, textarea.error, select.error { border-color: var(--danger); }
 
 textarea { resize: vertical; min-height: 96px; }
 
+/* ---- "Pessoas envolvidas": nome do próprio cliente marcado ---- */
+/* Espelho atrás do textarea com o MESMO texto (métricas idênticas de
+   fonte/padding/borda). Ativo: o texto do textarea fica transparente e
+   quem aparece é o espelho — com o nome do cliente em vermelho. */
+.ag-hl-wrap { position: relative; }
+.ag-hl-wrap textarea, .ag-hl-mirror { line-height: 1.5; }
+.ag-hl-mirror {
+  display: none;
+  position: absolute;
+  inset: 0;
+  border: 1.5px solid transparent;
+  border-radius: 12px 5px 12px 5px;
+  padding: 13px 15px;
+  font-family: inherit;
+  font-size: 1rem;
+  color: var(--text);
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+  overflow: hidden;
+  pointer-events: none;
+}
+.ag-hl-wrap.ativo { background: var(--surface); border-radius: 12px 5px 12px 5px; }
+.ag-hl-wrap.ativo .ag-hl-mirror { display: block; }
+.ag-hl-wrap.ativo textarea {
+  position: relative;
+  background: transparent;
+  color: transparent;
+  caret-color: var(--text);
+}
+.ag-hl-nome { color: var(--danger); border-bottom: 2px solid var(--danger); }
+
+.ag-nome-aviso {
+  background: rgba(139, 58, 30, .07);
+  border-left: 3px solid var(--danger);
+  border-radius: 0 10px 10px 0;
+  padding: 12px 14px;
+  font-size: .88rem;
+  color: var(--text);
+  line-height: 1.5;
+  animation: menorAvisoEntra .25s ease-out;
+}
+.ag-nome-aviso p { margin: 0 0 10px; }
+.ag-nome-aviso-acoes { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+.ag-nome-aviso .ag-btn { padding: 8px 14px; font-size: .85rem; }
+
 /* ---- Resumo do pedido — recibo de papel ---- */
 .ag-resumo {
   background: var(--surface);
