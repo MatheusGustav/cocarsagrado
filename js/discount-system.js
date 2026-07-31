@@ -109,7 +109,7 @@ function renderizarPrecoTiers(footer, tiers, resultado) {
   if (resultado.tipo === 'normal') {
     if (!jaTemDesconto) return;
     tiersEl.innerHTML = tiers
-      .map(t => `<span><span>${t.label}</span><strong>${formatarMoeda(t.preco)}</strong></span>`)
+      .map(t => `<span><span>${_escCat(t.label)}</span><strong>${formatarMoeda(t.preco)}</strong></span>`)
       .join('');
     return;
   }
@@ -118,7 +118,7 @@ function renderizarPrecoTiers(footer, tiers, resultado) {
   tiers.forEach(t => {
     const precoDesc = aplicarDesconto(t.preco, resultado.percentual);
     const row = document.createElement('span');
-    row.innerHTML = `<span>${t.label}</span>
+    row.innerHTML = `<span>${_escCat(t.label)}</span>
       <span class="cat-tier-prices">
         <span class="cat-price-original-small" aria-hidden="true">${formatarMoeda(t.preco)}</span>
         <strong class="cat-price-desconto-small">${formatarMoeda(precoDesc)}</strong>

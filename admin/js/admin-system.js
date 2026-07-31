@@ -1107,6 +1107,15 @@ function abrirWhatsApp(fone, nome, tipo, data, hora) {
 // ============================================================
 // Exportar CSV
 // ============================================================
+// Célula CSV segura: neutraliza injeção de fórmula (Excel/LibreOffice avaliam
+// células que começam com = + - @ tab CR — ex.: =HYPERLINK/=WEBSERVICE roubando
+// a planilha ao abrir). Prefixa com ' e faz o escape padrão de aspas.
+function _csvCel(v) {
+  let s = String(v ?? '');
+  if (/^[=+\-@\t\r]/.test(s)) s = `'${s}`;
+  return `"${s.replace(/"/g, '""')}"`;
+}
+
 async function exportarRelatorio() {
   if (!_admAutenticado) { _mostrarLogin(); return; }
   const { data, error } = await supabase
@@ -1133,7 +1142,7 @@ async function exportarRelatorio() {
     a.pago_em || '',
     a.atendido_em || '',
     a.created_at,
-  ].map(v => `"${String(v ?? '').replace(/"/g,'""')}"`).join(','));
+  ].map(_csvCel).join(','));
 
   const csv  = [cols.join(','), ...rows].join('\n');
   const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
@@ -1177,7 +1186,7 @@ async function exportarContatos() {
     p.cliente_nome,
     p.cliente_whatsapp,
     (p.criado_em || '').slice(0, 10),
-  ].map(v => `"${String(v ?? '').replace(/"/g,'""')}"`).join(','));
+  ].map(_csvCel).join(','));
 
   const csv  = [cols.join(','), ...rows].join('\n');
   const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
