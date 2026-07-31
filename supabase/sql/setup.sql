@@ -662,6 +662,22 @@ GRANT EXECUTE ON FUNCTION public.confirmar_pedido_pago(text, text) TO service_ro
 -- Validações server-side: 1–4 itens; tipo ativo + terapeuta confere;
 -- valor_original = preco_original × qty (1–5; especial = 1); desconto
 -- máximo = promoção ativa do serviço; valor_total = soma dos valor_final.
+-- Log de criações de pedido por WhatsApp (só dígitos) — sustenta o rate
+-- limit da criar_pedido. A linha sobrevive à exclusão do pedido (spammer
+-- não zera o contador quando o admin limpa a agenda); a própria função
+-- apaga linhas com mais de 48h (autolimpeza, sem cron). Sem grants: só a
+-- SECURITY DEFINER toca aqui.
+CREATE TABLE IF NOT EXISTS public.rate_limit_pedidos (
+  id            BIGSERIAL PRIMARY KEY,
+  whatsapp_norm TEXT NOT NULL,
+  criado_em     TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_rate_limit_pedidos_wa
+  ON public.rate_limit_pedidos (whatsapp_norm, criado_em);
+
+ALTER TABLE public.rate_limit_pedidos ENABLE ROW LEVEL SECURITY;
+
 CREATE OR REPLACE FUNCTION public.criar_pedido(
   p_chave         text,
   p_nome          text,
@@ -708,10 +724,34 @@ DECLARE
   v_resto_cents    numeric;
   v_termos         text;
   v_email          text;
+  v_wa_norm        text;
 BEGIN
   v_n := COALESCE(jsonb_array_length(p_itens), 0);
   IF v_n < 1 OR v_n > 4 THEN
     RAISE EXCEPTION 'pedido_invalido: o pedido deve ter entre 1 e 4 leituras';
+  END IF;
+
+  -- Rate limit por WhatsApp (decisão 2026-07-31): barra na porta (o pedido
+  -- nem nasce), sem robô apagando depois — pendente é estado legítimo do
+  -- "pagar de outra forma". (a) máx. 2 pendentes em aberto; (b) máx. 3
+  -- pedidos criados em 24h, contados no log rate_limit_pedidos, que
+  -- sobrevive à exclusão manual. Comparação por dígitos casa com o índice
+  -- idx_pedidos_whatsapp.
+  v_wa_norm := regexp_replace(COALESCE(p_whatsapp, ''), '\D', '', 'g');
+  IF v_wa_norm <> '' THEN
+    IF (SELECT count(*) FROM public.pedidos p
+        WHERE regexp_replace(p.cliente_whatsapp, '\D', '', 'g') = v_wa_norm
+          AND p.status = 'pendente') >= 2 THEN
+      RAISE EXCEPTION 'rate_limit_pendentes: já existem 2 pedidos aguardando pagamento';
+    END IF;
+
+    DELETE FROM public.rate_limit_pedidos WHERE criado_em < now() - interval '48 hours';
+    IF (SELECT count(*) FROM public.rate_limit_pedidos r
+        WHERE r.whatsapp_norm = v_wa_norm
+          AND r.criado_em > now() - interval '24 hours') >= 3 THEN
+      RAISE EXCEPTION 'rate_limit_24h: muitos pedidos criados em 24 horas';
+    END IF;
+    INSERT INTO public.rate_limit_pedidos (whatsapp_norm) VALUES (v_wa_norm);
   END IF;
 
   SELECT valor INTO v_cfg FROM public.configuracoes WHERE chave = 'descontos';

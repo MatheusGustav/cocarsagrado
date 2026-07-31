@@ -1405,6 +1405,16 @@ async function salvarMultiplosAgendamentos(itensPre) {
       err.userMessage = true;
       throw err;
     }
+    if (/rate_limit_pendentes/.test(rpcErr.message)) {
+      const err = new Error('Você já tem 2 pedidos aguardando pagamento. Finalize um deles — ou fale com a gente no WhatsApp — antes de criar outro.');
+      err.userMessage = true;
+      throw err;
+    }
+    if (/rate_limit_24h/.test(rpcErr.message)) {
+      const err = new Error('Muitos pedidos criados em pouco tempo. Aguarde algumas horas e tente de novo.');
+      err.userMessage = true;
+      throw err;
+    }
     throw rpcErr;
   }
 
