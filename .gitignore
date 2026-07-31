@@ -10,3 +10,7 @@ skills-lock.json
 
 # Scripts de migração one-off (ferramenta local, não faz parte do site)
 scripts/
+
+# Segredos locais — nunca versionar (repo é público)
+.env*
+!.env.example
