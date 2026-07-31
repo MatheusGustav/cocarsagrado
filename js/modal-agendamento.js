@@ -4,7 +4,6 @@
    _garantirTipos, carregarCalendario, MESES_PT)
    ============================================================ */
 
-const MODAL_WISE        = 'matheus7gustav@gmail.com';
 const _IP_CHECKOUT_URL  = 'https://demxedudbislzausvhwx.supabase.co/functions/v1/infinitypay-checkout';
 
 let _dadosPagamento = null;
@@ -250,7 +249,7 @@ window.redirecionarParaPagamento = function(chave, carrinhoSnap, cupomSnap) {
     ? (() => { const [y, m, dd] = nascRaw.split('-'); return `${dd}/${m}/${y}`; })()
     : '';
 
-  // Detalhe por leitura (usado na mensagem manual de WhatsApp / Wise)
+  // Detalhe por leitura (usado na mensagem de WhatsApp do "pagar de outra forma")
   const itensDetalhe = lista.map(item => {
     const [y, m, dd] = String(item.data).split('-');
     const dataFmt = (y && m && dd) ? `${dd}/${m}/${y}` : item.data;
@@ -541,8 +540,6 @@ function _preencherTelaPagamento() {
     itensBox.innerHTML = html;
   }
   set('modal-r-valor', `R$ ${ag.valor}`);
-  set('modal-valor-wise', `R$ ${ag.valor}`);
-  set('modal-email-wise', MODAL_WISE);
   const chaveEl = document.getElementById('pag-chave');
   if (chaveEl) chaveEl.innerHTML = `Pedido <strong>${_escCat(ag.chave)}</strong>`;
 
@@ -575,15 +572,10 @@ window.irParaPasso = function(num) {
 // ============================================================
 // Funções de pagamento
 // ============================================================
-function _copiarTexto(texto, msg) {
-  navigator.clipboard.writeText(texto)
-    .then(() => mostrarAlerta(msg, 'success'))
-    .catch(() => mostrarAlerta('Copie manualmente: ' + texto, 'info'));
-}
-
-function copiarWiseModal()   { _copiarTexto(MODAL_WISE, 'E-mail Wise copiado!'); }
-
-function avisarWhatsAppModal(metodo) {
+// "Pagar de outra forma" — abre o WhatsApp do terapeuta pra combinar o
+// pagamento por fora. O pedido segue 'pendente' na agenda até o admin
+// clicar "Marcar como Pago" no painel.
+function pagarOutraForma() {
   const ag = _dadosPagamento;
   if (!ag) return;
 
@@ -591,15 +583,12 @@ function avisarWhatsAppModal(metodo) {
   const leituraBloco = ag.itensDetalhe
     ? `*Leituras:*\n${ag.itensDetalhe}`
     : `*Leitura:* ${ag.tipo}\n*Data:* ${ag.data}${ag.hora ? `\n*Horário:* ${ag.hora}` : ''}`;
-  const msgs = {
-    pix:    `Olá! 😊 Fiz o pagamento via *PIX*.\n\n*Pedido:* ${ag.chave}\n${leituraBloco}\n*Valor:* R$ ${ag.valor}\n\n${infoCliente}\n\nPode confirmar o recebimento? Fico no aguardo da minha leitura no dia! 🙏`,
-    cartao: `Olá! 😊 Realizei o pagamento via *cartão de crédito*.\n\n*Pedido:* ${ag.chave}\n${leituraBloco}\n*Valor:* R$ ${ag.valor}\n\n${infoCliente}\n\nFico no aguardo da minha leitura no dia! 🙏`,
-    wise:   `Olá! 😊 Realizei a transferência via *Wise*.\n\n*Pedido:* ${ag.chave}\n${leituraBloco}\n*Valor:* R$ ${ag.valor}\n\n${infoCliente}\n\nPode confirmar o recebimento? Fico no aguardo da minha leitura no dia! 🙏`,
-  };
+  const msg = `Olá! 😊 Acabei de montar um pedido no site e quero combinar outra forma de pagamento.\n\n*Pedido:* ${ag.chave}\n${leituraBloco}\n*Valor:* R$ ${ag.valor}\n\n${infoCliente}\n\nComo podemos fazer? 🙏`;
 
   const numero = WHATSAPP_TERAPEUTA[ag.terapeuta] || WHATSAPP_TERAPEUTA.camila;
-  window.open(`https://wa.me/${numero}?text=${encodeURIComponent(msgs[metodo])}`, '_blank');
+  window.open(`https://wa.me/${numero}?text=${encodeURIComponent(msg)}`, '_blank');
 }
+window.pagarOutraForma = pagarOutraForma;
 
 // ============================================================
 // Setup de eventos globais
@@ -635,17 +624,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // "Estou fora do Brasil" abre/fecha as instruções da Wise
-  const wiseToggle = document.getElementById('pag-wise-toggle');
-  wiseToggle?.addEventListener('click', () => {
-    const painel = document.getElementById('pag-wise');
-    if (!painel) return;
-    const abrir = painel.hidden;
-    painel.hidden = !abrir;
-    wiseToggle.setAttribute('aria-expanded', String(abrir));
-    if (abrir) painel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-  });
-
   // Checa pedido pendente ao carregar (atualiza se foi pago via webhook)
   setTimeout(_verificarPedidoPendenteAoCarregar, 1500);
 });
@@ -657,8 +635,6 @@ document.addEventListener('DOMContentLoaded', () => {
 // navegador bloquear mesmo assim, a tela de espera oferece o botão
 // "Abrir pagamento".
 // ============================================================
-let _pagMetodoAtual = null;
-
 function _pagVoltarMetodos() {
   const mostrar = (id, vis) => { const el = document.getElementById(id); if (el) el.hidden = !vis; };
   mostrar('pag-fluxo', true);
@@ -666,9 +642,7 @@ function _pagVoltarMetodos() {
   mostrar('pag-espera', false);
   mostrar('pag-sucesso', false);
   mostrar('pag-erro-box', false);
-  mostrar('pag-wise', false);
-  document.getElementById('pag-wise-toggle')?.setAttribute('aria-expanded', 'false');
-  ['pix', 'cartao'].forEach(m => {
+  ['online', 'outra'].forEach(m => {
     const b = document.getElementById(`pag-btn-${m}`);
     if (b) { b.disabled = false; b.classList.remove('carregando'); }
   });
@@ -714,13 +688,13 @@ async function pagarCom(metodo) {
     } catch { /* melhor uma aba em branco do que quebrar o fluxo */ }
   }
 
-  const btnAtivo = document.getElementById(`pag-btn-${metodo}`);
+  const btnAtivo = document.getElementById('pag-btn-online');
   if (btnAtivo) {
     btnAtivo.classList.add('carregando');
     const label = btnAtivo.querySelector('strong');
     if (label) { btnAtivo.dataset.labelOriginal = label.textContent; label.textContent = 'Preparando…'; }
   }
-  ['pix', 'cartao'].forEach(m => {
+  ['online', 'outra'].forEach(m => {
     const b = document.getElementById(`pag-btn-${m}`);
     if (b) b.disabled = true;
   });
@@ -738,7 +712,6 @@ async function pagarCom(metodo) {
     const data = await res.json();
     if (!res.ok || data.error) throw new Error(typeof data.error === 'string' ? data.error : 'falha ao gerar link');
 
-    _pagMetodoAtual = metodo;
     let abriu = false;
     if (win && !win.closed) {
       try { win.location = data.url; abriu = true; } catch { /* cai no botão manual */ }
@@ -751,7 +724,7 @@ async function pagarCom(metodo) {
       err.hidden = false;
     }
   } finally {
-    ['pix', 'cartao'].forEach(m => {
+    ['online', 'outra'].forEach(m => {
       const b = document.getElementById(`pag-btn-${m}`);
       if (!b) return;
       b.disabled = false;
@@ -762,9 +735,6 @@ async function pagarCom(metodo) {
   }
 }
 window.pagarCom = pagarCom;
-// aliases legados (nada mais chama, mas não custa manter)
-window.gerarLinkPix    = () => pagarCom('pix');
-window.gerarLinkCartao = () => pagarCom('cartao');
 
 // Ajuda no meio do pagamento — mensagem neutra (não afirma que pagou)
 window.pagAjudaWhatsApp = function () {

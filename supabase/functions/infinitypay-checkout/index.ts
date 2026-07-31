@@ -1,5 +1,7 @@
 // Gera link de checkout InfinitePay (PIX ou cartão de crédito).
-// Payload: { chave, nome, whatsapp, metodo: 'pix'|'cartao', items: [{description, price}] }
+// Payload: { chave, nome, whatsapp, metodo: 'online'|'pix'|'cartao', items: [{description, price}] }
+// 'online' (botão único do site) libera os dois métodos no checkout;
+// 'pix'/'cartao' seguem aceitos para retrocompatibilidade.
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const HANDLE      = Deno.env.get('INFINITYPAY_HANDLE') ?? ''
@@ -67,7 +69,7 @@ Deno.serve(async (req) => {
       items: ipItems,
       order_nsu: chave,
       redirect_url: SITE_URL,
-      payment_methods: metodo === 'pix' ? ['pix'] : ['credit'],
+      payment_methods: metodo === 'pix' ? ['pix'] : metodo === 'cartao' ? ['credit'] : ['pix', 'credit'],
       ...(WEBHOOK_URL && { webhook_url: WEBHOOK_URL }),
       customer: {
         email: 'cocarsagrado+ip@gmail.com',

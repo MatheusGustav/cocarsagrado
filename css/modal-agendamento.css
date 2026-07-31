@@ -542,62 +542,6 @@ body.modal-aberto { overflow: hidden; }
 
 .pag-metodo-btn.carregando .pag-metodo-seta { display: none; }
 
-/* Wise escondido atrás de "estou fora do Brasil" */
-.pag-wise-toggle {
-  display: block;
-  margin: 6px auto 0;
-  background: none;
-  border: none;
-  padding: 8px 10px;
-  font-family: inherit;
-  font-size: .88rem;
-  font-weight: 600;
-  color: var(--color-text-muted, #85806B);
-  text-decoration: underline dotted;
-  text-underline-offset: 3px;
-  cursor: pointer;
-}
-.pag-wise-toggle:hover { color: var(--color-primary, #142E20); }
-.pag-wise {
-  background: var(--color-neutral-sand, #EDEBD9);
-  border-radius: 16px 7px 16px 7px;
-  padding: 18px;
-  margin-top: 10px;
-  font-size: .92rem;
-}
-.pag-wise p { margin-bottom: 12px; color: var(--color-text-body, #41513F); }
-.pag-wise .ag-btn { width: 100%; margin-top: 8px; }
-
-.pag-pix-chave {
-  background: var(--color-bg-card, #FFFEF6);
-  border: 1.5px dashed rgba(169, 135, 59, 0.5);
-  border-radius: 12px 5px 12px 5px;
-  padding: 13px;
-  text-align: center;
-  font-size: .98rem;
-  font-weight: 700;
-  color: var(--color-gold-deep, #8A6D2F);
-  margin-bottom: 4px;
-  word-break: break-all;
-}
-.pag-instrucoes { list-style: none; display: flex; flex-direction: column; gap: 10px; margin-bottom: 14px; padding: 0; }
-.pag-instrucoes li {
-  display: flex;
-  gap: 10px;
-  align-items: flex-start;
-  font-size: .9rem;
-}
-.pag-instrucoes .step-num {
-  min-width: 24px; height: 24px;
-  background: var(--color-gold, #A9873B);
-  color: var(--color-neutral-white, #FFFEF6);
-  border-radius: 50% 40% 50% 40%;
-  display: flex; align-items: center; justify-content: center;
-  font-size: .75rem;
-  font-weight: 800;
-  flex-shrink: 0;
-}
-
 /* Espera — checkout aberto em outra aba */
 .pag-espera {
   text-align: center;
