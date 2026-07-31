@@ -4284,6 +4284,10 @@ body.drawer-aberto { overflow: hidden; }
 .aud-dock-play .ico { width: 18px; height: 18px; }
 /* checkzinho colado no envelope = "já enviei este" */
 .aud-item-email-ok { width: .8em; height: .8em; margin-left: 1px; }
+/* ...e a cor separa "só mandei" de "o Resend confirmou que chegou"
+   (verde) ou "quicou, não chegou em ninguém" (vermelho) */
+.aud-item-email-entregue { color: var(--t-success); }
+.aud-item-email-quicou   { color: var(--t-danger); }
 
 .aud-dock-play:hover { transform: scale(1.06); background: #1F4530; }
 .aud-dock-play:focus-visible { outline: 2px solid #D2BA7C; outline-offset: 2px; }

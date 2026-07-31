@@ -139,6 +139,8 @@ function emailLink(nome: string, tipo: string, data: string, url: string) {
   `)
 }
 
+// Devolve o id do Resend: é a chave que casa este envio com os avisos
+// assinados de entrega (função resend-webhook → email_eventos).
 async function enviarResend(to: string, subject: string, html: string,
                             anexo?: { filename: string; content: string; content_type: string }) {
   const body: Record<string, unknown> = { from: EMAIL_FROM, to: [to], subject, html }
@@ -152,6 +154,8 @@ async function enviarResend(to: string, subject: string, html: string,
     body: JSON.stringify(body),
   })
   if (!res.ok) throw new Error(`Resend HTTP ${res.status}: ${(await res.text()).slice(0, 300)}`)
+  const resposta = await res.json().catch(() => null)
+  return String(resposta?.id || '')
 }
 
 Deno.serve(async (req) => {
@@ -213,6 +217,7 @@ Deno.serve(async (req) => {
       const mime    = String(a.mime || 'audio/webm')
       const tamanho = Number(a.tamanho_bytes) || 0
 
+      let resendId = ''
       if (tamanho > 0 && tamanho <= ANEXO_MAX_BYTES) {
         const { data: blob, error: dlErr } = await supabase.storage.from('audios').download(a.storage_path)
         if (dlErr || !blob) throw new Error(`download: ${dlErr?.message || 'vazio'}`)
@@ -221,18 +226,25 @@ Deno.serve(async (req) => {
           content: Buffer.from(await blob.arrayBuffer()).toString('base64'),
           content_type: mime,
         }
-        await enviarResend(email, subject, emailAnexo(nome, tipo, data), anexo)
+        resendId = await enviarResend(email, subject, emailAnexo(nome, tipo, data), anexo)
       } else {
         const { data: signed, error: urlErr } = await supabase.storage
           .from('audios').createSignedUrl(a.storage_path, LINK_VALIDADE_S)
         if (urlErr || !signed?.signedUrl) throw new Error(`signedUrl: ${urlErr?.message || 'vazio'}`)
-        await enviarResend(email, subject, emailLink(nome, tipo, data, signed.signedUrl))
+        resendId = await enviarResend(email, subject, emailLink(nome, tipo, data, signed.signedUrl))
       }
 
       // Marca DEPOIS do envio: se o update falhar, o pior caso é reenvio
       // no próximo tick (cliente recebe 2×, nunca 0×).
+      // entregue/quicou zeram: são o veredito DESTE envio, e num reenvio
+      // o veredito anterior não vale mais (fica guardado em email_eventos).
       const { error: upErr } = await supabase.from('audios_cliente')
-        .update({ enviado_email_em: new Date().toISOString() }).eq('id', a.id)
+        .update({
+          enviado_email_em: new Date().toISOString(),
+          resend_id: resendId || null,
+          entregue_em: null,
+          quicou_em: null,
+        }).eq('id', a.id)
       if (upErr) console.error('marca enviado:', upErr.message)
       enviados++
 

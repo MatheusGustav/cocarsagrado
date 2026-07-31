@@ -426,3 +426,7 @@ verify_jwt = false
 # Cron (x-cron-secret) OU painel admin (JWT + is_admin, checado dentro).
 [functions.audio-email]
 verify_jwt = false
+
+# Chamada pelo Resend (sem JWT); o gate é a assinatura Svix, conferida dentro.
+[functions.resend-webhook]
+verify_jwt = false

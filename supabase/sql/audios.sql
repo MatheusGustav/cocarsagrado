@@ -3,7 +3,8 @@
 -- (espelho das migrations 20260708120000_audios_cliente.sql
 --  + 20260719120000_reivindicar_audios.sql
 --  + 20260719150000_audio_email.sql
---  + 20260720150000_audio_email_manual.sql)
+--  + 20260720150000_audio_email_manual.sql
+--  + 20260731120000_resend_prova_entrega.sql)
 -- ------------------------------------------------------------
 -- ENTREGA OFICIAL (2026-07-19, manual desde 2026-07-20): E-MAIL
 -- COM ANEXO. Admin grava na aba "Áudios" do painel → bucket privado
@@ -32,8 +33,11 @@ CREATE TABLE public.audios_cliente (
   tamanho_bytes       BIGINT,
   mime                TEXT NOT NULL DEFAULT 'audio/webm',
   enviado_whatsapp_em TIMESTAMPTZ,
-  enviado_email_em    TIMESTAMPTZ,  -- NULL = ainda não foi por e-mail
+  enviado_email_em    TIMESTAMPTZ,  -- NULL = ainda não foi por e-mail (só "o Resend aceitou")
   email_liberado_em   TIMESTAMPTZ,  -- NULL = admin não pediu envio (✉️); edge/cron ignoram
+  resend_id           TEXT,         -- id do e-mail no Resend; casa com email_eventos
+  entregue_em         TIMESTAMPTZ,  -- aviso assinado do Resend: CHEGOU
+  quicou_em           TIMESTAMPTZ,  -- aviso assinado do Resend: NÃO chegou (bounce)
   criado_em           TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
@@ -41,6 +45,12 @@ CREATE INDEX idx_audios_agendamento ON public.audios_cliente (agendamento_id);
 CREATE INDEX idx_audios_user ON public.audios_cliente (user_id) WHERE user_id IS NOT NULL;
 CREATE INDEX idx_audios_email_pendente ON public.audios_cliente (id)
   WHERE enviado_email_em IS NULL AND email_liberado_em IS NOT NULL;
+CREATE INDEX idx_audios_resend ON public.audios_cliente (resend_id) WHERE resend_id IS NOT NULL;
+
+-- entregue_em/quicou_em NÃO são escritos pelo painel: quem preenche é o
+-- trigger de email_eventos (setup.sql), quando o aviso assinado do Resend
+-- chega na edge resend-webhook. Reenvio zera os dois (veredito do envio
+-- anterior morre; o histórico fica em email_eventos).
 
 -- Trigger: resolve user_id no banco (front não manda) --------------------
 CREATE OR REPLACE FUNCTION public.audio_seta_user_id()

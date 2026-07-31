@@ -1025,7 +1025,7 @@ function _audMostrarPosSalvar(audioId, ag, blob, mime) {
   const chip = document.getElementById('aud-cliente-chip');
   if (chip) chip.innerHTML = '';
 
-  const audioRef = { id: audioId, enviado_email_em: null };
+  const audioRef = { id: audioId, enviado_email_em: null, entregue_em: null, quicou_em: null };
   document.getElementById('aud-dock').innerHTML = `
     <div class="aud-dock-painel">
       <div class="aud-dock-titulo"><svg class="ico" aria-hidden="true"><use href="#ico-check"></use></svg> Salvo para ${_audEsc(_audPrimeiroNome(ag.cliente_nome))}</div>
@@ -1066,14 +1066,23 @@ function _audMostrarPosSalvar(audioId, ag, blob, mime) {
 // Muda audioRef no lugar. Retorna 'enviado' | 'pendente' | 'erro'.
 // ============================================================
 async function _audDispararEmail(audioRef) {
+  // entregue/quicou são o veredito do envio anterior: zeram junto, senão
+  // o selo diria "entregue" enquanto o reenvio ainda está na fila.
   const { error: upErr } = await supabase.from('audios_cliente')
-    .update({ email_liberado_em: new Date().toISOString(), enviado_email_em: null })
+    .update({
+      email_liberado_em: new Date().toISOString(),
+      enviado_email_em: null,
+      entregue_em: null,
+      quicou_em: null,
+    })
     .eq('id', audioRef.id);
   if (upErr) {
     _toastAdmin('Não deu pra liberar o envio: ' + upErr.message, 'erro');
     return 'erro';
   }
   audioRef.enviado_email_em = null;
+  audioRef.entregue_em = null;
+  audioRef.quicou_em = null;
   audioRef.email_liberado_em = new Date().toISOString();
 
   const { data, error: fnErr } = await supabase.functions.invoke('audio-email', {
@@ -1093,13 +1102,45 @@ async function _audDispararEmail(audioRef) {
   return 'pendente';
 }
 
+// Selo colado no envelope. Enviado ≠ entregue: "enviado" é só o Resend
+// ter aceitado o pedido de envio. Quem confirma que chegou — ou que
+// quicou — é o aviso assinado que o webhook guarda em email_eventos.
+function _audEmailSelo(a) {
+  if (a.quicou_em) return {
+    ico: 'ico-alerta', cls: ' aud-item-email-quicou',
+    titulo: `NÃO chegou — quicou em ${_audDataBR(a.quicou_em)}; confira o e-mail do cliente`,
+  };
+  if (a.entregue_em) return {
+    ico: 'ico-check-circulo', cls: ' aud-item-email-entregue',
+    titulo: `Entregue em ${_audDataBR(a.entregue_em)}`,
+  };
+  if (a.enviado_email_em) return {
+    ico: 'ico-check', cls: '',
+    titulo: `Enviado em ${_audDataBR(a.enviado_email_em)} — aguardando confirmação de entrega`,
+  };
+  return null;
+}
+
 function _audEmailBtnPintar(btn, a) {
   if (!btn) return;
-  const enviado = !!a.enviado_email_em;
+  const selo = _audEmailSelo(a);
   btn.innerHTML = '<svg class="ico" aria-hidden="true"><use href="#ico-envelope"></use></svg>' +
-    (enviado ? '<svg class="ico aud-item-email-ok" aria-hidden="true"><use href="#ico-check"></use></svg>' : '');
-  btn.title = enviado ? 'E-mail enviado — reenviar' : 'Enviar por e-mail';
+    (selo ? `<svg class="ico aud-item-email-ok${selo.cls}" aria-hidden="true"><use href="#${selo.ico}"></use></svg>` : '');
+  btn.title = selo ? `${selo.titulo} · tocar reenvia` : 'Enviar por e-mail';
   btn.setAttribute('aria-label', btn.title);
+}
+
+// A confirmação de entrega chega segundos depois, pelo webhook. Uma
+// espiada única evita ter que sair e voltar na aba pra ver o resultado.
+function _audEspiarEntrega(a, btn) {
+  setTimeout(async () => {
+    if (!btn.isConnected) return;
+    const { data } = await supabase.from('audios_cliente')
+      .select('enviado_email_em, entregue_em, quicou_em').eq('id', a.id).maybeSingle();
+    if (!data) return;
+    Object.assign(a, data);
+    _audEmailBtnPintar(btn, a);
+  }, 6000);
 }
 
 // ============================================================
@@ -1125,14 +1166,20 @@ function _audCriarItemAudio(a, opts = {}) {
   _audEmailBtnPintar(btnEmail, a);
   btnEmail.addEventListener('click', async () => {
     const nome = a.agendamentos?.cliente_nome || 'o cliente';
-    if (!confirm(a.enviado_email_em
-      ? `E-mail já enviado em ${_audDataBR(a.enviado_email_em)}. Reenviar para ${nome}?`
-      : `Enviar este áudio por e-mail para ${nome}?`)) return;
+    if (!confirm(
+      a.quicou_em
+        ? `Este e-mail QUICOU em ${_audDataBR(a.quicou_em)} — não chegou. Tentar de novo para ${nome}?`
+        : a.entregue_em
+          ? `Já entregue em ${_audDataBR(a.entregue_em)}. Reenviar para ${nome}?`
+          : a.enviado_email_em
+            ? `E-mail já enviado em ${_audDataBR(a.enviado_email_em)}. Reenviar para ${nome}?`
+            : `Enviar este áudio por e-mail para ${nome}?`)) return;
     btnEmail.disabled = true;
     btnEmail.innerHTML = '<svg class="ico" aria-hidden="true"><use href="#ico-ampulheta"></use></svg>';
-    await _audDispararEmail(a);
+    const r = await _audDispararEmail(a);
     btnEmail.disabled = false;
     _audEmailBtnPintar(btnEmail, a);
+    if (r === 'enviado') _audEspiarEntrega(a, btnEmail);
   });
 
   // Player lazy: signed URL só quando pedir pra ouvir

@@ -167,6 +167,8 @@ function emailLembrete(nome: string, payload: Record<string, unknown>) {
   }
 }
 
+// Devolve o id do Resend: casa este envio com os avisos assinados de
+// entrega (função resend-webhook → email_eventos).
 async function enviarResend(to: string, subject: string, html: string) {
   const res = await fetch('https://api.resend.com/emails', {
     method: 'POST',
@@ -177,6 +179,8 @@ async function enviarResend(to: string, subject: string, html: string) {
     body: JSON.stringify({ from: EMAIL_FROM, to: [to], subject, html }),
   })
   if (!res.ok) throw new Error(`Resend HTTP ${res.status}: ${(await res.text()).slice(0, 300)}`)
+  const resposta = await res.json().catch(() => null)
+  return String(resposta?.id || '')
 }
 
 Deno.serve(async (req) => {
@@ -224,12 +228,13 @@ Deno.serve(async (req) => {
           ? emailAniversario(item.nome || 'cliente', item.payload || {})
           : emailLembrete(item.nome || 'cliente', item.payload || {})
 
-      await enviarResend(item.email, subject, html)
+      const resendId = await enviarResend(item.email, subject, html)
 
       // Registra DEPOIS do envio: se o insert falhar o pior caso é um
       // reenvio no próximo tick (o UNIQUE tipo+ref barra duplicata no log).
       const { error: logErr } = await supabase.from('emails_enviados').insert({
         tipo: item.tipo, ref: item.ref, user_id: item.user_id, email: item.email,
+        resend_id: resendId || null,
       })
       if (logErr) console.error('emails_enviados insert:', logErr.message)
       enviados++

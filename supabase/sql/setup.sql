@@ -1460,12 +1460,82 @@ CREATE TABLE IF NOT EXISTS public.emails_enviados (
   ref        text NOT NULL,           -- 'cupom:CODIGO' | 'leitura:ID'
   user_id    uuid,
   email      text NOT NULL,
+  resend_id  text,                    -- id no Resend; casa com email_eventos
   enviado_em timestamptz NOT NULL DEFAULT now(),
   UNIQUE (tipo, ref)
 );
 ALTER TABLE public.emails_enviados ENABLE ROW LEVEL SECURITY;
 REVOKE ALL ON public.emails_enviados FROM anon, authenticated;
 REVOKE ALL ON SEQUENCE public.emails_enviados_id_seq FROM anon, authenticated;
+
+-- ============================================================
+-- PROVA DE ENTREGA — avisos assinados do Resend
+-- (migration 20260731120000_resend_prova_entrega.sql)
+--
+-- enviado_em/enviado_email_em só dizem "o Resend aceitou o pedido de
+-- envio". Quem afirma que chegou (ou que quicou) é o Resend, por
+-- webhook assinado (Svix) → edge function resend-webhook → esta tabela.
+-- O registro do próprio Resend expira em 30 dias; aqui não expira.
+--
+-- corpo_cru é TEXT de propósito: a assinatura só fecha com os bytes
+-- EXATOS do POST. jsonb reordena chave e normaliza espaço — guardar o
+-- aviso como jsonb tornaria impossível re-conferir a assinatura depois.
+-- Pra consultar o conteúdo: corpo_cru::jsonb na hora da leitura.
+-- ============================================================
+CREATE TABLE IF NOT EXISTS public.email_eventos (
+  id          bigserial PRIMARY KEY,
+  svix_id     text NOT NULL UNIQUE,   -- idempotência: o Svix re-entrega o mesmo aviso
+  resend_id   text,                   -- casa com audios_cliente / emails_enviados
+  tipo        text NOT NULL,          -- email.sent | email.delivered | email.bounced | ...
+  para        text,
+  ocorrido_em timestamptz,            -- hora carimbada pelo Resend (não a nossa)
+  corpo_cru   text NOT NULL,          -- bytes exatos do POST: é o que a assinatura cobre
+  assinatura  text NOT NULL,          -- header svix-signature
+  svix_ts     text NOT NULL,          -- header svix-timestamp (entra no cálculo)
+  recebido_em timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_email_eventos_resend
+  ON public.email_eventos (resend_id) WHERE resend_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_email_eventos_tipo
+  ON public.email_eventos (tipo, recebido_em DESC);
+
+-- Prova não se apaga por acidente: só service_role (a edge) escreve e lê.
+ALTER TABLE public.email_eventos ENABLE ROW LEVEL SECURITY;
+REVOKE ALL ON public.email_eventos FROM anon, authenticated;
+REVOKE ALL ON SEQUENCE public.email_eventos_id_seq FROM anon, authenticated;
+
+-- O aviso pinta o status do áudio. Fica no banco (e não na edge) pra que
+-- o status derive sempre do mesmo lugar: chegou aviso, mudou status.
+CREATE OR REPLACE FUNCTION public.email_evento_aplica_status()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+BEGIN
+  IF NEW.resend_id IS NULL THEN RETURN NEW; END IF;
+
+  IF NEW.tipo = 'email.delivered' THEN
+    UPDATE public.audios_cliente
+       SET entregue_em = COALESCE(NEW.ocorrido_em, NEW.recebido_em)
+     WHERE resend_id = NEW.resend_id AND entregue_em IS NULL;
+
+  ELSIF NEW.tipo IN ('email.bounced', 'email.failed') THEN
+    UPDATE public.audios_cliente
+       SET quicou_em = COALESCE(NEW.ocorrido_em, NEW.recebido_em)
+     WHERE resend_id = NEW.resend_id;
+  END IF;
+
+  RETURN NEW;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS trg_email_evento_status ON public.email_eventos;
+CREATE TRIGGER trg_email_evento_status
+  AFTER INSERT ON public.email_eventos
+  FOR EACH ROW EXECUTE FUNCTION public.email_evento_aplica_status();
+
+REVOKE ALL ON FUNCTION public.email_evento_aplica_status() FROM PUBLIC, anon, authenticated;
 
 -- meus_cupons: cupons pessoais da conta logada, com status calculado.
 -- descricao fica de fora (nota interna do admin).
