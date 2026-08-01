@@ -16,8 +16,8 @@
        DOCUMENTO PADRÃO · variante PAPEL
        Modelo cru para qualquer finalidade, no estudo V4 "Raiz
        Viva" do site: papel quente, verdes em camadas, dourado.
-       Folhinhas caem pelas bordas e a pena dourada assina o
-       centro como marca d'água. Autocontido.
+       Folhinhas pousadas pelas bordas e a pena dourada assina
+       o centro como marca d'água. Estático — pronto pra PDF.
        ============================================================ */
     :root {
       --color-primary:          #142E20;
@@ -58,39 +58,30 @@
     ::selection { background: var(--v4-sussurro); color: var(--color-primary-deep); }
     img { max-width: 100%; }
 
-    /* === folhinhas caindo pelas bordas === */
-    .folha-caindo {
-      position: fixed;
-      top: -70px;
+    /* === folhinhas estáticas pousadas pelas bordas === */
+    .folha {
+      position: absolute;
       z-index: 0;
       color: var(--v4-salvia-forte);
-      animation: folha-cai var(--dur, 13s) linear infinite;
-      animation-delay: var(--delay, 0s);
       pointer-events: none;
     }
-    .folha-caindo path {
+    .folha path {
       fill: rgba(221, 229, 204, 0.55);
       stroke: currentColor;
       stroke-width: 1.6;
       stroke-linecap: round;
     }
-    .folha-caindo path:last-child { fill: none; }
-    .folha-caindo--dourada { color: var(--color-gold); }
-    .folha-caindo--dourada path { fill: rgba(234, 224, 190, 0.6); }
-    @keyframes folha-cai {
-      0%   { transform: translate3d(0, 0, 0) rotate(var(--rot, 0deg)); opacity: 0; }
-      6%   { opacity: 0.9; }
-      30%  { transform: translate3d(16px, 30vh, 0) rotate(calc(var(--rot, 0deg) + 40deg)); }
-      60%  { transform: translate3d(-12px, 62vh, 0) rotate(calc(var(--rot, 0deg) + 70deg)); }
-      88%  { opacity: 0.9; }
-      100% { transform: translate3d(10px, 112vh, 0) rotate(calc(var(--rot, 0deg) + 100deg)); opacity: 0; }
-    }
-    .folha-caindo--1 { left: 1.2vw;  width: 26px; --rot: -18deg; --dur: 13s;   --delay: 0s; }
-    .folha-caindo--2 { left: 3.4vw;  width: 17px; --rot: 24deg;  --dur: 17s;   --delay: -6s; }
-    .folha-caindo--3 { left: 0.4vw;  width: 21px; --rot: 60deg;  --dur: 15s;   --delay: -11s; }
-    .folha-caindo--4 { right: 1.4vw; width: 28px; --rot: 14deg;  --dur: 14s;   --delay: -3s; }
-    .folha-caindo--5 { right: 3.6vw; width: 18px; --rot: -40deg; --dur: 18s;   --delay: -9s; }
-    .folha-caindo--6 { right: 0.6vw; width: 22px; --rot: 90deg;  --dur: 15.5s; --delay: -14s; }
+    .folha path:last-child { fill: none; }
+    .folha--dourada { color: var(--color-gold); }
+    .folha--dourada path { fill: rgba(234, 224, 190, 0.6); }
+    .folha--1 { left: -7px;  top: 5%;  width: 26px; transform: rotate(-32deg); }
+    .folha--2 { left: 16px;  top: 28%; width: 17px; transform: rotate(24deg); }
+    .folha--3 { left: -5px;  top: 54%; width: 21px; transform: rotate(64deg); }
+    .folha--4 { left: 14px;  top: 79%; width: 18px; transform: rotate(-12deg); }
+    .folha--5 { right: -8px; top: 9%;  width: 28px; transform: rotate(28deg); }
+    .folha--6 { right: 17px; top: 34%; width: 18px; transform: rotate(-42deg); }
+    .folha--7 { right: -4px; top: 60%; width: 22px; transform: rotate(96deg); }
+    .folha--8 { right: 15px; top: 84%; width: 24px; transform: rotate(-70deg); }
 
     /* === ramo que se desenha ao abrir o documento === */
     .ramo { display: block; width: min(300px, 72vw); margin: 26px auto 0; }
@@ -159,7 +150,7 @@
       pointer-events: none;
       user-select: none;
     }
-    .documento > *:not(.pena) { position: relative; }
+    .documento > *:not(.pena):not(.folha) { position: relative; }
 
     /* === cabeçalho === */
     .doc-header { text-align: center; }
@@ -367,14 +358,12 @@
       body { padding: 0; background: #fff; }
       .canteiro { max-width: none; }
       .documento { box-shadow: none; border-radius: 0; border: none; }
-      .folha-caindo { display: none; }
       .brota, .ramo-path { animation: none; opacity: 1; transform: none; stroke-dashoffset: 0; }
       .pena { opacity: 0.1; print-color-adjust: exact; -webkit-print-color-adjust: exact; }
       .doc-nota { display: none; }
     }
 
     @media (prefers-reduced-motion: reduce) {
-      .folha-caindo { animation: none; opacity: 0; }
       .jardim-blob { animation: none; }
       .brota { animation-duration: 0.01s; }
       .ramo-path { animation-duration: 0.01s; animation-delay: 0s; }
@@ -383,19 +372,21 @@
 </head>
 <body>
 
-  <!-- folhinhas caindo pelas bordas -->
-  <svg class="folha-caindo folha-caindo--1" viewBox="0 0 40 64" aria-hidden="true"><path d="M20 3 C 33 18, 35 38, 20 61 C 5 38, 7 18, 20 3 Z" /><path d="M20 12 L 20 52" /></svg>
-  <svg class="folha-caindo folha-caindo--2 folha-caindo--dourada" viewBox="0 0 40 64" aria-hidden="true"><path d="M20 3 C 33 18, 35 38, 20 61 C 5 38, 7 18, 20 3 Z" /><path d="M20 12 L 20 52" /></svg>
-  <svg class="folha-caindo folha-caindo--3" viewBox="0 0 40 64" aria-hidden="true"><path d="M20 3 C 33 18, 35 38, 20 61 C 5 38, 7 18, 20 3 Z" /><path d="M20 12 L 20 52" /></svg>
-  <svg class="folha-caindo folha-caindo--4" viewBox="0 0 40 64" aria-hidden="true"><path d="M20 3 C 33 18, 35 38, 20 61 C 5 38, 7 18, 20 3 Z" /><path d="M20 12 L 20 52" /></svg>
-  <svg class="folha-caindo folha-caindo--5 folha-caindo--dourada" viewBox="0 0 40 64" aria-hidden="true"><path d="M20 3 C 33 18, 35 38, 20 61 C 5 38, 7 18, 20 3 Z" /><path d="M20 12 L 20 52" /></svg>
-  <svg class="folha-caindo folha-caindo--6" viewBox="0 0 40 64" aria-hidden="true"><path d="M20 3 C 33 18, 35 38, 20 61 C 5 38, 7 18, 20 3 Z" /><path d="M20 12 L 20 52" /></svg>
-
   <div class="canteiro">
     <main class="documento">
 
       <!-- pena dourada — marca d'água central -->
       <img class="pena" src="images/pena-dourada.webp" alt="" aria-hidden="true" width="664" height="900" />
+
+      <!-- folhinhas pousadas pelas bordas -->
+      <svg class="folha folha--1" viewBox="0 0 40 64" aria-hidden="true"><path d="M20 3 C 33 18, 35 38, 20 61 C 5 38, 7 18, 20 3 Z" /><path d="M20 12 L 20 52" /></svg>
+      <svg class="folha folha--2 folha--dourada" viewBox="0 0 40 64" aria-hidden="true"><path d="M20 3 C 33 18, 35 38, 20 61 C 5 38, 7 18, 20 3 Z" /><path d="M20 12 L 20 52" /></svg>
+      <svg class="folha folha--3" viewBox="0 0 40 64" aria-hidden="true"><path d="M20 3 C 33 18, 35 38, 20 61 C 5 38, 7 18, 20 3 Z" /><path d="M20 12 L 20 52" /></svg>
+      <svg class="folha folha--4 folha--dourada" viewBox="0 0 40 64" aria-hidden="true"><path d="M20 3 C 33 18, 35 38, 20 61 C 5 38, 7 18, 20 3 Z" /><path d="M20 12 L 20 52" /></svg>
+      <svg class="folha folha--5" viewBox="0 0 40 64" aria-hidden="true"><path d="M20 3 C 33 18, 35 38, 20 61 C 5 38, 7 18, 20 3 Z" /><path d="M20 12 L 20 52" /></svg>
+      <svg class="folha folha--6 folha--dourada" viewBox="0 0 40 64" aria-hidden="true"><path d="M20 3 C 33 18, 35 38, 20 61 C 5 38, 7 18, 20 3 Z" /><path d="M20 12 L 20 52" /></svg>
+      <svg class="folha folha--7" viewBox="0 0 40 64" aria-hidden="true"><path d="M20 3 C 33 18, 35 38, 20 61 C 5 38, 7 18, 20 3 Z" /><path d="M20 12 L 20 52" /></svg>
+      <svg class="folha folha--8" viewBox="0 0 40 64" aria-hidden="true"><path d="M20 3 C 33 18, 35 38, 20 61 C 5 38, 7 18, 20 3 Z" /><path d="M20 12 L 20 52" /></svg>
 
       <header class="doc-header brota">
         <div class="jardim-mini" aria-hidden="true">
