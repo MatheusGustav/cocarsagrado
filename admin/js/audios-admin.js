@@ -158,18 +158,19 @@ async function _audConverterParaMp3Interno(blob) {
 // Pill fixo "toque pra enviar": quando a conversão demora, o navegador
 // esquece o toque original e bloqueia o navigator.share — este botão dá
 // um toque novo e compartilha na hora (mp3 já pronto no cache).
-function _audMostrarPillEnviar(files, nome) {
+function _audMostrarPillEnviar(files, nome, opts) {
   document.getElementById('aud-pill-enviar')?.remove();
   const pill = document.createElement('button');
   pill.type = 'button';
   pill.id = 'aud-pill-enviar';
   pill.className = 'aud-pill-enviar';
   pill.innerHTML = '<svg class="ico" aria-hidden="true"><use href="#ico-compartilhar"></use></svg> ' +
-    (files.length > 1 ? 'Áudio + documento prontos' : 'Áudio pronto') + ' — <strong>toque pra enviar</strong>';
+    (opts?.rotulo || 'Áudio pronto') + ' — <strong>toque pra enviar</strong>';
   pill.onclick = async () => {
     pill.remove();
     try {
       await navigator.share({ files, title: nome });
+      opts?.depois?.();
     } catch (e) {
       if (e.name !== 'AbortError') _toastAdmin('Erro ao compartilhar: ' + e.message, 'erro');
     }
@@ -190,8 +191,9 @@ function _audBaixarArquivo(file) {
 
 // Compartilhar (ou baixar, no fallback) um blob de áudio já pronto.
 // `doc` (opcional) = { blob, nome } do PDF do documento: quando o pedido
-// tem documento salvo, áudio e PDF saem JUNTOS no mesmo share — se o
-// aparelho não aceitar dois arquivos, vai só o áudio e a gente avisa.
+// tem documento salvo, o PDF sai num SEGUNDO toque logo após o áudio.
+// Juntos no mesmo share não dá: o WhatsApp rejeita tipos misturados
+// (áudio + PDF) e acusa "não é possível enviar mensagem vazia".
 async function _audCompartilharBlob(blob, mime, nomeSugestao, doc) {
   let nome = prompt('Nome do arquivo para compartilhar:', nomeSugestao);
   if (nome === null) return; // cancelou o rename
@@ -216,19 +218,20 @@ async function _audCompartilharBlob(blob, mime, nomeSugestao, doc) {
     : null;
 
   if (navigator.canShare?.({ files: [file] })) {
-    // Os dois juntos quando o alvo aceita; senão, só o áudio (e avisa)
-    let files = [file];
-    if (docFile) {
-      if (navigator.canShare({ files: [file, docFile] })) files = [file, docFile];
-      else _toastAdmin('Este aparelho não compartilha os dois juntos — o documento fica pro botão Documento.', 'info');
-    }
+    // Áudio enviado (share fechou sem cancelar) → pill pro PDF, que
+    // precisa de um toque novo (o navegador só autoriza 1 share por toque)
+    const oferecerDoc = () => {
+      if (docFile && navigator.canShare({ files: [docFile] }))
+        _audMostrarPillEnviar([docFile], docFile.name, { rotulo: 'Documento pronto' });
+    };
     try {
-      await navigator.share({ files, title: nome });
+      await navigator.share({ files: [file], title: nome });
+      oferecerDoc();
     } catch (e) {
       if (e.name === 'NotAllowedError') {
         // Conversão longa consumiu o toque que autoriza o share —
         // oferece um botão que compartilha na hora com um toque novo
-        _audMostrarPillEnviar(files, nome);
+        _audMostrarPillEnviar([file], nome, { depois: oferecerDoc });
       } else if (e.name !== 'AbortError') {
         _toastAdmin('Erro ao compartilhar: ' + e.message, 'erro');
       }
