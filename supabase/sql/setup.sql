@@ -309,6 +309,8 @@ CREATE TABLE public.agendamentos (
   agendamento_especial BOOLEAN NOT NULL DEFAULT FALSE,
   pago_em             TIMESTAMPTZ,
   atendido_em         TIMESTAMPTZ,
+  -- última vez que um documento do cliente (PDF) foi gerado pelo painel
+  documento_gerado_em TIMESTAMPTZ,
   criado_em           TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   -- qtd de perguntas do item (naipe: declarada; demais: do catálogo).
   -- Antes só existia no payload da RPC — necessária p/ complemento.

@@ -4772,3 +4772,67 @@ body.drawer-aberto { overflow: hidden; }
   .adm-item, .adm-stat-card, .agenda-card-overview,
   .desc-card, .esp-card, .cup-card, .cat-card { transition: none; }
 }
+
+/* ============================================================
+   DOCUMENTO DO CLIENTE
+   Modal com o documento-verde.html embutido (iframe) + selinho
+   "doc emitido" nos cards (agendamentos.documento_gerado_em).
+   ============================================================ */
+.adm-badge-doc {
+  background: var(--s-sand-1) !important;
+  color: var(--t-sage) !important;
+  border: 1px solid rgba(147, 172, 143, 0.35) !important;
+  font-size: .62rem !important;
+}
+
+.doc-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 18px;
+}
+.doc-modal[hidden] { display: none; }
+.doc-modal-fundo {
+  position: absolute;
+  inset: 0;
+  background: rgba(5, 12, 8, 0.72);
+  backdrop-filter: blur(3px);
+}
+.doc-modal-caixa {
+  position: relative;
+  width: min(980px, 100%);
+  height: min(92vh, 1100px);
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+  border: 1px solid var(--bd-gold);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-lg);
+  overflow: hidden;
+}
+.doc-modal-topo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+}
+.doc-modal-topo strong {
+  font-size: .85rem;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.doc-modal-acoes { display: flex; gap: 8px; flex: none; }
+.doc-modal-iframe { flex: 1; width: 100%; border: 0; background: var(--bg); }
+
+@media (max-width: 620px) {
+  .doc-modal { padding: 0; }
+  .doc-modal-caixa { height: 100%; width: 100%; border-radius: 0; border: 0; }
+}

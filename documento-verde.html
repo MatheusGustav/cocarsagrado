@@ -104,6 +104,65 @@
     .brota--3 { animation-delay: 0.3s; }
     @keyframes brota { to { opacity: 1; transform: translateY(0); } }
 
+    /* === edição direta no navegador ===
+       Os campos são contenteditable: clica e digita. O que foi
+       digitado vira rascunho no localStorage (por agendamento);
+       "Recomeçar" apaga. O halo dourado some no PDF. */
+    [contenteditable] { border-radius: 6px; }
+    [contenteditable]:hover { box-shadow: 0 0 0 1px rgba(210, 186, 124, 0.35); cursor: text; }
+    [contenteditable]:focus {
+      outline: none;
+      box-shadow: 0 0 0 1px rgba(210, 186, 124, 0.6);
+      background: rgba(210, 186, 124, 0.06);
+    }
+    .btn-pdf {
+      position: fixed;
+      right: 22px;
+      bottom: 22px;
+      z-index: 10;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-family: var(--fonte-corpo);
+      font-size: 14px;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      color: var(--color-primary-deep);
+      background: var(--color-gold-light);
+      border: none;
+      border-radius: 999px;
+      padding: 12px 22px;
+      cursor: pointer;
+      box-shadow: 6px 6px 0 rgba(0, 0, 0, 0.28);
+      transition: transform 0.2s var(--curva-suave), box-shadow 0.2s var(--curva-suave);
+    }
+    .btn-pdf:hover { transform: translateY(-2px); box-shadow: 8px 8px 0 rgba(0, 0, 0, 0.28); }
+    .doc-acoes {
+      position: fixed;
+      right: 22px;
+      bottom: 22px;
+      z-index: 10;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .doc-acoes .btn-pdf { position: static; }
+    .btn-limpar {
+      font-family: var(--fonte-corpo);
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--color-gold-light);
+      background: rgba(14, 33, 23, 0.85);
+      border: 1px solid rgba(210, 186, 124, 0.5);
+      border-radius: 999px;
+      padding: 10px 18px;
+      cursor: pointer;
+    }
+    .btn-limpar:hover { background: rgba(210, 186, 124, 0.12); }
+
+    /* embutido no modal do painel: papel encosta mais nas bordas */
+    html.embutido body { padding: 20px 12px; }
+
     /* ============================================================
        A FOLHA DE PAPEL (verde)
        ============================================================ */
@@ -349,7 +408,8 @@
       .brota, .ramo-path { animation: none; opacity: 1; transform: none; stroke-dashoffset: 0; }
       .plaqueta, .destaque { break-inside: avoid; }
       .pena { opacity: 0.14; }
-      .doc-nota { display: none; }
+      .doc-nota, .doc-acoes { display: none; }
+      [contenteditable]:hover, [contenteditable]:focus { box-shadow: none; background: none; }
     }
 
     @media (prefers-reduced-motion: reduce) {
@@ -396,21 +456,21 @@
           <img src="images/logo-icone.webp" alt="Cocar Sagrado" class="doc-logo" width="60" height="60" />
         </div>
         <p class="eyebrow">Cocar Sagrado</p>
-        <h1 class="doc-title">[Título do documento]</h1>
-        <p class="doc-sub">[Subtítulo ou descrição breve]</p>
+        <h1 class="doc-title" contenteditable="true" data-campo="titulo">[Título do documento]</h1>
+        <p class="doc-sub" contenteditable="true" data-campo="sub">[Subtítulo ou descrição breve]</p>
 
         <dl class="doc-meta">
           <div>
-            <dt>[Rótulo]</dt>
-            <dd>[Valor]</dd>
+            <dt contenteditable="true" data-campo="m1r" id="meta-rotulo-1">[Rótulo]</dt>
+            <dd contenteditable="true" data-campo="m1v" id="meta-valor-1">[Valor]</dd>
           </div>
           <div>
-            <dt>[Rótulo]</dt>
-            <dd>[Valor]</dd>
+            <dt contenteditable="true" data-campo="m2r" id="meta-rotulo-2">[Rótulo]</dt>
+            <dd contenteditable="true" data-campo="m2v" id="meta-valor-2">[Valor]</dd>
           </div>
           <div>
-            <dt>[Rótulo]</dt>
-            <dd>[Valor]</dd>
+            <dt contenteditable="true" data-campo="m3r" id="meta-rotulo-3">[Rótulo]</dt>
+            <dd contenteditable="true" data-campo="m3v" id="meta-valor-3">[Valor]</dd>
           </div>
         </dl>
 
@@ -425,13 +485,13 @@
       <!-- Corpo livre: use h2 (rótulo de seção), p, ul,
            .plaqueta (destaque central) e .destaque (citação). -->
       <section class="doc-corpo brota brota--2">
-        <h2>[Seção]</h2>
-        <p>[Conteúdo do documento.]</p>
+        <h2 contenteditable="true" data-campo="secao">[Seção]</h2>
+        <p contenteditable="true" data-campo="texto">[Conteúdo do documento.]</p>
       </section>
 
       <footer class="doc-footer brota brota--3">
         <div class="assinatura">
-          <strong>[Emitido por]</strong>
+          <strong contenteditable="true" data-campo="emitente" id="doc-emitente">[Emitido por]</strong>
           <span>Cocar Sagrado · cocarsagrado.com.br · @cocarsagrado</span>
         </div>
         <p class="axe">Muito axé.</p>
@@ -440,7 +500,86 @@
     </main>
   </div>
 
-  <p class="doc-nota">Documento emitido pelo Cocar Sagrado.</p>
+  <p class="doc-nota">Clica em qualquer campo pra editar · o rascunho fica salvo neste navegador até você Recomeçar.</p>
+
+  <div class="doc-acoes">
+    <button class="btn-limpar" type="button" id="btn-limpar" title="Apaga o rascunho e volta ao modelo limpo">Recomeçar</button>
+    <button class="btn-pdf" type="button" id="btn-pdf" title="Imprimir ou salvar como PDF">Gerar PDF</button>
+  </div>
+
+  <script>
+    (function () {
+      // Vindo do painel admin: ?ag=<id>&embutido=1&nome=&leitura=&data=&terapeuta=
+      const q = new URLSearchParams(location.search);
+      const campos = document.querySelectorAll('[contenteditable]');
+      const chaveRascunho = `doc-rascunho-${q.get('ag') || 'avulso'}`;
+
+      if (q.get('embutido')) document.documentElement.classList.add('embutido');
+
+      // 1) Pré-preenchimento com os dados do agendamento.
+      const poe = (id, texto) => {
+        const el = document.getElementById(id);
+        if (el && texto) el.textContent = texto;
+      };
+      if (q.get('nome')) {
+        poe('meta-rotulo-1', 'Cliente');
+        poe('meta-valor-1', q.get('nome'));
+        document.title = `Documento — ${q.get('nome')} — Cocar Sagrado`;
+      }
+      if (q.get('leitura')) { poe('meta-rotulo-2', 'Leitura'); poe('meta-valor-2', q.get('leitura')); }
+      if (q.get('data'))    { poe('meta-rotulo-3', 'Data');    poe('meta-valor-3', q.get('data')); }
+      poe('doc-emitente', q.get('terapeuta'));
+
+      // 2) Rascunho automático por agendamento, neste navegador.
+      //    Restaura por cima do pré-preenchimento: o que foi digitado vence.
+      try {
+        const dados = JSON.parse(localStorage.getItem(chaveRascunho));
+        if (dados) campos.forEach(el => {
+          const v = dados[el.dataset.campo];
+          if (v != null) el.innerHTML = v;
+        });
+      } catch (e) { /* rascunho corrompido: segue com o modelo limpo */ }
+
+      let tRascunho;
+      const salvarRascunho = () => {
+        const dados = {};
+        campos.forEach(el => { dados[el.dataset.campo] = el.innerHTML; });
+        try { localStorage.setItem(chaveRascunho, JSON.stringify(dados)); } catch (e) {}
+      };
+      campos.forEach(el => {
+        el.addEventListener('input', () => {
+          clearTimeout(tRascunho);
+          tRascunho = setTimeout(salvarRascunho, 350);
+        });
+        // Campo ainda com [placeholder] seleciona tudo ao focar: digitar já substitui.
+        el.addEventListener('focus', () => {
+          const t = el.textContent.trim();
+          if (t.startsWith('[') && t.endsWith(']')) {
+            const sel = getSelection();
+            sel.removeAllRanges();
+            const r = document.createRange();
+            r.selectNodeContents(el);
+            sel.addRange(r);
+          }
+        });
+      });
+
+      document.getElementById('btn-limpar').addEventListener('click', () => {
+        if (!confirm('Apagar o rascunho deste documento e recomeçar do modelo limpo?')) return;
+        localStorage.removeItem(chaveRascunho);
+        location.reload();
+      });
+
+      // 3) Gerar PDF: avisa o painel (selinho "doc emitido") e imprime.
+      document.getElementById('btn-pdf').addEventListener('click', () => {
+        const painel = window.parent !== window ? window.parent : window.opener;
+        if (q.get('ag') && painel) {
+          painel.postMessage({ tipo: 'documento-pdf-gerado', ag: q.get('ag') }, location.origin);
+        }
+        window.print();
+      });
+    })();
+  </script>
 
 </body>
 </html>

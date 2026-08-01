@@ -840,6 +840,10 @@ function criarItemAgendamento(ag) {
     ? `<span class="adm-badge adm-badge-adicao" title="Pergunta adicional comprada depois — responder junto com a leitura original"><svg class="ico" aria-hidden="true"><use href="#ico-mais"></use></svg> pergunta adicional</span>`
     : '';
 
+  const badgeDoc = ag.documento_gerado_em
+    ? `<span class="adm-badge adm-badge-doc" title="Documento emitido em ${_esc(formatarDatetime(ag.documento_gerado_em))}"><svg class="ico" aria-hidden="true"><use href="#ico-folha"></use></svg> doc emitido</span>`
+    : '';
+
   const acoes = montarAcoes(ag);
 
   item.innerHTML = `
@@ -850,6 +854,7 @@ function criarItemAgendamento(ag) {
       </div>
       <div class="adm-item-right">
         <span style="font-weight:700; color:var(--primary)">${_esc(valor)}</span>
+        ${badgeDoc}
         ${badgeAdicao}
         ${badgeTerapeuta}
         ${badge}
@@ -904,7 +909,9 @@ function criarItemGrupo(grupo) {
       </div>
       <div class="adm-grupo-leitura-right">
         <span>${_esc(valor)}</span>
+        ${ag.documento_gerado_em ? `<span class="adm-badge adm-badge-doc adm-badge-sm" title="Documento emitido em ${_esc(formatarDatetime(ag.documento_gerado_em))}"><svg class="ico" aria-hidden="true"><use href="#ico-folha"></use></svg> doc</span>` : ''}
         ${badgeSt}
+        <button class="ag-btn ag-btn-outline ag-btn-sm" onclick="abrirDocumento('${ag.id}')" title="Documento desta leitura — editar e Gerar PDF"><svg class="ico" aria-hidden="true"><use href="#ico-folha"></use></svg></button>
       </div>
     </div>`;
   }).join('');
@@ -991,6 +998,8 @@ function montarAcoes(ag) {
   if (fone.replace(/\D/g,'').length >= 10) {
     html += `<button class="ag-btn ag-btn-whatsapp ag-btn-sm" onclick="abrirWhatsApp('${escapeAttr(fone)}','${escapeAttr(nome)}','${escapeAttr(tipo)}','${escapeAttr(data)}','${escapeAttr(horaBtn)}')"><svg class="ico" aria-hidden="true"><use href="#ico-balao"></use></svg> WhatsApp</button>`;
   }
+
+  html += `<button class="ag-btn ag-btn-outline ag-btn-sm" onclick="abrirDocumento('${id}')" title="Abre o documento do Cocar já preenchido — editar e Gerar PDF"><svg class="ico" aria-hidden="true"><use href="#ico-folha"></use></svg> Documento</button>`;
 
   return html;
 }
@@ -1103,6 +1112,64 @@ function abrirWhatsApp(fone, nome, tipo, data, hora) {
   const msg = `Olá ${nome}! 😊\nRecebi seu pedido de ${tipo} para o dia ${data}${horaTexto}.\nEstá tudo confirmado! Combinaremos o horário por aqui. 🌙✨\nCocar Sagrado`;
   window.open(`https://wa.me/${dest}?text=${encodeURIComponent(msg)}`, '_blank');
 }
+
+// ============================================================
+// Documento do cliente (documento-verde.html)
+// ============================================================
+// Abre o modelo num modal (iframe) já preenchido via query string;
+// lá os campos são editáveis, o rascunho fica salvo por agendamento
+// e "Gerar PDF" imprime/salva sem sair do painel. Quando o PDF é
+// gerado, o doc avisa via postMessage e o card ganha o selinho
+// "doc emitido" (agendamentos.documento_gerado_em).
+function abrirDocumento(id) {
+  const ag = _agendamentosTodos.find(a => String(a.id) === String(id));
+  if (!ag) { _toastAdmin('Agendamento não encontrado — atualiza a lista.', 'aviso'); return; }
+  const q = new URLSearchParams();
+  q.set('ag', ag.id);
+  q.set('embutido', '1');
+  if (ag.cliente_nome)          q.set('nome', ag.cliente_nome);
+  if (ag.tipos_leitura?.nome)   q.set('leitura', ag.tipos_leitura.nome);
+  if (ag.data_agendamento)      q.set('data', formatarData(ag.data_agendamento));
+  if (ag.terapeuta)             q.set('terapeuta', terapeutaNome(ag.terapeuta));
+  document.getElementById('doc-modal-iframe').src = `/documento-verde.html?${q.toString()}`;
+  document.getElementById('doc-modal-titulo').textContent =
+    `Documento — ${ag.cliente_nome || 'cliente'}`;
+  document.getElementById('modal-documento').hidden = false;
+  document.body.style.overflow = 'hidden';
+}
+
+function fecharDocumento() {
+  const modal = document.getElementById('modal-documento');
+  if (modal.hidden) return;
+  modal.hidden = true;
+  // solta o iframe pra parar fontes/imagens e não imprimir por engano
+  document.getElementById('doc-modal-iframe').src = 'about:blank';
+  document.body.style.overflow = '';
+}
+
+function abrirDocumentoEmAba() {
+  const src = document.getElementById('doc-modal-iframe').src;
+  if (!src || src === 'about:blank') return;
+  window.open(src.replace(/([?&])embutido=1&?/, '$1').replace(/[?&]$/, ''), '_blank');
+  fecharDocumento();
+}
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') fecharDocumento();
+});
+
+// O doc avisa quando "Gerar PDF" foi clicado → grava o selinho.
+window.addEventListener('message', async (ev) => {
+  if (ev.origin !== location.origin) return;
+  if (ev.data?.tipo !== 'documento-pdf-gerado' || !ev.data.ag) return;
+  if (!_admAutenticado) return;
+  const { error } = await supabase
+    .from('agendamentos')
+    .update({ documento_gerado_em: new Date().toISOString() })
+    .eq('id', ev.data.ag);
+  if (error) { _toastAdmin('Não marquei o doc como emitido: ' + error.message, 'erro'); return; }
+  carregarAgendamentos({ silencioso: true });
+});
 
 // ============================================================
 // Exportar CSV

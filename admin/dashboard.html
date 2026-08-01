@@ -439,6 +439,22 @@
   </div>
 </div>
 
+<!-- Modal do documento do cliente: documento-verde.html embutido,
+     preenchido via query string; edita ali e gera o PDF sem sair. -->
+<div id="modal-documento" class="doc-modal" hidden>
+  <div class="doc-modal-fundo" onclick="fecharDocumento()"></div>
+  <div class="doc-modal-caixa" role="dialog" aria-modal="true" aria-label="Documento do cliente">
+    <div class="doc-modal-topo">
+      <strong id="doc-modal-titulo">Documento</strong>
+      <div class="doc-modal-acoes">
+        <button class="ag-btn ag-btn-outline ag-btn-sm" onclick="abrirDocumentoEmAba()" title="Abrir em aba separada"><svg class="ico" aria-hidden="true"><use href="#ico-compartilhar"></use></svg> Aba</button>
+        <button class="ag-btn ag-btn-outline ag-btn-sm" onclick="fecharDocumento()" title="Fechar"><svg class="ico" aria-hidden="true"><use href="#ico-fechar"></use></svg></button>
+      </div>
+    </div>
+    <iframe id="doc-modal-iframe" class="doc-modal-iframe" title="Documento do cliente"></iframe>
+  </div>
+</div>
+
 <!-- Scripts -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="../js/supabase-config.js"></script>
