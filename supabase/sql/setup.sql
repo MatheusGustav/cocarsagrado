@@ -311,6 +311,9 @@ CREATE TABLE public.agendamentos (
   atendido_em         TIMESTAMPTZ,
   -- última vez que um documento do cliente (PDF) foi gerado pelo painel
   documento_gerado_em TIMESTAMPTZ,
+  -- caminho do PDF no bucket privado "documentos" (NULL = nunca salvo);
+  -- a edge audio-email anexa junto do áudio quando presente
+  documento_pdf_path  TEXT,
   criado_em           TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   -- qtd de perguntas do item (naipe: declarada; demais: do catálogo).
   -- Antes só existia no payload da RPC — necessária p/ complemento.

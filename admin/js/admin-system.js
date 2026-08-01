@@ -849,7 +849,7 @@ function criarItemAgendamento(ag) {
     : '';
 
   const badgeDoc = ag.documento_gerado_em
-    ? `<span class="adm-badge adm-badge-doc" title="Documento emitido em ${_esc(formatarDatetime(ag.documento_gerado_em))}"><svg class="ico" aria-hidden="true"><use href="#ico-folha"></use></svg> doc emitido</span>`
+    ? `<span class="adm-badge adm-badge-doc" title="Documento salvo em ${_esc(formatarDatetime(ag.documento_gerado_em))}${ag.documento_pdf_path ? ' — o PDF vai anexado no e-mail do áudio' : ''}"><svg class="ico" aria-hidden="true"><use href="#ico-folha"></use></svg> doc emitido</span>`
     : '';
 
   const acoes = montarAcoes(ag);
@@ -919,7 +919,7 @@ function criarItemGrupo(grupo) {
       </div>
       <div class="adm-grupo-leitura-right">
         <span>${_esc(valor)}</span>
-        ${ag.documento_gerado_em ? `<span class="adm-badge adm-badge-doc adm-badge-sm" title="Documento emitido em ${_esc(formatarDatetime(ag.documento_gerado_em))}"><svg class="ico" aria-hidden="true"><use href="#ico-folha"></use></svg> doc</span>` : ''}
+        ${ag.documento_gerado_em ? `<span class="adm-badge adm-badge-doc adm-badge-sm" title="Documento salvo em ${_esc(formatarDatetime(ag.documento_gerado_em))}${ag.documento_pdf_path ? ' — o PDF vai anexado no e-mail do áudio' : ''}"><svg class="ico" aria-hidden="true"><use href="#ico-folha"></use></svg> doc</span>` : ''}
         ${badgeSt}
         <button class="ag-btn ag-btn-outline ag-btn-sm" onclick="abrirDocumento('${ag.id}')" title="Documento desta leitura — editar e Gerar PDF"><svg class="ico" aria-hidden="true"><use href="#ico-folha"></use></svg></button>
       </div>
@@ -1170,16 +1170,41 @@ document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') fecharDocumento();
 });
 
-// O doc avisa quando "Gerar PDF" foi clicado → grava o selinho.
+// O doc manda o PDF pronto (blob) → sobe pro bucket privado "documentos"
+// (upsert: regerar substitui), grava caminho + carimbo no agendamento e
+// responde o veredito pro iframe. É ESSE arquivo que a edge audio-email
+// anexa junto do áudio e que o compartilhar leva pro zap.
 window.addEventListener('message', async (ev) => {
   if (ev.origin !== location.origin) return;
-  if (ev.data?.tipo !== 'documento-pdf-gerado' || !ev.data.ag) return;
+  if (ev.data?.tipo !== 'documento-pdf' || !ev.data.ag || !(ev.data.blob instanceof Blob)) return;
   if (!_admAutenticado) return;
+  const agId = ev.data.ag;
+  const responder = (ok, erro) => {
+    try { ev.source?.postMessage({ tipo: 'documento-pdf-salvo', ag: agId, ok, erro }, location.origin); } catch (_) {}
+  };
+
+  const path = `agendamento-${agId}/documento.pdf`;
+  const { error: upErr } = await supabase.storage
+    .from('documentos')
+    .upload(path, ev.data.blob, { contentType: 'application/pdf', upsert: true });
+  if (upErr) {
+    _toastAdmin('Falha ao subir o PDF do documento: ' + upErr.message, 'erro');
+    responder(false, upErr.message);
+    return;
+  }
+
   const { error } = await supabase
     .from('agendamentos')
-    .update({ documento_gerado_em: new Date().toISOString() })
-    .eq('id', ev.data.ag);
-  if (error) { _toastAdmin('Não marquei o doc como emitido: ' + error.message, 'erro'); return; }
+    .update({ documento_gerado_em: new Date().toISOString(), documento_pdf_path: path })
+    .eq('id', agId);
+  if (error) {
+    _toastAdmin('PDF subiu, mas não marquei no pedido: ' + error.message, 'erro');
+    responder(false, error.message);
+    return;
+  }
+
+  responder(true);
+  _toastAdmin('Documento salvo — vai anexado no e-mail do áudio.', 'ok');
   carregarAgendamentos({ silencioso: true });
 });
 

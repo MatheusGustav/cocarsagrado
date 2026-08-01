@@ -14,6 +14,8 @@
 -- (*/10 min, gate x-cron-secret) só re-tenta LIBERADOS que falharam.
 -- Anexo até ~24MB; maior vai como link assinado de 90 dias. Só envia
 -- com pedido pago e e-mail presente; enviado_email_em marca o envio.
+-- Se agendamentos.documento_pdf_path existir, o PDF do documento vai
+-- ANEXADO no mesmo e-mail (bucket "documentos", abaixo).
 --
 -- LEGADO (conta no site morreu pro cliente em 2026-07-19, entrada
 -- da UI removida): user_id snapshot no INSERT (trigger), adoção
@@ -90,6 +92,26 @@ CREATE POLICY "audios_select_own" ON public.audios_cliente
 INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
 VALUES ('audios', 'audios', false, 52428800,
         ARRAY['audio/webm','audio/mp4','audio/mpeg','audio/ogg']);
+
+-- Bucket privado "documentos" (migration 20260801190000) -------------------
+-- PDF do documento do cliente (documento-verde.html rasterizado no painel;
+-- path agendamento-<id>/documento.pdf, upsert ao regerar). A edge
+-- audio-email ANEXA o PDF junto do áudio no mesmo e-mail quando
+-- agendamentos.documento_pdf_path está preenchido; o compartilhar do
+-- painel (WhatsApp) também leva os dois. Só admin acessa (UPDATE existe
+-- por causa do upsert).
+INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+VALUES ('documentos', 'documentos', false, 20971520, ARRAY['application/pdf']);
+
+CREATE POLICY "documentos_insert_admin" ON storage.objects FOR INSERT
+  TO authenticated WITH CHECK (bucket_id = 'documentos' AND public.is_admin());
+CREATE POLICY "documentos_update_admin" ON storage.objects FOR UPDATE
+  TO authenticated USING (bucket_id = 'documentos' AND public.is_admin())
+  WITH CHECK (bucket_id = 'documentos' AND public.is_admin());
+CREATE POLICY "documentos_delete_admin" ON storage.objects FOR DELETE
+  TO authenticated USING (bucket_id = 'documentos' AND public.is_admin());
+CREATE POLICY "documentos_select_admin" ON storage.objects FOR SELECT
+  TO authenticated USING (bucket_id = 'documentos' AND public.is_admin());
 
 CREATE POLICY "audios_insert_admin"
   ON storage.objects FOR INSERT

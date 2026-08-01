@@ -14,8 +14,13 @@
 //   liberou no painel (email_liberado_em preenchido).
 // - Só envia com pedido pago (status pago/confirmado/atendido) e com
 //   e-mail no agendamento; o resto fica pendente pro cron re-olhar.
+// - Documento salvo no painel (agendamentos.documento_pdf_path, bucket
+//   "documentos") vai ANEXADO junto do áudio no MESMO e-mail. Falha ao
+//   baixar o PDF derruba o envio inteiro (cron re-tenta) — mandar só o
+//   áudio marcaria enviado e o documento nunca chegaria.
 // - Anexo até ANEXO_MAX_BYTES (~24MB — teto prático do Resend após o
-//   inchaço do base64). Maior que isso: botão com link assinado (90d).
+//   inchaço do base64). Áudio que estoura o teto (já descontado o PDF):
+//   botão com link assinado (90d). O PDF sempre cabe (bucket limita 20MB).
 // - Idempotência: enviado_email_em marca o envio; a fila só devolve NULL.
 // - Falha num envio não derruba os demais; falhas avisam no Telegram.
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
@@ -116,17 +121,18 @@ function moldura(miolo: string) {
 </body></html>`
 }
 
-function emailAnexo(nome: string, tipo: string, data: string) {
+function emailAnexo(nome: string, tipo: string, data: string, temDoc: boolean) {
   return moldura(`
     <p style="margin:0 0 12px;">Olá, <strong>${esc(primeiroNome(nome))}</strong>.</p>
     <p style="margin:0 0 12px;">Sua <strong style="color:#D9B776;">${esc(tipo)}</strong>
       do dia ${dataBR(data)} está pronta. 🌙</p>
-    <p style="margin:0;">O áudio está <strong>anexado neste e-mail</strong> —
-      é só tocar pra ouvir, no seu tempo, quantas vezes quiser.</p>
+    <p style="margin:0;">${temDoc
+      ? 'O áudio e o <strong style="color:#D9B776;">documento</strong> da sua leitura estão <strong>anexados neste e-mail</strong> — é só abrir, no seu tempo, quantas vezes quiser.'
+      : 'O áudio está <strong>anexado neste e-mail</strong> — é só tocar pra ouvir, no seu tempo, quantas vezes quiser.'}</p>
   `)
 }
 
-function emailLink(nome: string, tipo: string, data: string, url: string) {
+function emailLink(nome: string, tipo: string, data: string, url: string, temDoc: boolean) {
   return moldura(`
     <p style="margin:0 0 12px;">Olá, <strong>${esc(primeiroNome(nome))}</strong>.</p>
     <p style="margin:0 0 12px;">Sua <strong style="color:#D9B776;">${esc(tipo)}</strong>
@@ -136,15 +142,18 @@ function emailLink(nome: string, tipo: string, data: string, url: string) {
     <div style="text-align:center;margin:24px 0 4px;">
       <a href="${url}" style="display:inline-block;background:#C0954E;color:#13251A;text-decoration:none;font-weight:bold;font-size:15px;padding:12px 28px;border-radius:999px;">▶ Ouvir minha leitura</a>
     </div>
+    ${temDoc ? '<p style="margin:16px 0 0;">Já o <strong style="color:#D9B776;">documento</strong> da sua leitura vai <strong>anexado neste e-mail</strong>.</p>' : ''}
   `)
 }
+
+type Anexo = { filename: string; content: string; content_type: string }
 
 // Devolve o id do Resend: é a chave que casa este envio com os avisos
 // assinados de entrega (função resend-webhook → email_eventos).
 async function enviarResend(to: string, subject: string, html: string,
-                            anexo?: { filename: string; content: string; content_type: string }) {
+                            anexos: Anexo[] = []) {
   const body: Record<string, unknown> = { from: EMAIL_FROM, to: [to], subject, html }
-  if (anexo) body.attachments = [anexo]
+  if (anexos.length) body.attachments = anexos
   const res = await fetch('https://api.resend.com/emails', {
     method: 'POST',
     headers: {
@@ -185,7 +194,7 @@ Deno.serve(async (req) => {
   let query = supabase
     .from('audios_cliente')
     .select(`id, storage_path, mime, tamanho_bytes, agendamentos!inner(
-      cliente_nome, cliente_email, data_agendamento, status, tipos_leitura(nome))`)
+      cliente_nome, cliente_email, data_agendamento, status, documento_pdf_path, tipos_leitura(nome))`)
     .is('enviado_email_em', null)
     .not('email_liberado_em', 'is', null)
   if (audioId) query = query.eq('id', audioId)
@@ -217,21 +226,43 @@ Deno.serve(async (req) => {
       const mime    = String(a.mime || 'audio/webm')
       const tamanho = Number(a.tamanho_bytes) || 0
 
+      // Documento salvo no painel viaja JUNTO no mesmo e-mail. Falha ao
+      // baixar o PDF = falha do envio inteiro (throw → cron re-tenta e o
+      // Telegram avisa): mandar só o áudio marcaria enviado e o documento
+      // nunca chegaria. O PDF sempre cabe anexado (bucket limita 20MB).
+      const anexos: Anexo[] = []
+      let docBytes = 0
+      const docPath = String(ag?.documento_pdf_path || '')
+      if (docPath) {
+        const { data: docBlob, error: docErr } = await supabase.storage.from('documentos').download(docPath)
+        if (docErr || !docBlob) throw new Error(`download documento: ${docErr?.message || 'vazio'}`)
+        const docBuf = Buffer.from(await docBlob.arrayBuffer())
+        docBytes = docBuf.byteLength
+        anexos.push({
+          filename: `seu-documento-${dataBR(data).replaceAll('/', '-')}.pdf`,
+          content: docBuf.toString('base64'),
+          content_type: 'application/pdf',
+        })
+      }
+      const temDoc = anexos.length > 0
+
       let resendId = ''
-      if (tamanho > 0 && tamanho <= ANEXO_MAX_BYTES) {
+      // O teto de anexo agora é dos DOIS somados; estourando, o áudio
+      // vira link assinado e o PDF continua anexado.
+      if (tamanho > 0 && tamanho + docBytes <= ANEXO_MAX_BYTES) {
         const { data: blob, error: dlErr } = await supabase.storage.from('audios').download(a.storage_path)
         if (dlErr || !blob) throw new Error(`download: ${dlErr?.message || 'vazio'}`)
-        const anexo = {
+        anexos.unshift({
           filename: `sua-leitura-${dataBR(data).replaceAll('/', '-')}.${EXT[mime] || 'webm'}`,
           content: Buffer.from(await blob.arrayBuffer()).toString('base64'),
           content_type: mime,
-        }
-        resendId = await enviarResend(email, subject, emailAnexo(nome, tipo, data), anexo)
+        })
+        resendId = await enviarResend(email, subject, emailAnexo(nome, tipo, data, temDoc), anexos)
       } else {
         const { data: signed, error: urlErr } = await supabase.storage
           .from('audios').createSignedUrl(a.storage_path, LINK_VALIDADE_S)
         if (urlErr || !signed?.signedUrl) throw new Error(`signedUrl: ${urlErr?.message || 'vazio'}`)
-        resendId = await enviarResend(email, subject, emailLink(nome, tipo, data, signed.signedUrl))
+        resendId = await enviarResend(email, subject, emailLink(nome, tipo, data, signed.signedUrl, temDoc), anexos)
       }
 
       // Marca DEPOIS do envio: se o update falhar, o pior caso é reenvio

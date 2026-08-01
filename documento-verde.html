@@ -452,6 +452,32 @@
       [contenteditable]:hover, [contenteditable]:focus { box-shadow: none; background: none; }
     }
 
+    /* === modo captura (Gerar PDF de verdade) ===
+       O PDF agora nasce de um retrato da própria página (html-to-image
+       → jsPDF), não do diálogo de impressão. Esta classe congela o
+       documento num layout DETERMINÍSTICO de 840px — celular, iframe
+       do painel e desktop geram o MESMO arquivo: todo clamp()/vw que
+       dependeria da tela é pinado no valor cheio de desktop, animação
+       vai pro estado final e os controles de edição somem. */
+    html.gerando-pdf body { padding: 0; }
+    html.gerando-pdf .canteiro { width: 840px; max-width: 840px; margin: 0; }
+    html.gerando-pdf .documento {
+      box-shadow: none;
+      border-radius: 0;
+      padding: 64px 60px;
+    }
+    html.gerando-pdf .brota, html.gerando-pdf .ramo-path {
+      animation: none; opacity: 1; transform: none; stroke-dashoffset: 0;
+    }
+    html.gerando-pdf .doc-title { font-size: 3rem; }
+    html.gerando-pdf .plaqueta-titulo { font-size: 2.4rem; }
+    html.gerando-pdf .destaque { padding: 26px 44px 26px 56px; }
+    html.gerando-pdf .ramo { width: 300px; }
+    html.gerando-pdf .pena { opacity: 0.14; width: 430px; height: auto; aspect-ratio: 664 / 900; }
+    html.gerando-pdf .doc-meta { gap: 14px 40px; }
+    html.gerando-pdf .doc-acoes, html.gerando-pdf .btn-secao, html.gerando-pdf .btn-remover { display: none; }
+    html.gerando-pdf [contenteditable]:hover, html.gerando-pdf [contenteditable]:focus { box-shadow: none; background: none; }
+
     @media (prefers-reduced-motion: reduce) {
       .jardim-blob { animation: none; }
       .brota { animation-duration: 0.01s; }
@@ -514,11 +540,14 @@
           </div>
         </dl>
 
+        <!-- fill/stroke também como ATRIBUTOS (não só CSS): a captura do
+             Gerar PDF não enxerga CSS de filho de SVG — sem eles, o ramo
+             sairia preto chapado no arquivo. Na tela o CSS segue mandando. -->
         <svg class="ramo" viewBox="0 0 320 44" aria-hidden="true">
-          <path class="ramo-path" pathLength="1" d="M6 26 C 60 12, 120 36, 160 24 C 210 10, 260 32, 314 18" />
-          <path class="ramo-path ramo-path--folha" pathLength="1" d="M72 22 q 8 -16 22 -13 q -5 16 -22 13 Z" />
-          <path class="ramo-path ramo-path--folha" pathLength="1" d="M182 24 q 10 13 25 9 q -6 -16 -25 -9 Z" />
-          <path class="ramo-path ramo-path--folha" pathLength="1" d="M260 24 q 8 -16 22 -13 q -5 16 -22 13 Z" />
+          <path class="ramo-path" pathLength="1" fill="none" stroke="#F7F3E8" stroke-width="1.7" stroke-linecap="round" d="M6 26 C 60 12, 120 36, 160 24 C 210 10, 260 32, 314 18" />
+          <path class="ramo-path ramo-path--folha" pathLength="1" fill="none" stroke="#F7F3E8" stroke-width="1.7" stroke-linecap="round" d="M72 22 q 8 -16 22 -13 q -5 16 -22 13 Z" />
+          <path class="ramo-path ramo-path--folha" pathLength="1" fill="none" stroke="#F7F3E8" stroke-width="1.7" stroke-linecap="round" d="M182 24 q 10 13 25 9 q -6 -16 -25 -9 Z" />
+          <path class="ramo-path ramo-path--folha" pathLength="1" fill="none" stroke="#F7F3E8" stroke-width="1.7" stroke-linecap="round" d="M260 24 q 8 -16 22 -13 q -5 16 -22 13 Z" />
         </svg>
       </header>
 
@@ -546,8 +575,15 @@
 
   <div class="doc-acoes">
     <button class="btn-limpar" type="button" id="btn-limpar" title="Apaga o rascunho e volta ao modelo limpo">Recomeçar</button>
-    <button class="btn-pdf" type="button" id="btn-pdf" title="Imprimir ou salvar como PDF">Gerar PDF</button>
+    <button class="btn-limpar" type="button" id="btn-imprimir" title="Abrir o diálogo de impressão (cópia em papel)">Imprimir</button>
+    <button class="btn-pdf" type="button" id="btn-pdf" title="Gera o PDF de verdade — no painel ele fica salvo no pedido e vai anexado no e-mail do áudio">Gerar PDF</button>
   </div>
+
+  <!-- Motor do "Gerar PDF de verdade": html-to-image tira o retrato da
+       página com o próprio motor do navegador (fidelidade total de fonte
+       e CSS) e o jsPDF encaderna em A4. Vendorados: sem CDN em produção. -->
+  <script src="/js/vendor/html-to-image.min.js"></script>
+  <script src="/js/vendor/jspdf.umd.min.js"></script>
 
   <script>
     (function () {
@@ -647,14 +683,175 @@
         location.reload();
       });
 
-      // 3) Gerar PDF: avisa o painel (selinho "doc emitido") e imprime.
-      document.getElementById('btn-pdf').addEventListener('click', () => {
-        const painel = window.parent !== window ? window.parent : window.opener;
-        if (q.get('ag') && painel) {
-          painel.postMessage({ tipo: 'documento-pdf-gerado', ag: q.get('ag') }, location.origin);
+      // 3) Gerar PDF de verdade.
+      //    O arquivo nasce aqui no navegador: retrato da página via
+      //    html-to-image (SVG foreignObject = o MESMO motor de render,
+      //    então fonte, pena e folhagem saem idênticos à tela) fatiado
+      //    em A4 pelo jsPDF. No painel, o blob viaja por postMessage e
+      //    o admin-system sobe pro bucket "documentos" — é esse arquivo
+      //    que o e-mail do áudio anexa e o compartilhar leva pro zap.
+      //    Fora do painel, o PDF é baixado direto.
+      const A4_L = 595.28, A4_A = 841.89; // pontos (pt)
+      const DPR  = 2;                     // nitidez da captura
+      const FUNDO_DOC = '#142E20';
+
+      async function gerarPdfBlob() {
+        if (!window.htmlToImage || !window.jspdf) {
+          throw new Error('As bibliotecas de PDF não carregaram — confere a conexão e recarrega a página. (O botão Imprimir segue funcionando.)');
         }
-        window.print();
+        document.activeElement?.blur?.();
+        const raiz = document.querySelector('.canteiro');
+        // Modo captura: layout determinístico de 840px (ver CSS .gerando-pdf)
+        document.documentElement.classList.add('gerando-pdf');
+        try {
+          void raiz.offsetWidth; // aplica o layout de captura antes de medir
+          const alturaCss = raiz.offsetHeight;
+
+          // Fronteiras seguras de corte (não decapitar linha de texto):
+          // TOPO de bloco/título (cortar ANTES manda ele inteiro pra
+          // próxima página — título nunca fica órfão no pé da página) e
+          // FUNDO de conteúdo completo. Fundo de h2 fica de fora de
+          // propósito: cortar logo depois de um título é órfão na certa.
+          const topoRaiz = raiz.getBoundingClientRect().top;
+          const cortes = new Set();
+          const marcar = (sel, lado) => raiz.querySelectorAll(sel).forEach(el => {
+            const r = el.getBoundingClientRect();
+            cortes.add(Math.round(((lado === 'topo' ? r.top : r.bottom) - topoRaiz) * DPR));
+          });
+          marcar('.bloco, .doc-corpo h2, .plaqueta, .destaque, .doc-meta, .doc-footer', 'topo');
+          marcar('.doc-header, .doc-corpo p, .doc-corpo li, .bloco, .plaqueta, .destaque', 'fundo');
+
+          const opts = { pixelRatio: DPR, backgroundColor: FUNDO_DOC };
+          // Safari às vezes entrega a 1ª captura sem imagem/fonte embutida;
+          // a passada dupla é barata e vale em todo navegador.
+          await htmlToImage.toCanvas(raiz, opts);
+          const canvas = await htmlToImage.toCanvas(raiz, opts);
+          if (!canvas.width || !canvas.height) throw new Error('a captura da página saiu vazia');
+
+          return montarPdf(canvas, [...cortes].sort((a, b) => a - b), alturaCss);
+        } finally {
+          document.documentElement.classList.remove('gerando-pdf');
+        }
+      }
+
+      function montarPdf(canvas, cortes, alturaCss) {
+        const { jsPDF } = window.jspdf;
+        const pdf = new jsPDF({ unit: 'pt', format: 'a4', compress: true });
+        pdf.setProperties({ title: document.title, creator: 'Cocar Sagrado' });
+        // Cortes foram medidos em px de CSS×DPR; o canvas pode arredondar
+        // diferente — reescala pro espaço real do canvas.
+        const escalaY = canvas.height / (alturaCss * DPR);
+        const cortesPx = cortes.map(c => Math.round(c * escalaY));
+        const capPx = Math.floor(canvas.width * (A4_A / A4_L)); // 1 página A4, em px do canvas
+
+        const fundoPagina = () => { pdf.setFillColor(FUNDO_DOC); pdf.rect(0, 0, A4_L, A4_A, 'F'); };
+        const jpeg = (cv) => cv.toDataURL('image/jpeg', 0.92);
+
+        // Documento é peça única (certificado): cabendo com folga de até
+        // 25%, encolhe pra fechar numa página só, centralizado.
+        if (canvas.height <= capPx * 1.25) {
+          const escala = Math.min(1, capPx / canvas.height);
+          const w = A4_L * escala;
+          const h = (canvas.height / canvas.width) * w;
+          fundoPagina();
+          pdf.addImage(jpeg(canvas), 'JPEG', (A4_L - w) / 2, (A4_A - h) / 2, w, h);
+          return pdf.output('blob');
+        }
+
+        // Longo de verdade: fatia em A4, cortando de preferência numa
+        // fronteira de bloco; o resto da última página fica no verde do doc.
+        let y = 0, primeira = true;
+        while (y < canvas.height - 4) {
+          const alvo = Math.min(y + capPx, canvas.height);
+          let corte = alvo;
+          if (alvo < canvas.height) {
+            const bons = cortesPx.filter(c => c > y + capPx * 0.55 && c <= alvo);
+            if (bons.length) corte = bons[bons.length - 1];
+          }
+          const fatia = document.createElement('canvas');
+          fatia.width = canvas.width;
+          fatia.height = corte - y;
+          fatia.getContext('2d').drawImage(canvas, 0, y, canvas.width, corte - y, 0, 0, canvas.width, corte - y);
+          if (!primeira) pdf.addPage();
+          fundoPagina();
+          pdf.addImage(jpeg(fatia), 'JPEG', 0, 0, A4_L, ((corte - y) / canvas.width) * A4_L);
+          primeira = false;
+          y = corte;
+        }
+        return pdf.output('blob');
+      }
+
+      // Entrega o blob pro painel e espera o veredito do upload.
+      function salvarNoPainel(painel, blob) {
+        return new Promise((resolve) => {
+          const ag = q.get('ag');
+          let timer = null;
+          const fim = (ok) => {
+            window.removeEventListener('message', ouvir);
+            clearTimeout(timer);
+            resolve(ok);
+          };
+          const ouvir = (ev) => {
+            if (ev.origin !== location.origin) return;
+            if (ev.data?.tipo !== 'documento-pdf-salvo' || String(ev.data.ag) !== String(ag)) return;
+            if (!ev.data.ok) alert('O painel não conseguiu salvar o PDF: ' + (ev.data.erro || 'tenta de novo'));
+            fim(!!ev.data.ok);
+          };
+          window.addEventListener('message', ouvir);
+          timer = setTimeout(() => { alert('O painel não respondeu ao salvar o PDF — tenta de novo.'); fim(false); }, 20000);
+          painel.postMessage({ tipo: 'documento-pdf', ag, blob }, location.origin);
+        });
+      }
+
+      function baixarBlob(blob) {
+        const nome = (`Documento - ${q.get('nome') || 'Cocar Sagrado'}`)
+          .replace(/[\\/:*?"<>|]/g, '').replace(/\s+/g, ' ').trim() + '.pdf';
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = nome;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 30000);
+      }
+
+      const btnPdf = document.getElementById('btn-pdf');
+      const btnPdfRotulo = btnPdf.innerHTML;
+      let pdfOcupado = false;
+
+      btnPdf.addEventListener('click', async () => {
+        if (pdfOcupado) return;
+        pdfOcupado = true;
+        btnPdf.disabled = true;
+        const soltar = (rotulo) => {
+          btnPdf.innerHTML = rotulo || btnPdfRotulo;
+          if (rotulo) setTimeout(() => { btnPdf.innerHTML = btnPdfRotulo; }, 2600);
+          btnPdf.disabled = false;
+          pdfOcupado = false;
+        };
+        try {
+          btnPdf.textContent = 'Gerando…';
+          const blob = await gerarPdfBlob();
+          const painel = window.parent !== window ? window.parent : window.opener;
+          if (q.get('ag') && painel) {
+            btnPdf.textContent = 'Salvando…';
+            const ok = await salvarNoPainel(painel, blob);
+            soltar(ok ? 'PDF salvo ✓' : null);
+          } else {
+            baixarBlob(blob);
+            soltar('PDF baixado ✓');
+          }
+        } catch (e) {
+          console.error('gerar PDF:', e);
+          alert('Não deu pra gerar o PDF: ' + (e?.message || e));
+          soltar(null);
+        }
       });
+
+      // Imprimir continua existindo pra cópia em papel — sem selinho:
+      // "doc emitido" agora significa PDF salvo no pedido.
+      document.getElementById('btn-imprimir').addEventListener('click', () => window.print());
     })();
   </script>
 
