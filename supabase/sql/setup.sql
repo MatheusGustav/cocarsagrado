@@ -1759,73 +1759,13 @@ END
 $do$;
 
 -- ============================================================
--- 13) CUPOM DE ANIVERSÁRIO
--- No dia do aniversário (SP), todo cliente com conta ganha 1 cupom
--- pessoal de uso único de R$ 15, válido por 15 dias. Cron diário
--- 'cupons-aniversario' às 00:05 SP; e-mail de parabéns via fluxo
--- de emails_pendentes (tipo 'aniversario', só com opt-in, 9h–20h).
+-- 13) CUPOM DE ANIVERSÁRIO — REMOVIDO (2026-08-01)
+-- O gerador automático (função gerar_cupons_aniversario + cron
+-- 'cupons-aniversario') foi desligado e dropado; cupom de
+-- aniversário agora é dado manualmente pelo admin (migration
+-- 20260801170000). Cupom manual com código NIVER% ainda recebe o
+-- template de parabéns e a janela 9h–20h em emails_pendentes.
 -- ============================================================
-CREATE OR REPLACE FUNCTION public.gerar_cupons_aniversario()
-RETURNS integer
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path = public
-AS $$
-DECLARE
-  v_hoje     date := (now() AT TIME ZONE 'America/Sao_Paulo')::date;
-  v_ano      integer := extract(year FROM v_hoje)::integer;
-  v_bissexto boolean := (v_ano % 4 = 0 AND (v_ano % 100 <> 0 OR v_ano % 400 = 0));
-  v_prefixo  text := 'NIVER' || to_char(v_hoje, 'YY') || '-';
-  v_n        integer;
-BEGIN
-  INSERT INTO public.cupons (codigo, valor_desconto, descricao, ativo, uso_unico, user_id, expira_em)
-  SELECT
-    -- 8 chars de md5 (colisão ~1 em 4 bi); idempotência real é o
-    -- NOT EXISTS por usuário/ano abaixo.
-    v_prefixo || upper(substr(md5(p.id::text || v_ano::text), 1, 8)),
-    15,
-    'aniversário: ' || p.nome,
-    TRUE,
-    TRUE,
-    p.id,
-    -- 23:59:59 SP do 7º dia após o aniversário
-    ((v_hoje + 8)::timestamp AT TIME ZONE 'America/Sao_Paulo') - interval '1 second'
-  FROM public.perfis p
-  WHERE (
-    (extract(month FROM p.nascimento) = extract(month FROM v_hoje)
-     AND extract(day FROM p.nascimento) = extract(day FROM v_hoje))
-    -- nascido em 29/02: em ano não-bissexto comemora em 28/02
-    OR (to_char(p.nascimento, 'MM-DD') = '02-29'
-        AND to_char(v_hoje, 'MM-DD') = '02-28'
-        AND NOT v_bissexto)
-  )
-  -- já ganhou este ano (mesmo que o admin tenha desativado)? pula.
-  AND NOT EXISTS (
-    SELECT 1 FROM public.cupons c
-    WHERE c.user_id = p.id AND c.codigo LIKE v_prefixo || '%'
-  )
-  ON CONFLICT (codigo) DO NOTHING;
-
-  GET DIAGNOSTICS v_n = ROW_COUNT;
-  RETURN v_n;
-END;
-$$;
-
-REVOKE ALL ON FUNCTION public.gerar_cupons_aniversario() FROM PUBLIC, anon, authenticated;
-GRANT EXECUTE ON FUNCTION public.gerar_cupons_aniversario() TO service_role;
-
-DO $do$
-BEGIN
-  IF EXISTS (SELECT 1 FROM cron.job WHERE jobname = 'cupons-aniversario') THEN
-    PERFORM cron.unschedule('cupons-aniversario');
-  END IF;
-  PERFORM cron.schedule(
-    'cupons-aniversario',
-    '5 3 * * *',
-    'SELECT public.gerar_cupons_aniversario();'
-  );
-END
-$do$;
 
 -- ============================================================
 -- 14) LIMPEZA DE CONTAS FANTASMA
