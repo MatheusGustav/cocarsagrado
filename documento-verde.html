@@ -190,6 +190,11 @@
       top: 50%;
       left: 50%;
       width: min(430px, 72%);
+      /* trava a proporção do arquivo (664×900) — nenhum contexto
+         (celular, iframe do painel, print) pode achatar a pena. */
+      height: auto;
+      aspect-ratio: 664 / 900;
+      object-fit: contain;
       transform: translate(-50%, -50%);
       opacity: 0.14;
       pointer-events: none;
@@ -439,7 +444,9 @@
       .documento { box-shadow: none; border-radius: 0; }
       .brota, .ramo-path { animation: none; opacity: 1; transform: none; stroke-dashoffset: 0; }
       .plaqueta, .destaque { break-inside: avoid; }
-      .pena { opacity: 0.14; }
+      /* no PDF a largura é a da folha, não a da tela — e a proporção
+         fica travada de novo aqui pra não depender da tela de origem. */
+      .pena { opacity: 0.14; width: 430px; height: auto; aspect-ratio: 664 / 900; }
       .doc-acoes, .btn-secao, .btn-remover { display: none; }
       .bloco { break-inside: avoid; }
       [contenteditable]:hover, [contenteditable]:focus { box-shadow: none; background: none; }
