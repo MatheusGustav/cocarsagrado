@@ -355,10 +355,11 @@
     }
 
     @media print {
-      body { padding: 0; background: #fff; }
+      body { padding: 0; background: var(--color-bg-card); print-color-adjust: exact; -webkit-print-color-adjust: exact; }
       .canteiro { max-width: none; }
       .documento { box-shadow: none; border-radius: 0; border: none; }
       .brota, .ramo-path { animation: none; opacity: 1; transform: none; stroke-dashoffset: 0; }
+      .plaqueta, .destaque { break-inside: avoid; }
       .pena { opacity: 0.1; print-color-adjust: exact; -webkit-print-color-adjust: exact; }
       .doc-nota { display: none; }
     }

@@ -353,10 +353,11 @@
     }
 
     @media print {
-      body { padding: 0; background: var(--color-primary-deep); print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+      body { padding: 0; background: var(--color-primary); print-color-adjust: exact; -webkit-print-color-adjust: exact; }
       .canteiro { max-width: none; }
       .documento { box-shadow: none; border-radius: 0; }
       .brota, .ramo-path { animation: none; opacity: 1; transform: none; stroke-dashoffset: 0; }
+      .plaqueta, .destaque { break-inside: avoid; }
       .pena { opacity: 0.14; }
       .doc-nota { display: none; }
     }
