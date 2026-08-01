@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Confirmação de Exu — Cocar Sagrado</title>
+  <meta name="description" content="Documento de registro de Confirmação de Exu — Cocar Sagrado." />
+  <meta name="robots" content="noindex" />
+  <link rel="icon" type="image/webp" href="/images/favicon.webp?v=3" />
+  <meta name="theme-color" content="#F7F3E8" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..700;1,9..144,300..700&family=Figtree:ital,wght@0,300..700;1,300..700&display=swap" rel="stylesheet" />
+  <style>
+    /* ============================================================
+       CONFIRMAÇÃO DE EXU · documento avulso — variante PAPEL
+       Herda o estudo V4 "Raiz Viva" do site: papel quente,
+       verdes em camadas, dourado, folhas que balançam e ramo
+       que se desenha. Autocontido — não depende dos CSS do site.
+       ============================================================ */
+    :root {
+      --color-primary:          #142E20;
+      --color-primary-deep:     #0E2117;
+      --color-gold:             #A9873B;
+      --color-gold-deep:        #8A6D2F;
+      --color-gold-light:       #D2BA7C;
+      --color-gold-mist:        #EAE0BE;
+      --color-bg-page:          #F7F3E8;
+      --color-bg-section-alt:   #EDEBD9;
+      --color-bg-card:          #FFFEF6;
+      --color-text-primary:     #182A1E;
+      --color-text-body:        #41513F;
+      --color-text-muted:       #85806B;
+      --color-neutral-stone:    #D8D2B8;
+      --v4-salvia:        #93AC8F;
+      --v4-salvia-forte:  #6E8F73;
+      --v4-sussurro:      #DDE5CC;
+      --v4-sombra-dura:   8px 8px 0 rgba(147, 172, 143, 0.3);
+      --v4-radius-a:      26px 10px 26px 10px;
+      --v4-radius-a-esp:  10px 26px 10px 26px;
+      --fonte-titulo: 'Fraunces', Georgia, 'Times New Roman', serif;
+      --fonte-corpo:  'Figtree', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      --curva-suave: cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html { color-scheme: light; }
+    body {
+      font-family: var(--fonte-corpo);
+      font-size: 16.5px;
+      line-height: 1.65;
+      background: var(--color-bg-page);
+      color: var(--color-text-body);
+      -webkit-font-smoothing: antialiased;
+      padding: clamp(18px, 4vw, 56px) clamp(12px, 3vw, 32px);
+    }
+    ::selection { background: var(--v4-sussurro); color: var(--color-primary-deep); }
+    img { max-width: 100%; }
+
+    /* === folha desenhada — balança devagar === */
+    .folha {
+      position: absolute;
+      color: var(--v4-salvia-forte);
+      transform-origin: 50% 100%;
+      animation: folha-balanca 9s ease-in-out infinite;
+      pointer-events: none;
+    }
+    .folha path {
+      fill: rgba(221, 229, 204, 0.55);
+      stroke: currentColor;
+      stroke-width: 1.6;
+      stroke-linecap: round;
+    }
+    .folha path:last-child { fill: none; }
+    @keyframes folha-balanca {
+      0%, 100% { transform: rotate(var(--rot, 0deg)); }
+      50%      { transform: rotate(calc(var(--rot, 0deg) + 7deg)); }
+    }
+    .folha--dourada { color: var(--color-gold); }
+    .folha--dourada path { fill: rgba(234, 224, 190, 0.6); }
+
+    /* === ramo que se desenha ao abrir o documento === */
+    .ramo { display: block; width: min(300px, 72vw); margin: 26px auto 0; }
+    .ramo-path {
+      fill: none;
+      stroke: var(--v4-salvia-forte);
+      stroke-width: 1.7;
+      stroke-linecap: round;
+      stroke-dasharray: 1;
+      stroke-dashoffset: 1;
+      animation: ramo-desenha 1.5s ease 0.45s forwards;
+    }
+    .ramo-path--folha { animation-delay: 1.25s; animation-duration: 0.8s; }
+    @keyframes ramo-desenha { to { stroke-dashoffset: 0; } }
+
+    /* === blob que respira === */
+    .jardim-blob {
+      position: absolute;
+      border-radius: 58% 42% 55% 45% / 45% 52% 48% 55%;
+      animation: blob-respira 14s ease-in-out infinite;
+      pointer-events: none;
+    }
+    @keyframes blob-respira {
+      0%, 100% { border-radius: 58% 42% 55% 45% / 45% 52% 48% 55%; transform: rotate(0deg) scale(1); }
+      33%      { border-radius: 45% 55% 48% 52% / 55% 45% 58% 42%; transform: rotate(2deg) scale(1.03); }
+      66%      { border-radius: 52% 48% 42% 58% / 48% 58% 45% 52%; transform: rotate(-2deg) scale(0.985); }
+    }
+
+    /* === entrada suave === */
+    .brota { opacity: 0; transform: translateY(14px); animation: brota 0.8s var(--curva-suave) forwards; }
+    .brota--2 { animation-delay: 0.15s; }
+    .brota--3 { animation-delay: 0.3s; }
+    .brota--4 { animation-delay: 0.45s; }
+    @keyframes brota { to { opacity: 1; transform: translateY(0); } }
+
+    /* ============================================================
+       A FOLHA DE PAPEL
+       ============================================================ */
+    .canteiro { position: relative; max-width: 840px; margin: 0 auto; }
+
+    .canteiro > .folha--a { width: 34px; top: -14px; right: -10px; --rot: 18deg; }
+    .canteiro > .folha--b { width: 26px; bottom: 7%; left: -16px; --rot: -24deg; animation-delay: -3s; }
+    .canteiro > .folha--c { width: 20px; top: 32%; left: -26px; --rot: 40deg; animation-delay: -6s; }
+    .canteiro > .folha--d { width: 22px; top: 12%; right: -22px; --rot: -14deg; animation-delay: -4.5s; }
+    .canteiro > .folha--e { width: 30px; bottom: -18px; right: 8%; --rot: 28deg; animation-delay: -7.5s; }
+
+    .documento {
+      position: relative;
+      background: var(--color-bg-card);
+      border: 1px solid rgba(169, 135, 59, 0.28);
+      border-radius: var(--v4-radius-a);
+      box-shadow: var(--v4-sombra-dura);
+      padding: clamp(30px, 6vw, 64px) clamp(22px, 5.5vw, 60px);
+      overflow: hidden;
+    }
+    /* moldura interna — toque de certificado */
+    .documento::before {
+      content: "";
+      position: absolute;
+      inset: 12px;
+      border: 1px solid rgba(169, 135, 59, 0.2);
+      border-radius: var(--v4-radius-a-esp);
+      pointer-events: none;
+    }
+
+    /* === cabeçalho === */
+    .doc-header { position: relative; text-align: center; }
+    .jardim-mini {
+      position: relative;
+      width: 76px; height: 76px;
+      margin: 0 auto 18px;
+      display: grid;
+      place-items: center;
+    }
+    .jardim-mini .jardim-blob--salvia { inset: -8px; background: rgba(147, 172, 143, 0.28); }
+    .jardim-mini .jardim-blob--ouro { inset: 6px -14px -6px 14px; background: rgba(210, 186, 124, 0.3); animation-delay: -7s; }
+    .doc-logo { position: relative; width: 60px; height: 60px; border-radius: 50%; }
+
+    .eyebrow {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 14px;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.24em;
+      text-transform: uppercase;
+      color: var(--color-gold-deep);
+      margin-bottom: 16px;
+    }
+    .eyebrow::before, .eyebrow::after {
+      content: "";
+      width: 34px;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--color-gold));
+    }
+    .eyebrow::after { background: linear-gradient(90deg, var(--color-gold), transparent); }
+
+    .doc-title {
+      font-family: var(--fonte-titulo);
+      font-optical-sizing: auto;
+      font-weight: 560;
+      font-size: clamp(2rem, 5.2vw, 3rem);
+      line-height: 1.08;
+      letter-spacing: -0.015em;
+      color: var(--color-text-primary);
+      text-wrap: balance;
+    }
+    .grifo { font-style: italic; font-weight: 460; color: var(--color-gold-deep); }
+    .doc-sub { margin-top: 12px; color: var(--color-text-muted); font-size: 15px; }
+
+    /* === meta: consulente · data · atendido por === */
+    .doc-meta {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 14px 40px;
+      margin-top: 30px;
+      padding: 16px 10px;
+      border-top: 1px solid var(--color-neutral-stone);
+      border-bottom: 1px solid var(--color-neutral-stone);
+    }
+    .doc-meta div { text-align: center; }
+    .doc-meta dt {
+      font-size: 10.5px;
+      font-weight: 600;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--color-text-muted);
+    }
+    .doc-meta dd { font-weight: 600; color: var(--color-text-primary); font-size: 15.5px; }
+
+    /* === nome revelado === */
+    .nome-plaqueta {
+      position: relative;
+      margin: 34px auto 0;
+      max-width: 560px;
+      text-align: center;
+      background: var(--color-bg-section-alt);
+      border: 1px solid rgba(169, 135, 59, 0.28);
+      border-radius: var(--v4-radius-a-esp);
+      padding: 26px 26px 30px;
+    }
+    .nome-plaqueta .rotulo {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--color-gold-deep);
+    }
+    .nome-exu {
+      font-family: var(--fonte-titulo);
+      font-weight: 560;
+      font-size: clamp(1.7rem, 4.6vw, 2.5rem);
+      line-height: 1.1;
+      color: var(--color-primary);
+      margin-top: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+    .nome-exu .folhinha {
+      width: 17px;
+      flex: none;
+      color: var(--v4-salvia-forte);
+      transform: rotate(-24deg);
+    }
+    .nome-exu .folhinha + span + .folhinha,
+    .nome-exu .folhinha:last-child { transform: rotate(24deg) scaleX(-1); }
+    .nome-exu .folhinha path {
+      fill: rgba(221, 229, 204, 0.55);
+      stroke: currentColor;
+      stroke-width: 1.6;
+      stroke-linecap: round;
+    }
+    .nome-exu .folhinha path:last-child { fill: none; }
+    .nome-reino { margin-top: 6px; color: var(--color-text-body); font-size: 15.5px; }
+    .nome-reino strong { color: var(--color-gold-deep); font-weight: 600; }
+
+    /* === campos do registro === */
+    .campos {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-top: 34px;
+    }
+    .campo {
+      background: var(--color-bg-page);
+      border: 1px solid var(--color-neutral-stone);
+      border-radius: 18px 8px 18px 8px;
+      padding: 18px 20px;
+    }
+    .campo--largo { grid-column: 1 / -1; }
+    .campo-rotulo {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--color-gold-deep);
+      margin-bottom: 8px;
+    }
+    .campo-rotulo svg { width: 10px; flex: none; color: var(--v4-salvia-forte); }
+    .campo-rotulo svg path { fill: rgba(221, 229, 204, 0.55); stroke: currentColor; stroke-width: 2; }
+    .campo p { color: var(--color-text-primary); font-size: 15.5px; }
+    .campo .obs { display: block; margin-top: 4px; color: var(--color-text-muted); font-size: 13.5px; }
+
+    /* === recado === */
+    .recado {
+      position: relative;
+      margin-top: 34px;
+      background: var(--color-bg-section-alt);
+      border-radius: var(--v4-radius-a);
+      padding: 30px clamp(22px, 4.5vw, 44px) 30px clamp(30px, 6vw, 56px);
+      overflow: hidden;
+    }
+    .recado::before {
+      content: "“";
+      position: absolute;
+      top: 2px;
+      left: 14px;
+      font-family: var(--fonte-titulo);
+      font-size: 74px;
+      line-height: 1;
+      color: rgba(169, 135, 59, 0.35);
+    }
+    .recado .campo-rotulo { margin-bottom: 10px; }
+    .recado p {
+      font-family: var(--fonte-titulo);
+      font-weight: 400;
+      font-size: 17.5px;
+      line-height: 1.7;
+      color: var(--color-text-primary);
+    }
+
+    /* === rodapé === */
+    .doc-footer {
+      margin-top: 38px;
+      padding-top: 22px;
+      border-top: 1px solid var(--color-neutral-stone);
+      display: flex;
+      flex-wrap: wrap;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 16px;
+    }
+    .assinatura strong { display: block; color: var(--color-text-primary); font-size: 15.5px; }
+    .assinatura span { color: var(--color-text-muted); font-size: 13.5px; }
+    .axe {
+      font-family: var(--fonte-titulo);
+      font-style: italic;
+      font-size: 21px;
+      color: var(--color-gold-deep);
+    }
+    .doc-nota {
+      margin: 16px auto 0;
+      max-width: 840px;
+      text-align: center;
+      color: var(--color-text-muted);
+      font-size: 12.5px;
+    }
+
+    @media (max-width: 620px) {
+      .campos { grid-template-columns: 1fr; }
+      .doc-meta { gap: 12px 26px; }
+      .canteiro > .folha--c { left: -12px; }
+    }
+
+    @media print {
+      body { padding: 0; background: #fff; }
+      .canteiro { max-width: none; }
+      .documento { box-shadow: none; border-radius: 0; border: none; }
+      .canteiro > .folha { display: none; }
+      .brota, .ramo-path { animation: none; opacity: 1; transform: none; stroke-dashoffset: 0; }
+      .doc-nota { display: none; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .folha, .jardim-blob { animation: none; }
+      .brota { animation-duration: 0.01s; }
+      .ramo-path { animation-duration: 0.01s; animation-delay: 0s; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="canteiro">
+    <svg class="folha folha--a" viewBox="0 0 40 64" aria-hidden="true"><path d="M20 3 C 33 18, 35 38, 20 61 C 5 38, 7 18, 20 3 Z" /><path d="M20 12 L 20 52" /></svg>
+    <svg class="folha folha--b" viewBox="0 0 40 64" aria-hidden="true"><path d="M20 3 C 33 18, 35 38, 20 61 C 5 38, 7 18, 20 3 Z" /><path d="M20 12 L 20 52" /></svg>
+    <svg class="folha folha--c folha--dourada" viewBox="0 0 40 64" aria-hidden="true"><path d="M20 3 C 33 18, 35 38, 20 61 C 5 38, 7 18, 20 3 Z" /><path d="M20 12 L 20 52" /></svg>
+    <svg class="folha folha--d" viewBox="0 0 40 64" aria-hidden="true"><path d="M20 3 C 33 18, 35 38, 20 61 C 5 38, 7 18, 20 3 Z" /><path d="M20 12 L 20 52" /></svg>
+    <svg class="folha folha--e folha--dourada" viewBox="0 0 40 64" aria-hidden="true"><path d="M20 3 C 33 18, 35 38, 20 61 C 5 38, 7 18, 20 3 Z" /><path d="M20 12 L 20 52" /></svg>
+
+    <main class="documento">
+
+      <header class="doc-header brota">
+        <div class="jardim-mini" aria-hidden="true">
+          <span class="jardim-blob jardim-blob--salvia"></span>
+          <span class="jardim-blob jardim-blob--ouro"></span>
+          <img src="images/logo-icone.webp" alt="Cocar Sagrado" class="doc-logo" width="60" height="60" />
+        </div>
+        <p class="eyebrow">Cocar Sagrado · Registro espiritual</p>
+        <h1 class="doc-title">Confirmação de <span class="grifo">Exu</span></h1>
+        <p class="doc-sub">Documento pessoal de registro do consulente</p>
+
+        <dl class="doc-meta">
+          <div>
+            <dt>Consulente</dt>
+            <dd>[Nome do consulente]</dd>
+          </div>
+          <div>
+            <dt>Data do registro</dt>
+            <dd>[dd/mm/aaaa]</dd>
+          </div>
+          <div>
+            <dt>Atendido por</dt>
+            <dd>Matheus — Babalorixá</dd>
+          </div>
+        </dl>
+
+        <svg class="ramo" viewBox="0 0 320 44" aria-hidden="true">
+          <path class="ramo-path" pathLength="1" d="M6 26 C 60 12, 120 36, 160 24 C 210 10, 260 32, 314 18" />
+          <path class="ramo-path ramo-path--folha" pathLength="1" d="M72 22 q 8 -16 22 -13 q -5 16 -22 13 Z" />
+          <path class="ramo-path ramo-path--folha" pathLength="1" d="M182 24 q 10 13 25 9 q -6 -16 -25 -9 Z" />
+          <path class="ramo-path ramo-path--folha" pathLength="1" d="M260 24 q 8 -16 22 -13 q -5 16 -22 13 Z" />
+        </svg>
+      </header>
+
+      <section class="nome-plaqueta brota brota--2" aria-label="Nome do Exu">
+        <p class="rotulo">Seu Exu é</p>
+        <p class="nome-exu">
+          <svg class="folhinha" viewBox="0 0 40 64" aria-hidden="true"><path d="M20 3 C 33 18, 35 38, 20 61 C 5 38, 7 18, 20 3 Z" /><path d="M20 12 L 20 52" /></svg>
+          <span>[Nome do Exu]</span>
+          <svg class="folhinha" viewBox="0 0 40 64" aria-hidden="true"><path d="M20 3 C 33 18, 35 38, 20 61 C 5 38, 7 18, 20 3 Z" /><path d="M20 12 L 20 52" /></svg>
+        </p>
+        <p class="nome-reino">Reino: <strong>[Reino do Exu]</strong></p>
+      </section>
+
+      <section class="campos brota brota--3" aria-label="Registro do Exu">
+        <div class="campo campo--largo">
+          <p class="campo-rotulo"><svg viewBox="0 0 40 64" aria-hidden="true"><path d="M20 3 C 33 18, 35 38, 20 61 C 5 38, 7 18, 20 3 Z" /></svg> O que come</p>
+          <p>[Oferendas de agrado]</p>
+        </div>
+        <div class="campo">
+          <p class="campo-rotulo"><svg viewBox="0 0 40 64" aria-hidden="true"><path d="M20 3 C 33 18, 35 38, 20 61 C 5 38, 7 18, 20 3 Z" /></svg> Corte (imolação)</p>
+          <p>[Animal do corte]</p>
+        </div>
+        <div class="campo">
+          <p class="campo-rotulo"><svg viewBox="0 0 40 64" aria-hidden="true"><path d="M20 3 C 33 18, 35 38, 20 61 C 5 38, 7 18, 20 3 Z" /></svg> O que bebe</p>
+          <p>[Bebidas]</p>
+        </div>
+        <div class="campo campo--largo">
+          <p class="campo-rotulo"><svg viewBox="0 0 40 64" aria-hidden="true"><path d="M20 3 C 33 18, 35 38, 20 61 C 5 38, 7 18, 20 3 Z" /></svg> O que fuma</p>
+          <p>[Fumo]</p>
+        </div>
+      </section>
+
+      <section class="recado brota brota--4" aria-label="Recado">
+        <p class="campo-rotulo"><svg viewBox="0 0 40 64" aria-hidden="true"><path d="M20 3 C 33 18, 35 38, 20 61 C 5 38, 7 18, 20 3 Z" /></svg> Recado</p>
+        <p>[Recado do Exu ao consulente]</p>
+      </section>
+
+      <footer class="doc-footer brota brota--4">
+        <div class="assinatura">
+          <strong>Matheus — Babalorixá</strong>
+          <span>Cocar Sagrado · cocarsagrado.com.br · @cocarsagrado</span>
+        </div>
+        <p class="axe">Muito axé.</p>
+      </footer>
+
+    </main>
+  </div>
+
+  <p class="doc-nota">Documento de registro pessoal, emitido pelo Cocar Sagrado.</p>
+
+</body>
+</html>
