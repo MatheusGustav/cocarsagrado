@@ -1,9 +1,12 @@
 /* ============================================================
    COCAR SAGRADO — Admin: Áudios das leituras
    Fluxo em linha reta, gravação primeiro:
-   1. Orbe grava (toque grava, toque para) direto na entrada;
-      prévia = barrinhas + dock com player. O chip mostra o
-      destino (ou "sem cliente") e deixa escolher/trocar antes.
+   1. Mesa de fita: a leitura é um cassete com o nome do cliente
+      na etiqueta. Tecla GRAVAR gira os carretéis; o VU de agulha
+      mede a voz ao vivo (é o rosto da sentinela: agulha deitada
+      + led SEM SOM = mic morto). PARAR rebobina pra prévia, e o
+      cassete/tecla TOCAR tocam com o dock de player embaixo. O
+      chip mostra o destino (ou "sem cliente") e deixa trocar.
    2. "Salvar para um cliente…" abre a lista de agendamentos
       pagos; escolher com prévia pendente já salva na hora.
    3. O salvar sobe pro bucket privado "audios" +
@@ -11,6 +14,9 @@
       e-mail agora (edge audio-email; o cron de 10 em 10 min só
       re-tenta liberados que falharam), compartilhar, nova gravação.
    A aba "Áudios salvos" é o histórico, com (re)envio por e-mail.
+   Sentinela de mudez (3 camadas): aviso ao vivo no palco quando o
+   mic entrega silêncio digital, faixa vermelha na prévia quando o
+   arquivo inteiro saiu mudo, e confirm() na hora de salvar.
    ============================================================ */
 
 let _audAgendamentos = [];   // cache da busca de agendamentos
@@ -31,8 +37,13 @@ let _audPreviewUrl   = null;
 let _audAudioCtx     = null; // Web Audio só pra medir a amplitude da voz
 let _audAnalyser     = null;
 let _audAmostra      = null; // buffer reutilizado do analyser
-let _audOrbeAmp      = 0;    // amplitude suavizada que anima o orbe
-let _audOrbeRaf      = null;
+let _audSilencioDesde = 0;   // último instante em que o mic entregou som de verdade
+let _audAvisoVivo     = null; // aviso ativo no palco: 'silencio' | 'mute' | 'ended'
+let _audVuCtx        = null; // canvas 2d do VU de agulha
+let _audVuW          = 0;
+let _audVuH          = 0;
+let _audAgulhaPos    = -1;   // posição suavizada da agulha (-1 repouso .. +1 estourado)
+let _audAgulhaRaf    = null;
 let _audListenersOk  = false;
 let _audMicDevices    = [];  // audioinputs enumerados
 let _audWakeLock      = null;
@@ -41,14 +52,18 @@ let _audPlayerAudio   = null; // <audio> escondido que toca a prévia
 let _audPlayerRaf     = null;
 let _audPlayerRate    = 1;
 let _audPlayerSeeking = false;
-let _audPlayerCtx      = null; // Web Audio da prévia (anima as barrinhas)
+let _audPlayerCtx      = null; // Web Audio da prévia (move a agulha no play)
 let _audPlayerAnalyser = null;
-let _audPlayerFreq     = null; // buffer de frequências reutilizado
-let _audVisuEls        = null; // as 7 barrinhas montadas no palco
-let _audVisuAlturas    = [];   // altura suavizada de cada barrinha
-let _audVisuRaf        = null;
+let _audPlayerAmostra  = null; // buffer reutilizado do analyser da prévia
 
 const _AUD_TICK = 50; // resolução (ms) do relógio de duração da gravação
+
+// Limiares da sentinela de mudez. O ruído de fundo de um mic vivo fica
+// acima de _AUD_LIMIAR_VIVO (silêncio digital = amostras cravadas no
+// zero); voz de verdade passa fácil de _AUD_PICO_MUDO no arquivo.
+const _AUD_LIMIAR_VIVO = 0.01;  // amplitude ao vivo abaixo disso = mic morto
+const _AUD_SILENCIO_MS = 6000;  // quanto silêncio digital contínuo até acusar
+const _AUD_PICO_MUDO   = 0.02;  // pico do arquivo inteiro abaixo disso = inaudível
 
 function _audEsc(s) {
   return String(s ?? '')
@@ -98,6 +113,7 @@ function _audExtDoMime(mime) {
 // arquivo SALVO no bucket já é mp3 (e-mail e share saem prontos).
 const _audMp3Cache  = new WeakMap(); // blob original → Promise<blob mp3>
 const _audMp3Pronto = new WeakSet(); // blobs cuja conversão já terminou
+const _audNivelCache = new WeakMap(); // blob original → { pico, fracaoComSom } medidos na conversão
 
 function _audConverterParaMp3(blob) {
   if (_audMp3Cache.has(blob)) return _audMp3Cache.get(blob);
@@ -124,6 +140,7 @@ async function _audConverterParaMp3Interno(blob) {
   const BLOCO = 1152;
   const partes = [];
   const amostras = new Int16Array(BLOCO);
+  let pico = 0, comSom = 0;
   for (let i = 0, bloco = 0; i < buf.length; i += BLOCO, bloco++) {
     // Respiro a cada ~1.5s de áudio: a conversão roda em segundo plano
     // logo após parar de gravar, e não pode travar as barrinhas da prévia
@@ -133,6 +150,9 @@ async function _audConverterParaMp3Interno(blob) {
       let v = 0;
       for (const canal of canais) v += canal[i + j];
       v /= canais.length;
+      const abs = v < 0 ? -v : v;
+      if (abs > pico) pico = abs;
+      if (abs > 0.01) comSom++;
       amostras[j] = v < 0 ? Math.max(-1, v) * 0x8000 : Math.min(1, v) * 0x7FFF;
     }
     const chunk = enc.encodeBuffer(amostras.subarray(0, n));
@@ -140,6 +160,12 @@ async function _audConverterParaMp3Interno(blob) {
   }
   const fim = enc.flush();
   if (fim.length) partes.push(fim);
+
+  // Já passamos por cada amostra mesmo: este nível é o veredito de mudez
+  // do que REALMENTE sobe pro cliente (a prévia toca o blob original)
+  const fracaoComSom = comSom / (buf.length || 1);
+  _audNivelCache.set(blob, { pico, fracaoComSom });
+  console.info('[áudios] nível da gravação — pico', +pico.toFixed(4), '· fração com som', +fracaoComSom.toFixed(3));
 
   return new Blob(partes, { type: 'audio/mpeg' });
 }
@@ -264,8 +290,9 @@ async function inicializarAudios() {
   if (!_audListenersOk) {
     _audListenersOk = true;
     document.addEventListener('visibilitychange', () => {
-      if (document.visibilityState === 'visible' && _audRecorder?.state === 'recording' && !_audWakeLock) {
-        _audWakeLockPedir();
+      if (document.visibilityState === 'visible' && _audRecorder?.state === 'recording') {
+        if (!_audWakeLock) _audWakeLockPedir();
+        _audAudioCtx?.resume().catch(() => {}); // iOS suspende o contexto em interrupções
       }
     });
   }
@@ -323,13 +350,17 @@ function _audMostrarGravar() {
   document.getElementById('aud-tela-escolha').style.display = 'none';
   document.getElementById('aud-tela-gravar').style.display = '';
   _audChipRender();
+  // O canvas do VU pode ter nascido com a tela escondida (largura 0)
+  if (!_audVuCtx) _audVuDesenhar(_audAgulhaPos);
   // Se já existe prévia, o botão de salvar precisa refletir o destino atual
   const acoes = document.querySelector('#aud-dock .aud-dock-acoes');
   if (acoes && _audBlob) acoes.innerHTML = _audDockAcoes();
 }
 
-// Chip no topo do palco: deixa sempre visível pra quem o áudio vai
+// Chip no topo do palco: deixa sempre visível pra quem o áudio vai.
+// A etiqueta do cassete espelha o mesmo cliente, então segue junto.
 function _audChipRender() {
+  _audK7Etiqueta();
   const chip = document.getElementById('aud-cliente-chip');
   if (!chip) return;
   const ag = _audClienteAlvo;
@@ -436,7 +467,7 @@ function _audRenderLista(ags) {
 }
 
 // ============================================================
-// Passo 1 — gravador (orbe: toque grava, toque de novo para → preview)
+// Passo 1 — gravador (mesa de fita: GRAVAR gira, PARAR → preview)
 // ============================================================
 function _audSetErro(txt) {
   const el = document.getElementById('aud-erro');
@@ -444,26 +475,182 @@ function _audSetErro(txt) {
 }
 
 // ============================================================
-// Orbe que reage à voz (estilo modo voz do ChatGPT): a cada frame
-// lê a amplitude do analyser, suaviza (ataque rápido, soltura
-// lenta) e escreve em --amp no jardim do orbe — o CSS faz o resto.
+// Mesa de fita — o palco é um cassete: etiqueta de papel com o
+// nome do cliente, carretéis que giram, contador mecânico, VU de
+// agulha e teclas mecânicas. A agulha é o rosto da sentinela:
+// segue o mic na gravação e o player na prévia; mic morto =
+// agulha deitada no zero + led SEM SOM piscando.
 // ============================================================
-function _audOrbeVozIniciar() {
-  const jardim = document.querySelector('#aud-controles .aud-orbe-jardim');
-  if (!jardim) return;
-  cancelAnimationFrame(_audOrbeRaf);
-  const passo = () => {
-    const alvo = _audRecorder?.state === 'recording' ? _audAmplitudeAtual() : 0;
-    _audOrbeAmp += (alvo - _audOrbeAmp) * (alvo > _audOrbeAmp ? 0.4 : 0.12);
-    jardim.style.setProperty('--amp', _audOrbeAmp.toFixed(3));
-    _audOrbeRaf = requestAnimationFrame(passo);
-  };
-  _audOrbeRaf = requestAnimationFrame(passo);
+const _AUD_K7_ESTADOS = {
+  pronto:   'pronta pra gravar',
+  gravando: '● gravando…',
+  previa:   'gravada — confere e salva',
+  salvo:    'salva ✓ — pronta pra entrega',
+};
+
+function _audK7Html(modo) {
+  const teclas = modo === 'pronto'
+    ? '<button type="button" class="aud-k7-tecla aud-k7-tecla--rec" onclick="_audComecarGravacao()"><b>●</b> GRAVAR</button>'
+    : modo === 'gravando'
+      ? '<button type="button" class="aud-k7-tecla" onclick="_audPararGravacao()"><b>■</b> PARAR</button>'
+      : modo === 'previa'
+        ? '<button type="button" class="aud-k7-tecla" id="aud-k7-play" onclick="_audPlayerTogglePlay()"><b>▶</b> TOCAR</button>'
+        : '';
+  return `
+    <div class="aud-k7-palco">
+      <div class="aud-k7${modo === 'gravando' ? ' aud-k7--girando' : ''}" id="aud-k7"${modo === 'previa' ? ' onclick="_audPlayerTogglePlay()" title="Tocar / pausar"' : ''}>
+        <i class="aud-k7-paraf aud-k7-paraf--bl"></i><i class="aud-k7-paraf aud-k7-paraf--br"></i>
+        <div class="aud-k7-etiqueta">
+          <div class="aud-k7-nome" id="aud-k7-nome"></div>
+          <div class="aud-k7-sub"><span id="aud-k7-estado"></span><span class="aud-k7-lado">LADO A</span></div>
+        </div>
+        <div class="aud-k7-janela">
+          <div class="aud-k7-carretel"><div class="aud-k7-disco" id="aud-k7-disco-e"></div><div class="aud-k7-cubo"></div></div>
+          <div class="aud-k7-fita"></div>
+          <div class="aud-k7-carretel"><div class="aud-k7-disco" id="aud-k7-disco-d"></div><div class="aud-k7-cubo"></div></div>
+        </div>
+        <div class="aud-k7-odo" id="aud-k7-odo"><span>0</span><span>0</span><span class="aud-k7-odo-sep">:</span><span>0</span><span>0</span></div>
+      </div>
+      ${modo === 'salvo' ? '' : `
+      <div class="aud-vu">
+        <div class="aud-vu-caixa"><canvas id="aud-vu-canvas"></canvas></div>
+        <div class="aud-vu-legenda"><span>nível da voz</span><span class="aud-vu-led" id="aud-vu-led">sem som</span></div>
+      </div>
+      <div class="aud-k7-teclas">${teclas}</div>`}
+    </div>`;
 }
 
-function _audOrbeVozParar() {
-  if (_audOrbeRaf) { cancelAnimationFrame(_audOrbeRaf); _audOrbeRaf = null; }
-  _audOrbeAmp = 0;
+function _audK7Montar(modo) {
+  _audBotoes(_audK7Html(modo));
+  _audK7Etiqueta();
+  const estado = document.getElementById('aud-k7-estado');
+  if (estado) estado.textContent = _AUD_K7_ESTADOS[modo] || '';
+  _audK7Odo(_audMmSs(_audMs / 1000));
+  _audK7Discos(modo === 'pronto' ? 0 : Math.min(1, _audMs / 600000));
+  _audVuCtx = null; // canvas novo — re-mede no próximo desenho
+  _audAgulhaPos = -1;
+  if (modo !== 'salvo') _audVuDesenhar(_audAgulhaPos);
+}
+
+// Etiqueta escrita à mão: leitura + primeiro nome (quem resolve
+// escolher/trocar o cliente continua sendo o chip lá em cima)
+function _audK7Etiqueta() {
+  const nome = document.getElementById('aud-k7-nome');
+  if (!nome) return;
+  const ag = _audClienteAlvo;
+  nome.innerHTML = ag
+    ? `${_audEsc(ag.tipos_leitura?.nome || 'Leitura')} — <em>${_audEsc(_audPrimeiroNome(ag.cliente_nome))}</em>`
+    : 'Leitura — <em>sem cliente ainda</em>';
+}
+
+function _audK7Odo(txt) {
+  const odo = document.getElementById('aud-k7-odo');
+  if (odo) [...odo.children].forEach((s, i) => { s.textContent = txt[i] || ''; });
+}
+
+// Fita passando: o disco esquerdo esvazia e o direito enche (0..1
+// ≈ 10 min de leitura; passou disso fica cheio e segue gravando)
+function _audK7Discos(frac) {
+  const f = Math.min(1, Math.max(0, frac));
+  const e = document.getElementById('aud-k7-disco-e');
+  const d = document.getElementById('aud-k7-disco-d');
+  if (e) e.style.width = e.style.height = (46 - f * 24).toFixed(1) + 'px';
+  if (d) d.style.width = d.style.height = (22 + f * 24).toFixed(1) + 'px';
+}
+
+function _audK7Girar(girando) {
+  document.getElementById('aud-k7')?.classList.toggle('aud-k7--girando', !!girando);
+}
+
+function _audK7TeclaPlay(tocando) {
+  const t = document.getElementById('aud-k7-play');
+  if (!t) return;
+  t.innerHTML = tocando ? '<b>❚❚</b> PAUSA' : '<b>▶</b> TOCAR';
+  t.classList.toggle('aud-k7-tecla--apertada', !!tocando);
+}
+
+// ---------- VU de agulha (canvas na caixa de papel) ----------
+function _audVuPrep() {
+  const cv = document.getElementById('aud-vu-canvas');
+  if (!cv) { _audVuCtx = null; return false; }
+  const rect = cv.getBoundingClientRect();
+  if (!rect.width) { _audVuCtx = null; return false; }
+  const dpr = window.devicePixelRatio || 1;
+  cv.width = rect.width * dpr;
+  cv.height = rect.height * dpr;
+  _audVuCtx = cv.getContext('2d');
+  _audVuCtx.scale(dpr, dpr);
+  _audVuW = rect.width;
+  _audVuH = rect.height;
+  return true;
+}
+
+function _audVuDesenhar(pos) {
+  if (!_audVuCtx && !_audVuPrep()) return;
+  const g = _audVuCtx, W = _audVuW, H = _audVuH;
+  g.clearRect(0, 0, W, H);
+  // pivô abaixo da caixa (fica escondido): o arco sobra na janela
+  const cx = W / 2, cy = H + 26, R = H + 8;
+  for (let i = 0; i <= 20; i++) {
+    const a = (-35 + i * 70 / 20) * Math.PI / 180;
+    g.strokeStyle = i > 15 ? '#A6432D' : '#6B5526'; // zona vermelha no fim
+    g.lineWidth = i % 5 === 0 ? 2 : 1;
+    const r1 = R - (i % 5 === 0 ? 14 : 9);
+    g.beginPath();
+    g.moveTo(cx + Math.sin(a) * r1, cy - Math.cos(a) * r1);
+    g.lineTo(cx + Math.sin(a) * R, cy - Math.cos(a) * R);
+    g.stroke();
+  }
+  g.fillStyle = '#6B5526';
+  g.font = '700 9px Figtree, sans-serif';
+  g.fillText('0', cx - R * 0.72, cy - R * 0.52);
+  g.fillText('+3', cx + R * 0.62, cy - R * 0.52);
+  const aA = (-35 + ((pos + 1) / 2) * 70) * Math.PI / 180;
+  g.strokeStyle = '#2E2712';
+  g.lineWidth = 2.5;
+  g.beginPath();
+  g.moveTo(cx, cy);
+  g.lineTo(cx + Math.sin(aA) * (R - 4), cy - Math.cos(aA) * (R - 4));
+  g.stroke();
+  g.fillStyle = '#2E2712';
+  g.beginPath();
+  g.arc(cx, cy, 5, 0, 7);
+  g.fill();
+}
+
+// Loop da agulha: gravando segue o mic, prévia tocando segue o
+// player; fora disso assenta no repouso e o loop dorme sozinho.
+function _audAgulhaLoop() {
+  const gravando = _audRecorder?.state === 'recording';
+  const tocando = _audPlayerAudio && !_audPlayerAudio.paused && !_audPlayerAudio.ended;
+  const amp = gravando ? _audAmplitudeAtual() : tocando ? _audPlayerAmplitude() : 0;
+  const alvo = amp * 2 - 1;
+  _audAgulhaPos += (alvo - _audAgulhaPos) * (alvo > _audAgulhaPos ? 0.4 : 0.12);
+  _audVuDesenhar(_audAgulhaPos);
+  document.getElementById('aud-vu-led')?.classList.toggle('aud-vu-led--on',
+    _audAvisoVivo === 'silencio' || _audAvisoVivo === 'mute');
+  const ativo = gravando || tocando || Math.abs(alvo - _audAgulhaPos) > 0.01;
+  _audAgulhaRaf = ativo ? requestAnimationFrame(_audAgulhaLoop) : null;
+}
+
+function _audAgulhaAcordar() {
+  if (!_audAgulhaRaf) _audAgulhaRaf = requestAnimationFrame(_audAgulhaLoop);
+}
+
+function _audAgulhaParar() {
+  if (_audAgulhaRaf) { cancelAnimationFrame(_audAgulhaRaf); _audAgulhaRaf = null; }
+  _audAgulhaPos = -1;
+}
+
+function _audPlayerAmplitude() {
+  if (!_audPlayerAnalyser) return 0;
+  _audPlayerAnalyser.getByteTimeDomainData(_audPlayerAmostra);
+  let pico = 0;
+  for (let i = 0; i < _audPlayerAmostra.length; i++) {
+    const v = Math.abs(_audPlayerAmostra[i] - 128) / 128;
+    if (v > pico) pico = v;
+  }
+  return Math.min(1, pico * 1.6);
 }
 
 function _audAmplitudeAtual() {
@@ -482,6 +669,59 @@ function _audFecharAudioCtx() {
   _audAudioCtx = null;
   _audAnalyser = null;
   _audAmostra = null;
+}
+
+// ============================================================
+// Sentinela de mudez — já saiu daqui leitura de 10 min muda sem
+// ninguém perceber. A agulha do VU mostra o nível, mas quem acusa
+// é a sentinela: mic mudo no sistema, dispositivo errado ou outro
+// app tomando o mic entregam silêncio que o MediaRecorder grava
+// sem reclamar.
+// ============================================================
+function _audAvisar(tipo, msg) {
+  if (_audAvisoVivo === tipo) return;
+  _audAvisoVivo = tipo;
+  _audSetErro(msg);
+  navigator.vibrate?.([120, 60, 120]); // pra quem grava olhando as cartas, não a tela
+}
+
+function _audAvisoLimpar() {
+  if (!_audAvisoVivo) return;
+  _audAvisoVivo = null;
+  _audSetErro('');
+}
+
+function _audVigiarSilencio(agora) {
+  const trilha = _audStream?.getAudioTracks()[0];
+  // Contexto suspenso congela o analyser no centro (leria como mudez):
+  // sem monitor confiável não se acusa ao vivo — a prévia condena depois
+  const monitor = _audAnalyser && _audAudioCtx?.state === 'running';
+  if (monitor && !trilha?.muted && _audAmplitudeAtual() > _AUD_LIMIAR_VIVO) {
+    _audSilencioDesde = agora;
+    _audAvisoLimpar();
+    return;
+  }
+  if (!monitor && !trilha?.muted) { _audSilencioDesde = agora; return; }
+  if (!_audAvisoVivo && agora - _audSilencioDesde > _AUD_SILENCIO_MS) {
+    _audAvisar('silencio', '⚠️ Nenhum som captado há vários segundos — o áudio pode estar saindo mudo. Confere se o microfone não está silenciado.');
+  }
+}
+
+function _audPareceMudo(blob) {
+  const nivel = blob && _audNivelCache.get(blob);
+  return !!nivel && nivel.pico < _AUD_PICO_MUDO;
+}
+
+// Faixa vermelha no painel da prévia: a conversão mediu o arquivo
+// inteiro e não achou som
+function _audAvisarPreviaMuda() {
+  const painel = document.querySelector('#aud-dock .aud-dock-painel');
+  if (!painel || document.getElementById('aud-aviso-mudo')) return;
+  const aviso = document.createElement('div');
+  aviso.id = 'aud-aviso-mudo';
+  aviso.className = 'aud-aviso-mudo';
+  aviso.innerHTML = '<svg class="ico" aria-hidden="true"><use href="#ico-alerta"></use></svg><div><strong>Este áudio saiu mudo.</strong> O microfone não captou som do início ao fim — toca a prévia pra conferir e, se estiver vazio, regrava.</div>';
+  painel.prepend(aviso);
 }
 
 // ============================================================
@@ -546,17 +786,6 @@ function _audBotoes(html) {
   if (el) el.innerHTML = html;
 }
 
-// O orbe é o único controle (sem ícones): parado grava, gravando para.
-function _audOrbeHtml(gravando) {
-  return `
-    <div class="aud-orbe-jardim${gravando ? ' aud-orbe-jardim--gravando' : ''}">
-      <button type="button" class="aud-orbe"
-              onclick="${gravando ? '_audPararGravacao()' : '_audComecarGravacao()'}"
-              title="${gravando ? 'Parar' : 'Gravar'}"
-              aria-label="${gravando ? 'Parar gravação' : 'Gravar'}"></button>
-    </div>`;
-}
-
 function _audResetGravador() {
   document.getElementById('aud-pill-enviar')?.remove(); // pill apontaria pra áudio morto
   if (_audTimerInt) { clearInterval(_audTimerInt); _audTimerInt = null; }
@@ -572,12 +801,13 @@ function _audResetGravador() {
 
   const dock = document.getElementById('aud-dock');
   if (dock) dock.innerHTML = '';
+  _audAvisoVivo = null;
   _audSetErro('');
-  _audOrbeVozParar();
-  _audBotoes(_audOrbeHtml(false));
+  _audAgulhaParar();
+  _audK7Montar('pronto');
   _audAtualizarBeforeUnload();
 
-  // Gravação primeiro: a entrada é sempre o orbe; cliente se escolhe
+  // Gravação primeiro: a entrada é sempre o cassete; cliente se escolhe
   // no chip ou na hora de salvar
   _audEscolhaPraSalvar = false;
   _audMostrarGravar();
@@ -630,14 +860,36 @@ async function _audComecarGravacao() {
   _audBlob = null;
   _audMs = 0;
 
-  // Analyser só pro orbe; se falhar, grava mesmo assim (orbe parado)
+  // O sistema pode calar ou tomar o mic no meio da leitura (ligação,
+  // outro app, fone que desconecta) — o MediaRecorder segue gravando
+  // silêncio sem reclamar, então quem denuncia é a gente
+  const trilha = _audStream.getAudioTracks()[0];
+  trilha?.addEventListener('mute', () => {
+    if (_audRecorder?.state === 'recording') _audAvisar('mute', '⚠️ O sistema silenciou o microfone (outro app pegou ele?) — o áudio está saindo mudo agora.');
+  });
+  trilha?.addEventListener('unmute', () => {
+    if (_audAvisoVivo === 'mute') _audAvisoLimpar();
+  });
+  trilha?.addEventListener('ended', () => {
+    if (_audRecorder && _audRecorder.state !== 'inactive') {
+      _audAvisar('ended', '⚠️ O microfone parou de enviar áudio (desconectou?). A gravação foi encerrada com o que já tinha.');
+      _audPararGravacao(); // garante o onstop — nem todo navegador para sozinho
+    }
+  });
+
+  // Analyser pra agulha do VU e pra sentinela de mudez; se falhar, grava
+  // mesmo assim (agulha parada), mas avisa que ficou sem monitor de nível
   try {
     _audAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
     _audAnalyser = _audAudioCtx.createAnalyser();
     _audAnalyser.fftSize = 512;
     _audAudioCtx.createMediaStreamSource(_audStream).connect(_audAnalyser);
     _audAmostra = new Uint8Array(_audAnalyser.fftSize);
-  } catch (_) { _audFecharAudioCtx(); }
+    _audAudioCtx.resume().catch(() => {});
+  } catch (_) {
+    _audFecharAudioCtx();
+    _toastAdmin('Sem monitor de nível do microfone neste navegador — ouça a prévia antes de enviar.', 'info');
+  }
 
   _audRecorder = new MediaRecorder(_audStream, { mimeType: _audMime });
   _audRecorder.ondataavailable = e => { if (e.data?.size) _audChunks.push(e.data); };
@@ -646,13 +898,24 @@ async function _audComecarGravacao() {
     _audStream?.getTracks().forEach(t => t.stop());
     _audStream = null;
     _audFecharAudioCtx();
-    _audOrbeVozParar();
     _audWakeLockLiberar();
     _audBlob = new Blob(_audChunks, { type: _audMime.split(';')[0] });
+    if (!_audBlob.size) {
+      // Navegador não entregou nenhum chunk: melhor acusar agora do que
+      // mostrar uma prévia que não toca
+      _audResetGravador();
+      _audSetErro('A gravação saiu vazia — o navegador não entregou nenhum áudio. Tenta de novo.');
+      return;
+    }
+    if (_audAvisoVivo !== 'ended') _audAvisoLimpar(); // aviso ao vivo já cumpriu o papel
     _audMostrarPreview();
     // Já converte pra mp3 em segundo plano: quando salvar ou compartilhar
-    // (depois de ouvir a prévia), o arquivo estará pronto e ninguém espera
-    _audConverterParaMp3(_audBlob).catch(() => {});
+    // (depois de ouvir a prévia), o arquivo estará pronto e ninguém espera.
+    // A conversão também mede o nível — arquivo inteiro mudo ganha a faixa.
+    const gravado = _audBlob;
+    _audConverterParaMp3(gravado)
+      .then(() => { if (gravado === _audBlob && _audPareceMudo(gravado)) _audAvisarPreviaMuda(); })
+      .catch(() => {});
   };
   _audRecorder.onerror = () => {
     _audSetErro('Erro na gravação. Tente de novo.');
@@ -666,14 +929,20 @@ async function _audComecarGravacao() {
   // audio.duration depois: webm do MediaRecorder reporta Infinity no
   // Chrome).
   let ultimo = performance.now();
+  _audSilencioDesde = ultimo;
   _audTimerInt = setInterval(() => {
     const agora = performance.now();
-    if (_audRecorder?.state === 'recording') _audMs += agora - ultimo;
+    if (_audRecorder?.state === 'recording') {
+      _audMs += agora - ultimo;
+      _audVigiarSilencio(agora); // no setInterval, não no rAF: segue vivo com a tela apagada
+      _audK7Odo(_audMmSs(_audMs / 1000));
+      _audK7Discos(_audMs / 600000);
+    }
     ultimo = agora;
   }, _AUD_TICK);
 
-  _audBotoes(_audOrbeHtml(true));
-  _audOrbeVozIniciar();
+  _audK7Montar('gravando');
+  _audAgulhaAcordar();
 }
 
 function _audPararGravacao() {
@@ -703,7 +972,16 @@ function _audPlayPintar(btn, tocando) {
 }
 
 function _audMostrarPreview() {
-  _audVisuMontar(); // o orbe colapsa e vira as 7 barrinhas
+  // O cassete rebobina e vira o player: tecla TOCAR (e o próprio
+  // cassete) dão play; os controles finos ficam no dock embaixo
+  _audK7Montar('previa');
+  const k7 = document.getElementById('aud-k7');
+  if (k7) {
+    k7.classList.add('aud-k7--rebobina');
+    setTimeout(() => k7.classList.remove('aud-k7--rebobina'), 900);
+  }
+  _audK7Discos(0);    // fita de volta pro começo…
+  _audK7Odo('00:00'); // …e o contador junto (agora conta a reprodução)
 
   _audPreviewUrl = URL.createObjectURL(_audBlob);
   _audPlayerRate = 1;
@@ -744,15 +1022,19 @@ function _audMostrarPreview() {
   const btnPlay = document.getElementById('aud-player-play');
   _audPlayerAudio.addEventListener('play', () => {
     _audPlayPintar(btnPlay, true);
-    _audVisuLigarAnalyser();
+    _audPlayerLigarAnalyser();
     _audPlayerCtx?.resume().catch(() => {});
-    _audVisuAcordar();
+    _audK7Girar(true);
+    _audK7TeclaPlay(true);
+    _audAgulhaAcordar();
     _audPlayerLoop();
   });
   _audPlayerAudio.addEventListener('pause', () => {
     _audPlayPintar(btnPlay, false);
     _audPlayerAtualizarTempo();
-    _audVisuAcordar(); // deixa as barrinhas assentarem de volta no repouso
+    _audK7Girar(false);
+    _audK7TeclaPlay(false);
+    _audAgulhaAcordar(); // deixa a agulha assentar de volta no repouso
   });
 
   btnPlay.addEventListener('click', _audPlayerTogglePlay);
@@ -771,52 +1053,10 @@ function _audMostrarPreview() {
   _audAtualizarBeforeUnload();
 }
 
-// ============================================================
-// Visualizador da prévia: o orbe colapsa na linha do horizonte e
-// vira 7 barrinhas com as mesmas cores dele, centradas na vertical
-// (crescem pra cima E pra baixo). Tocando, um analyser no <audio>
-// manda a energia por banda: grave no centro, agudos nas pontas
-// (espelhado). Parado, repousam num arco e respiram. Tocar no
-// visualizador dá play/pause.
-// ============================================================
-const _AUD_VISU_CORES = ['cera', 'ouro', 'giz', 'palha', 'giz', 'ouro', 'cera'];
-const _AUD_VISU_REST  = [20, 34, 48, 58, 48, 34, 20]; // alturas de repouso (px)
-
-function _audVisuMontar() {
-  const jardim = document.querySelector('#aud-controles .aud-orbe-jardim');
-  if (!jardim) return;
-  jardim.classList.remove('aud-orbe-jardim--gravando');
-  jardim.classList.add('aud-orbe-jardim--preview');
-
-  // o orbe deixa de ser botão e sai de cena (animação no CSS)
-  const orbe = jardim.querySelector('.aud-orbe');
-  if (orbe) {
-    orbe.disabled = true;
-    orbe.removeAttribute('onclick');
-    orbe.removeAttribute('title');
-    orbe.setAttribute('aria-hidden', 'true');
-  }
-
-  const visu = document.createElement('button');
-  visu.type = 'button';
-  visu.className = 'aud-visu';
-  visu.title = 'Tocar / pausar';
-  visu.setAttribute('aria-label', 'Tocar ou pausar a prévia');
-  visu.innerHTML = _AUD_VISU_CORES.map((cor, i) => `
-    <span class="aud-visu-coluna">
-      <span class="aud-visu-barra aud-visu-barra--${cor}" style="height:${_AUD_VISU_REST[i]}px"></span>
-    </span>`).join('');
-  visu.addEventListener('click', _audPlayerTogglePlay);
-  jardim.appendChild(visu);
-
-  _audVisuEls = visu.querySelectorAll('.aud-visu-barra');
-  _audVisuAlturas = _AUD_VISU_REST.slice();
-}
-
 // Analyser ligado só no 1º play (gesto do usuário → contexto liberado).
 // createMediaElementSource captura o <audio> pra sempre, por isso o
 // roteamento até o destination acontece logo em seguida.
-function _audVisuLigarAnalyser() {
+function _audPlayerLigarAnalyser() {
   if (_audPlayerCtx || !_audPlayerAudio) return;
   let ctx = null;
   try {
@@ -829,51 +1069,13 @@ function _audVisuLigarAnalyser() {
     analyser.connect(ctx.destination);
     _audPlayerCtx = ctx;
     _audPlayerAnalyser = analyser;
-    _audPlayerFreq = new Uint8Array(analyser.frequencyBinCount);
+    _audPlayerAmostra = new Uint8Array(analyser.fftSize);
   } catch (_) {
-    // sem análise, a prévia toca normal e as barrinhas ficam no repouso
+    // sem análise, a prévia toca normal e a agulha fica no repouso
     if (ctx) ctx.close().catch(() => {});
     _audPlayerAnalyser = null;
-    _audPlayerFreq = null;
+    _audPlayerAmostra = null;
   }
-}
-
-// 4 bandas em cortes ~logarítmicos (fftSize 256 → 128 bins) espelhadas
-// nas 7 barrinhas; pesos compensam a energia menor dos agudos na voz
-function _audVisuAmps() {
-  if (!_audPlayerAnalyser) return null;
-  _audPlayerAnalyser.getByteFrequencyData(_audPlayerFreq);
-  const CORTES = [1, 4, 12, 34, 110];
-  const PESOS  = [1, 1.15, 1.35, 1.6];
-  const bandas = [];
-  for (let b = 0; b < 4; b++) {
-    let soma = 0;
-    for (let i = CORTES[b]; i < CORTES[b + 1]; i++) soma += _audPlayerFreq[i];
-    bandas.push(Math.min(1, (soma / (CORTES[b + 1] - CORTES[b]) / 255) * PESOS[b]));
-  }
-  return [bandas[3], bandas[2], bandas[1], bandas[0], bandas[1], bandas[2], bandas[3]];
-}
-
-function _audVisuAcordar() {
-  if (!_audVisuRaf) _audVisuRaf = requestAnimationFrame(_audVisuLoop);
-}
-
-// Lerp por barra (ataque rápido, soltura lenta — mesmo feeling do
-// orbe). O loop dorme sozinho quando tudo assenta no repouso.
-function _audVisuLoop() {
-  if (!_audVisuEls || !_audVisuEls.length) { _audVisuRaf = null; return; }
-  const tocando = _audPlayerAudio && !_audPlayerAudio.paused && !_audPlayerAudio.ended;
-  const amps = tocando ? _audVisuAmps() : null;
-  let mexendo = false;
-  for (let i = 0; i < _audVisuEls.length; i++) {
-    const alvo = amps ? Math.min(148, 14 + amps[i] * 134) : _AUD_VISU_REST[i];
-    const atual = _audVisuAlturas[i];
-    const novo = atual + (alvo - atual) * (alvo > atual ? 0.5 : 0.16);
-    _audVisuAlturas[i] = novo;
-    _audVisuEls[i].style.height = novo.toFixed(1) + 'px';
-    if (Math.abs(alvo - novo) > 0.5) mexendo = true;
-  }
-  _audVisuRaf = (tocando || mexendo) ? requestAnimationFrame(_audVisuLoop) : null;
 }
 
 // ============================================================
@@ -885,11 +1087,12 @@ function _audPlayerAtualizarTempo() {
   if (!_audPlayerAudio || !_audMs) return;
   const el = document.getElementById('aud-player-tempo');
   if (el) el.textContent = `${_audMmSs(_audPlayerAudio.currentTime)} / ${_audMmSs(_audMs / 1000)}`;
+  const frac = Math.min(1, Math.max(0, _audPlayerAudio.currentTime / (_audMs / 1000)));
   const feito = document.getElementById('aud-progresso-feito');
-  if (feito) {
-    const frac = Math.min(1, Math.max(0, _audPlayerAudio.currentTime / (_audMs / 1000)));
-    feito.style.width = (frac * 100).toFixed(2) + '%';
-  }
+  if (feito) feito.style.width = (frac * 100).toFixed(2) + '%';
+  // o cassete acompanha a reprodução: contador e fita na posição atual
+  _audK7Odo(_audMmSs(_audPlayerAudio.currentTime));
+  _audK7Discos(frac * Math.min(1, _audMs / 600000));
 }
 
 function _audPlayerLoop() {
@@ -926,13 +1129,11 @@ function _audPlayerSeekPara(clientX) {
 
 function _audPlayerLimpar() {
   if (_audPlayerRaf) { cancelAnimationFrame(_audPlayerRaf); _audPlayerRaf = null; }
-  if (_audVisuRaf) { cancelAnimationFrame(_audVisuRaf); _audVisuRaf = null; }
+  _audAgulhaParar();
   if (_audPlayerAudio) { _audPlayerAudio.pause(); _audPlayerAudio.src = ''; _audPlayerAudio = null; }
   if (_audPlayerCtx) { _audPlayerCtx.close().catch(() => {}); _audPlayerCtx = null; }
   _audPlayerAnalyser = null;
-  _audPlayerFreq = null;
-  _audVisuEls = null;
-  _audVisuAlturas = [];
+  _audPlayerAmostra = null;
   _audPlayerSeeking = false;
 }
 
@@ -974,6 +1175,15 @@ async function _audSalvar() {
     contentType = 'audio/mpeg';
   } catch (e) {
     console.warn('Conversão mp3 falhou, salvando original:', e);
+  }
+
+  // Última cancela da sentinela: salvar leitura muda é perder a leitura
+  // (o cliente recebe um arquivo vazio e só se descobre dias depois)
+  if (_audPareceMudo(_audBlob) && !confirm('Este áudio parece MUDO do início ao fim — o microfone não captou som. Salvar mesmo assim?')) {
+    _audSalvando = false;
+    const acoes = document.querySelector('#aud-dock .aud-dock-acoes');
+    if (acoes) acoes.innerHTML = _audDockAcoes();
+    return;
   }
   const ext  = _audExtDoMime(contentType);
   const path = `agendamento-${ag.id}/${Date.now()}-${crypto.randomUUID()}.${ext}`;
@@ -1018,7 +1228,7 @@ function _audSalvarFalhou(msg) {
 // ============================================================
 function _audMostrarPosSalvar(audioId, ag, blob, mime) {
   _audPlayerLimpar();
-  _audBotoes('');   // palco esvazia — a prévia cumpriu o papel
+  _audK7Montar('salvo'); // o cassete fica de lembrança; a entrega mora no dock
   if (_audPreviewUrl) { URL.revokeObjectURL(_audPreviewUrl); _audPreviewUrl = null; }
   _audBlob = null;
   _audAtualizarBeforeUnload();
@@ -1054,7 +1264,7 @@ function _audMostrarPosSalvar(audioId, ag, blob, mime) {
       _audNomeSugerido(ag.cliente_nome, ag.tipos_leitura?.nome, ag.data_agendamento)));
 
   document.getElementById('aud-pos-nova').addEventListener('click', () => {
-    _audClienteAlvo = null;   // próxima leitura recomeça no orbe, sem cliente
+    _audClienteAlvo = null;   // próxima leitura recomeça no cassete, sem cliente
     _audResetGravador();
   });
 }

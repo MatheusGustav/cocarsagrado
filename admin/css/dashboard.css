@@ -3945,8 +3945,8 @@ body.drawer-aberto { overflow: hidden; }
   min-height: calc(100dvh - 240px);
 }
 
-/* Palco do gravador: sem card, sem cromo — só o orbe solto,
-   centralizado na altura útil da tela */
+/* Palco do gravador: sem card, sem cromo — só a mesa de fita
+   (cassete + VU + teclas), centralizada na altura útil da tela */
 .aud-gravador {
   flex: 1;
   min-height: clamp(340px, 58vh, 620px);
@@ -4006,135 +4006,247 @@ body.drawer-aberto { overflow: hidden; }
 }
 
 /* ============================================================
-   Orbe sálvia: círculo chapado verde clarinho (o tom que o blob do
-   hero aparenta sobre o papel do site), parado — sem morph, sem
-   respiro. Sem ícone: o orbe É o botão. Gravando (--gravando no
-   jardim): batida de pulso e a voz manda na escala via --amp
-   (0..1, setada por JS a cada frame).
+   Mesa de fita: o palco é um cassete — etiqueta de papel palha
+   com o nome do cliente (Fraunces manuscrita), janela com
+   carretéis que giram gravando e rebobinam na prévia, contador
+   mecânico pendurado e parafusos nos cantos. Embaixo, o VU de
+   agulha numa caixa de papel creme (canvas) e as teclas
+   mecânicas de tape deck. A agulha é o rosto da sentinela:
+   mic morto = agulha deitada no zero + led SEM SOM piscando.
    ============================================================ */
-.aud-orbe-jardim {
+.aud-k7-palco {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+}
+
+.aud-k7 {
+  width: min(330px, 100%);
+  background:
+    radial-gradient(circle at 20% 85%, rgba(169,135,59,0.12) 0%, transparent 55%),
+    linear-gradient(160deg, #193A28, #142E20 60%);
+  border: 1px solid rgba(169,135,59,0.4);
+  border-radius: 20px 9px 20px 9px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.5), inset 0 1px 0 rgba(240,224,172,0.08);
+  padding: 14px 16px 12px;
   position: relative;
-  width: 220px;
-  height: 220px;
-  --amp: 0;
+  box-sizing: border-box;
+}
+/* prévia: o cassete inteiro vira play/pause */
+.aud-k7[onclick] { cursor: pointer; }
+
+/* parafusos dos 4 cantos (2 pseudos em cima + 2 <i> embaixo) */
+.aud-k7::before, .aud-k7::after,
+.aud-k7-paraf {
+  content: '';
+  position: absolute;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: rgba(169,135,59,0.55);
+  box-shadow: inset 0 -1px 1px rgba(0,0,0,0.6);
+}
+.aud-k7::before { top: 7px; left: 9px; }
+.aud-k7::after  { top: 7px; right: 9px; }
+.aud-k7-paraf--bl { bottom: 7px; left: 9px; }
+.aud-k7-paraf--br { bottom: 7px; right: 9px; }
+
+.aud-k7-etiqueta {
+  background: linear-gradient(#F5E9C4, #EFDFAE);
+  border-radius: 8px 3px 8px 3px;
+  padding: 8px 12px 7px;
+  color: #2E2712;
+  box-shadow: 0 1px 0 rgba(0,0,0,0.35);
+  position: relative;
+  overflow: hidden;
+}
+/* listras de caneta no topo da etiqueta */
+.aud-k7-etiqueta::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 7px;
+  background: repeating-linear-gradient(90deg,
+    #A6432D 0 26px, #9A7B31 26px 52px, #2F5C41 52px 78px);
+  opacity: 0.85;
+}
+.aud-k7-nome {
+  font-family: 'Fraunces', Georgia, serif;
+  font-optical-sizing: auto;
+  font-size: 1.02rem;
+  font-weight: 560;
+  margin-top: 8px;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.aud-k7-nome em { font-style: italic; }
+.aud-k7-sub {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: 0.68rem;
+  letter-spacing: 0.08em;
+  color: #6B5526;
+  margin-top: 2px;
+  border-top: 1px dashed rgba(107,85,38,0.5);
+  padding-top: 4px;
+}
+.aud-k7-lado { font-weight: 800; }
+
+.aud-k7-janela {
+  margin: 10px 18px 6px;
+  background: #0A1A11;
+  border-radius: 999px;
+  border: 1px solid rgba(169,135,59,0.35);
+  padding: 9px 14px;
   display: flex;
   align-items: center;
-  justify-content: center;
-}
-.aud-orbe-jardim--gravando {
-  animation: aud-orbe-batida 2.2s ease-in-out infinite;
-}
-@keyframes aud-orbe-batida {
-  0%, 100% { transform: scale(1); }
-  50%      { transform: scale(1.035); }
-}
-
-/* A silhueta: círculo pintado com giz de cera (calibrado numa foto
-   de referência). A cobertura do giz é quase binária — ou tem cera
-   ou aparece papel — então o data-URI soma dois ruídos (arrasto
-   anisotrópico a -12° + grão fino) e aplica threshold duro, dando 3
-   tons: base pastel, ouro de pressão e branco de papel. O radial
-   por cima é a cera acumulada no contorno. Receita/prova de render
-   no histórico da sessão (rsvg-convert). */
-.aud-orbe {
+  justify-content: space-between;
   position: relative;
-  width: 180px;
-  height: 180px;
-  border: none;
-  padding: 0;
-  cursor: pointer;
-  background:
-    radial-gradient(circle, rgba(0, 0, 0, 0) 60%, rgba(90, 71, 32, 0.38) 96%),
-    url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20width='150'%20height='150'%3E%3Cfilter%20id='b'%20color-interpolation-filters='sRGB'%20x='-20%25'%20y='-20%25'%20width='140%25'%20height='140%25'%3E%3CfeTurbulence%20type='fractalNoise'%20baseFrequency='0.012%200.14'%20numOctaves='3'%20seed='4'/%3E%3CfeColorMatrix%20type='matrix'%20values='0%200%200%200%200%200%200%200%200%200%200%200%200%200%200%200%200%200%20-1%201'%20result='m'/%3E%3CfeFlood%20flood-color='%239A7B31'%20result='c'/%3E%3CfeComposite%20in='c'%20in2='m'%20operator='in'/%3E%3C/filter%3E%3Cfilter%20id='d'%20color-interpolation-filters='sRGB'%20x='-20%25'%20y='-20%25'%20width='140%25'%20height='140%25'%3E%3CfeTurbulence%20type='fractalNoise'%20baseFrequency='0.012%200.14'%20numOctaves='3'%20seed='4'/%3E%3CfeColorMatrix%20type='matrix'%20values='0%200%200%200%200%200%200%200%200%200%200%200%200%200%200%200%200%200%20-1%201'%20result='s'/%3E%3CfeTurbulence%20type='fractalNoise'%20baseFrequency='0.45%200.7'%20numOctaves='2'%20seed='21'/%3E%3CfeColorMatrix%20type='matrix'%20values='0%200%200%200%200%200%200%200%200%200%200%200%200%200%200%200%200%200%201%200'%20result='g'/%3E%3CfeComposite%20in='s'%20in2='g'%20operator='arithmetic'%20k1='0'%20k2='0.45'%20k3='0.55'%20k4='0'%20result='f'/%3E%3CfeComponentTransfer%20in='f'%20result='f2'%3E%3CfeFuncA%20type='discrete'%20tableValues='0%200%200.45%201'/%3E%3C/feComponentTransfer%3E%3CfeFlood%20flood-color='%23755C27'%20result='c'/%3E%3CfeComposite%20in='c'%20in2='f2'%20operator='in'/%3E%3C/filter%3E%3Cfilter%20id='l'%20color-interpolation-filters='sRGB'%20x='-20%25'%20y='-20%25'%20width='140%25'%20height='140%25'%3E%3CfeTurbulence%20type='fractalNoise'%20baseFrequency='0.012%200.14'%20numOctaves='3'%20seed='9'/%3E%3CfeColorMatrix%20type='matrix'%20values='0%200%200%200%200%200%200%200%200%200%200%200%200%200%200%200%200%200%201%200'%20result='s'/%3E%3CfeTurbulence%20type='fractalNoise'%20baseFrequency='0.45%200.7'%20numOctaves='2'%20seed='27'/%3E%3CfeColorMatrix%20type='matrix'%20values='0%200%200%200%200%200%200%200%200%200%200%200%200%200%200%200%200%200%201%200'%20result='g'/%3E%3CfeComposite%20in='s'%20in2='g'%20operator='arithmetic'%20k1='0'%20k2='0.42'%20k3='0.58'%20k4='0'%20result='f'/%3E%3CfeComponentTransfer%20in='f'%20result='f2'%3E%3CfeFuncA%20type='discrete'%20tableValues='0%200%200.4%201'/%3E%3C/feComponentTransfer%3E%3CfeFlood%20flood-color='%23F0E0AC'%20result='c'/%3E%3CfeComposite%20in='c'%20in2='f2'%20operator='in'/%3E%3C/filter%3E%3Crect%20width='150'%20height='150'%20fill='%23D4AF4E'/%3E%3Cg%20transform='rotate(-12%2075%2075)'%3E%3Crect%20x='-45'%20y='-45'%20width='260'%20height='260'%20filter='url(%23b)'%20opacity='0.22'/%3E%3Crect%20x='-45'%20y='-45'%20width='260'%20height='260'%20filter='url(%23d)'%20opacity='0.6'/%3E%3Crect%20x='-45'%20y='-45'%20width='260'%20height='260'%20filter='url(%23l)'%20opacity='0.85'/%3E%3C/g%3E%3C/svg%3E");
-  background-size: cover;
+  height: 74px;
+  box-sizing: border-box;
+}
+.aud-k7-fita {
+  position: absolute;
+  left: 60px;
+  right: 60px;
+  top: 50%;
+  height: 8px;
+  transform: translateY(-50%);
+  background: linear-gradient(#3B2E14, #241C0B);
+  border-radius: 2px;
+}
+.aud-k7-carretel { position: relative; width: 54px; height: 54px; flex: none; }
+/* rolo de fita: um lado esvazia e o outro enche (tamanho via JS) */
+.aud-k7-disco {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 0;
+  height: 0;
+  transform: translate(-50%, -50%);
   border-radius: 50%;
-  transition: transform .2s ease;
-  -webkit-tap-highlight-color: transparent;
+  background: #241C0B;
 }
-.aud-orbe:hover { transform: scale(1.04); }
-.aud-orbe:active { transform: scale(0.97); }
-
-/* Gravando: a voz manda na escala da silhueta (o lerp já vem suave
-   do JS; transition atrasaria a resposta) */
-.aud-orbe-jardim--gravando .aud-orbe {
-  transform: scale(calc(1 + var(--amp) * 0.14));
-  transition: none;
-}
-
-/* ============================================================
-   Prévia: o orbe colapsa na linha do horizonte e vira as 7
-   barrinhas do visualizador — é o mesmo jardim.
-   Cada barrinha nasce do centro pra fora e respira em onda;
-   tocando, o JS manda na altura (análise do áudio ao vivo). O
-   visualizador inteiro é um botão de tocar/pausar.
-   ============================================================ */
-.aud-orbe-jardim--preview .aud-orbe {
-  animation: aud-orbe-colapsa 0.5s var(--curva-suave) forwards;
-  pointer-events: none;
-}
-@keyframes aud-orbe-colapsa {
-  55% { opacity: 0.6; }
-  to  { transform: scaleX(0.6) scaleY(0.04); opacity: 0; }
-}
-
-.aud-visu {
+/* o carretel dentado: anel + braços recortados por máscara */
+.aud-k7-cubo {
   position: absolute;
   inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  padding: 0;
-  background: none;
-  border: none;
   border-radius: 50%;
-  cursor: pointer;
+  background: #EAE0BE;
+  -webkit-mask:
+    radial-gradient(circle, transparent 0 26%, #000 26% 42%, transparent 42% 100%),
+    conic-gradient(#000 0 20deg, transparent 20deg 60deg, #000 60deg 80deg, transparent 80deg 120deg, #000 120deg 140deg, transparent 140deg 180deg, #000 180deg 200deg, transparent 200deg 240deg, #000 240deg 260deg, transparent 260deg 300deg, #000 300deg 320deg, transparent 320deg 360deg);
+          mask:
+    radial-gradient(circle, transparent 0 26%, #000 26% 42%, transparent 42% 100%),
+    conic-gradient(#000 0 20deg, transparent 20deg 60deg, #000 60deg 80deg, transparent 80deg 120deg, #000 120deg 140deg, transparent 140deg 180deg, #000 180deg 200deg, transparent 200deg 240deg, #000 240deg 260deg, transparent 260deg 300deg, #000 300deg 320deg, transparent 320deg 360deg);
 }
-.aud-visu:focus-visible { outline: 2px solid #D2BA7C; outline-offset: 8px; }
+.aud-k7--girando  .aud-k7-cubo { animation: aud-k7-gira 1.6s linear infinite; }
+.aud-k7--rebobina .aud-k7-cubo { animation: aud-k7-gira 0.35s linear infinite reverse; }
+@keyframes aud-k7-gira { to { transform: rotate(360deg); } }
 
-.aud-visu-coluna {
+/* contador mecânico pendurado na borda de baixo do cassete */
+.aud-k7-odo {
+  position: absolute;
+  right: 14px;
+  bottom: -12px;
+  display: inline-flex;
+  gap: 2px;
+  background: #0A1A11;
+  border-radius: 5px;
+  padding: 3px 5px;
+  border: 1px solid rgba(169,135,59,0.35);
+}
+.aud-k7-odo span {
+  font-variant-numeric: tabular-nums;
+  font-size: 0.78rem;
+  font-weight: 800;
+  color: #EAE0BE;
+  background: #12281B;
+  border-radius: 2px;
+  padding: 1px 3px;
+  min-width: 14px;
+  text-align: center;
+}
+.aud-k7-odo .aud-k7-odo-sep { background: none; min-width: auto; padding: 1px 0; }
+
+/* ---------- VU de agulha (caixa de papel creme) ---------- */
+.aud-vu { width: min(300px, 100%); margin-top: 26px; }
+.aud-vu-caixa {
+  background: linear-gradient(#F2E8C8, #E8D9A6);
+  border-radius: 10px 4px 10px 4px;
+  border: 1px solid rgba(107,85,38,0.6);
+  box-shadow: 0 6px 18px rgba(0,0,0,0.4), inset 0 -8px 16px rgba(107,85,38,0.25);
+  padding: 10px 14px 8px;
+  height: 104px;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+.aud-vu-caixa canvas { width: 100%; height: 100%; display: block; }
+.aud-vu-legenda {
   display: flex;
+  justify-content: space-between;
   align-items: center;
-  animation: aud-barra-nasce 0.55s var(--curva-suave) backwards;
+  font-size: 0.64rem;
+  font-weight: 800;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #93AC8F;
+  margin-top: 7px;
+  padding: 0 4px;
 }
-/* nascem do centro pra fora, no embalo do colapso do orbe */
-.aud-visu-coluna:nth-child(4) { animation-delay: 0.18s; }
-.aud-visu-coluna:nth-child(3),
-.aud-visu-coluna:nth-child(5) { animation-delay: 0.26s; }
-.aud-visu-coluna:nth-child(2),
-.aud-visu-coluna:nth-child(6) { animation-delay: 0.34s; }
-.aud-visu-coluna:nth-child(1),
-.aud-visu-coluna:nth-child(7) { animation-delay: 0.42s; }
-@keyframes aud-barra-nasce {
-  from { transform: scaleY(0.06); opacity: 0; }
+/* led SEM SOM: apagado passa despercebido; a sentinela acende e pisca */
+.aud-vu-led { display: inline-flex; align-items: center; gap: 6px; color: #5F7A64; }
+.aud-vu-led::before {
+  content: '';
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: rgba(166,67,45,0.3);
+  transition: background 0.2s;
 }
+.aud-vu-led--on { color: var(--t-danger); }
+.aud-vu-led--on::before {
+  background: var(--t-danger);
+  box-shadow: 0 0 9px rgba(224,135,106,0.9);
+  animation: aud-led-pisca 1s steps(2, end) infinite;
+}
+@keyframes aud-led-pisca { 50% { opacity: 0.4; } }
 
-/* Altura vem do JS (repouso em arco; tocando, o áudio manda); o
-   respiro em scaleY passeia de barra em barra (delays negativos =
-   onda já em movimento) */
-.aud-visu-barra {
-  width: 15px;
-  border-radius: 999px;
-  background: var(--cor);
-  box-shadow: 0 0 18px var(--brilho);
-  animation: aud-barra-respira 3.4s ease-in-out infinite;
+/* ---------- teclas mecânicas de tape deck ---------- */
+.aud-k7-teclas { display: flex; gap: 8px; margin-top: 20px; }
+.aud-k7-tecla {
+  min-width: 128px;
+  padding: 11px 18px 13px;
+  background: linear-gradient(#1E3D2B, #142E20);
+  border: 1px solid var(--border);
+  border-bottom-width: 4px;
+  border-bottom-color: #0A1A11;
+  border-radius: 9px;
+  color: var(--text-muted);
+  font-family: 'Figtree', system-ui, sans-serif;
+  font-size: 0.8rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  cursor: pointer;
+  transition: transform 0.08s, border-bottom-width 0.08s, color 0.2s;
 }
-.aud-visu-coluna:nth-child(2) .aud-visu-barra { animation-delay: -0.4s; }
-.aud-visu-coluna:nth-child(3) .aud-visu-barra { animation-delay: -0.8s; }
-.aud-visu-coluna:nth-child(4) .aud-visu-barra { animation-delay: -1.2s; }
-.aud-visu-coluna:nth-child(5) .aud-visu-barra { animation-delay: -1.6s; }
-.aud-visu-coluna:nth-child(6) .aud-visu-barra { animation-delay: -2.0s; }
-.aud-visu-coluna:nth-child(7) .aud-visu-barra { animation-delay: -2.4s; }
-@keyframes aud-barra-respira {
-  0%, 100% { transform: scaleY(1); }
-  50%      { transform: scaleY(1.22); }
+.aud-k7-tecla:hover { color: var(--t-gold-900); }
+.aud-k7-tecla:active,
+.aud-k7-tecla--apertada { transform: translateY(3px); border-bottom-width: 1px; }
+.aud-k7-tecla:focus-visible { outline: 2px solid #D2BA7C; outline-offset: 2px; }
+.aud-k7-tecla b { font-size: 0.9rem; margin-right: 6px; vertical-align: -1px; }
+.aud-k7-tecla--rec { color: var(--t-danger); }
+.aud-k7-tecla--rec:hover { color: var(--t-danger-deep); }
+
+@media (prefers-reduced-motion: reduce) {
+  .aud-k7--girando .aud-k7-cubo,
+  .aud-k7--rebobina .aud-k7-cubo,
+  .aud-vu-led--on::before { animation: none; }
 }
-/* Os 4 tons da receita do giz do orbe: cera acumulada nas pontas,
-   papel aparecendo no centro */
-.aud-visu-barra--cera  { --cor: #755C27; --brilho: rgba(117, 92, 39, 0.5); }
-.aud-visu-barra--ouro  { --cor: #9A7B31; --brilho: rgba(154, 123, 49, 0.5); }
-.aud-visu-barra--giz   { --cor: #D4AF4E; --brilho: rgba(212, 175, 78, 0.5); }
-.aud-visu-barra--palha { --cor: #F0E0AC; --brilho: rgba(240, 224, 172, 0.5); }
 
 /* ============================================================
    Painel de controle da gravação — dock no fim da página.
@@ -4358,6 +4470,23 @@ body.drawer-aberto { overflow: hidden; }
 }
 .aud-erro { font-size: .85rem; color: #ff8f8f; text-align: center; max-width: 380px; }
 .aud-erro:empty { display: none; }
+
+/* Faixa de mudez na prévia: a conversão mediu o arquivo inteiro e não
+   achou som — precisa ser impossível de ignorar antes de salvar/enviar */
+.aud-aviso-mudo {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-bottom: 12px;
+  padding: 10px 12px;
+  border: 1px solid rgba(224, 135, 106, 0.45);
+  border-radius: 12px 5px 12px 5px;
+  background: rgba(224, 135, 106, 0.10);
+  color: var(--t-danger-deep);
+  font-size: .88rem;
+  line-height: 1.45;
+}
+.aud-aviso-mudo .ico { flex-shrink: 0; margin-top: 2px; }
 
 .aud-lista { margin-top: 18px; max-width: 460px; }
 .aud-item {
@@ -4766,8 +4895,6 @@ body.drawer-aberto { overflow: hidden; }
 /* --- Movimento reduzido --- */
 @media (prefers-reduced-motion: reduce) {
   .folha { animation: none; }
-  .aud-orbe-jardim--gravando { animation: none; }
-  .aud-orbe-jardim--gravando .aud-orbe { transform: none; }
   #admin-content .ag-btn,
   .adm-item, .adm-stat-card, .agenda-card-overview,
   .desc-card, .esp-card, .cup-card, .cat-card { transition: none; }
