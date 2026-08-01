@@ -793,12 +793,22 @@
           };
           const ouvir = (ev) => {
             if (ev.origin !== location.origin) return;
-            if (ev.data?.tipo !== 'documento-pdf-salvo' || String(ev.data.ag) !== String(ag)) return;
+            if (String(ev.data?.ag) !== String(ag)) return;
+            if (ev.data?.tipo === 'documento-pdf-recebido') {
+              // Painel acusou recebimento — daqui em diante a espera é só o
+              // upload, que pode demorar (arquivo grande, internet lenta).
+              clearTimeout(timer);
+              timer = setTimeout(() => { alert('O upload do PDF demorou demais — confere a internet e tenta de novo.'); fim(false); }, 120000);
+              return;
+            }
+            if (ev.data?.tipo !== 'documento-pdf-salvo') return;
             if (!ev.data.ok) alert('O painel não conseguiu salvar o PDF: ' + (ev.data.erro || 'tenta de novo'));
             fim(!!ev.data.ok);
           };
           window.addEventListener('message', ouvir);
-          timer = setTimeout(() => { alert('O painel não respondeu ao salvar o PDF — tenta de novo.'); fim(false); }, 20000);
+          // Sem acuse em 5s = painel rodando versão antiga (aba aberta antes
+          // da atualização) — recarregar o painel resolve.
+          timer = setTimeout(() => { alert('O painel não respondeu — atualiza a página do painel (F5) e tenta salvar de novo.'); fim(false); }, 5000);
           painel.postMessage({ tipo: 'documento-pdf', ag, blob }, location.origin);
         });
       }

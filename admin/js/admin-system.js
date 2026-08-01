@@ -1177,11 +1177,16 @@ document.addEventListener('keydown', (e) => {
 window.addEventListener('message', async (ev) => {
   if (ev.origin !== location.origin) return;
   if (ev.data?.tipo !== 'documento-pdf' || !ev.data.ag || !(ev.data.blob instanceof Blob)) return;
-  if (!_admAutenticado) return;
   const agId = ev.data.ag;
   const responder = (ok, erro) => {
     try { ev.source?.postMessage({ tipo: 'documento-pdf-salvo', ag: agId, ok, erro }, location.origin); } catch (_) {}
   };
+
+  // Acusa recebimento na hora: o doc sabe que este painel fala o protocolo
+  // (aba antiga do painel fica muda) e dá prazo folgado pro upload em si.
+  try { ev.source?.postMessage({ tipo: 'documento-pdf-recebido', ag: agId }, location.origin); } catch (_) {}
+
+  if (!_admAutenticado) { responder(false, 'a sessão do painel expirou — faz login de novo'); return; }
 
   const path = `agendamento-${agId}/documento.pdf`;
   const { error: upErr } = await supabase.storage
