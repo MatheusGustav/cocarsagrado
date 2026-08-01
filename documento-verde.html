@@ -16,7 +16,7 @@
        DOCUMENTO PADRÃO · variante VERDE
        Modelo cru para qualquer finalidade, no estudo V4 "Raiz
        Viva" do site, no tom das seções escuras: verde profundo
-       e dourado. Folhinhas pousadas pelas bordas e a pena dourada
+       e dourado. Folhagem transborda pelos cantos e a pena dourada
        assina o centro como marca d'água. Estático — pronto pra PDF.
        ============================================================ */
     :root {
@@ -56,30 +56,20 @@
     ::selection { background: var(--color-gold-light); color: var(--color-primary-deep); }
     img { max-width: 100%; }
 
-    /* === folhinhas estáticas pousadas pelas bordas === */
-    .folha {
+    /* === folhagem transbordando pelos cantos ===
+       Folhas grandes cortadas pela borda do papel, como se o mato
+       crescesse por trás do documento. Dois cantos opostos.
+       Ajuste fino: opacity abaixo é o botão de discrição. */
+    .canto {
       position: absolute;
       z-index: 0;
-      color: var(--v4-salvia);
+      width: 240px;
+      overflow: visible;
+      opacity: 0.7;
       pointer-events: none;
     }
-    .folha path {
-      fill: rgba(242, 238, 221, 0.08);
-      stroke: currentColor;
-      stroke-width: 1.6;
-      stroke-linecap: round;
-    }
-    .folha path:last-child { fill: none; }
-    .folha--dourada { color: var(--color-gold-light); }
-    .folha--dourada path { fill: rgba(210, 186, 124, 0.12); }
-    .folha--1 { left: -7px;  top: 5%;  width: 26px; transform: rotate(-32deg); }
-    .folha--2 { left: 16px;  top: 28%; width: 17px; transform: rotate(24deg); }
-    .folha--3 { left: -5px;  top: 54%; width: 21px; transform: rotate(64deg); }
-    .folha--4 { left: 14px;  top: 79%; width: 18px; transform: rotate(-12deg); }
-    .folha--5 { right: -8px; top: 9%;  width: 28px; transform: rotate(28deg); }
-    .folha--6 { right: 17px; top: 34%; width: 18px; transform: rotate(-42deg); }
-    .folha--7 { right: -4px; top: 60%; width: 22px; transform: rotate(96deg); }
-    .folha--8 { right: 15px; top: 84%; width: 24px; transform: rotate(-70deg); }
+    .canto--tl { top: -30px; left: -30px; }
+    .canto--br { bottom: -30px; right: -30px; transform: rotate(180deg); }
 
     /* === ramo que se desenha ao abrir o documento === */
     .ramo { display: block; width: min(300px, 72vw); margin: 26px auto 0; }
@@ -148,7 +138,7 @@
       pointer-events: none;
       user-select: none;
     }
-    .documento > *:not(.pena):not(.folha) { position: relative; }
+    .documento > *:not(.pena):not(.canto) { position: relative; }
 
     /* === cabeçalho === */
     .doc-header { text-align: center; }
@@ -377,15 +367,27 @@
       <!-- pena dourada — marca d'água central -->
       <img class="pena" src="images/pena-dourada.webp" alt="" aria-hidden="true" width="664" height="900" />
 
-      <!-- folhinhas pousadas pelas bordas -->
-      <svg class="folha folha--1" viewBox="0 0 40 64" aria-hidden="true"><path d="M20 3 C 33 18, 35 38, 20 61 C 5 38, 7 18, 20 3 Z" /><path d="M20 12 L 20 52" /></svg>
-      <svg class="folha folha--2 folha--dourada" viewBox="0 0 40 64" aria-hidden="true"><path d="M20 3 C 33 18, 35 38, 20 61 C 5 38, 7 18, 20 3 Z" /><path d="M20 12 L 20 52" /></svg>
-      <svg class="folha folha--3" viewBox="0 0 40 64" aria-hidden="true"><path d="M20 3 C 33 18, 35 38, 20 61 C 5 38, 7 18, 20 3 Z" /><path d="M20 12 L 20 52" /></svg>
-      <svg class="folha folha--4 folha--dourada" viewBox="0 0 40 64" aria-hidden="true"><path d="M20 3 C 33 18, 35 38, 20 61 C 5 38, 7 18, 20 3 Z" /><path d="M20 12 L 20 52" /></svg>
-      <svg class="folha folha--5" viewBox="0 0 40 64" aria-hidden="true"><path d="M20 3 C 33 18, 35 38, 20 61 C 5 38, 7 18, 20 3 Z" /><path d="M20 12 L 20 52" /></svg>
-      <svg class="folha folha--6 folha--dourada" viewBox="0 0 40 64" aria-hidden="true"><path d="M20 3 C 33 18, 35 38, 20 61 C 5 38, 7 18, 20 3 Z" /><path d="M20 12 L 20 52" /></svg>
-      <svg class="folha folha--7" viewBox="0 0 40 64" aria-hidden="true"><path d="M20 3 C 33 18, 35 38, 20 61 C 5 38, 7 18, 20 3 Z" /><path d="M20 12 L 20 52" /></svg>
-      <svg class="folha folha--8" viewBox="0 0 40 64" aria-hidden="true"><path d="M20 3 C 33 18, 35 38, 20 61 C 5 38, 7 18, 20 3 Z" /><path d="M20 12 L 20 52" /></svg>
+      <!-- folhagem transbordando pelos cantos -->
+      <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+        <defs>
+          <g id="folha-canto">
+            <path d="M20 3 C 33 18, 35 38, 20 61 C 5 38, 7 18, 20 3 Z" fill="currentColor" fill-opacity="0.2" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" />
+            <path d="M20 12 L 20 52" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" />
+          </g>
+        </defs>
+      </svg>
+      <svg class="canto canto--tl" viewBox="0 0 250 250" aria-hidden="true">
+        <use href="#folha-canto" style="color: var(--v4-salvia-forte)" transform="translate(48 70) rotate(135) scale(2.3) translate(-20 -32)" />
+        <use href="#folha-canto" style="color: var(--color-gold-light)" transform="translate(96 42) rotate(105) scale(1.7) translate(-20 -32)" />
+        <use href="#folha-canto" style="color: var(--v4-salvia)" transform="translate(26 120) rotate(162) scale(1.6) translate(-20 -32)" />
+        <use href="#folha-canto" style="color: var(--color-gold-light)" transform="translate(120 18) rotate(85) scale(1) translate(-20 -32)" />
+      </svg>
+      <svg class="canto canto--br" viewBox="0 0 250 250" aria-hidden="true">
+        <use href="#folha-canto" style="color: var(--v4-salvia-forte)" transform="translate(48 70) rotate(135) scale(2.3) translate(-20 -32)" />
+        <use href="#folha-canto" style="color: var(--color-gold-light)" transform="translate(96 42) rotate(105) scale(1.7) translate(-20 -32)" />
+        <use href="#folha-canto" style="color: var(--v4-salvia)" transform="translate(26 120) rotate(162) scale(1.6) translate(-20 -32)" />
+        <use href="#folha-canto" style="color: var(--color-gold-light)" transform="translate(120 18) rotate(85) scale(1) translate(-20 -32)" />
+      </svg>
 
       <header class="doc-header brota">
         <div class="jardim-mini" aria-hidden="true">
