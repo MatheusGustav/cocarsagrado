@@ -115,11 +115,19 @@
       box-shadow: 0 0 0 1px rgba(210, 186, 124, 0.6);
       background: rgba(210, 186, 124, 0.06);
     }
+    /* Ações no fim da página, alinhadas à direita — rolam junto
+       com o documento (nada de botão flutuante grudado na tela). */
+    .doc-acoes {
+      position: relative;
+      z-index: 1;
+      max-width: 840px;
+      margin: 18px auto 0;
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 10px;
+    }
     .btn-pdf {
-      position: fixed;
-      right: 22px;
-      bottom: 22px;
-      z-index: 10;
       display: inline-flex;
       align-items: center;
       gap: 8px;
@@ -137,16 +145,6 @@
       transition: transform 0.2s var(--curva-suave), box-shadow 0.2s var(--curva-suave);
     }
     .btn-pdf:hover { transform: translateY(-2px); box-shadow: 8px 8px 0 rgba(0, 0, 0, 0.28); }
-    .doc-acoes {
-      position: fixed;
-      right: 22px;
-      bottom: 22px;
-      z-index: 10;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-    .doc-acoes .btn-pdf { position: static; }
     .btn-limpar {
       font-family: var(--fonte-corpo);
       font-size: 13px;
@@ -272,6 +270,50 @@
        central · .destaque = citação/observação com aspas
        ============================================================ */
     .doc-corpo { margin-top: 34px; }
+    /* cada seção é um bloco: dá pra somar quantos quiser ("+ Seção")
+       e remover um a um. Os controles só existem na tela. */
+    .bloco { position: relative; }
+    .bloco + .bloco { margin-top: 4px; }
+    .btn-remover {
+      position: absolute;
+      top: 24px;
+      right: -6px;
+      display: grid;
+      place-items: center;
+      width: 24px;
+      height: 24px;
+      font-family: var(--fonte-corpo);
+      font-size: 16px;
+      line-height: 1;
+      color: var(--texto-suave-escuro);
+      background: transparent;
+      border: 1px solid var(--linha-escura);
+      border-radius: 50%;
+      cursor: pointer;
+      opacity: 0;
+      transition: opacity 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+    }
+    .bloco:hover .btn-remover, .btn-remover:focus-visible { opacity: 1; }
+    .btn-remover:hover { color: var(--color-gold-light); border-color: var(--color-gold-light); }
+    .doc-corpo .bloco:only-child .btn-remover { display: none; }
+    .btn-secao {
+      display: block;
+      width: 100%;
+      margin-top: 18px;
+      font-family: var(--fonte-corpo);
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--texto-suave-escuro);
+      background: transparent;
+      border: 1px dashed var(--linha-escura);
+      border-radius: var(--v4-radius-a-esp);
+      padding: 12px;
+      cursor: pointer;
+      transition: color 0.2s ease, border-color 0.2s ease;
+    }
+    .btn-secao:hover { color: var(--color-gold-light); border-color: rgba(210, 186, 124, 0.5); }
     .doc-corpo h2 {
       display: flex;
       align-items: center;
@@ -387,16 +429,6 @@
       font-size: 21px;
       color: var(--color-gold-light);
     }
-    .doc-nota {
-      position: relative;
-      z-index: 1;
-      margin: 16px auto 0;
-      max-width: 840px;
-      text-align: center;
-      color: rgba(242, 238, 221, 0.4);
-      font-size: 12.5px;
-    }
-
     @media (max-width: 620px) {
       .doc-meta { gap: 12px 26px; }
     }
@@ -408,7 +440,8 @@
       .brota, .ramo-path { animation: none; opacity: 1; transform: none; stroke-dashoffset: 0; }
       .plaqueta, .destaque { break-inside: avoid; }
       .pena { opacity: 0.14; }
-      .doc-nota, .doc-acoes { display: none; }
+      .doc-acoes, .btn-secao, .btn-remover { display: none; }
+      .bloco { break-inside: avoid; }
       [contenteditable]:hover, [contenteditable]:focus { box-shadow: none; background: none; }
     }
 
@@ -482,25 +515,27 @@
         </svg>
       </header>
 
-      <!-- Corpo livre: use h2 (rótulo de seção), p, ul,
-           .plaqueta (destaque central) e .destaque (citação). -->
-      <section class="doc-corpo brota brota--2">
-        <h2 contenteditable="true" data-campo="secao">[Seção]</h2>
-        <p contenteditable="true" data-campo="texto">[Conteúdo do documento.]</p>
+      <!-- Corpo livre: cada .bloco é uma seção (rótulo + texto).
+           O botão "+ Seção" clona este molde quantas vezes precisar. -->
+      <section class="doc-corpo brota brota--2" id="doc-corpo">
+        <div class="bloco">
+          <button class="btn-remover" type="button" title="Remover esta seção" aria-label="Remover esta seção">×</button>
+          <h2 contenteditable="true">[Seção]</h2>
+          <p contenteditable="true">[Conteúdo do documento.]</p>
+        </div>
       </section>
+      <button class="btn-secao" type="button" id="btn-secao">+ Seção</button>
 
       <footer class="doc-footer brota brota--3">
         <div class="assinatura">
           <strong contenteditable="true" data-campo="emitente" id="doc-emitente">[Emitido por]</strong>
           <span>Cocar Sagrado · cocarsagrado.com.br · @cocarsagrado</span>
         </div>
-        <p class="axe">Muito axé.</p>
+        <p class="axe">Axé.</p>
       </footer>
 
     </main>
   </div>
-
-  <p class="doc-nota">Clica em qualquer campo pra editar · o rascunho fica salvo neste navegador até você Recomeçar.</p>
 
   <div class="doc-acoes">
     <button class="btn-limpar" type="button" id="btn-limpar" title="Apaga o rascunho e volta ao modelo limpo">Recomeçar</button>
@@ -511,8 +546,11 @@
     (function () {
       // Vindo do painel admin: ?ag=<id>&embutido=1&nome=&leitura=&data=&terapeuta=
       const q = new URLSearchParams(location.search);
-      const campos = document.querySelectorAll('[contenteditable]');
+      // Campos fixos (cabeçalho/rodapé) x corpo, que cresce em seções.
+      const campos = document.querySelectorAll('[data-campo]');
+      const corpo  = document.getElementById('doc-corpo');
       const chaveRascunho = `doc-rascunho-${q.get('ag') || 'avulso'}`;
+      const MOLDE_BLOCO = corpo.innerHTML;
 
       if (q.get('embutido')) document.documentElement.classList.add('embutido');
 
@@ -532,36 +570,68 @@
 
       // 2) Rascunho automático por agendamento, neste navegador.
       //    Restaura por cima do pré-preenchimento: o que foi digitado vence.
+      //    O corpo vai inteiro (guarda também as seções somadas).
       try {
         const dados = JSON.parse(localStorage.getItem(chaveRascunho));
-        if (dados) campos.forEach(el => {
-          const v = dados[el.dataset.campo];
-          if (v != null) el.innerHTML = v;
-        });
+        if (dados) {
+          campos.forEach(el => {
+            const v = dados[el.dataset.campo];
+            if (v != null) el.innerHTML = v;
+          });
+          if (dados._corpo) corpo.innerHTML = dados._corpo;
+        }
       } catch (e) { /* rascunho corrompido: segue com o modelo limpo */ }
 
       let tRascunho;
       const salvarRascunho = () => {
-        const dados = {};
+        const dados = { _corpo: corpo.innerHTML };
         campos.forEach(el => { dados[el.dataset.campo] = el.innerHTML; });
         try { localStorage.setItem(chaveRascunho, JSON.stringify(dados)); } catch (e) {}
       };
-      campos.forEach(el => {
-        el.addEventListener('input', () => {
-          clearTimeout(tRascunho);
-          tRascunho = setTimeout(salvarRascunho, 350);
-        });
-        // Campo ainda com [placeholder] seleciona tudo ao focar: digitar já substitui.
-        el.addEventListener('focus', () => {
-          const t = el.textContent.trim();
-          if (t.startsWith('[') && t.endsWith(']')) {
-            const sel = getSelection();
-            sel.removeAllRanges();
-            const r = document.createRange();
-            r.selectNodeContents(el);
-            sel.addRange(r);
-          }
-        });
+      const agendarRascunho = () => {
+        clearTimeout(tRascunho);
+        tRascunho = setTimeout(salvarRascunho, 350);
+      };
+
+      // Delegação no documento inteiro: pega também as seções criadas depois.
+      document.addEventListener('input', (e) => {
+        if (e.target.isContentEditable) agendarRascunho();
+      });
+      // Campo ainda com [placeholder] seleciona tudo ao focar: digitar já substitui.
+      document.addEventListener('focusin', (e) => {
+        const el = e.target;
+        if (!el.isContentEditable) return;
+        const t = el.textContent.trim();
+        if (t.startsWith('[') && t.endsWith(']')) {
+          const sel = getSelection();
+          sel.removeAllRanges();
+          const r = document.createRange();
+          r.selectNodeContents(el);
+          sel.addRange(r);
+        }
+      });
+      // Colar sempre como texto puro — não traz fonte/cor de fora.
+      document.addEventListener('paste', (e) => {
+        if (!e.target.isContentEditable) return;
+        e.preventDefault();
+        const txt = (e.clipboardData || window.clipboardData).getData('text/plain');
+        document.execCommand('insertText', false, txt);
+      });
+
+      // 2b) Seções: somar e remover.
+      document.getElementById('btn-secao').addEventListener('click', () => {
+        const molde = document.createElement('div');
+        molde.innerHTML = MOLDE_BLOCO;
+        const bloco = molde.querySelector('.bloco');
+        corpo.appendChild(bloco);
+        bloco.querySelector('h2').focus();
+        salvarRascunho();
+      });
+      corpo.addEventListener('click', (e) => {
+        const btn = e.target.closest('.btn-remover');
+        if (!btn) return;
+        btn.closest('.bloco').remove();
+        salvarRascunho();
       });
 
       document.getElementById('btn-limpar').addEventListener('click', () => {
