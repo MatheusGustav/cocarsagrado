@@ -191,7 +191,7 @@ function _audBaixarArquivo(file) {
 
 // Compartilhar (ou baixar, no fallback) um blob de áudio já pronto.
 // `doc` (opcional) = { blob, nome } do PDF do documento: quando o pedido
-// tem documento salvo, o PDF sai num SEGUNDO toque logo após o áudio.
+// tem documento salvo, o PDF sai PRIMEIRO e o áudio num segundo toque.
 // Juntos no mesmo share não dá: o WhatsApp rejeita tipos misturados
 // (áudio + PDF) e acusa "não é possível enviar mensagem vazia".
 async function _audCompartilharBlob(blob, mime, nomeSugestao, doc) {
@@ -218,20 +218,21 @@ async function _audCompartilharBlob(blob, mime, nomeSugestao, doc) {
     : null;
 
   if (navigator.canShare?.({ files: [file] })) {
-    // Áudio enviado (share fechou sem cancelar) → pill pro PDF, que
-    // precisa de um toque novo (o navegador só autoriza 1 share por toque)
-    const oferecerDoc = () => {
-      if (docFile && navigator.canShare({ files: [docFile] }))
-        _audMostrarPillEnviar([docFile], docFile.name, { rotulo: 'Documento pronto' });
-    };
+    // Documento SEMPRE primeiro; o áudio vai num segundo toque (pill),
+    // porque o navegador só autoriza 1 share por toque.
+    const temDoc = !!(docFile && navigator.canShare({ files: [docFile] }));
+    const primeiro = temDoc ? [docFile] : [file];
+    const tituloPrimeiro = temDoc ? docFile.name : nome;
+    const depois = temDoc ? () => _audMostrarPillEnviar([file], nome) : null;
     try {
-      await navigator.share({ files: [file], title: nome });
-      oferecerDoc();
+      await navigator.share({ files: primeiro, title: tituloPrimeiro });
+      depois?.();
     } catch (e) {
       if (e.name === 'NotAllowedError') {
         // Conversão longa consumiu o toque que autoriza o share —
         // oferece um botão que compartilha na hora com um toque novo
-        _audMostrarPillEnviar([file], nome, { depois: oferecerDoc });
+        _audMostrarPillEnviar(primeiro, tituloPrimeiro,
+          { rotulo: temDoc ? 'Documento pronto' : undefined, depois });
       } else if (e.name !== 'AbortError') {
         _toastAdmin('Erro ao compartilhar: ' + e.message, 'erro');
       }
@@ -242,8 +243,12 @@ async function _audCompartilharBlob(blob, mime, nomeSugestao, doc) {
   // Fallback (desktop/sem suporte a share de arquivos): baixa direto —
   // os dois arquivos, quando houver documento (o navegador pode pedir
   // permissão de "múltiplos downloads" uma vez)
-  _audBaixarArquivo(file);
-  if (docFile) setTimeout(() => _audBaixarArquivo(docFile), 400);
+  if (docFile) {
+    _audBaixarArquivo(docFile);
+    setTimeout(() => _audBaixarArquivo(file), 400);
+  } else {
+    _audBaixarArquivo(file);
+  }
 }
 
 // ============================================================
