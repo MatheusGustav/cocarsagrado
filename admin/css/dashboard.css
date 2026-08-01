@@ -3947,6 +3947,9 @@ body.drawer-aberto { overflow: hidden; }
 
 /* Palco do gravador: sem card, sem cromo — só a mesa de fita
    (cassete + VU + teclas), centralizada na altura útil da tela */
+/* O dock é fixed: quando ele tem painel (prévia/entrega), reserva o
+   espaço embaixo — senão ele cobre o VU e a tecla TOCAR do cassete */
+#aud-tela-gravar:has(.aud-dock-painel) .aud-gravador { padding-bottom: 235px; }
 .aud-gravador {
   flex: 1;
   min-height: clamp(340px, 58vh, 620px);
@@ -4087,6 +4090,7 @@ body.drawer-aberto { overflow: hidden; }
   display: flex;
   justify-content: space-between;
   align-items: baseline;
+  gap: 10px;
   font-size: 0.68rem;
   letter-spacing: 0.08em;
   color: #6B5526;
@@ -4094,7 +4098,7 @@ body.drawer-aberto { overflow: hidden; }
   border-top: 1px dashed rgba(107,85,38,0.5);
   padding-top: 4px;
 }
-.aud-k7-lado { font-weight: 800; }
+.aud-k7-lado { font-weight: 800; white-space: nowrap; }
 
 .aud-k7-janela {
   margin: 10px 18px 6px;
