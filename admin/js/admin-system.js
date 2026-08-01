@@ -757,6 +757,13 @@ function _agruparPorPedido(lista) {
 }
 
 function renderizarAgendamentos(lista, container) {
+  // Gravação de áudio em andamento (ou prévia não salva) dentro de um
+  // card: re-renderizar derrubaria o gravador no meio da leitura. A lista
+  // fica como está; o próximo refresh (realtime/auto) atualiza depois.
+  if (window._audOcupado?.()) {
+    console.info('[agenda] re-render adiado: gravação de áudio em andamento');
+    return;
+  }
   if (!lista.length) {
     const temFiltro = !!(_statusAtivo || _buscaTexto ||
       document.getElementById('filtro-data')?.value ||
@@ -813,6 +820,7 @@ function renderizarAgendamentos(lista, container) {
       container.appendChild(criarItemAgendamento(item.ag));
     }
   });
+  window._audAposRender?.(); // selinhos "n áudios" nos cards (audios-admin.js)
 }
 
 function _esc(str) {
@@ -873,9 +881,11 @@ function criarItemAgendamento(ag) {
         ${ehAdicao ? `<div class="adm-detail-item"><label>Adição à leitura</label><span>#${_esc(ag.leitura_origem_id)}${ag.num_perguntas ? ` · +${_esc(ag.num_perguntas)} pergunta${ag.num_perguntas > 1 ? 's' : ''}` : ''}</span></div>` : ''}
         ${ag.cliente_observacoes ? `<div class="adm-detail-item" style="grid-column:1/-1"><label>Observações</label><span style="white-space:pre-wrap">${_esc(ag.cliente_observacoes)}</span></div>` : ''}
       </div>
+      <div class="aud-slot"></div>
       <div class="adm-item-actions">${acoes}</div>
     </div>`;
 
+  window._audMontarCard?.(item.querySelector('.aud-slot'), ag);
   return item;
 }
 
@@ -913,6 +923,7 @@ function criarItemGrupo(grupo) {
         ${badgeSt}
         <button class="ag-btn ag-btn-outline ag-btn-sm" onclick="abrirDocumento('${ag.id}')" title="Documento desta leitura — editar e Gerar PDF"><svg class="ico" aria-hidden="true"><use href="#ico-folha"></use></svg></button>
       </div>
+      <div class="aud-slot"></div>
     </div>`;
   }).join('');
 
@@ -946,6 +957,7 @@ function criarItemGrupo(grupo) {
       <div class="adm-item-actions">${montarAcoesGrupo(ags)}</div>
     </div>`;
 
+  item.querySelectorAll('.aud-slot').forEach((slot, i) => window._audMontarCard?.(slot, ags[i]));
   return item;
 }
 

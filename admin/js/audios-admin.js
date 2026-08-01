@@ -1,31 +1,26 @@
 /* ============================================================
-   COCAR SAGRADO — Admin: Áudios das leituras
-   Fluxo em linha reta, gravação primeiro:
-   1. Mesa de fita: a leitura é um cassete com o nome do cliente
-      na etiqueta. Tecla GRAVAR gira os carretéis; o VU de agulha
-      mede a voz ao vivo (é o rosto da sentinela: agulha deitada
-      + led SEM SOM = mic morto). PARAR rebobina pra prévia, e o
-      cassete/tecla TOCAR tocam com o dock de player embaixo. O
-      chip mostra o destino (ou "sem cliente") e deixa trocar.
-   2. "Salvar para um cliente…" abre a lista de agendamentos
-      pagos; escolher com prévia pendente já salva na hora.
-   3. O salvar sobe pro bucket privado "audios" +
-      audios_cliente e o dock vira o painel de entrega: enviar
-      e-mail agora (edge audio-email; o cron de 10 em 10 min só
-      re-tenta liberados que falharam), compartilhar, nova gravação.
-   A aba "Áudios salvos" é o histórico, com (re)envio por e-mail.
-   Sentinela de mudez (3 camadas): aviso ao vivo no palco quando o
-   mic entrega silêncio digital, faixa vermelha na prévia quando o
-   arquivo inteiro saiu mudo, e confirm() na hora de salvar.
+   COCAR SAGRADO — Admin: Áudios das leituras (embutido no card)
+   A seção "Microfone" morreu: gravar, ouvir e entregar acontecem
+   DENTRO do card do agendamento, sem trocar de tela.
+   - Cada card pago/confirmado/atendido ganha um bloco "Áudios da
+     leitura": lista do que já foi gravado + gravador mínimo
+     (● gravar → ■ parar → prévia → salvar).
+   - O salvar sobe o mp3 pro bucket privado "audios" + linha em
+     audios_cliente. Salvar NÃO envia: o envelope de cada áudio
+     dispara o e-mail (edge audio-email; cron re-tenta liberados).
+   - Sentinela de mudez (3 camadas): aviso ao vivo quando o mic
+     entrega silêncio digital, faixa vermelha na prévia quando o
+     arquivo inteiro saiu mudo, e confirm() na hora de salvar.
+   - Um gravador por vez no painel inteiro: começar a gravar num
+     card com prévia viva em outro pede pra descartar antes.
+   Integração (admin-system.js): _audMontarCard(slot, ag) em cada
+   card, _audAposRender() depois da lista, _audOcupado() como
+   trava anti re-render no meio de uma gravação.
    ============================================================ */
 
-let _audAgendamentos = [];   // cache da busca de agendamentos
-let _audClienteAlvo  = null; // agendamento escolhido (null = gravação sem cliente ainda)
-let _audEscolhaPraSalvar = false; // lista aberta pelo "Salvar…": escolher já salva
-let _audVerTodos     = false; // false = só pago/confirmado (a atender)
-let _audContagem     = {};   // agendamento_id -> nº de áudios salvos
-let _audTodos        = [];   // cache da aba "Áudios salvos"
-let _audSalvando     = false; // trava anti duplo-clique no salvar
+// ---- estado do gravador (um só, dono = um card por vez) ----
+let _audAgDono       = null; // agendamento dono da gravação/prévia atual
+let _audBloco        = null; // .aud-bloco-gravador do card dono
 let _audRecorder     = null;
 let _audStream       = null;
 let _audChunks       = [];
@@ -34,27 +29,18 @@ let _audMime         = '';
 let _audMs           = 0;    // duração acumulada (só enquanto grava)
 let _audTimerInt     = null;
 let _audPreviewUrl   = null;
+let _audPlayerAudio  = null; // <audio> da prévia (nativo)
 let _audAudioCtx     = null; // Web Audio só pra medir a amplitude da voz
 let _audAnalyser     = null;
 let _audAmostra      = null; // buffer reutilizado do analyser
 let _audSilencioDesde = 0;   // último instante em que o mic entregou som de verdade
-let _audAvisoVivo     = null; // aviso ativo no palco: 'silencio' | 'mute' | 'ended'
-let _audVuCtx        = null; // canvas 2d do VU de agulha
-let _audVuW          = 0;
-let _audVuH          = 0;
-let _audAgulhaPos    = -1;   // posição suavizada da agulha (-1 repouso .. +1 estourado)
-let _audAgulhaRaf    = null;
-let _audListenersOk  = false;
+let _audAvisoVivo     = null; // aviso ativo: 'silencio' | 'mute' | 'ended'
 let _audMicDevices    = [];  // audioinputs enumerados
 let _audWakeLock      = null;
 let _audBeforeUnloadOn = false;
-let _audPlayerAudio   = null; // <audio> escondido que toca a prévia
-let _audPlayerRaf     = null;
-let _audPlayerRate    = 1;
-let _audPlayerSeeking = false;
-let _audPlayerCtx      = null; // Web Audio da prévia (move a agulha no play)
-let _audPlayerAnalyser = null;
-let _audPlayerAmostra  = null; // buffer reutilizado do analyser da prévia
+let _audSalvando      = false; // trava anti duplo-clique no salvar
+let _audContagem      = {};  // agendamento_id -> nº de áudios salvos
+let _audContagemEm    = 0;   // quando a contagem foi buscada (TTL)
 
 const _AUD_TICK = 50; // resolução (ms) do relógio de duração da gravação
 
@@ -64,6 +50,8 @@ const _AUD_TICK = 50; // resolução (ms) do relógio de duração da gravação
 const _AUD_LIMIAR_VIVO = 0.01;  // amplitude ao vivo abaixo disso = mic morto
 const _AUD_SILENCIO_MS = 6000;  // quanto silêncio digital contínuo até acusar
 const _AUD_PICO_MUDO   = 0.02;  // pico do arquivo inteiro abaixo disso = inaudível
+
+const _AUD_STATUS_COM_AUDIO = ['pago', 'confirmado', 'atendido'];
 
 function _audEsc(s) {
   return String(s ?? '')
@@ -81,13 +69,6 @@ function _audDataBR(iso) {
   return isNaN(d) ? '' : d.toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' });
 }
 
-// data_agendamento é date puro (YYYY-MM-DD) — cortar a string evita
-// o shift de fuso do new Date()
-function _audDataAgend(str) {
-  const [a, m, d] = String(str || '').split('-');
-  return d ? `${d}/${m}/${a}` : '';
-}
-
 function _audSanitizarNomeArquivo(s) {
   return String(s || 'audio').replace(/[\\/:*?"<>|]/g, '').replace(/\s+/g, ' ').trim() || 'audio';
 }
@@ -103,6 +84,10 @@ function _audNomeSugerido(nomeCliente, tipoLeitura, dataAgendamentoISO) {
 function _audExtDoMime(mime) {
   const m = String(mime || '');
   return m.includes('mpeg') ? 'mp3' : m.includes('mp4') ? 'm4a' : 'webm';
+}
+
+function _audPrimeiroNome(nome) {
+  return String(nome || '').trim().split(/\s+/)[0] || 'cliente';
 }
 
 // Conversão pra mp3: o WhatsApp só mostra o áudio como bolha clicável se
@@ -143,7 +128,7 @@ async function _audConverterParaMp3Interno(blob) {
   let pico = 0, comSom = 0;
   for (let i = 0, bloco = 0; i < buf.length; i += BLOCO, bloco++) {
     // Respiro a cada ~1.5s de áudio: a conversão roda em segundo plano
-    // logo após parar de gravar, e não pode travar as barrinhas da prévia
+    // logo após parar de gravar, e não pode travar a prévia
     if (bloco % 64 === 63) await new Promise(r => setTimeout(r));
     const n = Math.min(BLOCO, buf.length - i);
     for (let j = 0; j < n; j++) {
@@ -239,1034 +224,137 @@ async function _audCompartilharBlob(blob, mime, nomeSugestao) {
 }
 
 // ============================================================
-// Init da seção
+// API pro painel (admin-system.js)
 // ============================================================
-async function inicializarAudios() {
-  const container = document.getElementById('audios-container');
-  if (!container) return;
 
-  container.innerHTML = `
-    <div class="aud-tabs">
-      <button type="button" class="aud-tab aud-tab--on" id="aud-tab-gravar" onclick="_audTrocarAba('gravar')"><svg class="ico" aria-hidden="true"><use href="#ico-microfone"></use></svg> Gravar</button>
-      <button type="button" class="aud-tab" id="aud-tab-todos" onclick="_audTrocarAba('todos')"><svg class="ico" aria-hidden="true"><use href="#ico-fone"></use></svg> Áudios salvos</button>
-      <select class="aud-mic-select" id="aud-mic-select" style="display:none;" onchange="_audEscolherMic(this.value)"></select>
-    </div>
+// Gravação em andamento ou prévia não salva: o painel NÃO pode
+// re-renderizar a lista (derrubaria o DOM do gravador).
+function _audOcupado() {
+  return !!(_audRecorder && _audRecorder.state !== 'inactive') || !!_audBlob;
+}
 
-    <div id="aud-aba-gravar">
-      <div class="aud-passo" id="aud-tela-escolha">
-        <div class="aud-escolha-topo">
-          <div class="aud-passo-titulo">Pra quem é esta leitura?</div>
-          <button type="button" class="ag-btn ag-btn-outline ag-btn-sm" id="aud-btn-voltar" onclick="_audVoltarGravador()"><svg class="ico" aria-hidden="true"><use href="#ico-voltar"></use></svg> Voltar</button>
-        </div>
-        <div class="aud-filtros">
-          <button type="button" class="aud-filtro aud-filtro--on" id="aud-filtro-pendentes" onclick="_audFiltroStatus(false)">A atender</button>
-          <button type="button" class="aud-filtro" id="aud-filtro-todos" onclick="_audFiltroStatus(true)">Todos (inclui atendidos)</button>
-        </div>
-        <input type="text" id="aud-busca" class="cup-input" autocomplete="off"
-               placeholder="Buscar por nome, leitura ou WhatsApp…">
-        <div id="aud-ag-lista" class="aud-ag-lista">
-          <div class="ag-loading"><div class="ag-spinner"></div> Carregando…</div>
-        </div>
-      </div>
+// Monta o bloco de áudios num slot do card. `ag` precisa de:
+// id, cliente_nome, data_agendamento, status, tipos_leitura(nome).
+function _audMontarCard(slot, ag) {
+  if (!slot || !ag) return;
+  if (!_AUD_STATUS_COM_AUDIO.includes(ag.status)) { slot.remove(); return; }
 
-      <div class="aud-passo" id="aud-tela-gravar" style="display:none;">
-        <div class="aud-chip" id="aud-cliente-chip"></div>
-        <div class="aud-gravador">
-          <div class="aud-controles" id="aud-controles"></div>
-          <div class="aud-erro" id="aud-erro"></div>
-        </div>
-        <div class="aud-dock" id="aud-dock"></div>
-      </div>
-    </div>
-
-    <div id="aud-aba-todos" style="display:none;">
-      <input type="text" id="aud-busca-todos" class="cup-input" autocomplete="off"
-             placeholder="Buscar por cliente ou leitura…">
-      <div id="aud-todos-lista" class="aud-lista" style="margin-top:10px;"></div>
+  slot.innerHTML = `
+    <div class="aud-bloco" data-ag-id="${_audEsc(ag.id)}">
+      <div class="aud-bloco-label">Áudios da leitura <span class="aud-cont" hidden></span></div>
+      <div class="aud-bloco-lista"></div>
+      <div class="aud-bloco-gravador"></div>
     </div>`;
 
-  document.getElementById('aud-busca').addEventListener('input', _audFiltrarLista);
-  document.getElementById('aud-busca-todos').addEventListener('input', _audRenderTodos);
-  if (!_audListenersOk) {
-    _audListenersOk = true;
-    document.addEventListener('visibilitychange', () => {
-      if (document.visibilityState === 'visible' && _audRecorder?.state === 'recording') {
-        if (!_audWakeLock) _audWakeLockPedir();
-        _audAudioCtx?.resume().catch(() => {}); // iOS suspende o contexto em interrupções
-      }
-    });
+  const gravador = slot.querySelector('.aud-bloco-gravador');
+
+  // Re-render aconteceu com gravação/prévia viva deste agendamento?
+  // Re-adota: o estado global sobrevive, só o palco é redesenhado.
+  if (_audAgDono?.id === ag.id && _audOcupado()) {
+    _audBloco = gravador;
+    if (_audBlob) _audRenderPrevia(ag); else _audRenderGravando(ag);
+  } else {
+    _audRenderPronto(gravador, ag);
   }
-  _audResetGravador();
-  _audAtualizarListaMics(); // best-effort; labels só vêm depois da 1ª permissão
+  _audContPintarBloco(slot.querySelector('.aud-bloco'));
+
+  // Lista carrega quando os detalhes do card abrem (lazy) — e já, se
+  // o bloco nasceu com os detalhes abertos (re-render pós-salvar).
+  const item = slot.closest('.adm-item');
+  const header = item?.querySelector('.adm-item-header');
+  const carregar = () => {
+    if (slot.dataset.audCarregada) return;
+    if (!item?.querySelector('.adm-item-details')?.classList.contains('open')) return;
+    slot.dataset.audCarregada = '1';
+    _audCardCarregarLista(slot, ag);
+  };
+  header?.addEventListener('click', () => setTimeout(carregar));
+  carregar();
 }
 
-// ============================================================
-// Abas: Gravar ⇄ Áudios salvos
-// ============================================================
-function _audTrocarAba(aba) {
-  // Sair da aba Gravar com gravação em andamento OU prévia não salva
-  // descartaria áudio sem avisar
-  if (aba === 'todos' && ((_audRecorder && _audRecorder.state !== 'inactive') || _audBlob)) {
-    if (!confirm('Há uma gravação em andamento ou uma prévia não salva. Descartar?')) return;
-    _audDescartarGravacao();
+// Depois de renderizar a lista da agenda: busca as contagens (com TTL,
+// pra busca-enquanto-digita não virar rajada de queries) e pinta os
+// selinhos "n áudios" nos cards e nos blocos.
+async function _audAposRender() {
+  if (Date.now() - _audContagemEm > 15000) {
+    const { data, error } = await supabase.from('audios_cliente').select('agendamento_id');
+    if (!error) {
+      _audContagem = {};
+      (data || []).forEach(r => {
+        _audContagem[r.agendamento_id] = (_audContagem[r.agendamento_id] || 0) + 1;
+      });
+      _audContagemEm = Date.now();
+    }
   }
-  document.getElementById('aud-aba-gravar').style.display = aba === 'gravar' ? '' : 'none';
-  document.getElementById('aud-aba-todos').style.display  = aba === 'todos'  ? '' : 'none';
-  document.getElementById('aud-tab-gravar').classList.toggle('aud-tab--on', aba === 'gravar');
-  document.getElementById('aud-tab-todos').classList.toggle('aud-tab--on', aba === 'todos');
-  if (aba === 'todos') _audCarregarTodos();
+  _audContPintarTudo();
 }
 
-// ============================================================
-// Lista de clientes — abre pelo "Salvar para um cliente…" (aí
-// escolher já salva) ou pelo chip escolher/trocar antes de gravar.
-// ============================================================
-function _audAbrirEscolha(praSalvar) {
-  _audEscolhaPraSalvar = !!praSalvar && !!_audBlob;
-  document.getElementById('aud-tela-gravar').style.display = 'none';
-  const tela = document.getElementById('aud-tela-escolha');
-  tela.style.display = '';
-  const titulo = tela.querySelector('.aud-passo-titulo');
-  if (titulo) titulo.textContent = _audEscolhaPraSalvar ? 'Salvar para quem?' : 'Pra quem é esta leitura?';
-  const busca = document.getElementById('aud-busca');
-  if (busca) busca.value = '';
-  _audCarregarAgendamentos();
-  tela.scrollIntoView({ behavior: 'smooth', block: 'start' });
+function _audContPintarTudo() {
+  document.querySelectorAll('.aud-bloco').forEach(_audContPintarBloco);
+  document.querySelectorAll('.adm-item[data-id]').forEach(item => {
+    const n = _audContagem[item.dataset.id] || 0;
+    const right = item.querySelector('.adm-item-right');
+    if (!right) return;
+    let b = right.querySelector('.adm-badge-audio');
+    if (!n) { b?.remove(); return; }
+    if (!b) {
+      b = document.createElement('span');
+      b.className = 'adm-badge adm-badge-audio';
+      right.insertBefore(b, right.querySelector('.adm-chevron'));
+    }
+    b.innerHTML = `<svg class="ico" aria-hidden="true"><use href="#ico-microfone"></use></svg> ${n} áudio${n > 1 ? 's' : ''}`;
+    b.title = `${n} áudio${n > 1 ? 's' : ''} gravado${n > 1 ? 's' : ''} para esta leitura`;
+  });
 }
 
-function _audEscolherCliente(ag) {
-  const salvarJa = _audEscolhaPraSalvar && _audBlob;
-  _audEscolhaPraSalvar = false;
-  _audClienteAlvo = ag;
-  _audMostrarGravar();
-  if (salvarJa) _audSalvar(); // veio do "Salvar…": escolher conclui o salvar
-}
-
-function _audVoltarGravador() {
-  _audMostrarGravar();
-}
-
-function _audMostrarGravar() {
-  document.getElementById('aud-tela-escolha').style.display = 'none';
-  document.getElementById('aud-tela-gravar').style.display = '';
-  _audChipRender();
-  // O canvas do VU pode ter nascido com a tela escondida (largura 0)
-  if (!_audVuCtx) _audVuDesenhar(_audAgulhaPos);
-  // Se já existe prévia, o botão de salvar precisa refletir o destino atual
-  const acoes = document.querySelector('#aud-dock .aud-dock-acoes');
-  if (acoes && _audBlob) acoes.innerHTML = _audDockAcoes();
-}
-
-// Chip no topo do palco: deixa sempre visível pra quem o áudio vai.
-// A etiqueta do cassete espelha o mesmo cliente, então segue junto.
-function _audChipRender() {
-  _audK7Etiqueta();
-  const chip = document.getElementById('aud-cliente-chip');
+function _audContPintarBloco(bloco) {
+  if (!bloco) return;
+  const n = _audContagem[bloco.dataset.agId] || 0;
+  const chip = bloco.querySelector('.aud-cont');
   if (!chip) return;
-  const ag = _audClienteAlvo;
-  if (!ag) {
-    chip.innerHTML = `
-      <span class="aud-chip-meta">Sem cliente — dá pra escolher ao salvar</span>
-      <button type="button" class="aud-chip-trocar" onclick="_audIrTrocarCliente()">escolher agora</button>`;
-    return;
-  }
-  chip.innerHTML = `
-    <span><svg class="ico" aria-hidden="true"><use href="#ico-folha"></use></svg> Gravando para <span class="aud-chip-nome">${_audEsc(ag.cliente_nome)}</span></span>
-    <span class="aud-chip-meta">${_audEsc(ag.tipos_leitura?.nome || 'Leitura')} · ${_audDataAgend(ag.data_agendamento)}</span>
-    <button type="button" class="aud-chip-trocar" onclick="_audIrTrocarCliente()">trocar</button>`;
+  chip.hidden = !n;
+  chip.textContent = n ? `${n} gravado${n > 1 ? 's' : ''}` : '';
 }
 
-function _audIrTrocarCliente() {
-  if (_audRecorder && _audRecorder.state !== 'inactive') {
-    _toastAdmin('Pare a gravação antes de trocar o cliente.', 'erro');
-    return;
-  }
-  _audAbrirEscolha();
-}
-
-function _audPrimeiroNome(nome) {
-  return String(nome || '').trim().split(/\s+/)[0] || 'cliente';
-}
-
-function _audFiltroStatus(verTodos) {
-  if (verTodos === _audVerTodos) return;
-  _audVerTodos = verTodos;
-  document.getElementById('aud-filtro-pendentes').classList.toggle('aud-filtro--on', !verTodos);
-  document.getElementById('aud-filtro-todos').classList.toggle('aud-filtro--on', verTodos);
-  _audCarregarAgendamentos();
-}
-
-async function _audCarregarAgendamentos() {
-  const lista = document.getElementById('aud-ag-lista');
+// ============================================================
+// Lista de áudios do agendamento (dentro do card)
+// ============================================================
+async function _audCardCarregarLista(slot, ag) {
+  const lista = slot.querySelector('.aud-bloco-lista');
   if (!lista) return;
-
   lista.innerHTML = '<div class="ag-loading"><div class="ag-spinner"></div> Carregando…</div>';
 
-  // Padrão: fila de quem falta atender. "Todos" inclui atendidos (regravar etc.)
-  const status = _audVerTodos ? ['pago', 'confirmado', 'atendido'] : ['pago', 'confirmado'];
-  const [ags, cnts] = await Promise.all([
-    supabase
-      .from('agendamentos')
-      .select('id, cliente_nome, cliente_whatsapp, data_agendamento, status, leitura_origem_id, tipos_leitura(nome)')
-      .in('status', status)
-      // fila: mais próximo primeiro; "todos": mais recente primeiro
-      .order('data_agendamento', { ascending: !_audVerTodos })
-      .limit(100),
-    supabase.from('audios_cliente').select('agendamento_id'),
-  ]);
+  const { data, error } = await supabase
+    .from('audios_cliente')
+    .select('*')
+    .eq('agendamento_id', ag.id)
+    .order('criado_em', { ascending: true });
 
-  if (ags.error) {
-    lista.innerHTML = '<div class="ag-empty">Erro ao carregar agendamentos.</div>';
-    console.error('_audCarregarAgendamentos:', ags.error);
+  if (error) {
+    lista.innerHTML = '<div class="aud-vazio">Erro ao carregar os áudios.</div>';
+    console.error('_audCardCarregarLista:', error);
     return;
   }
 
-  _audContagem = {};
-  (cnts.data || []).forEach(r => {
-    _audContagem[r.agendamento_id] = (_audContagem[r.agendamento_id] || 0) + 1;
-  });
-
-  _audAgendamentos = ags.data || [];
-  _audRenderLista(_audAgendamentos);
-}
-
-function _audFiltrarLista() {
-  const termo = (document.getElementById('aud-busca')?.value || '').trim().toLowerCase();
-  if (!termo) { _audRenderLista(_audAgendamentos); return; }
-  _audRenderLista(_audAgendamentos.filter(ag =>
-    (ag.cliente_nome || '').toLowerCase().includes(termo) ||
-    (ag.cliente_whatsapp || '').toLowerCase().includes(termo) ||
-    (ag.tipos_leitura?.nome || '').toLowerCase().includes(termo)
-  ));
-}
-
-function _audRenderLista(ags) {
-  const lista = document.getElementById('aud-ag-lista');
-  if (!lista) return;
-
-  if (!ags.length) {
-    lista.innerHTML = `<div class="ag-empty">${_audVerTodos
-      ? 'Nenhum agendamento pago encontrado.'
-      : 'Ninguém na fila 🎉 — todos os pagos já foram atendidos.'}</div>`;
-    return;
-  }
+  _audContagem[ag.id] = (data || []).length;
+  _audContPintarTudo();
 
   lista.innerHTML = '';
-  ags.forEach(ag => {
-    const item = document.createElement('button');
-    item.type = 'button';
-    item.className = 'aud-ag-item';
-    const n = _audContagem[ag.id] || 0;
-    item.innerHTML = `
-      <span class="aud-ag-nome">${_audEsc(ag.cliente_nome)}</span>
-      <span class="aud-ag-meta">${_audEsc(ag.tipos_leitura?.nome || 'Leitura')}${ag.leitura_origem_id ? ' (pergunta adicional)' : ''} · ${_audDataAgend(ag.data_agendamento)}</span>
-      ${n ? `<span class="aud-ag-badges"><span class="aud-ag-badge aud-ag-badge--audios"><svg class="ico" aria-hidden="true"><use href="#ico-fone"></use></svg> ${n} áudio${n > 1 ? 's' : ''}</span></span>` : ''}`;
-    item.addEventListener('click', () => _audEscolherCliente(ag));
-    lista.appendChild(item);
-  });
-}
-
-// ============================================================
-// Passo 1 — gravador (mesa de fita: GRAVAR gira, PARAR → preview)
-// ============================================================
-function _audSetErro(txt) {
-  const el = document.getElementById('aud-erro');
-  if (el) el.textContent = txt || '';
-}
-
-// ============================================================
-// Mesa de fita — o palco é um cassete: etiqueta de papel com o
-// nome do cliente, carretéis que giram, contador mecânico, VU de
-// agulha e teclas mecânicas. A agulha é o rosto da sentinela:
-// segue o mic na gravação e o player na prévia; mic morto =
-// agulha deitada no zero + led SEM SOM piscando.
-// ============================================================
-const _AUD_K7_ESTADOS = {
-  pronto:   'pronta pra gravar',
-  gravando: '● gravando…',
-  previa:   'gravada — confere e salva',
-  salvo:    'salva ✓ — pronta pra entrega',
-};
-
-function _audK7Html(modo) {
-  const teclas = modo === 'pronto'
-    ? '<button type="button" class="aud-k7-tecla aud-k7-tecla--rec" onclick="_audComecarGravacao()"><b>●</b> GRAVAR</button>'
-    : modo === 'gravando'
-      ? '<button type="button" class="aud-k7-tecla" onclick="_audPararGravacao()"><b>■</b> PARAR</button>'
-      : modo === 'previa'
-        ? '<button type="button" class="aud-k7-tecla" id="aud-k7-play" onclick="_audPlayerTogglePlay()"><b>▶</b> TOCAR</button>'
-        : '';
-  return `
-    <div class="aud-k7-palco">
-      <div class="aud-k7${modo === 'gravando' ? ' aud-k7--girando' : ''}" id="aud-k7"${modo === 'previa' ? ' onclick="_audPlayerTogglePlay()" title="Tocar / pausar"' : ''}>
-        <i class="aud-k7-paraf aud-k7-paraf--bl"></i><i class="aud-k7-paraf aud-k7-paraf--br"></i>
-        <div class="aud-k7-etiqueta">
-          <div class="aud-k7-nome" id="aud-k7-nome"></div>
-          <div class="aud-k7-sub"><span id="aud-k7-estado"></span><span class="aud-k7-lado">LADO A</span></div>
-        </div>
-        <div class="aud-k7-janela">
-          <div class="aud-k7-carretel"><div class="aud-k7-disco" id="aud-k7-disco-e"></div><div class="aud-k7-cubo"></div></div>
-          <div class="aud-k7-fita"></div>
-          <div class="aud-k7-carretel"><div class="aud-k7-disco" id="aud-k7-disco-d"></div><div class="aud-k7-cubo"></div></div>
-        </div>
-        <div class="aud-k7-odo" id="aud-k7-odo"><span>0</span><span>0</span><span class="aud-k7-odo-sep">:</span><span>0</span><span>0</span></div>
-      </div>
-      ${modo === 'salvo' ? '' : `
-      <div class="aud-vu">
-        <div class="aud-vu-caixa"><canvas id="aud-vu-canvas"></canvas></div>
-        <div class="aud-vu-legenda"><span>nível da voz</span><span class="aud-vu-led" id="aud-vu-led">sem som</span></div>
-      </div>
-      <div class="aud-k7-teclas">${teclas}</div>`}
-    </div>`;
-}
-
-function _audK7Montar(modo) {
-  _audBotoes(_audK7Html(modo));
-  _audK7Etiqueta();
-  const estado = document.getElementById('aud-k7-estado');
-  if (estado) estado.textContent = _AUD_K7_ESTADOS[modo] || '';
-  _audK7Odo(_audMmSs(_audMs / 1000));
-  _audK7Discos(modo === 'pronto' ? 0 : Math.min(1, _audMs / 600000));
-  _audVuCtx = null; // canvas novo — re-mede no próximo desenho
-  _audAgulhaPos = -1;
-  if (modo !== 'salvo') _audVuDesenhar(_audAgulhaPos);
-}
-
-// Etiqueta escrita à mão: leitura + primeiro nome (quem resolve
-// escolher/trocar o cliente continua sendo o chip lá em cima)
-function _audK7Etiqueta() {
-  const nome = document.getElementById('aud-k7-nome');
-  if (!nome) return;
-  const ag = _audClienteAlvo;
-  nome.innerHTML = ag
-    ? `${_audEsc(ag.tipos_leitura?.nome || 'Leitura')} — <em>${_audEsc(_audPrimeiroNome(ag.cliente_nome))}</em>`
-    : 'Leitura — <em>sem cliente ainda</em>';
-}
-
-function _audK7Odo(txt) {
-  const odo = document.getElementById('aud-k7-odo');
-  if (odo) [...odo.children].forEach((s, i) => { s.textContent = txt[i] || ''; });
-}
-
-// Fita passando: o disco esquerdo esvazia e o direito enche (0..1
-// ≈ 10 min de leitura; passou disso fica cheio e segue gravando)
-function _audK7Discos(frac) {
-  const f = Math.min(1, Math.max(0, frac));
-  const e = document.getElementById('aud-k7-disco-e');
-  const d = document.getElementById('aud-k7-disco-d');
-  if (e) e.style.width = e.style.height = (46 - f * 24).toFixed(1) + 'px';
-  if (d) d.style.width = d.style.height = (22 + f * 24).toFixed(1) + 'px';
-}
-
-function _audK7Girar(girando) {
-  document.getElementById('aud-k7')?.classList.toggle('aud-k7--girando', !!girando);
-}
-
-function _audK7TeclaPlay(tocando) {
-  const t = document.getElementById('aud-k7-play');
-  if (!t) return;
-  t.innerHTML = tocando ? '<b>❚❚</b> PAUSA' : '<b>▶</b> TOCAR';
-  t.classList.toggle('aud-k7-tecla--apertada', !!tocando);
-}
-
-// ---------- VU de agulha (canvas na caixa de papel) ----------
-function _audVuPrep() {
-  const cv = document.getElementById('aud-vu-canvas');
-  if (!cv) { _audVuCtx = null; return false; }
-  const rect = cv.getBoundingClientRect();
-  if (!rect.width) { _audVuCtx = null; return false; }
-  const dpr = window.devicePixelRatio || 1;
-  cv.width = rect.width * dpr;
-  cv.height = rect.height * dpr;
-  _audVuCtx = cv.getContext('2d');
-  _audVuCtx.scale(dpr, dpr);
-  _audVuW = rect.width;
-  _audVuH = rect.height;
-  return true;
-}
-
-function _audVuDesenhar(pos) {
-  if (!_audVuCtx && !_audVuPrep()) return;
-  const g = _audVuCtx, W = _audVuW, H = _audVuH;
-  g.clearRect(0, 0, W, H);
-  // pivô abaixo da caixa (fica escondido): o arco sobra na janela
-  const cx = W / 2, cy = H + 26, R = H + 8;
-  for (let i = 0; i <= 20; i++) {
-    const a = (-35 + i * 70 / 20) * Math.PI / 180;
-    g.strokeStyle = i > 15 ? '#A6432D' : '#6B5526'; // zona vermelha no fim
-    g.lineWidth = i % 5 === 0 ? 2 : 1;
-    const r1 = R - (i % 5 === 0 ? 14 : 9);
-    g.beginPath();
-    g.moveTo(cx + Math.sin(a) * r1, cy - Math.cos(a) * r1);
-    g.lineTo(cx + Math.sin(a) * R, cy - Math.cos(a) * R);
-    g.stroke();
-  }
-  g.fillStyle = '#6B5526';
-  g.font = '700 9px Figtree, sans-serif';
-  g.fillText('0', cx - R * 0.72, cy - R * 0.52);
-  g.fillText('+3', cx + R * 0.62, cy - R * 0.52);
-  const aA = (-35 + ((pos + 1) / 2) * 70) * Math.PI / 180;
-  g.strokeStyle = '#2E2712';
-  g.lineWidth = 2.5;
-  g.beginPath();
-  g.moveTo(cx, cy);
-  g.lineTo(cx + Math.sin(aA) * (R - 4), cy - Math.cos(aA) * (R - 4));
-  g.stroke();
-  g.fillStyle = '#2E2712';
-  g.beginPath();
-  g.arc(cx, cy, 5, 0, 7);
-  g.fill();
-}
-
-// Loop da agulha: gravando segue o mic, prévia tocando segue o
-// player; fora disso assenta no repouso e o loop dorme sozinho.
-function _audAgulhaLoop() {
-  const gravando = _audRecorder?.state === 'recording';
-  const tocando = _audPlayerAudio && !_audPlayerAudio.paused && !_audPlayerAudio.ended;
-  const amp = gravando ? _audAmplitudeAtual() : tocando ? _audPlayerAmplitude() : 0;
-  const alvo = amp * 2 - 1;
-  _audAgulhaPos += (alvo - _audAgulhaPos) * (alvo > _audAgulhaPos ? 0.4 : 0.12);
-  _audVuDesenhar(_audAgulhaPos);
-  document.getElementById('aud-vu-led')?.classList.toggle('aud-vu-led--on',
-    _audAvisoVivo === 'silencio' || _audAvisoVivo === 'mute');
-  const ativo = gravando || tocando || Math.abs(alvo - _audAgulhaPos) > 0.01;
-  _audAgulhaRaf = ativo ? requestAnimationFrame(_audAgulhaLoop) : null;
-}
-
-function _audAgulhaAcordar() {
-  if (!_audAgulhaRaf) _audAgulhaRaf = requestAnimationFrame(_audAgulhaLoop);
-}
-
-function _audAgulhaParar() {
-  if (_audAgulhaRaf) { cancelAnimationFrame(_audAgulhaRaf); _audAgulhaRaf = null; }
-  _audAgulhaPos = -1;
-}
-
-function _audPlayerAmplitude() {
-  if (!_audPlayerAnalyser) return 0;
-  _audPlayerAnalyser.getByteTimeDomainData(_audPlayerAmostra);
-  let pico = 0;
-  for (let i = 0; i < _audPlayerAmostra.length; i++) {
-    const v = Math.abs(_audPlayerAmostra[i] - 128) / 128;
-    if (v > pico) pico = v;
-  }
-  return Math.min(1, pico * 1.6);
-}
-
-function _audAmplitudeAtual() {
-  if (!_audAnalyser) return 0;
-  _audAnalyser.getByteTimeDomainData(_audAmostra);
-  let pico = 0;
-  for (let i = 0; i < _audAmostra.length; i++) {
-    const v = Math.abs(_audAmostra[i] - 128) / 128;
-    if (v > pico) pico = v;
-  }
-  return Math.min(1, pico * 1.6);
-}
-
-function _audFecharAudioCtx() {
-  if (_audAudioCtx) { _audAudioCtx.close().catch(() => {}); }
-  _audAudioCtx = null;
-  _audAnalyser = null;
-  _audAmostra = null;
-}
-
-// ============================================================
-// Sentinela de mudez — já saiu daqui leitura de 10 min muda sem
-// ninguém perceber. A agulha do VU mostra o nível, mas quem acusa
-// é a sentinela: mic mudo no sistema, dispositivo errado ou outro
-// app tomando o mic entregam silêncio que o MediaRecorder grava
-// sem reclamar.
-// ============================================================
-function _audAvisar(tipo, msg) {
-  if (_audAvisoVivo === tipo) return;
-  _audAvisoVivo = tipo;
-  _audSetErro(msg);
-  navigator.vibrate?.([120, 60, 120]); // pra quem grava olhando as cartas, não a tela
-}
-
-function _audAvisoLimpar() {
-  if (!_audAvisoVivo) return;
-  _audAvisoVivo = null;
-  _audSetErro('');
-}
-
-function _audVigiarSilencio(agora) {
-  const trilha = _audStream?.getAudioTracks()[0];
-  // Contexto suspenso congela o analyser no centro (leria como mudez):
-  // sem monitor confiável não se acusa ao vivo — a prévia condena depois
-  const monitor = _audAnalyser && _audAudioCtx?.state === 'running';
-  if (monitor && !trilha?.muted && _audAmplitudeAtual() > _AUD_LIMIAR_VIVO) {
-    _audSilencioDesde = agora;
-    _audAvisoLimpar();
+  if (!data?.length) {
+    lista.innerHTML = '<div class="aud-vazio">Nenhum áudio gravado ainda.</div>';
     return;
   }
-  if (!monitor && !trilha?.muted) { _audSilencioDesde = agora; return; }
-  if (!_audAvisoVivo && agora - _audSilencioDesde > _AUD_SILENCIO_MS) {
-    _audAvisar('silencio', '⚠️ Nenhum som captado há vários segundos — o áudio pode estar saindo mudo. Confere se o microfone não está silenciado.');
-  }
+  data.forEach(a => lista.appendChild(_audCriarItemAudio(a, ag)));
 }
 
-function _audPareceMudo(blob) {
-  const nivel = blob && _audNivelCache.get(blob);
-  return !!nivel && nivel.pico < _AUD_PICO_MUDO;
-}
-
-// Faixa vermelha no painel da prévia: a conversão mediu o arquivo
-// inteiro e não achou som
-function _audAvisarPreviaMuda() {
-  const painel = document.querySelector('#aud-dock .aud-dock-painel');
-  if (!painel || document.getElementById('aud-aviso-mudo')) return;
-  const aviso = document.createElement('div');
-  aviso.id = 'aud-aviso-mudo';
-  aviso.className = 'aud-aviso-mudo';
-  aviso.innerHTML = '<svg class="ico" aria-hidden="true"><use href="#ico-alerta"></use></svg><div><strong>Este áudio saiu mudo.</strong> O microfone não captou som do início ao fim — toca a prévia pra conferir e, se estiver vazio, regrava.</div>';
-  painel.prepend(aviso);
-}
-
-// ============================================================
-// Seletor de microfone
-// ============================================================
-async function _audAtualizarListaMics() {
-  if (!navigator.mediaDevices?.enumerateDevices) return;
-  let devices;
-  try { devices = await navigator.mediaDevices.enumerateDevices(); } catch (_) { return; }
-  _audMicDevices = devices.filter(d => d.kind === 'audioinput');
-
-  const sel = document.getElementById('aud-mic-select');
-  if (!sel) return;
-  if (_audMicDevices.length < 2) { sel.style.display = 'none'; sel.innerHTML = ''; return; }
-
-  const atual = localStorage.getItem('aud_mic_device_id');
-  sel.innerHTML = _audMicDevices
-    .map((d, i) => `<option value="${_audEsc(d.deviceId)}">${_audEsc(d.label || `Microfone ${i + 1}`)}</option>`)
-    .join('');
-  if (atual && _audMicDevices.some(d => d.deviceId === atual)) sel.value = atual;
-  sel.style.display = '';
-}
-
-function _audEscolherMic(deviceId) {
-  localStorage.setItem('aud_mic_device_id', deviceId);
-}
-
-// ============================================================
-// Wake Lock — mantém a tela acesa enquanto grava
-// ============================================================
-async function _audWakeLockPedir() {
-  try { _audWakeLock = await navigator.wakeLock?.request('screen'); }
-  catch (_) { _audWakeLock = null; }
-}
-
-async function _audWakeLockLiberar() {
-  try { await _audWakeLock?.release(); } catch (_) {}
-  _audWakeLock = null;
-}
-
-// ============================================================
-// beforeunload — só avisa enquanto há algo pra perder
-// ============================================================
-function _audBeforeUnloadHandler(e) {
-  e.preventDefault();
-  e.returnValue = '';
-}
-
-function _audAtualizarBeforeUnload() {
-  const precisaAvisar = (_audRecorder && _audRecorder.state !== 'inactive') || !!_audBlob;
-  if (precisaAvisar && !_audBeforeUnloadOn) {
-    window.addEventListener('beforeunload', _audBeforeUnloadHandler);
-    _audBeforeUnloadOn = true;
-  } else if (!precisaAvisar && _audBeforeUnloadOn) {
-    window.removeEventListener('beforeunload', _audBeforeUnloadHandler);
-    _audBeforeUnloadOn = false;
-  }
-}
-
-function _audBotoes(html) {
-  const el = document.getElementById('aud-controles');
-  if (el) el.innerHTML = html;
-}
-
-function _audResetGravador() {
-  document.getElementById('aud-pill-enviar')?.remove(); // pill apontaria pra áudio morto
-  if (_audTimerInt) { clearInterval(_audTimerInt); _audTimerInt = null; }
-  if (_audStream) { _audStream.getTracks().forEach(t => t.stop()); _audStream = null; }
-  if (_audPreviewUrl) { URL.revokeObjectURL(_audPreviewUrl); _audPreviewUrl = null; }
-  _audFecharAudioCtx();
-  _audPlayerLimpar();
-  _audWakeLockLiberar();
-  _audRecorder = null;
-  _audChunks = [];
-  _audBlob = null;
-  _audMs = 0;
-
-  const dock = document.getElementById('aud-dock');
-  if (dock) dock.innerHTML = '';
-  _audAvisoVivo = null;
-  _audSetErro('');
-  _audAgulhaParar();
-  _audK7Montar('pronto');
-  _audAtualizarBeforeUnload();
-
-  // Gravação primeiro: a entrada é sempre o cassete; cliente se escolhe
-  // no chip ou na hora de salvar
-  _audEscolhaPraSalvar = false;
-  _audMostrarGravar();
-}
-
-function _audDescartarGravacao() {
-  try { if (_audRecorder && _audRecorder.state !== 'inactive') { _audRecorder.onstop = null; _audRecorder.stop(); } } catch (_) {}
-  _audResetGravador();
-}
-
-async function _audComecarGravacao() {
-  _audSetErro('');
-
-  if (!navigator.mediaDevices?.getUserMedia || !window.MediaRecorder) {
-    _audSetErro('Este navegador não suporta gravação de áudio (precisa de HTTPS ou localhost).');
-    return;
-  }
-
-  // A gravação é só matéria-prima: o que vai pro bucket é o mp3 convertido.
-  // mp4/webm aqui é o que o navegador conseguir gravar; a ordem só importa
-  // no fallback raro de a conversão falhar (mp4 toca nativo em iPhone).
-  const MIMES = ['audio/mp4', 'audio/webm;codecs=opus', 'audio/webm'];
-  _audMime = MIMES.find(m => MediaRecorder.isTypeSupported(m)) || '';
-  if (!_audMime) {
-    _audSetErro('Nenhum formato de gravação suportado neste navegador.');
-    return;
-  }
-
-  const micEscolhido = localStorage.getItem('aud_mic_device_id');
-  try {
-    _audStream = await navigator.mediaDevices.getUserMedia({
-      audio: {
-        echoCancellation: false,
-        noiseSuppression: false,
-        autoGainControl: false,
-        ...(micEscolhido ? { deviceId: { ideal: micEscolhido } } : {}),
-      },
-    });
-  } catch (e) {
-    _audSetErro(e.name === 'NotAllowedError'
-      ? 'Permissão de microfone negada. Libere o microfone nas configurações do navegador.'
-      : e.name === 'NotFoundError'
-        ? 'Nenhum microfone encontrado.'
-        : 'Não foi possível acessar o microfone: ' + e.message);
-    return;
-  }
-  _audAtualizarListaMics(); // agora com permissão concedida, os labels vêm certos
-
-  _audChunks = [];
-  _audBlob = null;
-  _audMs = 0;
-
-  // O sistema pode calar ou tomar o mic no meio da leitura (ligação,
-  // outro app, fone que desconecta) — o MediaRecorder segue gravando
-  // silêncio sem reclamar, então quem denuncia é a gente
-  const trilha = _audStream.getAudioTracks()[0];
-  trilha?.addEventListener('mute', () => {
-    if (_audRecorder?.state === 'recording') _audAvisar('mute', '⚠️ O sistema silenciou o microfone (outro app pegou ele?) — o áudio está saindo mudo agora.');
-  });
-  trilha?.addEventListener('unmute', () => {
-    if (_audAvisoVivo === 'mute') _audAvisoLimpar();
-  });
-  trilha?.addEventListener('ended', () => {
-    if (_audRecorder && _audRecorder.state !== 'inactive') {
-      _audAvisar('ended', '⚠️ O microfone parou de enviar áudio (desconectou?). A gravação foi encerrada com o que já tinha.');
-      _audPararGravacao(); // garante o onstop — nem todo navegador para sozinho
-    }
-  });
-
-  // Analyser pra agulha do VU e pra sentinela de mudez; se falhar, grava
-  // mesmo assim (agulha parada), mas avisa que ficou sem monitor de nível
-  try {
-    _audAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    _audAnalyser = _audAudioCtx.createAnalyser();
-    _audAnalyser.fftSize = 512;
-    _audAudioCtx.createMediaStreamSource(_audStream).connect(_audAnalyser);
-    _audAmostra = new Uint8Array(_audAnalyser.fftSize);
-    _audAudioCtx.resume().catch(() => {});
-  } catch (_) {
-    _audFecharAudioCtx();
-    _toastAdmin('Sem monitor de nível do microfone neste navegador — ouça a prévia antes de enviar.', 'info');
-  }
-
-  _audRecorder = new MediaRecorder(_audStream, { mimeType: _audMime });
-  _audRecorder.ondataavailable = e => { if (e.data?.size) _audChunks.push(e.data); };
-  _audRecorder.onstop = () => {
-    if (_audTimerInt) { clearInterval(_audTimerInt); _audTimerInt = null; }
-    _audStream?.getTracks().forEach(t => t.stop());
-    _audStream = null;
-    _audFecharAudioCtx();
-    _audWakeLockLiberar();
-    _audBlob = new Blob(_audChunks, { type: _audMime.split(';')[0] });
-    if (!_audBlob.size) {
-      // Navegador não entregou nenhum chunk: melhor acusar agora do que
-      // mostrar uma prévia que não toca
-      _audResetGravador();
-      _audSetErro('A gravação saiu vazia — o navegador não entregou nenhum áudio. Tenta de novo.');
-      return;
-    }
-    if (_audAvisoVivo !== 'ended') _audAvisoLimpar(); // aviso ao vivo já cumpriu o papel
-    _audMostrarPreview();
-    // Já converte pra mp3 em segundo plano: quando salvar ou compartilhar
-    // (depois de ouvir a prévia), o arquivo estará pronto e ninguém espera.
-    // A conversão também mede o nível — arquivo inteiro mudo ganha a faixa.
-    const gravado = _audBlob;
-    _audConverterParaMp3(gravado)
-      .then(() => { if (gravado === _audBlob && _audPareceMudo(gravado)) _audAvisarPreviaMuda(); })
-      .catch(() => {});
-  };
-  _audRecorder.onerror = () => {
-    _audSetErro('Erro na gravação. Tente de novo.');
-    _audResetGravador();
-  };
-  _audRecorder.start(1000); // chunks de 1s: não perde tudo se algo falhar no fim
-  _audWakeLockPedir();
-  _audAtualizarBeforeUnload();
-
-  // Duração pause-aware acumulada em _audMs (não dá pra confiar em
-  // audio.duration depois: webm do MediaRecorder reporta Infinity no
-  // Chrome).
-  let ultimo = performance.now();
-  _audSilencioDesde = ultimo;
-  _audTimerInt = setInterval(() => {
-    const agora = performance.now();
-    if (_audRecorder?.state === 'recording') {
-      _audMs += agora - ultimo;
-      _audVigiarSilencio(agora); // no setInterval, não no rAF: segue vivo com a tela apagada
-      _audK7Odo(_audMmSs(_audMs / 1000));
-      _audK7Discos(_audMs / 600000);
-    }
-    ultimo = agora;
-  }, _AUD_TICK);
-
-  _audK7Montar('gravando');
-  _audAgulhaAcordar();
-}
-
-function _audPararGravacao() {
-  if (_audRecorder && _audRecorder.state !== 'inactive') _audRecorder.stop();
-}
-
-// Ações do dock da prévia. O salvar é o herói e diz o destino no
-// rótulo; sem cliente, abre a lista — e escolher já salva.
-function _audDockAcoes() {
-  const alvo = _audClienteAlvo;
-  const salvar = alvo
-    ? `<button type="button" class="aud-dock-btn aud-dock-btn--enviar" id="aud-btn-salvar" onclick="_audSalvar()"><svg class="ico" aria-hidden="true"><use href="#ico-guardar"></use></svg> Salvar para ${_audEsc(_audPrimeiroNome(alvo.cliente_nome))}</button>`
-    : `<button type="button" class="aud-dock-btn aud-dock-btn--enviar" id="aud-btn-salvar" onclick="_audAbrirEscolha(true)"><svg class="ico" aria-hidden="true"><use href="#ico-guardar"></use></svg> Salvar para um cliente…</button>`;
-  return `${salvar}
-        <button type="button" class="aud-dock-btn" onclick="_audCompartilharPreview()"><svg class="ico" aria-hidden="true"><use href="#ico-compartilhar"></use></svg> Compartilhar</button>
-        <button type="button" class="aud-dock-btn" onclick="_audResetGravador(); _audComecarGravacao()"><svg class="ico" aria-hidden="true"><use href="#ico-atualizar"></use></svg> Regravar</button>
-        <button type="button" class="aud-dock-btn aud-dock-btn--descartar" onclick="_audResetGravador()"><svg class="ico" aria-hidden="true"><use href="#ico-fechar"></use></svg> Descartar</button>`;
-}
-
-// Play e pause são o mesmo botão: troca o símbolo dentro do <use>
-// e o rótulo de leitor de tela junto.
-function _audPlayPintar(btn, tocando) {
-  if (!btn) return;
-  btn.querySelector('use')?.setAttribute('href', tocando ? '#ico-pause' : '#ico-play');
-  btn.title = tocando ? 'Pausar' : 'Tocar';
-  btn.setAttribute('aria-label', btn.title);
-}
-
-function _audMostrarPreview() {
-  // O cassete rebobina e vira o player: tecla TOCAR (e o próprio
-  // cassete) dão play; os controles finos ficam no dock embaixo
-  _audK7Montar('previa');
-  const k7 = document.getElementById('aud-k7');
-  if (k7) {
-    k7.classList.add('aud-k7--rebobina');
-    setTimeout(() => k7.classList.remove('aud-k7--rebobina'), 900);
-  }
-  _audK7Discos(0);    // fita de volta pro começo…
-  _audK7Odo('00:00'); // …e o contador junto (agora conta a reprodução)
-
-  _audPreviewUrl = URL.createObjectURL(_audBlob);
-  _audPlayerRate = 1;
-
-  // Painel de controle no fim da página: reprodução + ações juntas,
-  // longe do palco (que fica só com o visualizador)
-  document.getElementById('aud-dock').innerHTML = `
-    <div class="aud-dock-painel">
-      <div class="aud-dock-titulo">Gravação pronta</div>
-      <div class="aud-dock-player">
-        <button type="button" class="aud-dock-play" id="aud-player-play" title="Tocar" aria-label="Tocar"><svg class="ico" aria-hidden="true"><use href="#ico-play"></use></svg></button>
-        <div class="aud-dock-progresso" id="aud-progresso" title="Ir para um ponto do áudio">
-          <div class="aud-dock-progresso-feito" id="aud-progresso-feito"></div>
-        </div>
-        <button type="button" class="aud-dock-vel" id="aud-player-vel" title="Velocidade">1x</button>
-        <span class="aud-dock-tempo" id="aud-player-tempo">00:00 / ${_audMmSs(_audMs / 1000)}</span>
-      </div>
-      <div class="aud-dock-acoes">${_audDockAcoes()}</div>
-    </div>`;
-
-  _audPlayerAudio = new Audio(_audPreviewUrl);
-  _audPlayerAudio.preload = 'auto';
-
-  // webm do MediaRecorder reporta duration=Infinity no Chrome; este truque
-  // força o navegador a indexar o arquivo (a duração exibida usa _audMs)
-  _audPlayerAudio.addEventListener('loadedmetadata', () => {
-    if (_audPlayerAudio.duration === Infinity) {
-      try {
-        _audPlayerAudio.currentTime = 1e101;
-        _audPlayerAudio.addEventListener('timeupdate', function corrigirDuracao() {
-          _audPlayerAudio.currentTime = 0;
-          _audPlayerAudio.removeEventListener('timeupdate', corrigirDuracao);
-        });
-      } catch (_) {}
-    }
-  });
-
-  const btnPlay = document.getElementById('aud-player-play');
-  _audPlayerAudio.addEventListener('play', () => {
-    _audPlayPintar(btnPlay, true);
-    _audPlayerLigarAnalyser();
-    _audPlayerCtx?.resume().catch(() => {});
-    _audK7Girar(true);
-    _audK7TeclaPlay(true);
-    _audAgulhaAcordar();
-    _audPlayerLoop();
-  });
-  _audPlayerAudio.addEventListener('pause', () => {
-    _audPlayPintar(btnPlay, false);
-    _audPlayerAtualizarTempo();
-    _audK7Girar(false);
-    _audK7TeclaPlay(false);
-    _audAgulhaAcordar(); // deixa a agulha assentar de volta no repouso
-  });
-
-  btnPlay.addEventListener('click', _audPlayerTogglePlay);
-  document.getElementById('aud-player-vel').addEventListener('click', _audPlayerCicloVelocidade);
-
-  // Seek: clicar/arrastar na linha de progresso do painel
-  const prog = document.getElementById('aud-progresso');
-  prog.addEventListener('pointerdown', e => {
-    _audPlayerSeeking = true;
-    prog.setPointerCapture(e.pointerId);
-    _audPlayerSeekPara(e.clientX);
-  });
-  prog.addEventListener('pointermove', e => { if (_audPlayerSeeking) _audPlayerSeekPara(e.clientX); });
-  prog.addEventListener('pointerup', () => { _audPlayerSeeking = false; });
-
-  _audAtualizarBeforeUnload();
-}
-
-// Analyser ligado só no 1º play (gesto do usuário → contexto liberado).
-// createMediaElementSource captura o <audio> pra sempre, por isso o
-// roteamento até o destination acontece logo em seguida.
-function _audPlayerLigarAnalyser() {
-  if (_audPlayerCtx || !_audPlayerAudio) return;
-  let ctx = null;
-  try {
-    ctx = new (window.AudioContext || window.webkitAudioContext)();
-    const analyser = ctx.createAnalyser();
-    analyser.fftSize = 256;
-    analyser.smoothingTimeConstant = 0.55;
-    const fonte = ctx.createMediaElementSource(_audPlayerAudio);
-    fonte.connect(analyser);
-    analyser.connect(ctx.destination);
-    _audPlayerCtx = ctx;
-    _audPlayerAnalyser = analyser;
-    _audPlayerAmostra = new Uint8Array(analyser.fftSize);
-  } catch (_) {
-    // sem análise, a prévia toca normal e a agulha fica no repouso
-    if (ctx) ctx.close().catch(() => {});
-    _audPlayerAnalyser = null;
-    _audPlayerAmostra = null;
-  }
-}
-
-// ============================================================
-// Player da prévia — os controles moram no painel de controle:
-// tocar/pausar, linha de progresso arrastável (seek), velocidade
-// e tempo. O desenho fica com as barrinhas no palco.
-// ============================================================
-function _audPlayerAtualizarTempo() {
-  if (!_audPlayerAudio || !_audMs) return;
-  const el = document.getElementById('aud-player-tempo');
-  if (el) el.textContent = `${_audMmSs(_audPlayerAudio.currentTime)} / ${_audMmSs(_audMs / 1000)}`;
-  const frac = Math.min(1, Math.max(0, _audPlayerAudio.currentTime / (_audMs / 1000)));
-  const feito = document.getElementById('aud-progresso-feito');
-  if (feito) feito.style.width = (frac * 100).toFixed(2) + '%';
-  // o cassete acompanha a reprodução: contador e fita na posição atual
-  _audK7Odo(_audMmSs(_audPlayerAudio.currentTime));
-  _audK7Discos(frac * Math.min(1, _audMs / 600000));
-}
-
-function _audPlayerLoop() {
-  _audPlayerAtualizarTempo();
-  if (_audPlayerAudio && !_audPlayerAudio.paused) {
-    _audPlayerRaf = requestAnimationFrame(_audPlayerLoop);
-  } else {
-    _audPlayerRaf = null;
-  }
-}
-
-function _audPlayerTogglePlay() {
-  if (!_audPlayerAudio) return;
-  if (_audPlayerAudio.paused) _audPlayerAudio.play().catch(() => {});
-  else _audPlayerAudio.pause();
-}
-
-function _audPlayerCicloVelocidade() {
-  const ciclos = [1, 1.5, 2];
-  _audPlayerRate = ciclos[(ciclos.indexOf(_audPlayerRate) + 1) % ciclos.length];
-  if (_audPlayerAudio) _audPlayerAudio.playbackRate = _audPlayerRate;
-  const btn = document.getElementById('aud-player-vel');
-  if (btn) btn.textContent = _audPlayerRate + 'x';
-}
-
-function _audPlayerSeekPara(clientX) {
-  const trilha = document.getElementById('aud-progresso');
-  if (!trilha || !_audPlayerAudio || !_audMs) return;
-  const rect = trilha.getBoundingClientRect();
-  const frac = Math.min(1, Math.max(0, (clientX - rect.left) / rect.width));
-  _audPlayerAudio.currentTime = frac * (_audMs / 1000);
-  _audPlayerAtualizarTempo();
-}
-
-function _audPlayerLimpar() {
-  if (_audPlayerRaf) { cancelAnimationFrame(_audPlayerRaf); _audPlayerRaf = null; }
-  _audAgulhaParar();
-  if (_audPlayerAudio) { _audPlayerAudio.pause(); _audPlayerAudio.src = ''; _audPlayerAudio = null; }
-  if (_audPlayerCtx) { _audPlayerCtx.close().catch(() => {}); _audPlayerCtx = null; }
-  _audPlayerAnalyser = null;
-  _audPlayerAmostra = null;
-  _audPlayerSeeking = false;
-}
-
-// Botão "Compartilhar" no preview — com cliente escolhido a sugestão
-// de nome já vem completa; solta, leva só a data de hoje
-async function _audCompartilharPreview() {
-  if (!_audBlob) return;
-  const ag = _audClienteAlvo;
-  let sugestao;
-  if (ag) {
-    sugestao = _audNomeSugerido(ag.cliente_nome, ag.tipos_leitura?.nome, ag.data_agendamento);
-  } else {
-    const hoje = new Date();
-    const ddmm = `${String(hoje.getDate()).padStart(2, '0')}-${String(hoje.getMonth() + 1).padStart(2, '0')}`;
-    sugestao = _audSanitizarNomeArquivo(`Leitura - ${ddmm}`);
-  }
-  await _audCompartilharBlob(_audBlob, _audMime.split(';')[0], sugestao);
-}
-
-// ============================================================
-// Salvar pro cliente do chip: upload no bucket privado + insert.
-// NÃO envia e-mail — o dock vira o painel de entrega com o botão.
-// ============================================================
-async function _audSalvar() {
-  const ag = _audClienteAlvo;
-  if (!ag || !_audBlob || _audSalvando) return;
-  _audSalvando = true;
-
-  const btn = document.getElementById('aud-btn-salvar');
-  if (btn) { btn.disabled = true; btn.innerHTML = '<svg class="ico" aria-hidden="true"><use href="#ico-ampulheta"></use></svg> Salvando…'; }
-
-  // Sobe o mp3, não a gravação bruta: o arquivo salvo já serve pra e-mail
-  // e WhatsApp sem ninguém ver conversão. Ela roda desde que parou de
-  // gravar — aqui normalmente só pega o resultado pronto. Se tiver
-  // falhado, sobe o original mesmo (o share ainda tenta converter na hora).
-  let blobUp = _audBlob, contentType = _audMime.split(';')[0];
-  try {
-    blobUp = await _audConverterParaMp3(_audBlob);
-    contentType = 'audio/mpeg';
-  } catch (e) {
-    console.warn('Conversão mp3 falhou, salvando original:', e);
-  }
-
-  // Última cancela da sentinela: salvar leitura muda é perder a leitura
-  // (o cliente recebe um arquivo vazio e só se descobre dias depois)
-  if (_audPareceMudo(_audBlob) && !confirm('Este áudio parece MUDO do início ao fim — o microfone não captou som. Salvar mesmo assim?')) {
-    _audSalvando = false;
-    const acoes = document.querySelector('#aud-dock .aud-dock-acoes');
-    if (acoes) acoes.innerHTML = _audDockAcoes();
-    return;
-  }
-  const ext  = _audExtDoMime(contentType);
-  const path = `agendamento-${ag.id}/${Date.now()}-${crypto.randomUUID()}.${ext}`;
-  const seg  = Math.max(1, Math.round(_audMs / 1000));
-
-  const { error: upErr } = await supabase.storage
-    .from('audios')
-    .upload(path, blobUp, { contentType });
-
-  if (upErr) { _audSalvarFalhou('Falha no upload: ' + upErr.message); return; }
-
-  const { data: novo, error: dbErr } = await supabase.from('audios_cliente').insert({
-    agendamento_id: ag.id,
-    storage_path: path,
-    duracao_segundos: seg,
-    tamanho_bytes: blobUp.size,
-    mime: contentType,
-  }).select('id').single();
-
-  if (dbErr) {
-    await supabase.storage.from('audios').remove([path]); // não deixar arquivo órfão
-    _audSalvarFalhou('Erro ao salvar: ' + dbErr.message);
-    return;
-  }
-
-  _audContagem[ag.id] = (_audContagem[ag.id] || 0) + 1;
-  _audSalvando = false;
-  _audMostrarPosSalvar(novo.id, ag, blobUp, contentType);
-}
-
-function _audSalvarFalhou(msg) {
-  _audSalvando = false;
-  _toastAdmin(msg, 'erro');
-  const acoes = document.querySelector('#aud-dock .aud-dock-acoes');
-  if (acoes) acoes.innerHTML = _audDockAcoes(); // reativa os botões pra tentar de novo
-}
-
-// ============================================================
-// Painel de entrega — aparece no lugar do dock assim que salva.
-// O áudio já está seguro no servidor: o blob local vive só pra
-// compartilhar, e fechar a página não perde nada.
-// ============================================================
-function _audMostrarPosSalvar(audioId, ag, blob, mime) {
-  _audPlayerLimpar();
-  _audK7Montar('salvo'); // o cassete fica de lembrança; a entrega mora no dock
-  if (_audPreviewUrl) { URL.revokeObjectURL(_audPreviewUrl); _audPreviewUrl = null; }
-  _audBlob = null;
-  _audAtualizarBeforeUnload();
-  const chip = document.getElementById('aud-cliente-chip');
-  if (chip) chip.innerHTML = '';
-
-  const audioRef = { id: audioId, enviado_email_em: null, entregue_em: null, quicou_em: null };
-  document.getElementById('aud-dock').innerHTML = `
-    <div class="aud-dock-painel">
-      <div class="aud-dock-titulo"><svg class="ico" aria-hidden="true"><use href="#ico-check"></use></svg> Salvo para ${_audEsc(_audPrimeiroNome(ag.cliente_nome))}</div>
-      <div class="aud-dock-acoes" style="grid-template-columns:repeat(2,1fr);">
-        <button type="button" class="aud-dock-btn aud-dock-btn--enviar" id="aud-pos-email"><svg class="ico" aria-hidden="true"><use href="#ico-envelope"></use></svg> Enviar por e-mail agora</button>
-        <button type="button" class="aud-dock-btn" id="aud-pos-share"><svg class="ico" aria-hidden="true"><use href="#ico-compartilhar"></use></svg> Compartilhar</button>
-        <button type="button" class="aud-dock-btn" id="aud-pos-nova"><svg class="ico" aria-hidden="true"><use href="#ico-microfone"></use></svg> Nova gravação</button>
-      </div>
-    </div>`;
-
-  document.getElementById('aud-pos-email').addEventListener('click', async ev => {
-    const b = ev.currentTarget;
-    if (audioRef.enviado_email_em &&
-        !confirm(`Reenviar o e-mail para ${ag.cliente_nome}?`)) return;
-    b.disabled = true;
-    b.innerHTML = '<svg class="ico" aria-hidden="true"><use href="#ico-ampulheta"></use></svg> Enviando…';
-    const r = await _audDispararEmail(audioRef);
-    b.disabled = false;
-    b.innerHTML = r === 'enviado'
-      ? '<svg class="ico" aria-hidden="true"><use href="#ico-check"></use></svg> Enviado — reenviar'
-      : '<svg class="ico" aria-hidden="true"><use href="#ico-envelope"></use></svg> Enviar por e-mail agora';
-  });
-
-  document.getElementById('aud-pos-share').addEventListener('click', () =>
-    _audCompartilharBlob(blob, mime,
-      _audNomeSugerido(ag.cliente_nome, ag.tipos_leitura?.nome, ag.data_agendamento)));
-
-  document.getElementById('aud-pos-nova').addEventListener('click', () => {
-    _audClienteAlvo = null;   // próxima leitura recomeça no cassete, sem cliente
-    _audResetGravador();
-  });
+// Acrescenta um áudio recém-salvo na lista do card (sem re-query).
+function _audCardAcrescentarItem(slot, ag, a) {
+  const lista = slot.querySelector('.aud-bloco-lista');
+  if (!lista) return;
+  lista.querySelector('.aud-vazio')?.remove();
+  const item = _audCriarItemAudio(a, ag);
+  item.classList.add('aud-item--novo');
+  lista.appendChild(item);
 }
 
 // ============================================================
@@ -1341,7 +429,7 @@ function _audEmailBtnPintar(btn, a) {
 }
 
 // A confirmação de entrega chega segundos depois, pelo webhook. Uma
-// espiada única evita ter que sair e voltar na aba pra ver o resultado.
+// espiada única evita ter que fechar e abrir o card pra ver o resultado.
 function _audEspiarEntrega(a, btn) {
   setTimeout(async () => {
     if (!btn.isConnected) return;
@@ -1354,15 +442,15 @@ function _audEspiarEntrega(a, btn) {
 }
 
 // ============================================================
-// Item de áudio (usado nas duas listas): ouvir lazy + apagar
+// Item de áudio na lista do card: ouvir lazy + e-mail + share + apagar
 // ============================================================
-function _audCriarItemAudio(a, opts = {}) {
+function _audCriarItemAudio(a, ag) {
   const item = document.createElement('div');
   item.className = 'aud-item';
   item.innerHTML = `
     <div class="aud-item-info">
-      <span class="aud-item-nome">${opts.titulo}</span>
-      <span class="aud-item-meta">${opts.meta}</span>
+      <span class="aud-item-nome">Gravado em ${_audEsc(_audDataBR(a.criado_em))}</span>
+      <span class="aud-item-meta">${_audMmSs(a.duracao_segundos)}</span>
     </div>
     <div class="aud-item-acoes">
       <button type="button" class="ag-btn ag-btn-outline ag-btn-sm aud-item-play"><svg class="ico" aria-hidden="true"><use href="#ico-play"></use></svg> Ouvir</button>
@@ -1375,7 +463,7 @@ function _audCriarItemAudio(a, opts = {}) {
   const btnEmail = item.querySelector('.aud-item-email');
   _audEmailBtnPintar(btnEmail, a);
   btnEmail.addEventListener('click', async () => {
-    const nome = a.agendamentos?.cliente_nome || 'o cliente';
+    const nome = ag.cliente_nome || 'o cliente';
     if (!confirm(
       a.quicou_em
         ? `Este e-mail QUICOU em ${_audDataBR(a.quicou_em)} — não chegou. Tentar de novo para ${nome}?`
@@ -1427,7 +515,8 @@ function _audCriarItemAudio(a, opts = {}) {
       }
       const resp = await fetch(s.signedUrl);
       const blob = await resp.blob();
-      await _audCompartilharBlob(blob, a.mime || blob.type, opts.nomeSugestao || 'Áudio');
+      await _audCompartilharBlob(blob, a.mime || blob.type,
+        _audNomeSugerido(ag.cliente_nome, ag.tipos_leitura?.nome, ag.data_agendamento));
     } catch (err) {
       _toastAdmin('Erro ao preparar o compartilhamento: ' + err.message, 'erro');
     } finally {
@@ -1444,9 +533,13 @@ function _audCriarItemAudio(a, opts = {}) {
     if (e) { _toastAdmin(e.message, 'erro'); return; }
     const { error: eSt } = await supabase.storage.from('audios').remove([a.storage_path]);
     if (eSt) console.warn('arquivo órfão no bucket audios:', a.storage_path, eSt);
-    if (_audContagem[a.agendamento_id]) _audContagem[a.agendamento_id]--;
-    _audTodos = _audTodos.filter(t => t.id !== a.id);
+    const lista = item.parentElement;
     item.remove();
+    if (lista && !lista.querySelector('.aud-item')) {
+      lista.innerHTML = '<div class="aud-vazio">Nenhum áudio gravado ainda.</div>';
+    }
+    _audContagem[a.agendamento_id] = Math.max(0, (_audContagem[a.agendamento_id] || 1) - 1);
+    _audContPintarTudo();
     _toastAdmin('Áudio apagado.', 'ok');
   });
 
@@ -1454,65 +547,486 @@ function _audCriarItemAudio(a, opts = {}) {
 }
 
 // ============================================================
-// Aba "Áudios salvos" — histórico geral, sem escolher cliente
+// Gravador mínimo — estados desenhados no .aud-bloco-gravador
 // ============================================================
-async function _audCarregarTodos() {
-  const lista = document.getElementById('aud-todos-lista');
-  if (!lista) return;
-  lista.innerHTML = '<div class="ag-loading"><div class="ag-spinner"></div> Carregando…</div>';
-
-  const { data, error } = await supabase
-    .from('audios_cliente')
-    .select('*, agendamentos(id, cliente_nome, cliente_whatsapp, data_agendamento, leitura_origem_id, tipos_leitura(nome))')
-    .order('criado_em', { ascending: false })
-    .limit(200);
-
-  if (error) {
-    lista.innerHTML = '<div class="ag-empty">Erro ao carregar os áudios.</div>';
-    console.error('_audCarregarTodos:', error);
-    return;
-  }
-
-  _audTodos = data || [];
-  _audRenderTodos();
+function _audSetErro(txt) {
+  const el = _audBloco?.querySelector('.aud-erro');
+  if (el) el.textContent = txt || '';
 }
 
-function _audRenderTodos() {
-  const lista = document.getElementById('aud-todos-lista');
-  if (!lista) return;
+function _audRenderPronto(gravador, ag) {
+  if (!gravador) return;
+  gravador.innerHTML = `
+    <div class="aud-min">
+      <button type="button" class="ag-btn ag-btn-outline ag-btn-sm aud-btn-rec"><span class="aud-rec-dot"></span> Gravar áudio</button>
+      <select class="aud-mic-select" hidden></select>
+    </div>
+    <div class="aud-erro"></div>`;
+  gravador.querySelector('.aud-btn-rec').addEventListener('click', () => _audComecarGravacao(gravador, ag));
+  const sel = gravador.querySelector('.aud-mic-select');
+  sel.addEventListener('change', () => localStorage.setItem('aud_mic_device_id', sel.value));
+  _audAtualizarListaMics(sel); // best-effort; labels só vêm depois da 1ª permissão
+}
 
-  const termo = (document.getElementById('aud-busca-todos')?.value || '').trim().toLowerCase();
-  const itens = !termo ? _audTodos : _audTodos.filter(a =>
-    (a.agendamentos?.cliente_nome || '').toLowerCase().includes(termo) ||
-    (a.agendamentos?.cliente_whatsapp || '').toLowerCase().includes(termo) ||
-    (a.agendamentos?.tipos_leitura?.nome || '').toLowerCase().includes(termo)
-  );
+function _audRenderGravando(ag) {
+  if (!_audBloco) return;
+  _audBloco.innerHTML = `
+    <div class="aud-min aud-min--gravando">
+      <span class="aud-rec-dot aud-rec-dot--pulsa"></span>
+      <span class="aud-tempo">${_audMmSs(_audMs / 1000)}</span>
+      <span class="aud-nivel"><span class="aud-nivel-fill"></span></span>
+      <button type="button" class="ag-btn ag-btn-outline ag-btn-sm aud-btn-parar"><b>■</b> Parar</button>
+    </div>
+    <div class="aud-erro"></div>`;
+  _audBloco.querySelector('.aud-btn-parar').addEventListener('click', _audPararGravacao);
+}
 
-  if (!itens.length) {
-    lista.innerHTML = `<div class="ag-empty">${termo ? 'Nada encontrado.' : 'Nenhum áudio salvo ainda.'}</div>`;
-    return;
-  }
+function _audRenderPrevia(ag) {
+  if (!_audBloco) return;
+  if (_audPreviewUrl) { URL.revokeObjectURL(_audPreviewUrl); }
+  _audPreviewUrl = URL.createObjectURL(_audBlob);
 
-  lista.innerHTML = '';
-  itens.forEach(a => {
-    const ag = a.agendamentos;
-    lista.appendChild(_audCriarItemAudio(a, {
-      titulo: _audEsc(ag?.cliente_nome || 'Cliente'),
-      meta: `${_audEsc(ag?.tipos_leitura?.nome || 'Leitura')} · ${_audDataAgend(ag?.data_agendamento)} · gravado em ${_audDataBR(a.criado_em)} · ${_audMmSs(a.duracao_segundos)}`,
-      nomeSugestao: _audNomeSugerido(ag?.cliente_nome, ag?.tipos_leitura?.nome, ag?.data_agendamento),
-    }));
+  _audBloco.innerHTML = `
+    <div class="aud-previa">
+      <audio controls preload="auto" src="${_audPreviewUrl}"></audio>
+      <div class="aud-previa-acoes">
+        <button type="button" class="ag-btn ag-btn-primary ag-btn-sm aud-btn-salvar"><svg class="ico" aria-hidden="true"><use href="#ico-guardar"></use></svg> Salvar (${_audMmSs(_audMs / 1000)})</button>
+        <button type="button" class="ag-btn ag-btn-outline ag-btn-sm aud-btn-regravar"><svg class="ico" aria-hidden="true"><use href="#ico-atualizar"></use></svg> Regravar</button>
+        <button type="button" class="ag-btn ag-btn-outline ag-btn-sm aud-btn-descartar" style="color:var(--t-danger)"><svg class="ico" aria-hidden="true"><use href="#ico-fechar"></use></svg> Descartar</button>
+      </div>
+    </div>
+    <div class="aud-erro"></div>`;
+
+  _audPlayerAudio = _audBloco.querySelector('audio');
+  // webm do MediaRecorder reporta duration=Infinity no Chrome; este truque
+  // força o navegador a indexar o arquivo (seek e barra passam a funcionar)
+  _audPlayerAudio.addEventListener('loadedmetadata', () => {
+    if (_audPlayerAudio.duration === Infinity) {
+      try {
+        _audPlayerAudio.currentTime = 1e101;
+        _audPlayerAudio.addEventListener('timeupdate', function corrigirDuracao() {
+          _audPlayerAudio.currentTime = 0;
+          _audPlayerAudio.removeEventListener('timeupdate', corrigirDuracao);
+        });
+      } catch (_) {}
+    }
   });
+
+  _audBloco.querySelector('.aud-btn-salvar').addEventListener('click', () => _audSalvar(ag));
+  _audBloco.querySelector('.aud-btn-regravar').addEventListener('click', () => {
+    const gravador = _audBloco;
+    _audLimparEstado();
+    _audComecarGravacao(gravador, ag);
+  });
+  _audBloco.querySelector('.aud-btn-descartar').addEventListener('click', () => _audDescartarGravacao());
+
+  if (_audPareceMudo(_audBlob)) _audAvisarPreviaMuda();
 }
 
-window.inicializarAudios = inicializarAudios;
-window._audComecarGravacao = _audComecarGravacao;
-window._audPararGravacao = _audPararGravacao;
-window._audResetGravador = _audResetGravador;
-window._audAbrirEscolha = _audAbrirEscolha;
-window._audVoltarGravador = _audVoltarGravador;
-window._audIrTrocarCliente = _audIrTrocarCliente;
-window._audSalvar = _audSalvar;
-window._audTrocarAba = _audTrocarAba;
-window._audFiltroStatus = _audFiltroStatus;
-window._audEscolherMic = _audEscolherMic;
-window._audCompartilharPreview = _audCompartilharPreview;
+// Faixa vermelha na prévia: a conversão mediu o arquivo inteiro e não achou som
+function _audAvisarPreviaMuda() {
+  const previa = _audBloco?.querySelector('.aud-previa');
+  if (!previa || _audBloco.querySelector('.aud-aviso-mudo')) return;
+  const aviso = document.createElement('div');
+  aviso.className = 'aud-aviso-mudo';
+  aviso.innerHTML = '<svg class="ico" aria-hidden="true"><use href="#ico-alerta"></use></svg><div><strong>Este áudio saiu mudo.</strong> O microfone não captou som do início ao fim — toca a prévia pra conferir e, se estiver vazio, regrava.</div>';
+  previa.prepend(aviso);
+}
+
+// ============================================================
+// Sentinela de mudez — já saiu daqui leitura de 10 min muda sem
+// ninguém perceber. Mic mudo no sistema, dispositivo errado ou
+// outro app tomando o mic entregam silêncio que o MediaRecorder
+// grava sem reclamar.
+// ============================================================
+function _audAvisar(tipo, msg) {
+  if (_audAvisoVivo === tipo) return;
+  _audAvisoVivo = tipo;
+  _audSetErro(msg);
+  _audBloco?.querySelector('.aud-min')?.classList.add('aud-min--alerta');
+  navigator.vibrate?.([120, 60, 120]); // pra quem grava olhando as cartas, não a tela
+}
+
+function _audAvisoLimpar() {
+  if (!_audAvisoVivo) return;
+  _audAvisoVivo = null;
+  _audSetErro('');
+  _audBloco?.querySelector('.aud-min')?.classList.remove('aud-min--alerta');
+}
+
+function _audVigiarSilencio(agora) {
+  const trilha = _audStream?.getAudioTracks()[0];
+  // Contexto suspenso congela o analyser no centro (leria como mudez):
+  // sem monitor confiável não se acusa ao vivo — a prévia condena depois
+  const monitor = _audAnalyser && _audAudioCtx?.state === 'running';
+  if (monitor && !trilha?.muted && _audAmplitudeAtual() > _AUD_LIMIAR_VIVO) {
+    _audSilencioDesde = agora;
+    _audAvisoLimpar();
+    return;
+  }
+  if (!monitor && !trilha?.muted) { _audSilencioDesde = agora; return; }
+  if (!_audAvisoVivo && agora - _audSilencioDesde > _AUD_SILENCIO_MS) {
+    _audAvisar('silencio', '⚠️ Nenhum som captado há vários segundos — o áudio pode estar saindo mudo. Confere se o microfone não está silenciado.');
+  }
+}
+
+function _audPareceMudo(blob) {
+  const nivel = blob && _audNivelCache.get(blob);
+  return !!nivel && nivel.pico < _AUD_PICO_MUDO;
+}
+
+function _audAmplitudeAtual() {
+  if (!_audAnalyser) return 0;
+  _audAnalyser.getByteTimeDomainData(_audAmostra);
+  let pico = 0;
+  for (let i = 0; i < _audAmostra.length; i++) {
+    const v = Math.abs(_audAmostra[i] - 128) / 128;
+    if (v > pico) pico = v;
+  }
+  return Math.min(1, pico * 1.6);
+}
+
+function _audFecharAudioCtx() {
+  if (_audAudioCtx) { _audAudioCtx.close().catch(() => {}); }
+  _audAudioCtx = null;
+  _audAnalyser = null;
+  _audAmostra = null;
+}
+
+// ============================================================
+// Seletor de microfone (aparece no estado "pronto" com 2+ mics)
+// ============================================================
+async function _audAtualizarListaMics(sel) {
+  if (!navigator.mediaDevices?.enumerateDevices) return;
+  let devices;
+  try { devices = await navigator.mediaDevices.enumerateDevices(); } catch (_) { return; }
+  _audMicDevices = devices.filter(d => d.kind === 'audioinput');
+
+  sel = sel || _audBloco?.querySelector('.aud-mic-select');
+  if (!sel || !sel.isConnected) return;
+  if (_audMicDevices.length < 2) { sel.hidden = true; sel.innerHTML = ''; return; }
+
+  const atual = localStorage.getItem('aud_mic_device_id');
+  sel.innerHTML = _audMicDevices
+    .map((d, i) => `<option value="${_audEsc(d.deviceId)}">${_audEsc(d.label || `Microfone ${i + 1}`)}</option>`)
+    .join('');
+  if (atual && _audMicDevices.some(d => d.deviceId === atual)) sel.value = atual;
+  sel.hidden = false;
+}
+
+// ============================================================
+// Wake Lock — mantém a tela acesa enquanto grava
+// ============================================================
+async function _audWakeLockPedir() {
+  try { _audWakeLock = await navigator.wakeLock?.request('screen'); }
+  catch (_) { _audWakeLock = null; }
+}
+
+async function _audWakeLockLiberar() {
+  try { await _audWakeLock?.release(); } catch (_) {}
+  _audWakeLock = null;
+}
+
+// ============================================================
+// beforeunload — só avisa enquanto há algo pra perder
+// ============================================================
+function _audBeforeUnloadHandler(e) {
+  e.preventDefault();
+  e.returnValue = '';
+}
+
+function _audAtualizarBeforeUnload() {
+  const precisaAvisar = _audOcupado();
+  if (precisaAvisar && !_audBeforeUnloadOn) {
+    window.addEventListener('beforeunload', _audBeforeUnloadHandler);
+    _audBeforeUnloadOn = true;
+  } else if (!precisaAvisar && _audBeforeUnloadOn) {
+    window.removeEventListener('beforeunload', _audBeforeUnloadHandler);
+    _audBeforeUnloadOn = false;
+  }
+}
+
+// iOS suspende o AudioContext quando o app perde o foco no meio da gravação
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible' && _audRecorder?.state === 'recording') {
+    if (!_audWakeLock) _audWakeLockPedir();
+    _audAudioCtx?.resume().catch(() => {});
+  }
+});
+
+// ============================================================
+// Ciclo de vida da gravação
+// ============================================================
+
+// Limpa o estado global SEM redesenhar palco nenhum.
+function _audLimparEstado() {
+  document.getElementById('aud-pill-enviar')?.remove(); // pill apontaria pra áudio morto
+  if (_audTimerInt) { clearInterval(_audTimerInt); _audTimerInt = null; }
+  if (_audStream) { _audStream.getTracks().forEach(t => t.stop()); _audStream = null; }
+  if (_audPreviewUrl) { URL.revokeObjectURL(_audPreviewUrl); _audPreviewUrl = null; }
+  if (_audPlayerAudio) { _audPlayerAudio.pause(); _audPlayerAudio = null; }
+  _audFecharAudioCtx();
+  _audWakeLockLiberar();
+  _audRecorder = null;
+  _audChunks = [];
+  _audBlob = null;
+  _audMs = 0;
+  _audAvisoVivo = null;
+  _audAtualizarBeforeUnload();
+}
+
+// Descarta a gravação/prévia atual e devolve o card dono pro estado pronto.
+function _audDescartarGravacao() {
+  try { if (_audRecorder && _audRecorder.state !== 'inactive') { _audRecorder.onstop = null; _audRecorder.stop(); } } catch (_) {}
+  const gravador = _audBloco, ag = _audAgDono;
+  _audLimparEstado();
+  _audBloco = null;
+  _audAgDono = null;
+  if (gravador?.isConnected) _audRenderPronto(gravador, ag);
+}
+
+async function _audComecarGravacao(gravador, ag) {
+  // Um gravador por vez no painel: gravação/prévia viva em outro card
+  // precisa ser descartada com consentimento antes de começar aqui.
+  if (_audOcupado()) {
+    if (_audAgDono?.id !== ag.id &&
+        !confirm(`Há uma gravação não salva para ${_audPrimeiroNome(_audAgDono?.cliente_nome)}. Descartar e gravar aqui?`)) return;
+    _audDescartarGravacao();
+  }
+
+  _audBloco = gravador;
+  _audAgDono = ag;
+  _audSetErro('');
+
+  if (!navigator.mediaDevices?.getUserMedia || !window.MediaRecorder) {
+    _audSetErro('Este navegador não suporta gravação de áudio (precisa de HTTPS ou localhost).');
+    return;
+  }
+
+  // A gravação é só matéria-prima: o que vai pro bucket é o mp3 convertido.
+  // mp4/webm aqui é o que o navegador conseguir gravar; a ordem só importa
+  // no fallback raro de a conversão falhar (mp4 toca nativo em iPhone).
+  const MIMES = ['audio/mp4', 'audio/webm;codecs=opus', 'audio/webm'];
+  _audMime = MIMES.find(m => MediaRecorder.isTypeSupported(m)) || '';
+  if (!_audMime) {
+    _audSetErro('Nenhum formato de gravação suportado neste navegador.');
+    return;
+  }
+
+  const micEscolhido = localStorage.getItem('aud_mic_device_id');
+  try {
+    _audStream = await navigator.mediaDevices.getUserMedia({
+      audio: {
+        echoCancellation: false,
+        noiseSuppression: false,
+        autoGainControl: false,
+        ...(micEscolhido ? { deviceId: { ideal: micEscolhido } } : {}),
+      },
+    });
+  } catch (e) {
+    _audSetErro(e.name === 'NotAllowedError'
+      ? 'Permissão de microfone negada. Libere o microfone nas configurações do navegador.'
+      : e.name === 'NotFoundError'
+        ? 'Nenhum microfone encontrado.'
+        : 'Não foi possível acessar o microfone: ' + e.message);
+    return;
+  }
+  _audAtualizarListaMics(); // agora com permissão concedida, os labels vêm certos
+
+  _audChunks = [];
+  _audBlob = null;
+  _audMs = 0;
+
+  // O sistema pode calar ou tomar o mic no meio da leitura (ligação,
+  // outro app, fone que desconecta) — o MediaRecorder segue gravando
+  // silêncio sem reclamar, então quem denuncia é a gente
+  const trilha = _audStream.getAudioTracks()[0];
+  trilha?.addEventListener('mute', () => {
+    if (_audRecorder?.state === 'recording') _audAvisar('mute', '⚠️ O sistema silenciou o microfone (outro app pegou ele?) — o áudio está saindo mudo agora.');
+  });
+  trilha?.addEventListener('unmute', () => {
+    if (_audAvisoVivo === 'mute') _audAvisoLimpar();
+  });
+  trilha?.addEventListener('ended', () => {
+    if (_audRecorder && _audRecorder.state !== 'inactive') {
+      _audAvisar('ended', '⚠️ O microfone parou de enviar áudio (desconectou?). A gravação foi encerrada com o que já tinha.');
+      _audPararGravacao(); // garante o onstop — nem todo navegador para sozinho
+    }
+  });
+
+  // Analyser pra barrinha de nível e pra sentinela de mudez; se falhar,
+  // grava mesmo assim (barrinha parada), mas avisa que ficou sem monitor
+  try {
+    _audAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    _audAnalyser = _audAudioCtx.createAnalyser();
+    _audAnalyser.fftSize = 512;
+    _audAudioCtx.createMediaStreamSource(_audStream).connect(_audAnalyser);
+    _audAmostra = new Uint8Array(_audAnalyser.fftSize);
+    _audAudioCtx.resume().catch(() => {});
+  } catch (_) {
+    _audFecharAudioCtx();
+    _toastAdmin('Sem monitor de nível do microfone neste navegador — ouça a prévia antes de enviar.', 'info');
+  }
+
+  _audRecorder = new MediaRecorder(_audStream, { mimeType: _audMime });
+  _audRecorder.ondataavailable = e => { if (e.data?.size) _audChunks.push(e.data); };
+  _audRecorder.onstop = () => {
+    if (_audTimerInt) { clearInterval(_audTimerInt); _audTimerInt = null; }
+    _audStream?.getTracks().forEach(t => t.stop());
+    _audStream = null;
+    _audFecharAudioCtx();
+    _audWakeLockLiberar();
+    _audBlob = new Blob(_audChunks, { type: _audMime.split(';')[0] });
+    if (!_audBlob.size) {
+      // Navegador não entregou nenhum chunk: melhor acusar agora do que
+      // mostrar uma prévia que não toca
+      const gravador = _audBloco;
+      _audLimparEstado();
+      _audBloco = null;
+      _audAgDono = null;
+      if (gravador?.isConnected) {
+        _audRenderPronto(gravador, ag);
+        const erro = gravador.querySelector('.aud-erro');
+        if (erro) erro.textContent = 'A gravação saiu vazia — o navegador não entregou nenhum áudio. Tenta de novo.';
+      }
+      return;
+    }
+    if (_audAvisoVivo !== 'ended') _audAvisoLimpar(); // aviso ao vivo já cumpriu o papel
+    _audAtualizarBeforeUnload();
+    _audRenderPrevia(ag);
+    // Já converte pra mp3 em segundo plano: quando salvar ou compartilhar
+    // (depois de ouvir a prévia), o arquivo estará pronto e ninguém espera.
+    // A conversão também mede o nível — arquivo inteiro mudo ganha a faixa.
+    const gravado = _audBlob;
+    _audConverterParaMp3(gravado)
+      .then(() => { if (gravado === _audBlob && _audPareceMudo(gravado)) _audAvisarPreviaMuda(); })
+      .catch(() => {});
+  };
+  _audRecorder.onerror = () => {
+    _toastAdmin('Erro na gravação. Tente de novo.', 'erro');
+    _audDescartarGravacao();
+  };
+  _audRecorder.start(1000); // chunks de 1s: não perde tudo se algo falhar no fim
+  _audWakeLockPedir();
+  _audAtualizarBeforeUnload();
+
+  _audRenderGravando(ag);
+
+  // Duração pause-aware acumulada em _audMs (não dá pra confiar em
+  // audio.duration depois: webm do MediaRecorder reporta Infinity no
+  // Chrome). O mesmo tick pinta o relógio e a barrinha de nível — e
+  // roda no setInterval, não em rAF: segue vivo com a tela apagada.
+  let ultimo = performance.now();
+  _audSilencioDesde = ultimo;
+  _audTimerInt = setInterval(() => {
+    const agora = performance.now();
+    if (_audRecorder?.state === 'recording') {
+      _audMs += agora - ultimo;
+      _audVigiarSilencio(agora);
+      const tempo = _audBloco?.querySelector('.aud-tempo');
+      if (tempo) tempo.textContent = _audMmSs(_audMs / 1000);
+      const fill = _audBloco?.querySelector('.aud-nivel-fill');
+      if (fill) fill.style.width = Math.round(_audAmplitudeAtual() * 100) + '%';
+    }
+    ultimo = agora;
+  }, _AUD_TICK);
+}
+
+function _audPararGravacao() {
+  if (_audRecorder && _audRecorder.state !== 'inactive') _audRecorder.stop();
+}
+
+// ============================================================
+// Salvar: upload do mp3 no bucket privado + insert na tabela.
+// NÃO envia e-mail — o envelope do item recém-listado envia.
+// ============================================================
+async function _audSalvar(ag) {
+  if (!ag || !_audBlob || _audSalvando) return;
+  _audSalvando = true;
+
+  const btn = _audBloco?.querySelector('.aud-btn-salvar');
+  if (btn) { btn.disabled = true; btn.innerHTML = '<svg class="ico" aria-hidden="true"><use href="#ico-ampulheta"></use></svg> Salvando…'; }
+
+  // Sobe o mp3, não a gravação bruta: o arquivo salvo já serve pra e-mail
+  // e WhatsApp sem ninguém ver conversão. Ela roda desde que parou de
+  // gravar — aqui normalmente só pega o resultado pronto. Se tiver
+  // falhado, sobe o original mesmo (o share ainda tenta converter na hora).
+  let blobUp = _audBlob, contentType = _audMime.split(';')[0];
+  try {
+    blobUp = await _audConverterParaMp3(_audBlob);
+    contentType = 'audio/mpeg';
+  } catch (e) {
+    console.warn('Conversão mp3 falhou, salvando original:', e);
+  }
+
+  // Última cancela da sentinela: salvar leitura muda é perder a leitura
+  // (o cliente recebe um arquivo vazio e só se descobre dias depois)
+  if (_audPareceMudo(_audBlob) && !confirm('Este áudio parece MUDO do início ao fim — o microfone não captou som. Salvar mesmo assim?')) {
+    _audSalvarFalhou(null);
+    return;
+  }
+  const ext  = _audExtDoMime(contentType);
+  const path = `agendamento-${ag.id}/${Date.now()}-${crypto.randomUUID()}.${ext}`;
+  const seg  = Math.max(1, Math.round(_audMs / 1000));
+
+  const { error: upErr } = await supabase.storage
+    .from('audios')
+    .upload(path, blobUp, { contentType });
+
+  if (upErr) { _audSalvarFalhou('Falha no upload: ' + upErr.message); return; }
+
+  const { data: novo, error: dbErr } = await supabase.from('audios_cliente').insert({
+    agendamento_id: ag.id,
+    storage_path: path,
+    duracao_segundos: seg,
+    tamanho_bytes: blobUp.size,
+    mime: contentType,
+  }).select('id, criado_em').single();
+
+  if (dbErr) {
+    await supabase.storage.from('audios').remove([path]); // não deixar arquivo órfão
+    _audSalvarFalhou('Erro ao salvar: ' + dbErr.message);
+    return;
+  }
+
+  _audSalvando = false;
+  const gravador = _audBloco;
+  _audLimparEstado();
+  _audBloco = null;
+  _audAgDono = null;
+
+  // O áudio novo entra na lista do card na hora, com o envelope pronto
+  const slot = gravador?.closest('.aud-slot');
+  if (slot) {
+    _audCardAcrescentarItem(slot, ag, {
+      id: novo.id,
+      agendamento_id: ag.id,
+      storage_path: path,
+      duracao_segundos: seg,
+      mime: contentType,
+      criado_em: novo.criado_em || new Date().toISOString(),
+      email_liberado_em: null,
+      enviado_email_em: null,
+      entregue_em: null,
+      quicou_em: null,
+    });
+  }
+  if (gravador?.isConnected) _audRenderPronto(gravador, ag);
+  _audContagem[ag.id] = (_audContagem[ag.id] || 0) + 1;
+  _audContPintarTudo();
+  _toastAdmin('Áudio salvo — o envelope envia pro e-mail quando você quiser.', 'ok');
+}
+
+function _audSalvarFalhou(msg) {
+  _audSalvando = false;
+  if (msg) _toastAdmin(msg, 'erro');
+  const btn = _audBloco?.querySelector('.aud-btn-salvar');
+  if (btn) {
+    btn.disabled = false;
+    btn.innerHTML = `<svg class="ico" aria-hidden="true"><use href="#ico-guardar"></use></svg> Salvar (${_audMmSs(_audMs / 1000)})`;
+  }
+}
+
+window._audMontarCard = _audMontarCard;
+window._audAposRender = _audAposRender;
+window._audOcupado = _audOcupado;
