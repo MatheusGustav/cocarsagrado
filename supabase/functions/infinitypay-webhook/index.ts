@@ -5,6 +5,9 @@
 // - Toda chamada fica registrada em public.webhook_log (diagnóstico).
 // - Valor: aceita recebido >= esperado (juros de parcelamento somam ao
 //   total); rejeita só pagamento A MENOR.
+// - O transaction_nsu é gravado no pedido (pedidos.txid, índice único): um
+//   pagamento quita UM pedido só, e a resposta do payment_check precisa se
+//   referir ao order_nsu que perguntamos.
 // - Respostas não-2xx em condições transitórias para a InfinitePay
 //   reentregar o webhook.
 // - Falha na notificação Telegram nunca derruba a confirmação,
@@ -157,6 +160,15 @@ Deno.serve(async (req) => {
       return json({ error: 'payment not confirmed by InfinitePay' }, 400)
     }
 
+    // A resposta tem que falar do MESMO pedido que perguntamos: sem esta
+    // conferência, um comprovante de outra compra "confirmaria" este pedido.
+    // Só compara quando a InfinitePay devolve o campo (não é documentado).
+    if (check.order_nsu != null && String(check.order_nsu) !== String(chave)) {
+      await log(chave, 'rejeitado',
+        `payment_check devolveu order_nsu '${check.order_nsu}' (esperado '${chave}')`, { body, check })
+      return json({ error: 'order_nsu mismatch' }, 400)
+    }
+
     const { data: pedido, error: pedErr } = await supabase
       .from('pedidos')
       .select('id, valor_total, status')
@@ -184,13 +196,26 @@ Deno.serve(async (req) => {
       return json({ error: 'amount below expected', recebido, esperado }, 400)
     }
 
+    // p_txid amarra ESTE pagamento ao pedido (índice único em pedidos.txid).
     const { data: rpcData, error: rpcErr } = await supabase.rpc('confirmar_pedido_pago', {
       p_chave:  chave,
       p_metodo: captureMethod,
+      p_txid:   String(transactionNsu),
     })
     if (rpcErr) {
+      // Inclui a corrida rara de duas confirmações do mesmo txid ao mesmo
+      // tempo (unique_violation): 500 faz a InfinitePay reentregar e a 2ª
+      // volta como retorno 3, abaixo.
       await log(chave, 'erro', `confirmar_pedido_pago: ${rpcErr.message}`, body)
       return json({ error: 'update failed', detail: rpcErr.message }, 500)
+    }
+
+    // 3 = este transaction_nsu já pagou OUTRO pedido. Nada foi alterado: ou é
+    // comprovante reaproveitado, ou a InfinitePay mandou o nsu trocado.
+    if (Number(rpcData) === 3) {
+      await log(chave, 'rejeitado',
+        `transaction_nsu ${transactionNsu} já consta em outro pedido`, body)
+      return json({ error: 'transaction already used' }, 400)
     }
 
     // A RPC é idempotente (FOR UPDATE) e retorna 0 se o pedido já fora

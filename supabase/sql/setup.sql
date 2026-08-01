@@ -281,6 +281,8 @@ CREATE INDEX idx_pedidos_user      ON public.pedidos (user_id) WHERE user_id IS 
 -- Busca da reivindicação: só pedidos órfãos (guest) com e-mail.
 CREATE INDEX idx_pedidos_email_guest ON public.pedidos (lower(trim(cliente_email)))
   WHERE user_id IS NULL AND cliente_email IS NOT NULL;
+-- Um transaction_nsu paga UM pedido só (o webhook grava via confirmar_pedido_pago).
+CREATE UNIQUE INDEX idx_pedidos_txid_unico ON public.pedidos (txid) WHERE txid IS NOT NULL;
 
 -- ============================================================
 -- 4) AGENDAMENTOS (filho — N por pedido)
@@ -602,7 +604,14 @@ GRANT EXECUTE ON FUNCTION public.catalogo_ranking() TO anon, authenticated;
 
 -- confirmar_pedido_pago: atualização atômica (pai + filhos) chamada pelo
 -- webhook do Mercado Pago (service_role). NUNCA exposta ao anon.
-CREATE OR REPLACE FUNCTION public.confirmar_pedido_pago(p_chave text, p_metodo text)
+-- p_txid = transaction_nsu da InfinitePay: amarra o pagamento a ESTE pedido
+-- (idx_pedidos_txid_unico garante 1 pagamento = 1 pedido). Retorno 3 = o
+-- txid já quitou outro pedido; nada é alterado.
+CREATE OR REPLACE FUNCTION public.confirmar_pedido_pago(
+  p_chave  text,
+  p_metodo text,
+  p_txid   text DEFAULT NULL
+)
 RETURNS integer
 LANGUAGE plpgsql
 SECURITY DEFINER
@@ -615,6 +624,14 @@ DECLARE
   v_ativo boolean;
   v_reuso boolean := FALSE;
 BEGIN
+  -- Este pagamento já quitou OUTRO pedido: não confirma nada (retorno 3).
+  IF p_txid IS NOT NULL AND EXISTS (
+       SELECT 1 FROM public.pedidos
+       WHERE txid = p_txid AND chave_pedido <> p_chave
+     ) THEN
+    RETURN 3;
+  END IF;
+
   SELECT id, cupom_codigo INTO v_id, v_cupom
   FROM public.pedidos
   WHERE chave_pedido = p_chave
@@ -626,11 +643,13 @@ BEGIN
   END IF;
 
   UPDATE public.pedidos
-  SET status = 'pago', pago_em = NOW(), metodo_pagamento = p_metodo
+  SET status = 'pago', pago_em = NOW(), metodo_pagamento = p_metodo,
+      txid = COALESCE(p_txid, txid)
   WHERE id = v_id;
 
   UPDATE public.agendamentos
-  SET status = 'pago', pago_em = NOW(), metodo_pagamento = p_metodo
+  SET status = 'pago', pago_em = NOW(), metodo_pagamento = p_metodo,
+      txid = COALESCE(p_txid, txid)
   WHERE pedido_id = v_id
     AND status = 'pendente';
 
@@ -655,10 +674,10 @@ BEGIN
 END;
 $$;
 
-REVOKE ALL ON FUNCTION public.confirmar_pedido_pago(text, text) FROM PUBLIC;
-REVOKE ALL ON FUNCTION public.confirmar_pedido_pago(text, text) FROM anon;
-REVOKE ALL ON FUNCTION public.confirmar_pedido_pago(text, text) FROM authenticated;
-GRANT EXECUTE ON FUNCTION public.confirmar_pedido_pago(text, text) TO service_role;
+REVOKE ALL ON FUNCTION public.confirmar_pedido_pago(text, text, text) FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.confirmar_pedido_pago(text, text, text) FROM anon;
+REVOKE ALL ON FUNCTION public.confirmar_pedido_pago(text, text, text) FROM authenticated;
+GRANT EXECUTE ON FUNCTION public.confirmar_pedido_pago(text, text, text) TO service_role;
 
 -- criar_pedido: cria pedido pai + N agendamentos filhos numa transação só.
 -- SECURITY DEFINER porque anon não tem SELECT/DELETE em pedidos (LGPD).
