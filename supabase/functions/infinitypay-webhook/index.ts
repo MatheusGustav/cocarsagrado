@@ -2,7 +2,10 @@
 // InfinitePay chama este endpoint com { order_nsu, transaction_nsu, capture_method }.
 //
 // Garantias:
-// - Toda chamada fica registrada em public.webhook_log (diagnóstico).
+// - Chamada com chave real fica registrada em public.webhook_log
+//   (diagnóstico). Lixo (corpo quebrado, chave fora do formato, chave
+//   inexistente) entra sem payload e com teto por hora: o endpoint é
+//   público, não pode virar torneira de linhas no banco nem de Telegram.
 // - Valor: aceita recebido >= esperado (juros de parcelamento somam ao
 //   total); rejeita só pagamento A MENOR.
 // - O transaction_nsu é gravado no pedido (pedidos.txid, índice único): um
@@ -39,9 +42,27 @@ function json(body: unknown, status = 200) {
   })
 }
 
+// Trava de enxurrada dos AVISOS (o Telegram é o canal da Camila; a
+// notificação de pedido confirmado não passa por aqui e nunca é cortada).
+// Contador do isolate — a Supabase reaproveita o isolate por um tempo, então
+// segura a rajada de uma origem só, que é o caso real. Não é limite global.
+const ALERTA_MAX_HORA = 15
+const alertasRecentes: number[] = []
+function podeAlertar() {
+  const corte = Date.now() - 3600_000
+  while (alertasRecentes.length && alertasRecentes[0] < corte) alertasRecentes.shift()
+  if (alertasRecentes.length >= ALERTA_MAX_HORA) return false
+  alertasRecentes.push(Date.now())
+  return true
+}
+
 // Envia texto puro ao Telegram (best-effort: nunca lança)
 async function alertaTelegram(texto: string) {
   if (!TG_BOT || !TG_CHAT) return
+  if (!podeAlertar()) {
+    console.warn('alerta suprimido (teto de', ALERTA_MAX_HORA, 'por hora):', texto.slice(0, 120))
+    return
+  }
   try {
     const tg = await fetch(`https://api.telegram.org/bot${TG_BOT}/sendMessage`, {
       method: 'POST',
@@ -67,6 +88,34 @@ async function log(chave: string | null, resultado: string, detalhe: string, pay
     await alertaTelegram(`⚠️ Problema no webhook de pagamento\n\n🔑 Pedido: ${chave ?? '(sem chave)'}\n❌ ${resultado}: ${detalhe}`)
   }
 }
+
+// Lixo no endpoint público (corpo quebrado, chave fora do formato, chave que
+// não existe em pedidos): no máximo LIXO_MAX_HORA linhas por hora, nunca com
+// o corpo cru e nunca no Telegram — senão qualquer um enche a tabela e o
+// celular da Camila. O retorno também governa se vale gastar uma consulta na
+// InfinitePay: passou do teto, o webhook simplesmente descarta.
+const LIXO_MAX_HORA = 10
+async function logLixo(chave: string | null, resultado: string, detalhe: string) {
+  try {
+    const desde = new Date(Date.now() - 3600_000).toISOString()
+    const { count } = await supabase
+      .from('webhook_log')
+      .select('id', { count: 'exact', head: true })
+      .in('resultado', ['invalido', 'desconhecido'])
+      .gt('criado_em', desde)
+    if ((count ?? 0) >= LIXO_MAX_HORA) return false
+    await supabase.from('webhook_log').insert({ chave, resultado, detalhe, payload: null })
+    return true
+  } catch (e) {
+    console.error('logLixo falhou:', e)
+    return false
+  }
+}
+
+// Formato das chaves geradas pelo site (gerarChaveAleatoria): CS-XXXX-XXXX-XXXX
+// no alfabeto sem I/O/0/1. Só serve pra separar lixo de chave plausível — a
+// chave real ainda é conferida na tabela pedidos.
+const FORMATO_CHAVE = /^CS-[A-HJ-NP-Z2-9]{4}-[A-HJ-NP-Z2-9]{4}-[A-HJ-NP-Z2-9]{4}$/
 
 // 'YYYY-MM-DD' -> 'DD/MM/YYYY' (sem Date(): evita shift de fuso)
 function dataBR(iso: string) {
@@ -122,32 +171,91 @@ async function notificarTelegram(chave: string, captureMethod: string) {
   }
 }
 
+// Pergunta à InfinitePay se este pagamento existe mesmo (exige handle + slug —
+// sem eles a API responde 404). URL nova do Checkout Integrado (a antiga
+// api.infinitepay.io/invoices/... será desativada).
+async function consultarPagamento(chave: string, transactionNsu: string, slug?: string) {
+  return await fetch('https://api.checkout.infinitepay.io/payment_check', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      handle: HANDLE,
+      order_nsu: chave,
+      transaction_nsu: transactionNsu,
+      ...(slug && { slug }),
+    }),
+  })
+}
+
+const MAX_BODY = 16 * 1024   // o payload real tem ~200 bytes
+
 Deno.serve(async (req) => {
   let chave: string | null = null
   try {
-    const body = await req.json()
+    // Corpo com tamanho de gente: sem isso um POST gigante vira linha gigante
+    // no webhook_log (o payload cru é gravado nos casos legítimos).
+    if (Number(req.headers.get('content-length') ?? 0) > MAX_BODY) {
+      return json({ error: 'payload too large' }, 413)
+    }
+    const cru = await req.text()
+    if (cru.length > MAX_BODY) return json({ error: 'payload too large' }, 413)
 
-    chave                = body.order_nsu ?? null
-    const transactionNsu = body.transaction_nsu
-    const captureMethod  = body.capture_method ?? 'cartao'
-
-    if (!chave || !transactionNsu) {
-      await log(chave, 'rejeitado', 'payload sem order_nsu/transaction_nsu', body)
-      return json({ error: 'missing order_nsu or transaction_nsu' }, 400)
+    let body: Record<string, unknown>
+    try {
+      body = JSON.parse(cru)
+    } catch {
+      await logLixo(null, 'invalido', 'corpo não é JSON')
+      return json({ error: 'invalid JSON' }, 400)
     }
 
-    // Verifica pagamento na InfinitePay (exige handle + slug — sem eles a API responde 404).
-    // URL nova do Checkout Integrado (a antiga api.infinitepay.io/invoices/... será desativada).
-    const checkRes = await fetch('https://api.checkout.infinitepay.io/payment_check', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        handle: HANDLE,
-        order_nsu: chave,
-        transaction_nsu: transactionNsu,
-        ...(body.invoice_slug && { slug: body.invoice_slug }),
-      }),
-    })
+    chave                = (body.order_nsu as string) ?? null
+    const transactionNsu = body.transaction_nsu as string
+    const captureMethod  = (body.capture_method as string) ?? 'cartao'
+
+    if (!chave || !transactionNsu) {
+      await logLixo(null, 'invalido', 'payload sem order_nsu/transaction_nsu')
+      return json({ error: 'missing order_nsu or transaction_nsu' }, 400)
+    }
+    // Chave fora do formato do site nunca foi pedido nosso: descarta antes de
+    // gastar consulta na InfinitePay ou linha no banco.
+    if (!FORMATO_CHAVE.test(chave)) {
+      await logLixo(String(chave).slice(0, 20), 'invalido', 'order_nsu fora do formato')
+      return json({ error: 'invalid order_nsu' }, 400)
+    }
+
+    // O pedido vem ANTES do payment_check: chave que não existe não vira
+    // consulta na InfinitePay nem aviso no Telegram (era o vetor de spam).
+    const { data: pedido, error: pedErr } = await supabase
+      .from('pedidos')
+      .select('id, valor_total, status, txid')
+      .eq('chave_pedido', chave)
+      .maybeSingle()
+
+    if (pedErr) {
+      await log(chave, 'erro', `consulta pedido: ${pedErr.message}`, body)
+      return json({ error: 'pedido lookup failed' }, 500)
+    }
+    if (!pedido) {
+      // Formato certo e inexistente: quase sempre chute. Só que também é a
+      // cara de um pedido que a Camila apagou e o cliente pagou assim mesmo —
+      // aí o dinheiro entrou sem pedido e ela PRECISA saber. Confere na
+      // InfinitePay enquanto o teto de lixo/hora permitir; passou do teto,
+      // descarta sem consultar nem gravar.
+      if (!await logLixo(chave, 'desconhecido', 'pedido não encontrado')) {
+        return json({ error: 'pedido not found' }, 400)
+      }
+      const orfaoRes = await consultarPagamento(chave, transactionNsu, body.invoice_slug as string)
+      const orfao = orfaoRes.ok ? await orfaoRes.json().catch(() => null) : null
+      if (orfao?.paid) {
+        // resultado próprio (não 'rejeitado'): o aviso genérico do log sairia
+        // junto com o específico abaixo e a Camila receberia dois Telegrams.
+        await log(chave, 'pago_sem_pedido', 'PAGO na InfinitePay mas o pedido não existe no banco', { body, check: orfao })
+        await alertaTelegram(`🚨 Pagamento CONFIRMADO sem pedido no banco\n\n🔑 ${chave}\n💳 ${transactionNsu}\n\nO pedido foi apagado ou nunca gravou. Confira na InfinitePay e fale com o cliente.`)
+      }
+      return json({ error: 'pedido not found' }, 400)
+    }
+
+    const checkRes = await consultarPagamento(chave, transactionNsu, body.invoice_slug as string)
 
     if (!checkRes.ok) {
       // Transitório: 500 induz a InfinitePay a reentregar
@@ -169,21 +277,6 @@ Deno.serve(async (req) => {
       await log(chave, 'rejeitado',
         `payment_check devolveu order_nsu '${check.order_nsu}' (esperado '${chave}')`, { body, check })
       return json({ error: 'order_nsu mismatch' }, 400)
-    }
-
-    const { data: pedido, error: pedErr } = await supabase
-      .from('pedidos')
-      .select('id, valor_total, status, txid')
-      .eq('chave_pedido', chave)
-      .maybeSingle()
-
-    if (pedErr) {
-      await log(chave, 'erro', `consulta pedido: ${pedErr.message}`, body)
-      return json({ error: 'pedido lookup failed' }, 500)
-    }
-    if (!pedido) {
-      await log(chave, 'rejeitado', 'pedido não encontrado', body)
-      return json({ error: 'pedido not found' }, 400)
     }
     if (pedido.status !== 'pendente') {
       // Reentrega do MESMO pagamento é rotina (a InfinitePay repete o aviso):
