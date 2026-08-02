@@ -54,6 +54,16 @@ Deno.serve(async (req) => {
     if (pErr) return json({ error: 'falha ao validar pedido' }, 500)
     if (!pedido) return json({ error: 'pedido não encontrado' }, 404)
 
+    // Pedido que não está mais pendente não ganha link novo: a InfinitePay
+    // cobraria de novo (o link não sabe que o pedido já foi quitado) e o
+    // webhook depois só ignoraria — dinheiro entrando duas vezes em silêncio.
+    if (pedido.status !== 'pendente') {
+      return json({
+        error: pedido.status === 'pago' ? 'pedido já pago' : 'pedido cancelado',
+        status: pedido.status,
+      }, 409)
+    }
+
     const totalItens = ipItems.reduce((s: number, i: { price: number }) => s + i.price, 0)
     const totalPedido = Math.round(Number(pedido.valor_total) * 100)
     if (Math.abs(totalItens - totalPedido) > 5) {

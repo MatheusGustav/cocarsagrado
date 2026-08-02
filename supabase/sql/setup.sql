@@ -999,7 +999,7 @@ CREATE POLICY "auth_admin_pedidos" ON public.pedidos
 CREATE TABLE IF NOT EXISTS public.webhook_log (
   id        BIGSERIAL PRIMARY KEY,
   chave     TEXT,
-  resultado TEXT NOT NULL,   -- confirmado | rejeitado | ignorado | erro | telegram_erro
+  resultado TEXT NOT NULL,   -- confirmado | rejeitado | ignorado | pagamento_repetido | erro | telegram_erro
   detalhe   TEXT,
   payload   JSONB,
   criado_em TIMESTAMPTZ NOT NULL DEFAULT NOW()

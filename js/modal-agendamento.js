@@ -8,6 +8,8 @@ const _IP_CHECKOUT_URL  = 'https://demxedudbislzausvhwx.supabase.co/functions/v1
 
 let _dadosPagamento = null;
 let _calendarioOk   = false;
+// Pedido já pago/cancelado no servidor: trava o botão de pagar (evita 2ª cobrança).
+let _pagJaProcessado = false;
 
 // ============================================================
 // Abrir / Fechar
@@ -278,6 +280,8 @@ window.redirecionarParaPagamento = function(chave, carrinhoSnap, cupomSnap) {
     obs: '',
     whatsapp,
   };
+
+  _pagJaProcessado = false;   // pedido novo: botão de pagar volta a valer
 
   sessionStorage.setItem('agendamento', JSON.stringify(_dadosPagamento));
   _salvarPedidoPendente(_dadosPagamento);
@@ -675,6 +679,7 @@ function _pagMostrarEspera(abriuSozinho, url) {
 async function pagarCom(metodo) {
   const ag = _dadosPagamento;
   if (!ag) return;
+  if (_pagJaProcessado) return;   // pedido já pago/cancelado: não gera link novo
 
   const err = document.getElementById('pag-erro-box');
   if (err) err.hidden = true;
@@ -710,6 +715,14 @@ async function pagarCom(metodo) {
       body: JSON.stringify({ chave: ag.chave, nome: ag.nome, whatsapp: ag.whatsapp, metodo, items }),
     });
     const data = await res.json();
+    // 409 = o pedido não está mais pendente. Mandar "tente de novo" aqui faria
+    // o cliente pagar duas vezes; a mensagem tem que dizer o que houve.
+    if (res.status === 409) {
+      const jaErr = new Error('pedido não está mais pendente');
+      jaErr.jaProcessado = data.status === 'pago' ? 'pago' : 'cancelado';
+      _pagJaProcessado = true;
+      throw jaErr;
+    }
     if (!res.ok || data.error) throw new Error(typeof data.error === 'string' ? data.error : 'falha ao gerar link');
 
     let abriu = false;
@@ -720,14 +733,22 @@ async function pagarCom(metodo) {
   } catch (e) {
     if (win) { try { win.close(); } catch {} }
     if (err) {
-      err.textContent = 'Não conseguimos preparar o pagamento agora. Espere alguns segundos e tente de novo — nada foi cobrado.';
+      err.textContent = e.jaProcessado === 'pago'
+        ? 'Esse pedido já está pago 🌿 Não precisa pagar de novo — a confirmação chega no seu WhatsApp.'
+        : e.jaProcessado === 'cancelado'
+          ? 'Esse pedido foi cancelado. Faça um novo agendamento — nada foi cobrado.'
+          : 'Não conseguimos preparar o pagamento agora. Espere alguns segundos e tente de novo — nada foi cobrado.';
       err.hidden = false;
     }
+    // Pedido resolvido: tira o pendente guardado pra não reabrir a cobrança.
+    if (e.jaProcessado) _limparPedidoPendente();
   } finally {
     ['online', 'outra'].forEach(m => {
       const b = document.getElementById(`pag-btn-${m}`);
       if (!b) return;
-      b.disabled = false;
+      // Já pago/cancelado: o botão de pagar não volta — só o "outra forma"
+      // (zap) faz sentido pra tirar dúvida.
+      b.disabled = (m === 'online' && _pagJaProcessado);
       b.classList.remove('carregando');
       const label = b.querySelector('strong');
       if (label && b.dataset.labelOriginal) label.textContent = b.dataset.labelOriginal;

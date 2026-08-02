@@ -14,6 +14,8 @@
 //   mas fica registrada em webhook_log (resultado 'telegram_erro').
 // - Rejeições e erros (com chave) também disparam aviso no Telegram,
 //   em texto puro, dizendo o problema.
+// - Pagamento repetido no mesmo pedido (transaction_nsu novo em pedido já
+//   pago) avisa no Telegram: é estorno a fazer, não reentrega.
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const TG_BOT  = Deno.env.get('TELEGRAM_BOT_TOKEN')  || ''
@@ -171,7 +173,7 @@ Deno.serve(async (req) => {
 
     const { data: pedido, error: pedErr } = await supabase
       .from('pedidos')
-      .select('id, valor_total, status')
+      .select('id, valor_total, status, txid')
       .eq('chave_pedido', chave)
       .maybeSingle()
 
@@ -184,6 +186,22 @@ Deno.serve(async (req) => {
       return json({ error: 'pedido not found' }, 400)
     }
     if (pedido.status !== 'pendente') {
+      // Reentrega do MESMO pagamento é rotina (a InfinitePay repete o aviso):
+      // segue silenciosa. Transaction_nsu diferente num pedido já pago = o
+      // cliente pagou duas vezes e alguém precisa estornar — nunca deixar
+      // passar calado. Pedido antigo (pago antes do txid existir) entra no
+      // aviso com a ressalva: um alarme à toa custa nada, um pagamento em
+      // dobro invisível custa o dinheiro do cliente.
+      const mesmaTransacao = !!pedido.txid && String(pedido.txid) === String(transactionNsu)
+      if (pedido.status === 'pago' && !mesmaTransacao) {
+        const anterior = pedido.txid
+          ? `o pedido foi pago com ${pedido.txid}`
+          : 'o pagamento anterior é de antes do registro de txid — pode ser reaviso do mesmo'
+        await log(chave, 'pagamento_repetido',
+          `2º pagamento no pedido (agora ${transactionNsu}; ${anterior})`, body)
+        await alertaTelegram(`⚠️ PAGAMENTO EM DOBRO no mesmo pedido\n\n🔑 Pedido: ${chave}\n💳 Pagamento novo: ${transactionNsu}\n📌 ${anterior}\n\nConfira no painel e trate o estorno com o cliente.`)
+        return json({ ok: true, skipped: 'already paid' })
+      }
       await log(chave, 'ignorado', `status já era '${pedido.status}'`, body)
       return json({ ok: true, skipped: 'already processed' })
     }
