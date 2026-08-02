@@ -1628,6 +1628,20 @@ img { max-width: 100%; }
   color: var(--color-text-muted);
 }
 
+/* Guias das modalidades — parágrafo discreto abaixo do catálogo */
+.cat-guias {
+  margin-top: 34px;
+  text-align: center;
+  font-size: 14.5px;
+  line-height: 1.7;
+  color: var(--color-text-muted);
+}
+.cat-guias a {
+  color: var(--color-text-link);
+  font-weight: 500;
+}
+.cat-guias a:hover { color: var(--color-gold-deep); }
+
 /* ============================================================
    RODAPÉ
    ============================================================ */

@@ -1,0 +1,153 @@
+/* ============================================================
+   PÁGINAS DE MODALIDADE (SEO) — /jogo-de-buzios, /baralho-cigano,
+   /registros-akashicos, /theta-healing
+   Complementa v4-raiz.css (tokens e header/footer vêm de lá).
+   ============================================================ */
+
+/* Nas páginas internas não há hamburger: some a navegação no mobile
+   e sobra marca + botão de agendar. */
+@media (max-width: 860px) {
+  .pg .nav-links { display: none; }
+}
+
+.pg-hero {
+  background: var(--color-bg-section-alt);
+  padding-block: 64px 56px;
+  border-bottom: 2px dotted var(--color-neutral-stone);
+}
+.pg-hero-inner { max-width: 760px; }
+.pg-hero .hero-title { margin-bottom: 18px; }
+.pg-lead {
+  font-size: 18px;
+  line-height: 1.7;
+  color: var(--color-text-body);
+  max-width: 640px;
+}
+.pg-hero .hero-btns { margin-top: 28px; }
+
+.pg-migalhas {
+  font-size: 13px;
+  color: var(--color-text-muted);
+  margin-bottom: 26px;
+}
+.pg-migalhas a { color: var(--color-text-link); text-decoration: none; }
+.pg-migalhas a:hover { text-decoration: underline; }
+
+.pg-corpo { padding-block: 56px 72px; }
+.pg-corpo .container { max-width: 820px; }
+
+.pg-secao { margin-bottom: 52px; }
+.pg-secao h2 {
+  font-family: var(--fonte-titulo);
+  font-weight: 600;
+  font-size: clamp(24px, 3.4vw, 32px);
+  color: var(--color-primary);
+  margin-bottom: 16px;
+}
+.pg-secao p {
+  font-size: 16.5px;
+  line-height: 1.75;
+  color: var(--color-text-body);
+  margin-bottom: 14px;
+}
+.pg-secao a { color: var(--color-text-link); }
+
+/* Lista de leituras da linha */
+.pg-leituras { display: grid; gap: 14px; margin-top: 22px; }
+.pg-leitura {
+  background: var(--color-bg-card);
+  border: 1.5px solid var(--color-neutral-stone);
+  border-radius: 18px 6px 18px 6px;
+  padding: 18px 22px;
+}
+.pg-leitura h3 {
+  font-family: var(--fonte-titulo);
+  font-weight: 600;
+  font-size: 19px;
+  color: var(--color-primary);
+  margin-bottom: 6px;
+}
+.pg-leitura p { font-size: 15.5px; line-height: 1.65; color: var(--color-text-body); margin: 0; }
+.pg-leitura .pg-entrega {
+  display: inline-block;
+  margin-top: 10px;
+  font-size: 12.5px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-gold-deep);
+}
+
+/* Passos de como funciona */
+.pg-passos { list-style: none; counter-reset: passo; display: grid; gap: 16px; margin-top: 22px; padding: 0; }
+.pg-passos li {
+  counter-increment: passo;
+  position: relative;
+  padding-left: 54px;
+  font-size: 16px;
+  line-height: 1.65;
+  color: var(--color-text-body);
+}
+.pg-passos li::before {
+  content: counter(passo);
+  position: absolute;
+  left: 0;
+  top: 2px;
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  font-family: var(--fonte-titulo);
+  font-weight: 600;
+  font-size: 17px;
+  color: var(--color-gold-deep);
+  background: var(--color-gold-mist);
+  border-radius: 14px 5px 14px 5px;
+}
+
+/* FAQ */
+.pg-faq { display: grid; gap: 10px; margin-top: 22px; }
+.pg-faq details {
+  background: var(--color-bg-card);
+  border: 1.5px solid var(--color-neutral-stone);
+  border-radius: 14px 5px 14px 5px;
+  padding: 14px 18px;
+}
+.pg-faq summary {
+  font-weight: 600;
+  font-size: 16px;
+  color: var(--color-primary);
+  cursor: pointer;
+}
+.pg-faq details p { margin: 10px 0 2px; font-size: 15.5px; line-height: 1.65; color: var(--color-text-body); }
+
+/* CTA final da página */
+.pg-cta {
+  background: var(--color-bg-dark);
+  border-radius: 22px 8px 22px 8px;
+  padding: 36px 32px;
+  text-align: center;
+}
+.pg-cta p {
+  font-family: var(--fonte-titulo);
+  font-size: clamp(20px, 3vw, 26px);
+  color: var(--color-text-on-dark);
+  margin-bottom: 20px;
+}
+
+/* Links para as outras modalidades */
+.pg-relacionadas { margin-top: 44px; }
+.pg-relacionadas h2 { font-size: 20px; }
+.pg-relacionadas ul { list-style: none; padding: 0; display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; }
+.pg-relacionadas a {
+  display: inline-block;
+  font-size: 14.5px;
+  font-weight: 500;
+  color: var(--color-text-link);
+  text-decoration: none;
+  background: var(--color-bg-card);
+  border: 1.5px solid var(--color-neutral-stone);
+  border-radius: 14px 5px 14px 5px;
+  padding: 9px 16px;
+}
+.pg-relacionadas a:hover { border-color: var(--color-gold); color: var(--color-gold-deep); }
