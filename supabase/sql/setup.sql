@@ -798,6 +798,13 @@ BEGIN
     -- queimar o cupom — sem esta trava, 2 pedidos pendentes gastariam o
     -- mesmo cupom. Pago trava sempre; pendente trava por 24h (carrinho
     -- abandonado não prende o cupom pra sempre).
+    -- Lock por código do cupom: dois pedidos simultâneos com o mesmo cupom
+    -- entram na fila — o segundo só checa o EXISTS depois que o primeiro
+    -- commitou (ou deu rollback). Fecha a race do "usa duas vezes no mesmo
+    -- segundo". Solto automático no fim da transação.
+    IF v_cupom_uso THEN
+      PERFORM pg_advisory_xact_lock(hashtext('cupom:' || v_cupom_cod));
+    END IF;
     IF v_cupom_uso AND EXISTS (
       SELECT 1 FROM public.pedidos p
       WHERE upper(p.cupom_codigo) = v_cupom_cod

@@ -119,7 +119,16 @@ async function _avaliarSessao() {
   _avaliandoSessao = true;
   try {
     const { data, error } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
-    if (error || !data) { _entrarNoPainel(); return; }      // MFA indisponível: não trava o acesso
+    if (error || !data) {
+      // Fail-closed: sem saber o AAL, ninguém entra. Volta pro login com aviso.
+      _mostrarLogin();
+      const errorEl = document.getElementById('adm-login-error');
+      if (errorEl) {
+        errorEl.textContent = 'Não deu para verificar o segundo fator. Tente entrar de novo.';
+        errorEl.style.display = 'block';
+      }
+      return;
+    }
     const { currentLevel, nextLevel } = data;
 
     if (nextLevel === 'aal2' && currentLevel !== 'aal2') {
