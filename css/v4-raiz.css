@@ -1628,19 +1628,20 @@ img { max-width: 100%; }
   color: var(--color-text-muted);
 }
 
-/* Guias das modalidades — parágrafo discreto abaixo do catálogo */
+/* Guias das modalidades — parágrafo discreto abaixo do catálogo
+   (fica sobre o fundo escuro da seção: texto claro, links dourados) */
 .cat-guias {
   margin-top: 34px;
   text-align: center;
   font-size: 14.5px;
   line-height: 1.7;
-  color: var(--color-text-muted);
+  color: rgba(242, 238, 221, 0.72);
 }
 .cat-guias a {
-  color: var(--color-text-link);
+  color: var(--color-gold-light);
   font-weight: 500;
 }
-.cat-guias a:hover { color: var(--color-gold-deep); }
+.cat-guias a:hover { color: var(--color-gold-mist); }
 
 /* ============================================================
    RODAPÉ
