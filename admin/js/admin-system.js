@@ -914,11 +914,13 @@ function criarItemAgendamento(ag) {
       </div>
       <div class="doc-slot"></div>
       <div class="aud-slot"></div>
+      <div class="cab-slot"></div>
       <div class="adm-item-actions">${acoes}</div>
     </div>`;
 
   window._docMontarCard?.(item.querySelector('.doc-slot'), ag);
   window._audMontarCard?.(item.querySelector('.aud-slot'), ag);
+  window._cabalaMontarCard?.(item.querySelector('.cab-slot'), ag);
   return item;
 }
 
@@ -988,11 +990,14 @@ function criarItemGrupo(grupo) {
         <div class="adm-detail-item"><label>Método pag.</label><span>${_esc(ref.metodo_pagamento || '—')}</span></div>
         <div class="adm-detail-item"><label>Pago em</label><span>${ref.pago_em ? _esc(formatarDatetime(ref.pago_em)) : '—'}</span></div>
       </div>
+      <div class="cab-slot"></div>
       <div class="adm-item-actions">${montarAcoesGrupo(ags)}</div>
     </div>`;
 
   item.querySelectorAll('.doc-slot').forEach((slot, i) => window._docMontarCard?.(slot, ags[i]));
   item.querySelectorAll('.aud-slot').forEach((slot, i) => window._audMontarCard?.(slot, ags[i]));
+  // Cabala é do cliente (1 por pedido); aparece se alguma leitura for do Matheus
+  window._cabalaMontarCard?.(item.querySelector('.cab-slot'), ags.find(a => a.terapeuta === 'matheus'));
   return item;
 }
 

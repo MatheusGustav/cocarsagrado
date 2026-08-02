@@ -4478,3 +4478,75 @@ body.drawer-aberto { overflow: hidden; }
   .doc-modal { padding: 0; }
   .doc-modal-caixa { height: 100%; width: 100%; border-radius: 0; border: 0; }
 }
+
+/* ============================================================
+   Cabala de Odu (só leituras do Matheus — cabala-admin.js)
+   ============================================================ */
+.cabala-bloco { margin: 14px 0; }
+.cabala-dica {
+  font-weight: 400;
+  text-transform: none;
+  letter-spacing: normal;
+  font-size: .66rem;
+  opacity: .7;
+}
+.cabala-cruz {
+  display: block;
+  width: min(320px, 100%);
+  margin: 4px auto 0;
+}
+.cabala-cruz line {
+  stroke: var(--bd-gold);
+  stroke-width: 1.5;
+  stroke-linecap: round;
+}
+.cabala-cruz .cab-ponto { cursor: pointer; }
+.cabala-cruz .cab-hit { fill: transparent; }
+.cabala-cruz .cab-num {
+  fill: var(--accent);
+  font-size: 21px;
+  font-weight: 700;
+}
+.cabala-cruz .cab-rotulo {
+  fill: var(--text-muted);
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+}
+.cabala-cruz .cab-centro-circulo {
+  fill: var(--surface);
+  stroke: var(--bd-gold);
+  stroke-width: 1.5;
+}
+.cabala-cruz .cab-ponto:hover .cab-num,
+.cabala-cruz .cab-ponto.ativo .cab-num { fill: var(--secondary); }
+.cabala-cruz .cab-ponto.ativo .cab-rotulo { fill: var(--accent); }
+.cabala-resumo {
+  margin: 10px auto 0;
+  max-width: 480px;
+  padding: 10px 14px;
+  background: var(--bd-soft);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  font-size: .82rem;
+  line-height: 1.5;
+}
+.cabala-resumo-ponto {
+  font-size: .68rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .07em;
+  color: var(--text-muted);
+}
+.cabala-resumo-ponto span {
+  font-weight: 400;
+  text-transform: none;
+  letter-spacing: normal;
+}
+.cabala-resumo-odu {
+  margin: 4px 0 6px;
+  font-weight: 700;
+  color: var(--accent);
+}
+.cabala-resumo-odu em { font-weight: 400; }
+.cabala-resumo p { margin: 0; color: var(--text); }
