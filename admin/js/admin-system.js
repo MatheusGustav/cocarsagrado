@@ -785,6 +785,9 @@ function renderizarAgendamentos(lista, container) {
     }</div>`;
     return;
   }
+  // Card aberto pelo admin não pode fechar sozinho no próximo refresh:
+  // guarda quem estava aberto e reabre depois de recriar a lista.
+  const abertos = _capturarAbertos(container);
   container.innerHTML = '';
   const itens = _agruparPorPedido(lista);
   const porTerapeuta = _statusAtivo === 'pendente' || _statusAtivo === 'pago';
@@ -823,13 +826,32 @@ function renderizarAgendamentos(lista, container) {
         container.appendChild(subdivisor);
       }
     }
-    if (item.tipo === 'grupo') {
-      container.appendChild(criarItemGrupo(item));
-    } else {
-      container.appendChild(criarItemAgendamento(item.ag));
-    }
+    const el = item.tipo === 'grupo' ? criarItemGrupo(item) : criarItemAgendamento(item.ag);
+    _restaurarAberto(el, abertos);
+    container.appendChild(el);
   });
   window._audAposRender?.(); // selinhos "n áudios" nos cards (audios-admin.js)
+}
+
+function _chaveItem(el) {
+  return el.dataset.pedidoId ? `ped:${el.dataset.pedidoId}` : `ag:${el.dataset.id}`;
+}
+
+function _capturarAbertos(container) {
+  const abertos = new Set();
+  container.querySelectorAll('.adm-item').forEach(item => {
+    if (item.querySelector(':scope > .adm-item-details.open')) abertos.add(_chaveItem(item));
+  });
+  return abertos;
+}
+
+function _restaurarAberto(item, abertos) {
+  if (!abertos.size || !abertos.has(_chaveItem(item))) return;
+  const det = item.querySelector(':scope > .adm-item-details');
+  if (!det) return;
+  det.classList.add('open');
+  const seta = item.querySelector('.adm-chevron use');
+  if (seta) seta.setAttribute('href', '#ico-chevron-cima');
 }
 
 function _esc(str) {
