@@ -890,10 +890,12 @@ function criarItemAgendamento(ag) {
         ${ehAdicao ? `<div class="adm-detail-item"><label>Adição à leitura</label><span>#${_esc(ag.leitura_origem_id)}${ag.num_perguntas ? ` · +${_esc(ag.num_perguntas)} pergunta${ag.num_perguntas > 1 ? 's' : ''}` : ''}</span></div>` : ''}
         ${ag.cliente_observacoes ? `<div class="adm-detail-item" style="grid-column:1/-1"><label>Observações</label><span style="white-space:pre-wrap">${_esc(ag.cliente_observacoes)}</span></div>` : ''}
       </div>
+      <div class="doc-slot"></div>
       <div class="aud-slot"></div>
       <div class="adm-item-actions">${acoes}</div>
     </div>`;
 
+  window._docMontarCard?.(item.querySelector('.doc-slot'), ag);
   window._audMontarCard?.(item.querySelector('.aud-slot'), ag);
   return item;
 }
@@ -932,6 +934,7 @@ function criarItemGrupo(grupo) {
         ${badgeSt}
         <button class="ag-btn ag-btn-outline ag-btn-sm" onclick="abrirDocumento('${ag.id}')" title="Documento desta leitura — editar e Gerar PDF"><svg class="ico" aria-hidden="true"><use href="#ico-folha"></use></svg></button>
       </div>
+      <div class="doc-slot"></div>
       <div class="aud-slot"></div>
     </div>`;
   }).join('');
@@ -966,6 +969,7 @@ function criarItemGrupo(grupo) {
       <div class="adm-item-actions">${montarAcoesGrupo(ags)}</div>
     </div>`;
 
+  item.querySelectorAll('.doc-slot').forEach((slot, i) => window._docMontarCard?.(slot, ags[i]));
   item.querySelectorAll('.aud-slot').forEach((slot, i) => window._audMontarCard?.(slot, ags[i]));
   return item;
 }
@@ -1218,7 +1222,7 @@ window.addEventListener('message', async (ev) => {
   }
 
   responder(true);
-  _toastAdmin('Documento salvo — vai anexado no e-mail do áudio.', 'ok');
+  _toastAdmin('Documento salvo — já tem card na leitura (ver, compartilhar, apagar).', 'ok');
   carregarAgendamentos({ silencioso: true });
 });
 

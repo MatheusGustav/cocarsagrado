@@ -190,11 +190,11 @@ function _audBaixarArquivo(file) {
 }
 
 // Compartilhar (ou baixar, no fallback) um blob de áudio já pronto.
-// `doc` (opcional) = { blob, nome } do PDF do documento: quando o pedido
-// tem documento salvo, o PDF sai PRIMEIRO e o áudio num segundo toque.
-// Juntos no mesmo share não dá: o WhatsApp rejeita tipos misturados
+// Só o áudio: o documento tem card e botão de compartilhar próprios
+// (documento-admin.js), então o painel escolhe a ordem. Mandar os dois
+// no mesmo share nunca foi opção — o WhatsApp rejeita tipos misturados
 // (áudio + PDF) e acusa "não é possível enviar mensagem vazia".
-async function _audCompartilharBlob(blob, mime, nomeSugestao, doc) {
+async function _audCompartilharBlob(blob, mime, nomeSugestao) {
   let nome = prompt('Nome do arquivo para compartilhar:', nomeSugestao);
   if (nome === null) return; // cancelou o rename
 
@@ -213,26 +213,15 @@ async function _audCompartilharBlob(blob, mime, nomeSugestao, doc) {
   nome = _audSanitizarNomeArquivo(nome) + '.' + ext;
 
   const file = new File([blobFinal], nome, { type: mimeFinal });
-  const docFile = doc?.blob
-    ? new File([doc.blob], _audSanitizarNomeArquivo(doc.nome || 'Documento') + '.pdf', { type: 'application/pdf' })
-    : null;
 
   if (navigator.canShare?.({ files: [file] })) {
-    // Documento SEMPRE primeiro; o áudio vai num segundo toque (pill),
-    // porque o navegador só autoriza 1 share por toque.
-    const temDoc = !!(docFile && navigator.canShare({ files: [docFile] }));
-    const primeiro = temDoc ? [docFile] : [file];
-    const tituloPrimeiro = temDoc ? docFile.name : nome;
-    const depois = temDoc ? () => _audMostrarPillEnviar([file], nome) : null;
     try {
-      await navigator.share({ files: primeiro, title: tituloPrimeiro });
-      depois?.();
+      await navigator.share({ files: [file], title: nome });
     } catch (e) {
       if (e.name === 'NotAllowedError') {
         // Conversão longa consumiu o toque que autoriza o share —
         // oferece um botão que compartilha na hora com um toque novo
-        _audMostrarPillEnviar(primeiro, tituloPrimeiro,
-          { rotulo: temDoc ? 'Documento pronto' : undefined, depois });
+        _audMostrarPillEnviar([file], nome);
       } else if (e.name !== 'AbortError') {
         _toastAdmin('Erro ao compartilhar: ' + e.message, 'erro');
       }
@@ -240,15 +229,8 @@ async function _audCompartilharBlob(blob, mime, nomeSugestao, doc) {
     return;
   }
 
-  // Fallback (desktop/sem suporte a share de arquivos): baixa direto —
-  // os dois arquivos, quando houver documento (o navegador pode pedir
-  // permissão de "múltiplos downloads" uma vez)
-  if (docFile) {
-    _audBaixarArquivo(docFile);
-    setTimeout(() => _audBaixarArquivo(file), 400);
-  } else {
-    _audBaixarArquivo(file);
-  }
+  // Fallback (desktop/sem suporte a share de arquivos): baixa direto
+  _audBaixarArquivo(file);
 }
 
 // ============================================================
@@ -469,30 +451,6 @@ function _audEspiarEntrega(a, btn) {
   }, 6000);
 }
 
-// PDF do documento do pedido (bucket "documentos"), pro share levar
-// junto do áudio. Falha aqui não pode travar o share do áudio: avisa
-// e devolve null (o documento sempre dá pra mandar pelo botão dele).
-async function _audBuscarDocPdf(ag) {
-  if (!ag?.documento_pdf_path) return null;
-  try {
-    const { data: s, error } = await supabase.storage
-      .from('documentos')
-      .createSignedUrl(ag.documento_pdf_path, 3600);
-    if (error || !s?.signedUrl) throw new Error(error?.message || 'sem URL');
-    const resp = await fetch(s.signedUrl);
-    if (!resp.ok) throw new Error('HTTP ' + resp.status);
-    const [, mes, dia] = String(ag.data_agendamento || '').split('-');
-    return {
-      blob: await resp.blob(),
-      nome: `Documento - ${ag.cliente_nome || ''} - ${dia ? `${dia}-${mes}` : ''}`.replace(/\s+-\s*$/, '').trim(),
-    };
-  } catch (e) {
-    console.warn('documento não veio pro share:', e);
-    _toastAdmin('O documento não veio junto — compartilha só o áudio agora e o doc pelo botão Documento.', 'info');
-    return null;
-  }
-}
-
 // ============================================================
 // Item de áudio na lista do card: ouvir lazy + e-mail + share + apagar
 // ============================================================
@@ -554,7 +512,7 @@ function _audCriarItemAudio(a, ag) {
   });
 
   // Compartilhar: baixa o blob via signed URL antes de abrir o menu de
-  // share. Pedido com documento salvo leva o PDF junto no mesmo share.
+  // share. Só o áudio — o documento vai pelo card dele.
   item.querySelector('.aud-item-share').addEventListener('click', async ev => {
     const b = ev.currentTarget;
     const original = b.innerHTML;   // é só o ícone: textContent devolveria vazio
@@ -570,9 +528,8 @@ function _audCriarItemAudio(a, ag) {
       }
       const resp = await fetch(s.signedUrl);
       const blob = await resp.blob();
-      const doc = await _audBuscarDocPdf(ag); // null se não tiver (ou falhar — aí vai só o áudio)
       await _audCompartilharBlob(blob, a.mime || blob.type,
-        _audNomeSugerido(ag.cliente_nome, ag.tipos_leitura?.nome, ag.data_agendamento), doc);
+        _audNomeSugerido(ag.cliente_nome, ag.tipos_leitura?.nome, ag.data_agendamento));
     } catch (err) {
       _toastAdmin('Erro ao preparar o compartilhamento: ' + err.message, 'erro');
     } finally {
