@@ -64,9 +64,12 @@ Deno.serve(async (req) => {
       }, 409)
     }
 
+    // Tolerância de 1 centavo, a MESMA do webhook (que rejeita recebido <
+    // esperado-1). Com folga maior aqui, o link sairia até 5c abaixo do
+    // pedido, o cliente pagaria e o webhook travaria a confirmação.
     const totalItens = ipItems.reduce((s: number, i: { price: number }) => s + i.price, 0)
     const totalPedido = Math.round(Number(pedido.valor_total) * 100)
-    if (Math.abs(totalItens - totalPedido) > 5) {
+    if (Math.abs(totalItens - totalPedido) > 1) {
       return json({ error: 'valor dos itens não confere com o pedido' }, 400)
     }
 
@@ -94,15 +97,24 @@ Deno.serve(async (req) => {
       body: JSON.stringify(payload),
     })
 
-    const data = await res.json()
+    const data = await res.json().catch(() => null)
 
-    if (!res.ok) return json({ error: data }, 500)
+    // A resposta crua da InfinitePay fica no log da function, nunca no
+    // cliente: é endpoint aberto e o corpo pode carregar detalhe interno.
+    if (!res.ok) {
+      console.error('InfinitePay /links HTTP', res.status, JSON.stringify(data)?.slice(0, 500))
+      return json({ error: 'falha ao gerar link de pagamento' }, 500)
+    }
 
-    const url = data.url ?? data.link ?? data.checkout_url ?? data.payment_url
-    if (!url) return json({ error: 'URL não retornada pela InfinitePay', data }, 500)
+    const url = data?.url ?? data?.link ?? data?.checkout_url ?? data?.payment_url
+    if (!url) {
+      console.error('InfinitePay /links sem URL:', JSON.stringify(data)?.slice(0, 500))
+      return json({ error: 'falha ao gerar link de pagamento' }, 500)
+    }
 
     return json({ url })
   } catch (err) {
-    return json({ error: String(err) }, 500)
+    console.error('checkout exception:', err)
+    return json({ error: 'erro interno' }, 500)
   }
 })

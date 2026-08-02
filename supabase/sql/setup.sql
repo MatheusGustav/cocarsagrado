@@ -59,6 +59,21 @@ $$;
 
 REVOKE ALL ON FUNCTION public.update_updated_at_column() FROM PUBLIC, anon, authenticated;
 
+-- Gêmea antiga (migration 20260519000000) que segue plugada em triggers de
+-- disponibilidade_especial/override. search_path fixo (advisor).
+CREATE OR REPLACE FUNCTION public.set_updated_at()
+RETURNS trigger
+LANGUAGE plpgsql
+SET search_path = public
+AS $$
+BEGIN
+  NEW.updated_at = NOW();
+  RETURN NEW;
+END;
+$$;
+
+REVOKE ALL ON FUNCTION public.set_updated_at() FROM PUBLIC, anon, authenticated;
+
 -- ============================================================
 -- 1) TIPOS DE LEITURA (catálogo de serviços)
 -- ============================================================
@@ -854,6 +869,14 @@ BEGIN
       RAISE EXCEPTION 'pedido_invalido: terapeuta não confere com o catálogo';
     END IF;
 
+    -- Data no passado não agenda ('hoje' no fuso do atendimento, SP).
+    -- O front já barra, mas a RPC é pública — sem isto dava pra criar
+    -- pedido em data que nunca vai acontecer. Data NULL segue passando
+    -- (item sem agenda); complemento não passa por aqui (RPC própria).
+    IF (v_item->>'data')::date < (now() AT TIME ZONE 'America/Sao_Paulo')::date THEN
+      RAISE EXCEPTION 'pedido_invalido: a data escolhida já passou';
+    END IF;
+
     v_valor_original := COALESCE((v_item->>'valor_original')::numeric, -1);
     v_desconto       := COALESCE((v_item->>'desconto_aplicado')::numeric, 0);
     v_valor_final    := COALESCE((v_item->>'valor_final')::numeric, -1);
@@ -1063,6 +1086,10 @@ CREATE POLICY "anon_select_config" ON public.configuracoes
 CREATE POLICY "auth_admin_config" ON public.configuracoes
   FOR ALL TO authenticated USING (is_admin()) WITH CHECK (is_admin());
 
+-- Grant morto da era "dashboard sem auth" (20260514050516): a RLS já não
+-- deixa anon escrever, mas grant de escrita não fica pendurado à toa.
+REVOKE INSERT, UPDATE, DELETE ON public.configuracoes FROM anon;
+
 -- ============================================================
 -- 8b) CUPONS (desconto R$ fixo no total — comunidade do WhatsApp)
 -- ============================================================
@@ -1089,6 +1116,19 @@ DROP POLICY IF EXISTS "auth_admin_cupons" ON public.cupons;
 CREATE POLICY "auth_admin_cupons" ON public.cupons
   FOR ALL TO authenticated USING (is_admin()) WITH CHECK (is_admin());
 
+-- Tentativas FALHAS de cupom (rate limit da validar_cupom): anon não tem
+-- identidade, então o teto é global — 30 falhas/h e a RPC passa a responder
+-- "inválido" sem consultar, até a janela esvaziar. Chute de código vira
+-- inútil; quem digita o código certo não gera linha aqui. Autolimpeza 2h
+-- na própria função. criar_pedido revalida sempre, nada depende só disto.
+CREATE TABLE IF NOT EXISTS public.rate_limit_cupons (
+  id        BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  criado_em TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_rate_limit_cupons_criado
+  ON public.rate_limit_cupons (criado_em);
+ALTER TABLE public.rate_limit_cupons ENABLE ROW LEVEL SECURITY;
+
 -- validar_cupom: anon checa um código e recebe {valido, valor_desconto,
 -- precisa_login}. precisa_login = cupom pessoal digitado deslogado (dica
 -- de entrar na conta); dono errado recebe o "inválido" genérico.
@@ -1106,6 +1146,14 @@ DECLARE
 BEGIN
   v_cod := upper(trim(COALESCE(p_codigo, '')));
 
+  -- Teto global de falhas (ver rate_limit_cupons acima): estourou, responde
+  -- o "inválido" genérico sem nem consultar a tabela de cupons.
+  DELETE FROM public.rate_limit_cupons WHERE criado_em < now() - interval '2 hours';
+  IF (SELECT count(*) FROM public.rate_limit_cupons
+      WHERE criado_em > now() - interval '1 hour') >= 30 THEN
+    RETURN QUERY SELECT FALSE, 0::numeric, FALSE; RETURN;
+  END IF;
+
   SELECT c.valor_desconto, c.user_id, c.uso_unico
   INTO v_val, v_user, v_uso
   FROM public.cupons c
@@ -1114,6 +1162,7 @@ BEGIN
     AND (c.expira_em IS NULL OR c.expira_em > now());
 
   IF v_val IS NULL THEN
+    INSERT INTO public.rate_limit_cupons DEFAULT VALUES;
     RETURN QUERY SELECT FALSE, 0::numeric, FALSE; RETURN;
   END IF;
 
@@ -1843,3 +1892,136 @@ BEGIN
   );
 END
 $do$;
+
+-- ============================================================
+-- 15) ÁUDIOS DAS LEITURAS (gravados pela admin no painel)
+-- ------------------------------------------------------------
+-- Arquivo no bucket PRIVADO "audios"; a linha em audios_cliente
+-- vincula áudio → agendamento → conta (user_id NULL = guest; a
+-- adoção posterior acontece em reivindicar_pedidos). Entrega ao
+-- cliente por E-MAIL, disparo manual no painel (email_liberado_em);
+-- enviado_email_em marca o envio aceito pelo Resend.
+-- Estado consolidado de 20260708120000 + 20260719150000 + 20260720150000.
+-- ============================================================
+CREATE TABLE IF NOT EXISTS public.audios_cliente (
+  id                  BIGSERIAL PRIMARY KEY,
+  agendamento_id      BIGINT NOT NULL REFERENCES public.agendamentos(id) ON DELETE CASCADE,
+  user_id             UUID REFERENCES auth.users(id) ON DELETE SET NULL, -- NULL = guest
+  storage_path        TEXT NOT NULL UNIQUE,
+  duracao_segundos    INTEGER,
+  tamanho_bytes       BIGINT,
+  mime                TEXT NOT NULL DEFAULT 'audio/webm',
+  enviado_whatsapp_em TIMESTAMPTZ,  -- NULL = ainda não enviado (envio automático futuro)
+  enviado_email_em    TIMESTAMPTZ,  -- NULL = e-mail ainda não enviado
+  email_liberado_em   TIMESTAMPTZ,  -- admin apertou ✉️ (libera o envio manual)
+  criado_em           TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_audios_agendamento ON public.audios_cliente (agendamento_id);
+CREATE INDEX IF NOT EXISTS idx_audios_user ON public.audios_cliente (user_id) WHERE user_id IS NOT NULL;
+-- E-mail liberado e ainda não enviado (fila do envio manual)
+CREATE INDEX IF NOT EXISTS idx_audios_email_pendente ON public.audios_cliente (id)
+  WHERE enviado_email_em IS NULL AND email_liberado_em IS NOT NULL;
+
+-- user_id vem de agendamentos → pedidos, nunca do front
+CREATE OR REPLACE FUNCTION public.audio_seta_user_id()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+BEGIN
+  SELECT p.user_id INTO NEW.user_id
+  FROM public.agendamentos a
+  JOIN public.pedidos p ON p.id = a.pedido_id
+  WHERE a.id = NEW.agendamento_id;
+  RETURN NEW;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS trg_audio_user_id ON public.audios_cliente;
+CREATE TRIGGER trg_audio_user_id
+  BEFORE INSERT ON public.audios_cliente
+  FOR EACH ROW EXECUTE FUNCTION public.audio_seta_user_id();
+
+REVOKE ALL ON FUNCTION public.audio_seta_user_id() FROM PUBLIC, anon, authenticated;
+
+ALTER TABLE public.audios_cliente ENABLE ROW LEVEL SECURITY;
+REVOKE ALL ON public.audios_cliente FROM anon;
+
+DROP POLICY IF EXISTS "auth_admin_audios" ON public.audios_cliente;
+CREATE POLICY "auth_admin_audios" ON public.audios_cliente
+  FOR ALL TO authenticated
+  USING (is_admin()) WITH CHECK (is_admin());
+
+-- Cliente lê só o próprio (user_id NULL nunca casa com auth.uid())
+DROP POLICY IF EXISTS "audios_select_own" ON public.audios_cliente;
+CREATE POLICY "audios_select_own" ON public.audios_cliente
+  FOR SELECT TO authenticated
+  USING (user_id = auth.uid());
+
+-- Bucket privado "audios" + policies
+INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+VALUES ('audios', 'audios', false, 52428800,
+        ARRAY['audio/webm','audio/mp4','audio/mpeg','audio/ogg'])
+ON CONFLICT (id) DO UPDATE
+  SET public = false,
+      file_size_limit = 52428800,
+      allowed_mime_types = ARRAY['audio/webm','audio/mp4','audio/mpeg','audio/ogg'];
+
+DROP POLICY IF EXISTS "audios_insert_admin"          ON storage.objects;
+DROP POLICY IF EXISTS "audios_delete_admin"          ON storage.objects;
+DROP POLICY IF EXISTS "audios_select_dono_ou_admin"  ON storage.objects;
+
+CREATE POLICY "audios_insert_admin"
+  ON storage.objects FOR INSERT
+  TO authenticated
+  WITH CHECK (bucket_id = 'audios' AND public.is_admin());
+
+CREATE POLICY "audios_delete_admin"
+  ON storage.objects FOR DELETE
+  TO authenticated
+  USING (bucket_id = 'audios' AND public.is_admin());
+
+-- SELECT (também autoriza createSignedUrl): admin ou dono do áudio.
+-- Join por storage_path (índice UNIQUE) em vez de prefixo user_id/ no
+-- path: guest que virar conta depois passa a ver sem mover arquivo.
+CREATE POLICY "audios_select_dono_ou_admin"
+  ON storage.objects FOR SELECT
+  TO authenticated
+  USING (
+    bucket_id = 'audios' AND (
+      public.is_admin()
+      OR EXISTS (
+        SELECT 1 FROM public.audios_cliente ac
+        WHERE ac.storage_path = storage.objects.name
+          AND ac.user_id = auth.uid()
+      )
+    )
+  );
+
+-- Legado do drawer (front deletado 19/07; RPC fica como endpoint histórico)
+CREATE OR REPLACE FUNCTION public.meus_audios()
+RETURNS TABLE (
+  id               bigint,
+  agendamento_id   bigint,
+  storage_path     text,
+  duracao_segundos integer,
+  mime             text,
+  criado_em        timestamptz
+)
+LANGUAGE sql
+SECURITY DEFINER
+SET search_path = public
+STABLE
+AS $$
+  SELECT ac.id, ac.agendamento_id, ac.storage_path,
+         ac.duracao_segundos, ac.mime, ac.criado_em
+  FROM public.audios_cliente ac
+  WHERE ac.user_id = auth.uid()
+    AND auth.uid() IS NOT NULL
+  ORDER BY ac.criado_em;
+$$;
+
+REVOKE ALL ON FUNCTION public.meus_audios() FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.meus_audios() TO authenticated;

@@ -1,3 +1,18 @@
+# Segurança (tudo que sai do Pages). CSP montada do inventário real:
+# - script: self + supabase-js do jsdelivr; 'unsafe-inline' é obrigatório
+#   enquanto o site usa onclick= inline (ainda barra script de domínio alheio)
+# - style/font: Google Fonts; connect: Supabase REST/Functions + Realtime (wss)
+# - img/media: storage do Supabase + blob:/data: (gravador, previews)
+# - frame 'self': o painel abre documento-verde.html num iframe
+# - microphone=(self): gravador de áudios do painel
+/*
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://demxedudbislzausvhwx.supabase.co; media-src 'self' blob: https://demxedudbislzausvhwx.supabase.co; connect-src 'self' https://demxedudbislzausvhwx.supabase.co wss://demxedudbislzausvhwx.supabase.co; frame-src 'self'; frame-ancestors 'self'; base-uri 'self'; form-action 'self'; object-src 'none'
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: SAMEORIGIN
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: camera=(), microphone=(self), geolocation=(), payment=()
+  Strict-Transport-Security: max-age=31536000
+
 /*.html
   Cache-Control: no-cache, must-revalidate
 

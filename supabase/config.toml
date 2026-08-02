@@ -413,12 +413,6 @@ verify_jwt = false
 [functions.infinitypay-webhook]
 verify_jwt = false
 
-[functions.mp-create-payment]
-verify_jwt = false
-
-[functions.mp-webhook]
-verify_jwt = false
-
 # Chamada pelo pg_cron (sem JWT); o gate é o header x-cron-secret.
 [functions.emails-cron]
 verify_jwt = false

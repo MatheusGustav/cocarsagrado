@@ -1657,6 +1657,22 @@ function _escDesc(s) {
   return _escCat(s).replace(/&lt;br\s*\/?&gt;/gi, '<br>');
 }
 
+// Para valor dentro de onclick="fn('...')": escapa as DUAS camadas (string JS
+// entre aspas simples E atributo HTML). _escCat só trata HTML — o &#39; volta
+// a ser aspa quando o navegador executa o onclick, abrindo breakout da string.
+// A barra invertida vem primeiro, senão '\' no fim consome o \' escapado.
+function _escAtrJs(s) {
+  return String(s ?? '')
+    .replace(/\\/g, '\\\\')
+    .replace(/&/g, '&amp;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, "\\'")
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/\r/g, '')
+    .replace(/\n/g, ' ');
+}
+
 function _formatarPrecoCat(v) {
   const n = Number(v) || 0;
   return Number.isInteger(n)
@@ -1746,7 +1762,7 @@ function _catCardHTML(item) {
         </div>
         <div class="cat-footer">
           <div class="cat-footer-tiers">${tiers}</div>
-          <button class="cat-btn" onclick="abrirSeletor('grupo:${_escCat(item.grupo_slug)}')">Agendar</button>
+          <button class="cat-btn" onclick="abrirSeletor('grupo:${_escAtrJs(item.grupo_slug)}')">Agendar</button>
         </div>
       </article>
     `;
@@ -1756,7 +1772,7 @@ function _catCardHTML(item) {
   const slug    = t.slug || `id-${t.id}`;
   const img     = _catImg(t.imagem_url, t.nome);
   const desc    = t.descricao ? `<p class="cat-desc">${_escDesc(t.descricao)}</p>` : '';
-  const onclick = t.slug ? `abrirSeletor('${_escCat(slug)}')` : `abrirSeletor(${t.id})`;
+  const onclick = t.slug ? `abrirSeletor('${_escAtrJs(slug)}')` : `abrirSeletor(${Number(t.id)})`;
   const bucket  = Number(t.preco_original) <= 50 ? ' ate50' : '';
 
   return `

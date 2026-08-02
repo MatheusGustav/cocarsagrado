@@ -159,6 +159,10 @@ function _descCartaoServico(s) {
   const orig = _descPrecoOrig(s);
   const desc = s.descontoAtivo ? _descPrecoComDesc(s, s.percentualDesconto) : null;
   const id   = _descEsc(s.id);
+  // Dentro de onchange/oninput o valor vive numa string JS: precisa do
+  // escapeAttr (admin-system.js), que trata as duas camadas — _descEsc só
+  // trata HTML e deixaria &#39; voltar a ser aspa na hora de executar.
+  const idJs = escapeAttr(s.id);
 
   return `
     <div class="desc-card" data-id="${id}">
@@ -170,7 +174,7 @@ function _descCartaoServico(s) {
         <label class="desc-toggle-wrap">
           <input type="checkbox" class="desc-svc-chk" data-id="${id}"
             ${s.descontoAtivo ? 'checked' : ''}
-            onchange="desc_toggleServico('${id}', this.checked)">
+            onchange="desc_toggleServico('${idJs}', this.checked)">
           <span class="desc-toggle-track"><span class="desc-toggle-thumb"></span></span>
         </label>
       </div>
@@ -181,7 +185,7 @@ function _descCartaoServico(s) {
             <div class="desc-pct-row">
               <input type="number" class="desc-pct-input" min="1" max="99"
                 value="${s.percentualDesconto || ''}" placeholder="–"
-                data-id="${id}" oninput="desc_atualizarPreview('${id}')">
+                data-id="${id}" oninput="desc_atualizarPreview('${idJs}')">
               <span class="desc-pct-sym">%</span>
             </div>
           </div>

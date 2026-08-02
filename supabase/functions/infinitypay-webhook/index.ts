@@ -35,6 +35,15 @@ function esc(s: unknown) {
   return String(s ?? '').replace(/([_*`\[])/g, '\\$1')
 }
 
+// Exceção de fetch no Deno traz a URL inteira na mensagem — e a URL do
+// Telegram carrega o bot token. Tudo que vira log (console ou webhook_log)
+// passa por aqui antes.
+function semSegredo(s: unknown) {
+  let t = String(s ?? '')
+  if (TG_BOT) t = t.split(TG_BOT).join('***')
+  return t.replace(/\/bot\d+:[\w-]+/g, '/bot***')
+}
+
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
     status,
@@ -69,9 +78,9 @@ async function alertaTelegram(texto: string) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ chat_id: TG_CHAT, text: texto }),
     })
-    if (!tg.ok) console.error('Telegram alerta error:', tg.status, await tg.text())
+    if (!tg.ok) console.error('Telegram alerta error:', tg.status, semSegredo(await tg.text()))
   } catch (e) {
-    console.error('Telegram alerta exception:', e)
+    console.error('Telegram alerta exception:', semSegredo(e))
   }
 }
 
@@ -159,15 +168,15 @@ async function notificarTelegram(chave: string, captureMethod: string) {
       body: JSON.stringify({ chat_id: TG_CHAT, text: msg, parse_mode: 'Markdown' }),
     })
     if (!tg.ok) {
-      const detalhe = await tg.text()
+      const detalhe = semSegredo(await tg.text())
       console.error('Telegram error:', tg.status, detalhe)
       await log(chave, 'telegram_erro', `sendMessage HTTP ${tg.status}: ${detalhe.slice(0, 500)}`)
       // Fallback: reenvia sem Markdown (parse_mode é a causa comum de 400)
       await alertaTelegram(msg.replace(/\\([_*`\[])/g, '$1'))
     }
   } catch (e) {
-    console.error('Telegram exception:', e)
-    await log(chave, 'telegram_erro', String(e))
+    console.error('Telegram exception:', semSegredo(e))
+    await log(chave, 'telegram_erro', semSegredo(e))
   }
 }
 
@@ -351,7 +360,7 @@ Deno.serve(async (req) => {
 
     return json({ ok: true })
   } catch (err) {
-    await log(chave, 'erro', String(err))
-    return json({ error: String(err) }, 500)
+    await log(chave, 'erro', semSegredo(err))
+    return json({ error: 'internal error' }, 500)
   }
 })
