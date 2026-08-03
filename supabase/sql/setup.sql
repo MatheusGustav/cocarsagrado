@@ -2025,3 +2025,103 @@ $$;
 
 REVOKE ALL ON FUNCTION public.meus_audios() FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION public.meus_audios() TO authenticated;
+
+-- ============================================================
+-- TERMOS DE ACEITE POR LINK (cliente que agenda pelo zap)
+-- Painel gera /aceite?t=TOKEN; cliente toca "LI E ACEITO" e a RPC
+-- grava versão/data/IP/user-agent. anon não lê a tabela — só as
+-- 2 RPCs, ambas exigindo o token (o token é o segredo).
+-- ============================================================
+
+CREATE TABLE IF NOT EXISTS public.termos_aceites (
+  id                bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  token             text NOT NULL UNIQUE CHECK (length(token) BETWEEN 8 AND 64),
+  cliente_nome      text NOT NULL CHECK (length(trim(cliente_nome)) > 0),
+  cliente_whatsapp  text,          -- opcional: habilita o botão "Zap" no painel
+  termos_versao     text,          -- NULL = ainda não aceitou
+  aceito_em         timestamptz,   -- NULL = ainda não aceitou
+  aceite_ip         text,          -- prova extra, capturada no servidor
+  aceite_user_agent text,
+  criado_em         timestamptz NOT NULL DEFAULT now()
+);
+
+ALTER TABLE public.termos_aceites ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "auth_admin_termos_aceites" ON public.termos_aceites;
+CREATE POLICY "auth_admin_termos_aceites" ON public.termos_aceites
+  FOR ALL TO authenticated USING (is_admin()) WITH CHECK (is_admin());
+
+-- Lockdown explícito: cliente só via RPCs (token é o segredo).
+REVOKE ALL ON public.termos_aceites FROM anon;
+
+-- aceite_info: a página cumprimenta pelo nome e sabe se já aceitou.
+-- NULL = token inexistente.
+CREATE OR REPLACE FUNCTION public.aceite_info(p_token text)
+RETURNS jsonb
+LANGUAGE sql
+SECURITY DEFINER
+STABLE
+SET search_path = public
+AS $$
+  SELECT jsonb_build_object(
+           'nome',      ta.cliente_nome,
+           'aceito',    ta.aceito_em IS NOT NULL,
+           'aceito_em', ta.aceito_em
+         )
+  FROM public.termos_aceites ta
+  WHERE ta.token = trim(COALESCE(p_token, ''));
+$$;
+
+GRANT EXECUTE ON FUNCTION public.aceite_info(text) TO anon, authenticated;
+
+-- aceitar_termos_link: grava o aceite. Idempotente (toque duplo devolve
+-- o aceite original, sem sobrescrever). IP/UA vêm do request.headers.
+CREATE OR REPLACE FUNCTION public.aceitar_termos_link(p_token text, p_versao text)
+RETURNS jsonb
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_ta      public.termos_aceites%ROWTYPE;
+  v_headers jsonb;
+  v_ip      text;
+  v_ua      text;
+BEGIN
+  IF NULLIF(trim(COALESCE(p_versao, '')), '') IS NULL THEN
+    RAISE EXCEPTION 'aceite_invalido: versão dos termos ausente';
+  END IF;
+
+  SELECT * INTO v_ta
+  FROM public.termos_aceites
+  WHERE token = trim(COALESCE(p_token, ''))
+  FOR UPDATE;
+
+  IF NOT FOUND THEN
+    RETURN NULL;
+  END IF;
+
+  IF v_ta.aceito_em IS NOT NULL THEN
+    RETURN jsonb_build_object('ok', true, 'ja_aceito', true, 'aceito_em', v_ta.aceito_em);
+  END IF;
+
+  BEGIN
+    v_headers := NULLIF(current_setting('request.headers', true), '')::jsonb;
+    v_ip := NULLIF(trim(split_part(COALESCE(v_headers->>'x-forwarded-for', ''), ',', 1)), '');
+    v_ua := NULLIF(left(COALESCE(v_headers->>'user-agent', ''), 300), '');
+  EXCEPTION WHEN OTHERS THEN
+    v_ip := NULL; v_ua := NULL;
+  END;
+
+  UPDATE public.termos_aceites
+  SET termos_versao     = trim(p_versao),
+      aceito_em         = now(),
+      aceite_ip         = v_ip,
+      aceite_user_agent = v_ua
+  WHERE id = v_ta.id;
+
+  RETURN jsonb_build_object('ok', true, 'ja_aceito', false, 'aceito_em', now());
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION public.aceitar_termos_link(text, text) TO anon, authenticated;

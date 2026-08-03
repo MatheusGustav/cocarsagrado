@@ -32,6 +32,14 @@
 /data/*
   Cache-Control: no-cache, must-revalidate
 
+# Aceite dos termos por link (token no query string): página privada,
+# fora dos buscadores — nas duas formas de URL (limpa e .html)
+/aceite
+  X-Robots-Tag: noindex
+
+/aceite.html
+  X-Robots-Tag: noindex
+
 
 # Imagens mudam raramente — 7 dias (necessário com Browser Cache TTL
 # da zona em "Respect Existing Headers", senão ficariam sem cache)

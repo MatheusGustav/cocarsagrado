@@ -2,5 +2,6 @@ User-agent: *
 Allow: /
 Disallow: /admin/
 Disallow: /supabase/
+Disallow: /aceite
 
 Sitemap: https://cocarsagrado.com.br/sitemap.xml

@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Aceite dos Termos — Cocar Sagrado</title>
+  <!-- Página privada por token (link mandado no zap): fora dos buscadores -->
+  <meta name="robots" content="noindex, nofollow" />
+  <link rel="icon" type="image/webp" href="/images/favicon.webp?v=3" />
+  <link rel="apple-touch-icon" href="/images/apple-touch-icon.png" />
+  <meta name="theme-color" content="#142E20" />
+  <!-- Preview do link no WhatsApp: o cliente precisa reconhecer a marca -->
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="Cocar Sagrado — Confirme sua consulta" />
+  <meta property="og:description" content="Toque para ler e aceitar os Termos de Uso da sua consulta." />
+  <meta property="og:image" content="https://cocarsagrado.com.br/images/og-image.webp" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
+  <link rel="preconnect" href="https://demxedudbislzausvhwx.supabase.co" />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..700;1,9..144,300..700&family=Figtree:ital,wght@0,300..700;1,300..700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/v4-raiz.css">
+  <link rel="stylesheet" href="css/termos.css">
+  <link rel="stylesheet" href="css/aceite.css">
+</head>
+<body class="aceite-pagina">
+
+  <main class="aceite-wrap">
+
+    <header class="aceite-marca">
+      <img src="images/logo-icone.webp" alt="" class="aceite-logo" width="44" height="44">
+      <span class="aceite-marca-nome">Cocar Sagrado</span>
+    </header>
+
+    <!-- ESTADO: carregando -->
+    <div id="aceite-carregando" class="aceite-estado">
+      <div class="aceite-spinner" aria-hidden="true"></div>
+      <p class="aceite-texto-grande">Um instante…</p>
+    </div>
+
+    <!-- ESTADO: link inválido -->
+    <div id="aceite-invalido" class="aceite-estado" hidden>
+      <div class="aceite-emoji" aria-hidden="true">🤔</div>
+      <h1 class="aceite-titulo">Esse link não funcionou</h1>
+      <p class="aceite-texto-grande">Volte na conversa do <strong>WhatsApp</strong> e peça um link novo, tá bom?</p>
+    </div>
+
+    <!-- ESTADO: formulário de aceite -->
+    <div id="aceite-form" hidden>
+      <h1 class="aceite-titulo">Olá, <span id="aceite-nome">…</span>! 🙏</h1>
+      <p class="aceite-texto-grande">
+        Para confirmar sua consulta, falta só <strong>1 passo</strong>:<br>
+        toque no <strong class="aceite-destaque-verde">botão verde</strong> aí embaixo.
+      </p>
+
+      <section class="aceite-termos-card">
+        <div class="aceite-termos-topo">
+          <h2 class="aceite-termos-titulo">O combinado da consulta</h2>
+          <button type="button" id="aceite-ouvir" class="aceite-btn-ouvir" hidden>
+            <span id="aceite-ouvir-txt">🔊 Ouvir</span>
+          </button>
+        </div>
+        <div class="termos-modal-corpo aceite-termos-corpo" id="aceite-termos-corpo">
+          <p>Carregando o texto…</p>
+        </div>
+      </section>
+
+      <div class="aceite-rodape">
+        <button type="button" id="aceite-btn" class="aceite-btn-aceitar" disabled>
+          <svg class="aceite-btn-check" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6L9 17l-5-5" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <span id="aceite-btn-txt">LI E ACEITO</span>
+        </button>
+        <p class="aceite-rodape-nota" id="aceite-rodape-nota">É só tocar uma vez 😉</p>
+      </div>
+    </div>
+
+    <!-- ESTADO: sucesso -->
+    <div id="aceite-sucesso" class="aceite-estado" hidden>
+      <div class="aceite-check-circulo" aria-hidden="true">
+        <svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+      <h1 class="aceite-titulo">Tudo certo, <span id="aceite-sucesso-nome">…</span>! 💚</h1>
+      <p class="aceite-texto-grande" id="aceite-sucesso-msg">Seu aceite foi registrado.</p>
+      <p class="aceite-texto-grande"><strong>Pode fechar esta página</strong> e voltar para o WhatsApp.</p>
+    </div>
+
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js" crossorigin="anonymous"></script>
+  <script src="js/supabase-config.js"></script>
+  <script src="js/aceite.js"></script>
+</body>
+</html>
