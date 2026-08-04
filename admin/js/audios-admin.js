@@ -194,9 +194,11 @@ function _audBaixarArquivo(file) {
 // (documento-admin.js), então o painel escolhe a ordem. Mandar os dois
 // no mesmo share nunca foi opção — o WhatsApp rejeita tipos misturados
 // (áudio + PDF) e acusa "não é possível enviar mensagem vazia".
-async function _audCompartilharBlob(blob, mime, nomeSugestao) {
-  let nome = prompt('Nome do arquivo para compartilhar:', nomeSugestao);
-  if (nome === null) return; // cancelou o rename
+// O nome do arquivo nunca aparece pro cliente (mp3 vai como áudio no
+// WhatsApp, não como documento), então não perguntamos nada: usa o nome
+// sugerido direto.
+async function _audCompartilharBlob(blob, mime, nomeArquivo) {
+  let nome = nomeArquivo;
 
   let blobFinal = blob, mimeFinal = mime, ext = _audExtDoMime(mime);
   if (mime !== 'audio/mpeg') {
