@@ -482,7 +482,9 @@ async function carregarAgendamentos(opts = {}) {
   _lancamentosStats  = lancs || [];
   calcularEstatisticas(_agendamentosTodos);
   _atualizarContadoresPills(_agendamentosTodos);
-  _renderizarListaFiltrada();
+  // silencioso = refresh automático/realtime; o resto veio de um toque do
+  // admin e merece explicação se a lista estiver travada pelo áudio
+  _renderizarListaFiltrada({ interativo: !opts.silencioso });
   _renderizarSemanaStrip();
   _atualizarCarregarMais();
 
@@ -510,9 +512,9 @@ function _filtrarLocal() {
   return lista;
 }
 
-function _renderizarListaFiltrada() {
+function _renderizarListaFiltrada(opts = {}) {
   const lista = document.getElementById('lista-agendamentos');
-  if (lista) renderizarAgendamentos(_filtrarLocal(), lista);
+  if (lista) renderizarAgendamentos(_filtrarLocal(), lista, opts);
 }
 
 function filtrarPorPill(status) {
@@ -520,7 +522,7 @@ function filtrarPorPill(status) {
   document.querySelectorAll('.adm-pill').forEach(p => {
     p.classList.toggle('active', p.dataset.status === status);
   });
-  _renderizarListaFiltrada();
+  _renderizarListaFiltrada({ interativo: true });
 }
 
 function limparFiltros() {
@@ -765,12 +767,21 @@ function _agruparPorPedido(lista) {
   return resultado;
 }
 
-function renderizarAgendamentos(lista, container) {
-  // Gravação de áudio em andamento (ou prévia não salva) dentro de um
-  // card: re-renderizar derrubaria o gravador no meio da leitura. A lista
-  // fica como está; o próximo refresh (realtime/auto) atualiza depois.
-  if (window._audOcupado?.()) {
-    console.info('[agenda] re-render adiado: gravação de áudio em andamento');
+function renderizarAgendamentos(lista, container, opts = {}) {
+  // Gravação de áudio em andamento (ou prévia não salva) dentro de um card:
+  // re-renderizar derrubaria o gravador no meio da leitura. Áudio já salvo
+  // tocando também segura — o card é recriado e o player morre no meio da
+  // escuta. A lista fica como está; o próximo refresh atualiza depois.
+  const gravando = !!window._audOcupado?.();
+  if (gravando || window._audTocando?.()) {
+    console.info('[agenda] re-render adiado: áudio em uso');
+    // Só avisa quando o pedido veio de um toque do admin (busca, filtro,
+    // botão): no refresh automático viraria chuva de avisos.
+    if (opts.interativo) {
+      _toastAdmin(gravando
+        ? 'Lista pausada: tem gravação ou prévia aberta. Salve ou descarte pra atualizar.'
+        : 'Lista pausada enquanto o áudio toca. Pause o áudio pra atualizar.', 'info');
+    }
     return;
   }
   if (!lista.length) {
@@ -1098,12 +1109,33 @@ async function _devolverVagaEspecialSeAplicavel(ag) {
   });
 }
 
+// Áudios que morrem junto com a leitura: devolve a lista e o texto do aviso.
+// Leitura cancelada não mostra mais o bloco de áudios (só pago/confirmado/
+// atendido mostram), então gravação deixada pra trás é gravação perdida —
+// vai junto, mas o admin lê antes quantas são.
+async function _audiosQueVaoJunto(id) {
+  const audios = await window._audListarDaLeitura?.(id);
+  if (audios === null) { // consulta falhou: não dá pra prometer que some junto
+    return { audios: [], aviso: '\n\nNão deu pra conferir se esta leitura tem áudios gravados — se tiver, eles NÃO serão apagados junto.' };
+  }
+  const lista = audios || [];
+  return {
+    audios: lista,
+    aviso: lista.length ? `\n\nATENÇÃO: ${lista.length} áudio(s) gravado(s) desta leitura serão APAGADOS junto.` : '',
+  };
+}
+
 async function cancelarAgendamento(id) {
   if (!_admAutenticado) { _mostrarLogin(); return; }
-  if (!confirm('Cancelar este agendamento? Esta ação não pode ser desfeita.')) return;
+  const { audios, aviso } = await _audiosQueVaoJunto(id);
+  if (!confirm('Cancelar este agendamento? Esta ação não pode ser desfeita.' + aviso)) return;
   const ag = _agendamentosTodos.find(a => String(a.id) === String(id));
   const { error } = await supabase.from('agendamentos').update({ status: 'cancelado' }).eq('id', id);
   if (error) { _toastAdmin('Erro: ' + error.message, 'erro'); return; }
+  if (audios.length) {
+    const { erro } = await window._audApagarDaLeitura(id, audios);
+    if (erro) _toastAdmin('Leitura cancelada, mas os áudios não foram apagados: ' + erro, 'erro');
+  }
   await _devolverVagaEspecialSeAplicavel(ag);
   _toastAdmin('Agendamento cancelado.', 'ok');
   carregarAgendamentos();
@@ -1143,10 +1175,15 @@ async function marcarGrupoComoAtendido(ids) {
 
 async function apagarAgendamento(id) {
   if (!_admAutenticado) { _mostrarLogin(); return; }
-  if (!confirm('Apagar este agendamento permanentemente? Esta ação não pode ser desfeita.')) return;
+  // As linhas de áudio somem por CASCADE junto com a leitura, mas os
+  // ARQUIVOS ficariam órfãos no bucket — some com eles na mão.
+  const { audios, aviso } = await _audiosQueVaoJunto(id);
+  if (!confirm('Apagar este agendamento permanentemente? Esta ação não pode ser desfeita.' + aviso)) return;
   const ag = _agendamentosTodos.find(a => String(a.id) === String(id));
   const { error } = await supabase.from('agendamentos').delete().eq('id', id);
   if (error) { _toastAdmin('Erro: ' + error.message, 'erro'); return; }
+  // Depois do delete: as linhas já morreram no CASCADE, isto varre os arquivos
+  if (audios.length) await window._audApagarDaLeitura(id, audios);
   await _devolverVagaEspecialSeAplicavel(ag);
   _toastAdmin('Agendamento apagado.', 'ok');
   carregarAgendamentos();
@@ -1417,7 +1454,7 @@ document.addEventListener('DOMContentLoaded', () => {
     clearTimeout(_buscaDebounce);
     _buscaDebounce = setTimeout(() => {
       _buscaTexto = e.target.value.trim();
-      _renderizarListaFiltrada();
+      _renderizarListaFiltrada({ interativo: true });
     }, 200);
   });
   document.getElementById('btn-carregar-antigos')?.addEventListener('click', () => {

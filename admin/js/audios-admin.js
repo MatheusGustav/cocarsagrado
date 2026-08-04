@@ -245,6 +245,14 @@ function _audOcupado() {
   return !!(_audRecorder && _audRecorder.state !== 'inactive') || !!_audBlob;
 }
 
+// Áudio JÁ SALVO tocando na lista de um card: re-renderizar mata o
+// <audio> no meio da escuta (o card inteiro é recriado) e volta o botão
+// "Ouvir". Sem estado global: quem sabe se está tocando é o player.
+function _audTocando() {
+  return [...document.querySelectorAll('.aud-item-acoes audio')]
+    .some(a => !a.paused && !a.ended);
+}
+
 // Monta o bloco de áudios num slot do card. `ag` precisa de:
 // id, cliente_nome, data_agendamento, status, tipos_leitura(nome).
 function _audMontarCard(slot, ag) {
@@ -281,7 +289,11 @@ function _audMontarCard(slot, ag) {
     _audCardCarregarLista(slot, ag);
   };
   header?.addEventListener('click', () => setTimeout(carregar));
-  carregar();
+  // No fim da fila, não agora: o card é montado ANTES de a agenda reabrir
+  // quem estava aberto (_restaurarAberto). Checar "aberto" neste instante
+  // dava sempre fechado, e o card reaberto ficava com a lista vazia —
+  // o áudio recém-salvo sumia no primeiro refresh e só voltava com F5.
+  setTimeout(carregar);
 }
 
 // Depois de renderizar a lista da agenda: busca as contagens (com TTL,
@@ -289,12 +301,26 @@ function _audMontarCard(slot, ag) {
 // selinhos "n áudios" nos cards e nos blocos.
 async function _audAposRender() {
   if (Date.now() - _audContagemEm > 15000) {
-    const { data, error } = await supabase.from('audios_cliente').select('agendamento_id');
-    if (!error) {
-      _audContagem = {};
+    // Paginado: a resposta do PostgREST tem teto (1000 linhas por padrão) e
+    // sem isso o selinho começaria a mentir quando o acervo passasse dele.
+    // Anda pelo tanto que VOLTOU (não pelo tanto que pedi): se o servidor
+    // devolver páginas menores, a conta continua fechando.
+    const PAGINA = 1000;
+    const contagem = {};
+    let de = 0, completo = false;
+    while (de < 200000) {
+      const { data, error } = await supabase.from('audios_cliente')
+        .select('agendamento_id').range(de, de + PAGINA - 1);
+      if (error) { console.warn('_audAposRender:', error); break; }
       (data || []).forEach(r => {
-        _audContagem[r.agendamento_id] = (_audContagem[r.agendamento_id] || 0) + 1;
+        contagem[r.agendamento_id] = (contagem[r.agendamento_id] || 0) + 1;
       });
+      if (!data?.length) { completo = true; break; }
+      de += data.length;
+    }
+    // Contagem parcial não vira verdade: erro no meio mantém a anterior
+    if (completo) {
+      _audContagem = contagem;
       _audContagemEm = Date.now();
     }
   }
@@ -629,6 +655,7 @@ function _audRenderPrevia(ag) {
 
   _audBloco.querySelector('.aud-btn-salvar').addEventListener('click', () => _audSalvar(ag));
   _audBloco.querySelector('.aud-btn-regravar').addEventListener('click', () => {
+    if (_audSalvando) return;
     const gravador = _audBloco;
     _audLimparEstado();
     _audComecarGravacao(gravador, ag);
@@ -791,7 +818,10 @@ function _audLimparEstado() {
 }
 
 // Descarta a gravação/prévia atual e devolve o card dono pro estado pronto.
+// Nunca no meio do "Salvando…": puxar o estado debaixo do upload fazia o
+// áudio entrar no banco e não aparecer na lista.
 function _audDescartarGravacao() {
+  if (_audSalvando) return;
   try { if (_audRecorder && _audRecorder.state !== 'inactive') { _audRecorder.onstop = null; _audRecorder.stop(); } } catch (_) {}
   const gravador = _audBloco, ag = _audAgDono;
   _audLimparEstado();
@@ -801,6 +831,12 @@ function _audDescartarGravacao() {
 }
 
 async function _audComecarGravacao(gravador, ag) {
+  // Salvando: o "descartar e gravar aqui" abaixo arrancaria o estado no meio
+  // do upload (áudio salvo que não aparece na lista). Espera terminar.
+  if (_audSalvando) {
+    _toastAdmin('Espera o áudio terminar de salvar pra começar outro.', 'aviso');
+    return;
+  }
   // Um gravador por vez no painel: gravação/prévia viva em outro card
   // precisa ser descartada com consentimento antes de começar aqui.
   if (_audOcupado()) {
@@ -959,7 +995,15 @@ async function _audSalvar(ag) {
   if (!ag || !_audBlob || _audSalvando) return;
   _audSalvando = true;
 
-  const btn = _audBloco?.querySelector('.aud-btn-salvar');
+  // Palco e blob DESTA salvada, guardados antes dos await: o upload demora
+  // e o estado global pode trocar de dono no meio. Com eles na mão, o item
+  // cai na lista certa mesmo se algo mexer no gravador enquanto sobe.
+  const blobDaVez = _audBlob;
+  const gravador  = _audBloco;
+  const slot      = gravador?.closest('.aud-slot');
+
+  _audPreviaBotoes(false);
+  const btn = gravador?.querySelector('.aud-btn-salvar');
   if (btn) { btn.disabled = true; btn.innerHTML = '<svg class="ico" aria-hidden="true"><use href="#ico-ampulheta"></use></svg> Salvando…'; }
 
   // Sobe o mp3, não a gravação bruta: o arquivo salvo já serve pra e-mail
@@ -1005,13 +1049,15 @@ async function _audSalvar(ag) {
   }
 
   _audSalvando = false;
-  const gravador = _audBloco;
-  _audLimparEstado();
-  _audBloco = null;
-  _audAgDono = null;
+  // Só desmonta o estado global se ele ainda for desta gravação — senão
+  // estaríamos matando o que outro dono começou enquanto isto subia.
+  if (_audBlob === blobDaVez) {
+    _audLimparEstado();
+    _audBloco = null;
+    _audAgDono = null;
+  }
 
   // O áudio novo entra na lista do card na hora, com o envelope pronto
-  const slot = gravador?.closest('.aud-slot');
   if (slot) {
     _audCardAcrescentarItem(slot, ag, {
       id: novo.id,
@@ -1026,15 +1072,26 @@ async function _audSalvar(ag) {
       quicou_em: null,
     });
   }
-  if (gravador?.isConnected) _audRenderPronto(gravador, ag);
+  // Palco de volta ao "Gravar áudio" — a não ser que ele já esteja servindo
+  // a uma gravação nova (aí redesenhar apagaria ela)
+  if (gravador?.isConnected && !_audOcupado()) _audRenderPronto(gravador, ag);
   _audContagem[ag.id] = (_audContagem[ag.id] || 0) + 1;
   _audContPintarTudo();
   _toastAdmin('Áudio salvo — o envelope envia pro e-mail quando você quiser.', 'ok');
 }
 
+// Regravar/Descartar fora do ar enquanto o arquivo sobe: tocar neles no meio
+// do "Salvando…" arrancava o palco (o áudio salvava e sumia da lista) e, no
+// caso do Regravar, ainda matava a gravação que acabara de começar.
+function _audPreviaBotoes(ativo) {
+  _audBloco?.querySelectorAll('.aud-btn-regravar, .aud-btn-descartar')
+    .forEach(b => { b.disabled = !ativo; });
+}
+
 function _audSalvarFalhou(msg) {
   _audSalvando = false;
   if (msg) _toastAdmin(msg, 'erro');
+  _audPreviaBotoes(true);
   const btn = _audBloco?.querySelector('.aud-btn-salvar');
   if (btn) {
     btn.disabled = false;
@@ -1042,6 +1099,44 @@ function _audSalvarFalhou(msg) {
   }
 }
 
+// ============================================================
+// Áudio morre junto com a leitura. O bloco só aparece em pago/
+// confirmado/atendido — leitura cancelada esconderia gravações que
+// ninguém mais alcança (nem ouvir, nem reenviar, nem apagar), e leitura
+// apagada leva as linhas por CASCADE deixando os arquivos órfãos no
+// bucket. Quem cancela/apaga no painel chama estas duas.
+// ============================================================
+
+// Lista o que existe (id + caminho), pro aviso do confirm sair com número.
+// null = não deu pra consultar (o chamador decide se segue mesmo assim).
+async function _audListarDaLeitura(agId) {
+  const { data, error } = await supabase.from('audios_cliente')
+    .select('id, storage_path').eq('agendamento_id', agId);
+  if (error) { console.warn('_audListarDaLeitura:', error); return null; }
+  return data || [];
+}
+
+// Apaga linhas + arquivos. Tolera as linhas já terem morrido por CASCADE
+// (a leitura apagada antes) — nesse caso só varre os arquivos.
+async function _audApagarDaLeitura(agId, jaListados) {
+  const linhas = jaListados || await _audListarDaLeitura(agId) || [];
+  if (!linhas.length) return { apagados: 0, erro: null };
+
+  const { error } = await supabase.from('audios_cliente').delete().eq('agendamento_id', agId);
+  if (error) return { apagados: 0, erro: error.message };
+
+  const paths = linhas.map(l => l.storage_path).filter(Boolean);
+  if (paths.length) {
+    const { error: eSt } = await supabase.storage.from('audios').remove(paths);
+    if (eSt) console.warn('arquivos órfãos no bucket audios:', paths, eSt);
+  }
+  delete _audContagem[agId]; // selinho some junto, sem esperar o TTL
+  return { apagados: linhas.length, erro: null };
+}
+
 window._audMontarCard = _audMontarCard;
 window._audAposRender = _audAposRender;
 window._audOcupado = _audOcupado;
+window._audTocando = _audTocando;
+window._audListarDaLeitura = _audListarDaLeitura;
+window._audApagarDaLeitura = _audApagarDaLeitura;
