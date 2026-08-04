@@ -3917,16 +3917,6 @@ body.drawer-aberto { overflow: hidden; }
 /* Sentinela acusando (mic mudo/sem som): a barrinha vira alerta */
 .aud-min--alerta .aud-nivel-fill { background: var(--t-danger); }
 
-.aud-mic-select {
-  padding: 6px 10px;
-  border-radius: 999px;
-  border: 1px solid #2A4A38;
-  background: #10251A;
-  color: #E1E7D6;
-  font-size: .76rem;
-  max-width: 220px;
-}
-
 /* ---- prévia (player nativo + salvar/regravar/descartar) ---- */
 .aud-previa { display: flex; flex-direction: column; gap: 10px; max-width: 460px; }
 .aud-previa audio { width: 100%; height: 40px; color-scheme: dark; }
@@ -3937,7 +3927,7 @@ body.drawer-aberto { overflow: hidden; }
 
 /* Faixa de mudez na prévia: a conversão mediu o arquivo inteiro e não
    achou som — precisa ser impossível de ignorar antes de salvar/enviar */
-.aud-aviso-mudo {
+.aud-aviso-nivel {
   display: flex;
   align-items: flex-start;
   gap: 10px;
@@ -3949,7 +3939,20 @@ body.drawer-aberto { overflow: hidden; }
   font-size: .88rem;
   line-height: 1.45;
 }
-.aud-aviso-mudo .ico { flex-shrink: 0; margin-top: 2px; }
+.aud-aviso-nivel .ico { flex-shrink: 0; margin-top: 2px; }
+
+/* Qual microfone o sistema entregou — discreto, mas sempre visível enquanto
+   grava. É o que denuncia na hora que o wireless não entrou na roda. */
+.aud-mic-nome {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 6px;
+  color: var(--t-gray);
+  font-size: .74rem;
+  letter-spacing: .01em;
+}
+.aud-mic-nome .ico { width: 13px; height: 13px; flex-shrink: 0; opacity: .8; }
 
 /* Pill "toque pra enviar": aparece quando a conversão pra mp3 demorou
    e o navegador bloqueou o share — um toque novo abre o menu na hora */

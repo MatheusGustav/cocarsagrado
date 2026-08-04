@@ -34,8 +34,10 @@ let _audAudioCtx     = null; // Web Audio só pra medir a amplitude da voz
 let _audAnalyser     = null;
 let _audAmostra      = null; // buffer reutilizado do analyser
 let _audSilencioDesde = 0;   // último instante em que o mic entregou som de verdade
-let _audAvisoVivo     = null; // aviso ativo: 'silencio' | 'mute' | 'ended'
-let _audMicDevices    = [];  // audioinputs enumerados
+let _audAvisoVivo     = null; // aviso ativo: 'silencio' | 'mute' | 'ended' | 'baixo'
+let _audMicNome       = '';  // rótulo do mic que o sistema entregou (mostrado na tela)
+let _audPicoMax       = 0;   // maior amplitude crua vista na gravação em curso
+let _audMsComVoz      = 0;   // tempo (ms) acumulado com som acima do limiar de voz
 let _audWakeLock      = null;
 let _audBeforeUnloadOn = false;
 let _audSalvando      = false; // trava anti duplo-clique no salvar
@@ -50,6 +52,27 @@ const _AUD_TICK = 50; // resolução (ms) do relógio de duração da gravação
 const _AUD_LIMIAR_VIVO = 0.01;  // amplitude ao vivo abaixo disso = mic morto
 const _AUD_SILENCIO_MS = 6000;  // quanto silêncio digital contínuo até acusar
 const _AUD_PICO_MUDO   = 0.02;  // pico do arquivo inteiro abaixo disso = inaudível
+
+// Sentinela de volume fraco — o degrau acima da mudez. Uma leitura inteira já
+// saiu com pico 0,080 (mic do iPhone em vez do wireless): 27 dB abaixo de uma
+// gravação boa, audível o bastante pra passar por _AUD_PICO_MUDO e baixa
+// demais pro cliente. Voz saudável crava picos de 0,5 pra cima; 0,15 fica com
+// folga dos dois lados. Só julga depois de ouvir voz de verdade por um tempo,
+// senão acusaria o silêncio de quem ainda está embaralhando as cartas.
+// O limiar de voz precisa ficar RENTE ao chão: numa gravação fraca a voz
+// inteira mora abaixo de qualquer limiar "razoável" e o alarme nunca julgaria
+// (medido: com 0.02 a leitura ruim acumulava 3s de "voz" em 234s e passava
+// batido). O analyser entrega 8 bits, então um degrau vale 1/128 ≈ 0.0078 —
+// 0.005 significa na prática "o analyser viu pelo menos um degrau".
+const _AUD_PICO_BAIXO   = 0.15;   // pico máximo da gravação abaixo disso = fraca
+const _AUD_VOZ_LIMIAR   = 0.005;  // amplitude crua que já conta como "tem som"
+const _AUD_VOZ_MS_JUIZO = 8000;   // quanto tempo de som até dar o veredito
+
+// Resquício do seletor de microfone que existiu até 04/08/2026: a escolha
+// ficava gravada aqui e o painel obedecia pra sempre — inclusive com o
+// wireless plugado. Agora quem escolhe é o sistema, então some com a chave
+// nos aparelhos que já rodaram a versão antiga.
+try { localStorage.removeItem('aud_mic_device_id'); } catch (_) {}
 
 const _AUD_STATUS_COM_AUDIO = ['pago', 'confirmado', 'atendido'];
 
@@ -600,13 +623,9 @@ function _audRenderPronto(gravador, ag) {
   gravador.innerHTML = `
     <div class="aud-min">
       <button type="button" class="ag-btn ag-btn-outline ag-btn-sm aud-btn-rec"><span class="aud-rec-dot"></span> Gravar áudio</button>
-      <select class="aud-mic-select" hidden></select>
     </div>
     <div class="aud-erro"></div>`;
   gravador.querySelector('.aud-btn-rec').addEventListener('click', () => _audComecarGravacao(gravador, ag));
-  const sel = gravador.querySelector('.aud-mic-select');
-  sel.addEventListener('change', () => localStorage.setItem('aud_mic_device_id', sel.value));
-  _audAtualizarListaMics(sel); // best-effort; labels só vêm depois da 1ª permissão
 }
 
 function _audRenderGravando(ag) {
@@ -618,6 +637,7 @@ function _audRenderGravando(ag) {
       <span class="aud-nivel"><span class="aud-nivel-fill"></span></span>
       <button type="button" class="ag-btn ag-btn-outline ag-btn-sm aud-btn-parar"><b>■</b> Parar</button>
     </div>
+    ${_audMicNomeHtml()}
     <div class="aud-erro"></div>`;
   _audBloco.querySelector('.aud-btn-parar').addEventListener('click', _audPararGravacao);
 }
@@ -635,6 +655,7 @@ function _audRenderPrevia(ag) {
         <button type="button" class="ag-btn ag-btn-outline ag-btn-sm aud-btn-regravar"><svg class="ico" aria-hidden="true"><use href="#ico-atualizar"></use></svg> Regravar</button>
         <button type="button" class="ag-btn ag-btn-outline ag-btn-sm aud-btn-descartar" style="color:var(--t-danger)"><svg class="ico" aria-hidden="true"><use href="#ico-fechar"></use></svg> Descartar</button>
       </div>
+      ${_audMicNomeHtml()}
     </div>
     <div class="aud-erro"></div>`;
 
@@ -662,17 +683,38 @@ function _audRenderPrevia(ag) {
   });
   _audBloco.querySelector('.aud-btn-descartar').addEventListener('click', () => _audDescartarGravacao());
 
-  if (_audPareceMudo(_audBlob)) _audAvisarPreviaMuda();
+  _audJulgarPrevia(_audBlob);
 }
 
-// Faixa vermelha na prévia: a conversão mediu o arquivo inteiro e não achou som
-function _audAvisarPreviaMuda() {
+// Linha discreta com o mic que o sistema escolheu — some quando o navegador
+// não expõe rótulo (acontece antes da 1ª permissão em alguns navegadores)
+function _audMicNomeHtml() {
+  if (!_audMicNome) return '';
+  return `<div class="aud-mic-nome"><svg class="ico" aria-hidden="true"><use href="#ico-microfone"></use></svg> ${_audEsc(_audMicNome)}</div>`;
+}
+
+// Faixa vermelha na prévia: a conversão mediu o arquivo inteiro e deu veredito
+function _audAvisarPrevia(html) {
   const previa = _audBloco?.querySelector('.aud-previa');
-  if (!previa || _audBloco.querySelector('.aud-aviso-mudo')) return;
+  if (!previa || _audBloco.querySelector('.aud-aviso-nivel')) return;
   const aviso = document.createElement('div');
-  aviso.className = 'aud-aviso-mudo';
-  aviso.innerHTML = '<svg class="ico" aria-hidden="true"><use href="#ico-alerta"></use></svg><div><strong>Este áudio saiu mudo.</strong> O microfone não captou som do início ao fim — toca a prévia pra conferir e, se estiver vazio, regrava.</div>';
+  aviso.className = 'aud-aviso-nivel';
+  aviso.innerHTML = `<svg class="ico" aria-hidden="true"><use href="#ico-alerta"></use></svg><div>${html}</div>`;
   previa.prepend(aviso);
+}
+
+function _audAvisarPreviaMuda() {
+  _audAvisarPrevia('<strong>Este áudio saiu mudo.</strong> O microfone não captou som do início ao fim — toca a prévia pra conferir e, se estiver vazio, regrava.');
+}
+
+function _audAvisarPreviaBaixa() {
+  _audAvisarPrevia(`<strong>Este áudio saiu muito baixo.</strong> Tem som, mas fraco demais — o cliente vai ouvir no talo e ainda achar baixo.${_audMicNome ? ` Foi gravado pelo <strong>${_audEsc(_audMicNome)}</strong>.` : ''} Se o microfone sem fio não entrou, vale regravar.`);
+}
+
+// Veredito da conversão sobre o arquivo inteiro: mudo é mais grave que baixo
+function _audJulgarPrevia(blob) {
+  if (_audPareceMudo(blob)) _audAvisarPreviaMuda();
+  else if (_audPareceBaixo(blob)) _audAvisarPreviaBaixa();
 }
 
 // ============================================================
@@ -703,7 +745,9 @@ function _audVigiarSilencio(agora) {
   const monitor = _audAnalyser && _audAudioCtx?.state === 'running';
   if (monitor && !trilha?.muted && _audAmplitudeAtual() > _AUD_LIMIAR_VIVO) {
     _audSilencioDesde = agora;
-    _audAvisoLimpar();
+    // Só derruba os avisos que o próprio som desmente. O 'baixo' fala
+    // justamente de um mic que ESTÁ entregando som — não pode cair aqui.
+    if (_audAvisoVivo === 'silencio' || _audAvisoVivo === 'mute') _audAvisoLimpar();
     return;
   }
   if (!monitor && !trilha?.muted) { _audSilencioDesde = agora; return; }
@@ -712,12 +756,41 @@ function _audVigiarSilencio(agora) {
   }
 }
 
+// Sentinela de volume fraco: acompanha o pico mais alto da gravação inteira e
+// só dá o veredito depois de _AUD_VOZ_MS_JUIZO de voz acumulada. O pico é
+// recorde (nunca desce): passou uma vez do limiar, o setup está bom e o aviso
+// não volta a incomodar no resto da leitura.
+function _audVigiarNivelBaixo(dt) {
+  if (!_audAnalyser || _audAudioCtx?.state !== 'running') return;
+
+  const amp = _audAmplitudeCrua();
+  if (amp > _audPicoMax) _audPicoMax = amp;
+  if (amp > _AUD_VOZ_LIMIAR) _audMsComVoz += dt;
+
+  if (_audMsComVoz < _AUD_VOZ_MS_JUIZO) return;
+  if (_audPicoMax >= _AUD_PICO_BAIXO) {
+    if (_audAvisoVivo === 'baixo') _audAvisoLimpar();
+    return;
+  }
+  // Mudez tem prioridade: não empilha dois alertas na mesma faixa
+  if (_audAvisoVivo && _audAvisoVivo !== 'baixo') return;
+  _audAvisar('baixo', `⚠️ Volume muito baixo${_audMicNome ? ` — gravando pelo "${_audMicNome}"` : ''}. Confere se o microfone sem fio está ligado e preso na roupa. Assim o cliente vai ouvir bem fraco.`);
+}
+
 function _audPareceMudo(blob) {
   const nivel = blob && _audNivelCache.get(blob);
   return !!nivel && nivel.pico < _AUD_PICO_MUDO;
 }
 
-function _audAmplitudeAtual() {
+// Baixo é o degrau ACIMA de mudo: tem som, só que fraco demais pra entregar
+function _audPareceBaixo(blob) {
+  const nivel = blob && _audNivelCache.get(blob);
+  return !!nivel && nivel.pico >= _AUD_PICO_MUDO && nivel.pico < _AUD_PICO_BAIXO;
+}
+
+// Amplitude como o arquivo vai gravar — é esta que se compara com os limiares
+// de nível, porque é a mesma escala que a conversão mede no mp3 pronto.
+function _audAmplitudeCrua() {
   if (!_audAnalyser) return 0;
   _audAnalyser.getByteTimeDomainData(_audAmostra);
   let pico = 0;
@@ -725,7 +798,13 @@ function _audAmplitudeAtual() {
     const v = Math.abs(_audAmostra[i] - 128) / 128;
     if (v > pico) pico = v;
   }
-  return Math.min(1, pico * 1.6);
+  return pico;
+}
+
+// Versão da barrinha: o 1.6 é ganho de vitrine (voz normal encostaria sempre
+// na metade da barra), não serve pra julgar nível.
+function _audAmplitudeAtual() {
+  return Math.min(1, _audAmplitudeCrua() * 1.6);
 }
 
 function _audFecharAudioCtx() {
@@ -733,27 +812,6 @@ function _audFecharAudioCtx() {
   _audAudioCtx = null;
   _audAnalyser = null;
   _audAmostra = null;
-}
-
-// ============================================================
-// Seletor de microfone (aparece no estado "pronto" com 2+ mics)
-// ============================================================
-async function _audAtualizarListaMics(sel) {
-  if (!navigator.mediaDevices?.enumerateDevices) return;
-  let devices;
-  try { devices = await navigator.mediaDevices.enumerateDevices(); } catch (_) { return; }
-  _audMicDevices = devices.filter(d => d.kind === 'audioinput');
-
-  sel = sel || _audBloco?.querySelector('.aud-mic-select');
-  if (!sel || !sel.isConnected) return;
-  if (_audMicDevices.length < 2) { sel.hidden = true; sel.innerHTML = ''; return; }
-
-  const atual = localStorage.getItem('aud_mic_device_id');
-  sel.innerHTML = _audMicDevices
-    .map((d, i) => `<option value="${_audEsc(d.deviceId)}">${_audEsc(d.label || `Microfone ${i + 1}`)}</option>`)
-    .join('');
-  if (atual && _audMicDevices.some(d => d.deviceId === atual)) sel.value = atual;
-  sel.hidden = false;
 }
 
 // ============================================================
@@ -814,6 +872,9 @@ function _audLimparEstado() {
   _audBlob = null;
   _audMs = 0;
   _audAvisoVivo = null;
+  _audMicNome = '';
+  _audPicoMax = 0;
+  _audMsComVoz = 0;
   _audAtualizarBeforeUnload();
 }
 
@@ -864,14 +925,17 @@ async function _audComecarGravacao(gravador, ag) {
     return;
   }
 
-  const micEscolhido = localStorage.getItem('aud_mic_device_id');
+  // Sem deviceId de propósito: quem escolhe o microfone é o sistema. Plugou o
+  // wireless, o aparelho já o promove a entrada padrão; tirou, volta pro
+  // embutido. Escolher na mão só servia pra cravar a opção errada — foi assim
+  // que uma leitura inteira saiu 27 dB abaixo do normal (mic do iPhone
+  // selecionado com o wireless na mão).
   try {
     _audStream = await navigator.mediaDevices.getUserMedia({
       audio: {
         echoCancellation: false,
         noiseSuppression: false,
         autoGainControl: false,
-        ...(micEscolhido ? { deviceId: { ideal: micEscolhido } } : {}),
       },
     });
   } catch (e) {
@@ -882,16 +946,23 @@ async function _audComecarGravacao(gravador, ag) {
         : 'Não foi possível acessar o microfone: ' + e.message);
     return;
   }
-  _audAtualizarListaMics(); // agora com permissão concedida, os labels vêm certos
 
   _audChunks = [];
   _audBlob = null;
   _audMs = 0;
+  _audPicoMax = 0;
+  _audMsComVoz = 0;
 
   // O sistema pode calar ou tomar o mic no meio da leitura (ligação,
   // outro app, fone que desconecta) — o MediaRecorder segue gravando
   // silêncio sem reclamar, então quem denuncia é a gente
   const trilha = _audStream.getAudioTracks()[0];
+
+  // Nome que o próprio sistema dá ao mic escolhido ("Hollyland...",
+  // "Microfone do iPhone"). Fica na tela durante a gravação: é o único jeito
+  // de perceber na hora que o wireless não entrou na roda.
+  _audMicNome = trilha?.label || '';
+
   trilha?.addEventListener('mute', () => {
     if (_audRecorder?.state === 'recording') _audAvisar('mute', '⚠️ O sistema silenciou o microfone (outro app pegou ele?) — o áudio está saindo mudo agora.');
   });
@@ -950,7 +1021,7 @@ async function _audComecarGravacao(gravador, ag) {
     // A conversão também mede o nível — arquivo inteiro mudo ganha a faixa.
     const gravado = _audBlob;
     _audConverterParaMp3(gravado)
-      .then(() => { if (gravado === _audBlob && _audPareceMudo(gravado)) _audAvisarPreviaMuda(); })
+      .then(() => { if (gravado === _audBlob) _audJulgarPrevia(gravado); })
       .catch(() => {});
   };
   _audRecorder.onerror = () => {
@@ -971,9 +1042,11 @@ async function _audComecarGravacao(gravador, ag) {
   _audSilencioDesde = ultimo;
   _audTimerInt = setInterval(() => {
     const agora = performance.now();
+    const dt = agora - ultimo;
     if (_audRecorder?.state === 'recording') {
-      _audMs += agora - ultimo;
+      _audMs += dt;
       _audVigiarSilencio(agora);
+      _audVigiarNivelBaixo(dt);
       const tempo = _audBloco?.querySelector('.aud-tempo');
       if (tempo) tempo.textContent = _audMmSs(_audMs / 1000);
       const fill = _audBloco?.querySelector('.aud-nivel-fill');
