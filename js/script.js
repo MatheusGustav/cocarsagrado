@@ -185,6 +185,12 @@ function inicializarCarrosselDepoimentos() {
     let tapPausa   = false; // tap pra ler (mobile)
     let arrastando = false;
     let startX = 0, startOffset = 0, movido = 0, pointerId = null;
+    let inercia = 0;                       // px/s que sobram depois de soltar
+    let vArraste = 0, ultimoX = 0, ultimoT = 0;
+
+    // O navegador tenta "pegar" a imagem pra arrastar (DnD nativo) e come o gesto.
+    track.querySelectorAll('img').forEach(img => { img.draggable = false; });
+    track.addEventListener('dragstart', (e) => e.preventDefault());
 
     function medir() {
       const gap = parseFloat(getComputedStyle(track).gap) || 0;
@@ -207,20 +213,36 @@ function inicializarCarrosselDepoimentos() {
     function frame(agora) {
       const dt = Math.min((agora - ultimo) / 1000, 0.05); // clamp p/ aba inativa
       ultimo = agora;
-      const rodando = !tapPausa && !arrastando && !reduzido;
-      if (rodando && velocidade > 0) {
-        offset -= velocidade * dt;
-        normalizar();
-        aplicar();
+
+      if (!arrastando) {
+        if (Math.abs(inercia) > 2) {
+          // Solta o dedo/mouse e o carrossel segue e vai morrendo (atrito).
+          offset += inercia * dt;
+          inercia *= Math.pow(0.0016, dt);
+          normalizar();
+          aplicar();
+        } else {
+          inercia = 0;
+          if (!tapPausa && !reduzido && velocidade > 0) {
+            offset -= velocidade * dt;
+            normalizar();
+            aplicar();
+          }
+        }
       }
       requestAnimationFrame(frame);
     }
 
     // --- Arrastar / deslizar (mouse + touch via Pointer Events) ---
     track.addEventListener('pointerdown', (e) => {
+      if (e.button > 0) return;              // só botão principal
+      if (e.cancelable) e.preventDefault();  // sem seleção de texto nem DnD nativo da imagem
       arrastando = true;
+      inercia = 0;
+      vArraste = 0;
       movido = 0;
-      startX = e.clientX;
+      startX = ultimoX = e.clientX;
+      ultimoT = performance.now();
       startOffset = offset;
       pointerId = e.pointerId;
       try { track.setPointerCapture(pointerId); } catch {}
@@ -234,18 +256,33 @@ function inicializarCarrosselDepoimentos() {
       offset = startOffset + dx;
       normalizar();
       aplicar();
+
+      // velocidade instantânea suavizada, p/ a inércia depois de soltar
+      const agora = performance.now();
+      const dtv = (agora - ultimoT) / 1000;
+      if (dtv > 0.004) {
+        const v = (e.clientX - ultimoX) / dtv;
+        vArraste = vArraste * 0.7 + v * 0.3;
+        ultimoX = e.clientX;
+        ultimoT = agora;
+      }
     });
 
-    function fimArraste(e) {
+    function fimArraste(e, cancelado) {
       if (!arrastando) return;
       arrastando = false;
       track.classList.remove('dragging');
       try { track.releasePointerCapture(e.pointerId); } catch {}
+      // parado há mais de 100ms antes de soltar = não é arremesso
+      const parado = performance.now() - ultimoT > 100;
+      inercia = (!parado && Math.abs(vArraste) > 60)
+        ? Math.max(-2600, Math.min(2600, vArraste))
+        : 0;
       // Tap curto (toque) → alterna pausa pra leitura no mobile.
-      if (e.pointerType === 'touch' && movido < 8) tapPausa = !tapPausa;
+      if (!cancelado && e.pointerType === 'touch' && movido < 8) tapPausa = !tapPausa;
     }
-    track.addEventListener('pointerup', fimArraste);
-    track.addEventListener('pointercancel', fimArraste);
+    track.addEventListener('pointerup', (e) => fimArraste(e, false));
+    track.addEventListener('pointercancel', (e) => fimArraste(e, true));
 
     // --- Recalcula em resize (largura dos cards é responsiva) ---
     let resizeT;
