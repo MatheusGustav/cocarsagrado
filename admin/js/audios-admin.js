@@ -1092,8 +1092,15 @@ async function _audSalvar(ag) {
   }
 
   // Última cancela da sentinela: salvar leitura muda é perder a leitura
-  // (o cliente recebe um arquivo vazio e só se descobre dias depois)
-  if (_audPareceMudo(_audBlob) && !confirm('Este áudio parece MUDO do início ao fim — o microfone não captou som. Salvar mesmo assim?')) {
+  // (o cliente recebe um arquivo vazio e só se descobre dias depois).
+  // Baixo demais é o mesmo prejuízo em versão lenta — o cliente até recebe,
+  // mas ouve no talo e reclama depois, quando regravar já não é opção.
+  const cancela = _audPareceMudo(_audBlob)
+    ? 'Este áudio parece MUDO do início ao fim — o microfone não captou som. Salvar mesmo assim?'
+    : _audPareceBaixo(_audBlob)
+      ? `Este áudio saiu MUITO BAIXO${_audMicNome ? ` (gravado pelo "${_audMicNome}")` : ''} — o cliente vai ouvir bem fraco mesmo no volume máximo. Salvar mesmo assim?`
+      : null;
+  if (cancela && !confirm(cancela)) {
     _audSalvarFalhou(null);
     return;
   }
