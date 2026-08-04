@@ -546,20 +546,19 @@ function _audCriarItemAudio(a, ag) {
   // Player lazy: signed URL só quando pedir pra ouvir
   item.querySelector('.aud-item-play').addEventListener('click', async ev => {
     const b = ev.currentTarget;
+    const original = b.innerHTML;
     b.disabled = true;
+    b.innerHTML = '<svg class="ico" aria-hidden="true"><use href="#ico-ampulheta"></use></svg> Abrindo…';
     const { data: s, error: e } = await supabase.storage
       .from('audios')
       .createSignedUrl(a.storage_path, 3600);
     if (e || !s?.signedUrl) {
       b.disabled = false;
+      b.innerHTML = original;
       _toastAdmin('Não deu pra abrir o áudio: ' + (e?.message || 'tente de novo'), 'erro');
       return;
     }
-    const player = document.createElement('audio');
-    player.controls = true;
-    player.src = s.signedUrl;
-    b.replaceWith(player);
-    player.play().catch(() => {});
+    b.replaceWith(_audMontarPlayer(s.signedUrl, a.duracao_segundos));
   });
 
   // Compartilhar: baixa o blob via signed URL antes de abrir o menu de
@@ -608,6 +607,118 @@ function _audCriarItemAudio(a, ag) {
   });
 
   return item;
+}
+
+// ============================================================
+// Player próprio dos áudios salvos
+// O <audio controls> nativo encolhe nesse espaço curto até virar uma
+// bolinha branca com "…": não pausa, não mostra tempo e não deixa
+// arrastar. Aqui é botão que ALTERNA play/pause, barra que busca e
+// relógio — com um estado "abrindo" enquanto o arquivo baixa, senão o
+// clique parece que não fez nada.
+// ============================================================
+function _audMontarPlayer(url, duracaoConhecida) {
+  const box = document.createElement('div');
+  box.className = 'aud-player aud-player--carregando';
+  box.innerHTML = `
+    <audio preload="auto"></audio>
+    <button type="button" class="aud-pp" aria-label="Pausar">
+      <svg class="ico aud-ico-play"  aria-hidden="true"><use href="#ico-play"></use></svg>
+      <svg class="ico aud-ico-pause" aria-hidden="true"><use href="#ico-pause"></use></svg>
+      <span class="aud-pp-girando" aria-hidden="true"></span>
+    </button>
+    <div class="aud-seek" role="slider" tabindex="0" aria-label="Posição do áudio"
+         aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-valuetext="início">
+      <div class="aud-seek-fill"></div>
+    </div>
+    <span class="aud-relogio"><b>0:00</b><i>/${_audMmSs(duracaoConhecida)}</i></span>`;
+
+  const audio   = box.querySelector('audio');
+  const btn     = box.querySelector('.aud-pp');
+  const seek    = box.querySelector('.aud-seek');
+  const fill    = box.querySelector('.aud-seek-fill');
+  const relogio = box.querySelector('.aud-relogio b');
+  audio.src = url;
+
+  const total = () => (isFinite(audio.duration) && audio.duration > 0)
+    ? audio.duration
+    : (duracaoConhecida || 0);
+
+  function pintar() {
+    const t = total();
+    const pct = t ? Math.min(100, (audio.currentTime / t) * 100) : 0;
+    fill.style.width = pct + '%';
+    relogio.textContent = _audMmSs(audio.currentTime);
+    seek.setAttribute('aria-valuenow', Math.round(pct));
+    seek.setAttribute('aria-valuetext', _audMmSs(audio.currentTime));
+  }
+
+  audio.addEventListener('timeupdate', pintar);
+  audio.addEventListener('loadedmetadata', () => {
+    const t = total();
+    if (t) box.querySelector('.aud-relogio i').textContent = '/' + _audMmSs(t);
+  });
+  audio.addEventListener('playing', () => {
+    box.classList.remove('aud-player--carregando');
+    box.classList.add('aud-player--tocando');
+    btn.setAttribute('aria-label', 'Pausar');
+  });
+  audio.addEventListener('waiting', () => box.classList.add('aud-player--carregando'));
+  const parou = () => {
+    box.classList.remove('aud-player--carregando', 'aud-player--tocando');
+    btn.setAttribute('aria-label', 'Tocar');
+  };
+  audio.addEventListener('pause', parou);
+  audio.addEventListener('ended', () => { audio.currentTime = 0; pintar(); parou(); });
+  audio.addEventListener('error', () => {
+    parou();
+    _toastAdmin('O áudio não abriu. Feche e abra o card pra tentar de novo.', 'erro');
+  });
+
+  btn.addEventListener('click', () => {
+    if (audio.paused) _audTocarSozinho(audio); else audio.pause();
+  });
+
+  // Buscar: clique ou arrasto em qualquer ponto da barra
+  let arrastando = false;
+  const irPara = ev => {
+    const t = total();
+    if (!t) return;
+    const r = seek.getBoundingClientRect();
+    const pct = Math.min(1, Math.max(0, (ev.clientX - r.left) / r.width));
+    audio.currentTime = pct * t;
+    pintar();
+  };
+  seek.addEventListener('pointerdown', ev => {
+    arrastando = true;
+    seek.setPointerCapture(ev.pointerId);
+    irPara(ev);
+  });
+  seek.addEventListener('pointermove', ev => { if (arrastando) irPara(ev); });
+  seek.addEventListener('pointerup',     () => { arrastando = false; });
+  seek.addEventListener('pointercancel', () => { arrastando = false; });
+  seek.addEventListener('keydown', ev => {
+    const t = total();
+    if (ev.key === 'ArrowRight')     audio.currentTime = Math.min(t, audio.currentTime + 5);
+    else if (ev.key === 'ArrowLeft') audio.currentTime = Math.max(0, audio.currentTime - 5);
+    else if (ev.key === ' ' || ev.key === 'Enter') { if (audio.paused) _audTocarSozinho(audio); else audio.pause(); }
+    else return;
+    ev.preventDefault();
+    pintar();
+  });
+
+  // O gesto do clique em "Ouvir" já se perdeu no await da signed URL;
+  // se o navegador recusar o autoplay, o botão só volta pro play.
+  _audTocarSozinho(audio);
+  return box;
+}
+
+// Dois áudios tocando junto viram sopa. Quem começa cala os outros.
+function _audTocarSozinho(audio) {
+  document.querySelectorAll('.aud-player audio').forEach(o => { if (o !== audio) o.pause(); });
+  audio.play().catch(() => {
+    audio.closest('.aud-player')?.classList.remove('aud-player--carregando');
+  });
 }
 
 // ============================================================

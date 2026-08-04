@@ -3866,12 +3866,120 @@ body.drawer-aberto { overflow: hidden; }
 .aud-item-nome { font-weight: 600; font-size: .88rem; }
 .aud-item-meta { font-size: .78rem; color: var(--text-muted, #93AC8F); }
 .aud-item-acoes { display: flex; align-items: center; gap: 8px; }
-.aud-item-acoes audio { max-width: 220px; height: 36px; color-scheme: dark; }
+
+/* ---- player próprio (o nativo vira uma bolinha com "…" nesse espaço:
+   sem pausa, sem tempo, sem barra) ---- */
+.aud-player {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  width: 236px;
+  max-width: 100%;
+  padding: 5px 12px 5px 5px;
+  border-radius: 999px;
+  background: var(--s-stone-2);
+  border: 1px solid rgba(169, 135, 59, 0.3);
+}
+.aud-player audio { display: none; }
+
+.aud-pp {
+  position: relative;
+  flex: none;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: var(--t-gold-900);
+  color: #14301F;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  transition: filter .18s, transform .12s;
+}
+.aud-pp:hover { filter: brightness(1.08); }
+.aud-pp:active { transform: scale(.93); }
+.aud-pp .ico {
+  grid-area: 1 / 1;
+  width: 15px;
+  height: 15px;
+  --ico-traco: 2.6;
+}
+/* triângulo cheio: em 15px o contorno vazado some */
+.aud-ico-play { fill: currentColor; margin-left: 1px; }
+/* play e pause trocam de lugar conforme o estado */
+.aud-ico-pause,
+.aud-player--tocando .aud-ico-play { display: none; }
+.aud-player--tocando .aud-ico-pause { display: block; }
+
+/* Enquanto o arquivo baixa, o botão gira — o clique precisa parecer
+   que fez alguma coisa, senão o som "não dispara na hora". */
+.aud-pp-girando {
+  grid-area: 1 / 1;
+  display: none;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: 2px solid rgba(20, 48, 31, 0.25);
+  border-top-color: #14301F;
+  animation: aud-girar .7s linear infinite;
+}
+.aud-player--carregando .aud-pp-girando { display: block; }
+.aud-player--carregando .aud-pp .ico { opacity: 0; }
+@keyframes aud-girar { to { transform: rotate(360deg); } }
+
+.aud-seek {
+  position: relative;
+  flex: 1 1 auto;
+  min-width: 40px;
+  height: 18px;          /* alvo de toque; o trilho é a faixa do meio */
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  touch-action: none;
+}
+.aud-seek::before {
+  content: '';
+  position: absolute;
+  left: 0; right: 0;
+  height: 5px;
+  border-radius: 999px;
+  background: rgba(147, 172, 143, 0.28);
+}
+.aud-seek-fill {
+  position: relative;
+  height: 5px;
+  width: 0%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #D2BA7C, var(--t-gold-900));
+}
+/* bolinha grudada na ponta do preenchimento: anda sozinha com a largura */
+.aud-seek-fill::after {
+  content: '';
+  position: absolute;
+  right: -5px;
+  top: 50%;
+  width: 10px;
+  height: 10px;
+  margin-top: -5px;
+  border-radius: 50%;
+  background: var(--t-gold-900);
+}
+.aud-seek:focus-visible { outline: 2px solid var(--t-gold-900); outline-offset: 3px; border-radius: 999px; }
+
+.aud-relogio {
+  flex: none;
+  font-size: .72rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--t-gold-900);
+  letter-spacing: -.01em;
+}
+.aud-relogio i { font-style: normal; opacity: .6; }
 
 @media (max-width: 640px) {
   .aud-item { flex-wrap: wrap; }
   .aud-item-acoes { width: 100%; flex-wrap: wrap; }
-  .aud-item-acoes audio { max-width: 100%; flex: 1; }
+  .aud-player { flex: 1 1 100%; width: auto; }
 }
 
 .aud-item-email-ok { width: .8em; height: .8em; margin-left: 1px; }
