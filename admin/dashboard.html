@@ -282,8 +282,8 @@
             <div class="adm-stat-label">Pendentes</div>
             <div class="adm-stat-value" id="stat-pendente">—</div>
           </div>
-          <div class="adm-stat-card pagos" onclick="filtrarPorPill('pago')" title="Ver pagos">
-            <div class="adm-stat-label">Pagos / Confirmados</div>
+          <div class="adm-stat-card pagos" onclick="statCardPagos()" title="Ver os pagos do período">
+            <div class="adm-stat-label" id="stat-pagos-label">Pagos / Confirmados no mês</div>
             <div class="adm-stat-value" id="stat-pagos">—</div>
           </div>
           <div class="adm-stat-card total" onclick="mostrarSecao('financeiro')" title="Abrir financeiro">
@@ -340,10 +340,6 @@
         </div>
 
         <div id="lista-agendamentos" class="adm-list" role="list" aria-label="Lista de agendamentos"></div>
-        <div class="adm-carregar-mais" id="adm-carregar-mais" style="display:none;">
-          <button class="ag-btn ag-btn-outline ag-btn-sm" id="btn-carregar-antigos"><svg class="ico" aria-hidden="true"><use href="#ico-historico"></use></svg> Carregar mais antigos</button>
-        </div>
-        <div class="adm-janela-info" id="adm-janela-info"></div>
       </div>
 
       <!-- FINANCEIRO -->

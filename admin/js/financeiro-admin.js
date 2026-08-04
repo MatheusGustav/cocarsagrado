@@ -40,7 +40,14 @@ async function inicializarFinanceiro(forcar = false) {
   inicio.setMonth(inicio.getMonth() - 11);
   const inicioISO = _dataLocalISO(inicio);
 
-  const [{ data, error }, { data: lanc, error: lancErr }] = await Promise.all([
+  // Os totais "desde o início" vêm como contagem no servidor (head), sem
+  // trazer linha nenhuma — não estouram o limite de linhas do PostgREST.
+  const [
+    { data, error },
+    { data: lanc, error: lancErr },
+    { count: totalAtendidos },
+    { count: totalPagos },
+  ] = await Promise.all([
     supabase
       .from('agendamentos')
       .select('valor_final, data_agendamento, terapeuta, metodo_pagamento, status, tipos_leitura(nome)')
@@ -51,6 +58,14 @@ async function inicializarFinanceiro(forcar = false) {
       .select('*')
       .gte('data', inicioISO)
       .order('data', { ascending: false }),
+    supabase
+      .from('agendamentos')
+      .select('id', { count: 'exact', head: true })
+      .eq('status', 'atendido'),
+    supabase
+      .from('agendamentos')
+      .select('id', { count: 'exact', head: true })
+      .in('status', FIN_STATUS_PAGOS),
   ]);
 
   _finCarregando = false;
@@ -62,7 +77,11 @@ async function inicializarFinanceiro(forcar = false) {
   }
   if (lancErr) console.error('lancamentos_financeiros:', lancErr);
 
-  _finCache   = { registros: data || [], lancamentos: lanc || [] };
+  _finCache   = {
+    registros:   data || [],
+    lancamentos: lanc || [],
+    totais:      { atendidos: totalAtendidos, pagos: totalPagos },
+  };
   _finCacheEm = Date.now();
   _renderFinanceiro(_finCache, container);
 }
@@ -70,6 +89,7 @@ async function inicializarFinanceiro(forcar = false) {
 function _renderFinanceiro(cache, container) {
   const registros   = Array.isArray(cache) ? cache : (cache.registros || []);
   const lancamentos = Array.isArray(cache) ? [] : (cache.lancamentos || []);
+  const totais      = (Array.isArray(cache) ? null : cache.totais) || {};
   const hoje     = new Date();
   const mesAtual = _finMesKey(_dataLocalISO(hoje));
 
@@ -148,7 +168,7 @@ function _renderFinanceiro(cache, container) {
     r.valor_final));
   lancMesTerap.forEach(l => _addTerap(
     l.terapeuta || 'geral',
-    l.terapeuta ? (typeof terapeutaNome === 'function' ? terapeutaNome(l.terapeuta) : l.terapeuta) : 'Geral / avulsos',
+    l.terapeuta ? (typeof terapeutaNome === 'function' ? terapeutaNome(l.terapeuta) : l.terapeuta) : 'Geral / dos dois',
     l.valor));
   const porTerapeuta = [...terapMap.values()].sort((a, b) => b.total - a.total);
   const porServico = agrupar(doMes,
@@ -162,7 +182,7 @@ function _renderFinanceiro(cache, container) {
   // ---- Render ----
   const maxMes = Math.max(...meses.map(m => m.total), 1);
   const barras = meses.map(m => `
-    <div class="fin-bar-col" title="${_esc(m.rotulo)}: ${_esc(_finBRL(m.total))} (${m.qtd} leitura${m.qtd === 1 ? '' : 's'})">
+    <div class="fin-bar-col" title="${_esc(m.rotulo)}: ${_esc(_finBRL(m.total))} — ${m.qtd} leitura${m.qtd === 1 ? '' : 's'} (${_esc(_finBRL(m.totalLeituras))})${m.totalLanc !== 0 ? ` · avulsos/despesas ${_esc(_finBRL(m.totalLanc))}` : ''}">
       <span class="fin-bar-valor">${m.total > 0 ? _esc(_finBRL(m.total).replace(',00', '')) : ''}</span>
       <div class="fin-bar ${m.key === mesAtual ? 'fin-bar--atual' : ''}" style="height:${Math.max(2, Math.round((m.total / maxMes) * 100))}%"></div>
       <span class="fin-bar-mes">${_esc(m.rotulo)}</span>
@@ -188,11 +208,37 @@ function _renderFinanceiro(cache, container) {
       <h3>Lançamentos manuais (mês atual)</h3>
       ${lancDoMes.length
         ? lancDoMes.map(l => `<div class="fin-break-row">
-            <span class="fin-break-nome">${_esc(l.descricao)} <em class="fin-lanc-cat">${rotuloCat[l.categoria] || l.categoria}${l.terapeuta ? ' · ' + _esc(typeof terapeutaNome === 'function' ? terapeutaNome(l.terapeuta) : l.terapeuta) : ''}</em></span>
+            <span class="fin-break-nome">${_esc(l.descricao)} <em class="fin-lanc-cat">${rotuloCat[l.categoria] || l.categoria} · ${l.terapeuta ? _esc(typeof terapeutaNome === 'function' ? terapeutaNome(l.terapeuta) : l.terapeuta) : 'dos dois'}</em></span>
             <span class="fin-break-valor${Number(l.valor) < 0 ? ' fin-break-valor--neg' : ''}">${_esc(_finBRL(l.valor))}</span>
             <button class="fin-lanc-del" onclick="fin_excluirLancamento(${l.id})" aria-label="Excluir lançamento"><svg class="ico" aria-hidden="true"><use href="#ico-lixeira"></use></svg></button>
           </div>`).join('')
         : '<div class="fin-break-row"><span class="fin-break-nome">Nenhum lançamento neste mês.</span></div>'}
+    </div>`;
+
+  // ---- Desde o início (contagens de todos os tempos) ----
+  // Os cards do Painel são do mês; o histórico completo mora aqui.
+  const qtd12   = meses.reduce((s, m) => s + m.qtd, 0);
+  const numOuTraco = (n) => (typeof n === 'number' ? n.toLocaleString('pt-BR') : '—');
+  const totalHtml = `
+    <div class="fin-grafico-wrap">
+      <div class="fin-grafico-titulo">Desde o início</div>
+      <div class="fin-cards fin-cards--embutido">
+        <div class="fin-card">
+          <div class="fin-card-label">Atendidos no total</div>
+          <div class="fin-card-valor">${numOuTraco(totais.atendidos)}</div>
+          <span class="fin-card-delta">leituras já realizadas</span>
+        </div>
+        <div class="fin-card">
+          <div class="fin-card-label">Pagos / Confirmados no total</div>
+          <div class="fin-card-valor">${numOuTraco(totais.pagos)}</div>
+          <span class="fin-card-delta">inclui os atendidos</span>
+        </div>
+        <div class="fin-card">
+          <div class="fin-card-label">Nos últimos 12 meses</div>
+          <div class="fin-card-valor">${qtd12.toLocaleString('pt-BR')}</div>
+          <span class="fin-card-delta">leituras pagas no período do gráfico</span>
+        </div>
+      </div>
     </div>`;
 
   const entradas = lancDoMes.filter(l => Number(l.valor) > 0).reduce((s, l) => s + Number(l.valor), 0);
@@ -231,6 +277,8 @@ function _renderFinanceiro(cache, container) {
       <div class="fin-grafico-titulo">Faturamento mensal (12 meses)</div>
       <div class="fin-grafico">${barras}</div>
     </div>
+
+    ${totalHtml}
 
     <div class="fin-breakdowns">
       ${breakHtml('Por terapeuta (mês atual)', porTerapeuta)}
@@ -280,10 +328,11 @@ function fin_abrirLancamento() {
             </select>
           </div>
           <div class="ag-form-group">
-            <label for="fin-lanc-terapeuta">Terapeuta</label>
+            <label for="fin-lanc-terapeuta">De quem é</label>
             <select id="fin-lanc-terapeuta">
               ${(typeof listaTerapeutas === 'function' ? listaTerapeutas() : [{id:'matheus',nome:'Matheus'},{id:'camila',nome:'Camila'}])
                 .map(t => `<option value="${_esc(t.id)}">${_esc(t.nome)}</option>`).join('')}
+              <option value="__geral">Outro / dos dois</option>
             </select>
           </div>
         </div>
@@ -315,17 +364,20 @@ async function fin_salvarLancamento() {
   if (!descricao)               { _toastAdmin('Informe a descrição.', 'erro'); return; }
   if (isNaN(valor) || valor <= 0) { _toastAdmin('Valor inválido.', 'erro'); return; }
   if (!data)                    { _toastAdmin('Informe a data.', 'erro'); return; }
-  if (!terapeuta)               { _toastAdmin('Selecione o terapeuta.', 'erro'); return; }
+  if (!terapeuta)               { _toastAdmin('Diga de quem é o lançamento.', 'erro'); return; }
 
   const btn = document.getElementById('fin-lanc-salvar');
   if (btn) { btn.disabled = true; btn.textContent = 'Salvando…'; }
 
   // Despesa entra negativa: subtrai do faturamento automaticamente
   const valorFinal = categoria === 'despesa' ? -valor : valor;
+  // "Outro / dos dois" não é de ninguém: grava sem terapeuta e aparece
+  // na quebra como "Geral / dos dois" (não entra no recorte de nenhum).
+  const deQuem = terapeuta === '__geral' ? null : terapeuta;
 
   const { error } = await supabase
     .from('lancamentos_financeiros')
-    .insert({ descricao, valor: valorFinal, data, categoria, terapeuta });
+    .insert({ descricao, valor: valorFinal, data, categoria, terapeuta: deQuem });
 
   if (error) {
     _toastAdmin('Erro ao salvar: ' + error.message, 'erro');

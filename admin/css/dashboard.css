@@ -3436,6 +3436,8 @@ body.drawer-aberto { overflow: hidden; }
 /* Cards de estatística clicáveis */
 .adm-stat-card { cursor: pointer; transition: transform .12s ease, box-shadow .12s ease; }
 .adm-stat-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-lg); }
+/* Card em uso: a lista abaixo está mostrando exatamente o que ele conta */
+.adm-stat-card.ativo { outline: 2px solid var(--t-sage); outline-offset: 2px; }
 
 /* Strip da semana (ocupação por dia) */
 .adm-semana-strip {
@@ -3480,8 +3482,6 @@ body.drawer-aberto { overflow: hidden; }
 .adm-empty-acoes { margin-top: 12px; display: flex; justify-content: center; }
 
 /* Carregar mais antigos */
-.adm-carregar-mais { display: flex; justify-content: center; margin: 18px 0 8px; }
-.adm-janela-info { text-align: center; font-size: .72rem; color: var(--text-muted); margin-top: 4px; }
 
 /* Botão de tema na sidebar */
 .adm-sidebar-footer { margin-top: auto; }
@@ -3520,6 +3520,9 @@ body.drawer-aberto { overflow: hidden; }
   border-radius: var(--radius); padding: 20px; margin-bottom: 24px;
 }
 .fin-grafico-titulo { font-size: .85rem; font-weight: 600; margin-bottom: 16px; color: var(--text); }
+/* Cards dentro de um bloco (ex.: "Desde o início") — sem margem sobrando */
+.fin-cards--embutido { margin-bottom: 0; }
+.fin-cards--embutido .fin-card { background: var(--bg, transparent); }
 .fin-grafico {
   display: flex; align-items: flex-end; gap: 8px;
   height: 160px;

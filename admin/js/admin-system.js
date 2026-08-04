@@ -37,7 +37,11 @@ let _agendamentosTodos = [];
 let _lancamentosStats  = [];   // lançamentos manuais (p/ o card "Faturado no mês")
 let _statusAtivo       = 'pendente';
 let _buscaTexto        = '';
-let _janelaDias        = 90;   // janela de busca; 0 = sem corte (tudo)
+// Janela da consulta: segura o painel rápido e longe do teto de 1000 linhas
+// do Supabase. Não aparece na tela — leitura mais antiga se acha pelo filtro
+// de data, que busca o dia direto no banco, sem janela.
+const _JANELA_DIAS = 90;
+let _recorteCard       = null;  // 'hoje' | 'pagos' — lista travada no que o card conta
 let _primeiroLoad      = true;
 let _autoRefreshTimer  = null;
 let _admAutenticado    = false;
@@ -419,9 +423,9 @@ function _montarQueryAgendamentos() {
 
   if (filtroData) {
     query = query.eq('data_agendamento', filtroData);
-  } else if (_janelaDias > 0) {
+  } else {
     const corte = new Date();
-    corte.setDate(corte.getDate() - _janelaDias);
+    corte.setDate(corte.getDate() - _JANELA_DIAS);
     query = query.gte('data_agendamento', _dataLocalISO(corte));
   }
   if (filtroTerapeuta) query = query.eq('terapeuta', filtroTerapeuta);
@@ -486,7 +490,6 @@ async function carregarAgendamentos(opts = {}) {
   // admin e merece explicação se a lista estiver travada pelo áudio
   _renderizarListaFiltrada({ interativo: !opts.silencioso });
   _renderizarSemanaStrip();
-  _atualizarCarregarMais();
 
   _iniciarRealtime();
   _iniciarAutoRefresh();
@@ -495,7 +498,9 @@ async function carregarAgendamentos(opts = {}) {
 // Pill de status + busca textual aplicados em memória
 function _filtrarLocal() {
   let lista = _agendamentosTodos;
-  if (_statusAtivo) {
+  if (_RECORTES[_recorteCard]) {
+    lista = lista.filter(_RECORTES[_recorteCard]);
+  } else if (_statusAtivo) {
     lista = _statusAtivo === 'pago'
       ? lista.filter(a => ['pago', 'confirmado'].includes(a.status)) // contador da pill soma os dois
       : lista.filter(a => a.status === _statusAtivo);
@@ -519,15 +524,37 @@ function _renderizarListaFiltrada(opts = {}) {
 
 function filtrarPorPill(status) {
   _statusAtivo = status;
+  _marcarRecorte(null);
   document.querySelectorAll('.adm-pill').forEach(p => {
     p.classList.toggle('active', p.dataset.status === status);
   });
   _renderizarListaFiltrada({ interativo: true });
 }
 
+// Clicar num card trava a lista no que ele conta: mesmo recorte, mesmo
+// número. Nenhuma pill fica ativa; o card é que manda (contorno verde).
+function _marcarRecorte(qual) {
+  _recorteCard = qual;
+  document.querySelectorAll('.adm-stat-card').forEach(c => {
+    c.classList.toggle('ativo', !!qual && c.classList.contains(qual));
+  });
+}
+
+function _abrirRecorteCard(qual) {
+  _statusAtivo = '';
+  _marcarRecorte(qual);
+  document.querySelectorAll('.adm-pill').forEach(p => p.classList.remove('active'));
+  _renderizarListaFiltrada({ interativo: true });
+}
+
+// Card "Pagos / Confirmados": pagos + confirmados + atendidos do período
+// (a pill "Pago" não serve — ignora atendidos e ignora o período).
+function statCardPagos() { _abrirRecorteCard('pagos'); }
+
 function limparFiltros() {
   _statusAtivo = '';
   _buscaTexto  = '';
+  _marcarRecorte(null);
   ['filtro-busca', 'filtro-data', 'filtro-terapeuta', 'filtro-metodo'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.value = '';
@@ -538,10 +565,12 @@ function limparFiltros() {
   carregarAgendamentos();
 }
 
+// Card "Agendamentos hoje": filtra o dia e esconde os cancelados — o card
+// e a fitinha da semana contam a mesma coisa (leitura que vai acontecer).
 function statCardHoje() {
   const el = document.getElementById('filtro-data');
   if (el) el.value = _dataLocalISO();
-  filtrarPorPill('');
+  _abrirRecorteCard('hoje');
   carregarAgendamentos();
 }
 
@@ -606,21 +635,15 @@ async function _renderizarSemanaStrip() {
 }
 
 // Clicar num dia filtra por ele; clicar de novo desliga o filtro.
+// A lista mostra o mesmo que a fitinha conta: o dia inteiro, sem
+// cancelados e sem pill de status por cima (senão o número não bate).
 function filtrarPorDia(iso) {
   const el = document.getElementById('filtro-data');
   if (!el) return;
-  el.value = el.value === iso ? '' : iso;
+  const ligando = el.value !== iso;
+  el.value = ligando ? iso : '';
+  _abrirRecorteCard(ligando ? 'dia' : null);
   carregarAgendamentos();
-}
-
-function _atualizarCarregarMais() {
-  const wrap = document.getElementById('adm-carregar-mais');
-  const info = document.getElementById('adm-janela-info');
-  if (!wrap) return;
-  const filtroData = document.getElementById('filtro-data')?.value || '';
-  const ativo = _janelaDias > 0 && !filtroData;
-  wrap.style.display = ativo ? 'flex' : 'none';
-  if (info) info.textContent = ativo ? `Mostrando os últimos ${_janelaDias} dias.` : '';
 }
 
 // ============================================================
@@ -685,40 +708,70 @@ function _dataLocalISO(d = new Date()) {
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 }
 
-// Os cards refletem a lista carregada (acompanham os filtros da tela).
-// Com um dia filtrado, o card de faturamento diz o dia no rótulo.
-function calcularEstatisticas(todos) {
-  const hoje = _dataLocalISO();
+// Status que contam como pago nos cards (atendido já foi pago).
+const _statusPago = (a) => ['pago','confirmado','atendido'].includes(a.status);
 
-  const agendamentosHoje  = todos.filter(a => a.data_agendamento === hoje).length;
-  const pendentes         = todos.filter(a => a.status === 'pendente').length;
-  const pagos             = todos.filter(a => ['pago','confirmado','atendido'].includes(a.status)).length;
-  const leiturasPendentes = todos.filter(a => ['pago','confirmado'].includes(a.status)).length;
-
+// Período dos cards de pagos e faturamento: o dia filtrado ou o mês atual.
+function _noPeriodoCards(a) {
   const filtroData = document.getElementById('filtro-data')?.value || '';
-  const pago = (a) => ['pago','confirmado','atendido'].includes(a.status);
-  let rotuloTotal, total;
+  return filtroData
+    ? a.data_agendamento === filtroData
+    : !!a.data_agendamento?.startsWith(_dataLocalISO().slice(0, 7));
+}
+
+// O que cada card conta — a lista usa o mesmo filtro quando clicam nele.
+// Cancelado não é leitura que vai acontecer: fica fora do card de hoje
+// (a fitinha da semana já contava assim).
+const _RECORTES = {
+  hoje:  (a) => a.data_agendamento === _dataLocalISO() && a.status !== 'cancelado',
+  dia:   (a) => a.status !== 'cancelado', // o dia já vem filtrado na query
+  pagos: (a) => _statusPago(a) && _noPeriodoCards(a),
+};
+
+// Os cards refletem a lista carregada (acompanham os filtros da tela).
+// Com um dia filtrado, o card de faturamento diz o dia no rótulo; com
+// terapeuta ou método filtrado, o rótulo avisa que o número é só daquele
+// recorte (o Financeiro, que abre no clique, mostra o total geral).
+function calcularEstatisticas(todos) {
+  const agendamentosHoje = todos.filter(_RECORTES.hoje).length;
+  const pendentes        = todos.filter(a => a.status === 'pendente').length;
+
+  const filtroData      = document.getElementById('filtro-data')?.value      || '';
+  const filtroTerapeuta = document.getElementById('filtro-terapeuta')?.value || '';
+  const filtroMetodo    = document.getElementById('filtro-metodo')?.value    || '';
+  const pago      = _statusPago;
+  const doPeriodo = _noPeriodoCards;
+
+  const rotuloMetodo = { pix: 'PIX', cartao: 'Cartão', wise: 'Wise', __null: 'sem método' };
+  const recortes = [];
+  if (filtroTerapeuta) recortes.push(terapeutaNome(filtroTerapeuta));
+  if (filtroMetodo)    recortes.push(rotuloMetodo[filtroMetodo] || filtroMetodo);
+  const sufixo = recortes.length ? ` · só ${recortes.join(' + ')}` : '';
+
+  let rotuloTotal, rotuloPagos;
   if (filtroData) {
     const [, m, d] = filtroData.split('-');
     rotuloTotal = `Faturado em ${d}/${m}`;
-    total = todos.filter(a => a.data_agendamento === filtroData && pago(a))
-      .reduce((acc, a) => acc + Number(a.valor_final || 0), 0);
+    rotuloPagos = `Pagos / Confirmados em ${d}/${m}`;
   } else {
     rotuloTotal = 'Faturado no mês';
-    const mesAtual = hoje.slice(0, 7);
-    total = todos.filter(a => a.data_agendamento?.startsWith(mesAtual) && pago(a))
-      .reduce((acc, a) => acc + Number(a.valor_final || 0), 0);
+    rotuloPagos = 'Pagos / Confirmados no mês';
   }
+  rotuloTotal += sufixo;
+  rotuloPagos += sufixo;
+
+  const pagosDoPeriodo = todos.filter(a => doPeriodo(a) && pago(a));
+  const pagos = pagosDoPeriodo.length;
+  let total = pagosDoPeriodo.reduce((acc, a) => acc + Number(a.valor_final || 0), 0);
 
   // Soma os lançamentos manuais do período (avulsos somam, despesas são
   // negativas e subtraem) — alinha o card ao total do Financeiro.
-  // Respeita os filtros da tela: terapeuta filtra lançamentos também; com
+  // Respeita os filtros da tela: terapeuta filtra lançamentos também (o
+  // lançamento "dos dois" não entra em nenhum dos dois recortes); com
   // filtro de método de pagamento, lançamentos não entram (não têm método).
-  const filtroTerapeuta = document.getElementById('filtro-terapeuta')?.value || '';
-  const filtroMetodo    = document.getElementById('filtro-metodo')?.value    || '';
   if (!filtroMetodo) {
     total += (_lancamentosStats || [])
-      .filter(l => filtroData ? l.data === filtroData : (l.data || '').startsWith(hoje.slice(0, 7)))
+      .filter(l => filtroData ? l.data === filtroData : (l.data || '').startsWith(_dataLocalISO().slice(0, 7)))
       .filter(l => !filtroTerapeuta || l.terapeuta === filtroTerapeuta)
       .reduce((acc, l) => acc + Number(l.valor || 0), 0);
   }
@@ -727,6 +780,7 @@ function calcularEstatisticas(todos) {
   set('stat-hoje',    agendamentosHoje);
   set('stat-pendente',pendentes);
   set('stat-pagos',   pagos);
+  set('stat-pagos-label', rotuloPagos);
   set('stat-total',   `R$ ${total.toFixed(2).replace('.', ',')}`);
   set('stat-total-label', rotuloTotal);
 }
@@ -785,7 +839,7 @@ function renderizarAgendamentos(lista, container, opts = {}) {
     return;
   }
   if (!lista.length) {
-    const temFiltro = !!(_statusAtivo || _buscaTexto ||
+    const temFiltro = !!(_statusAtivo || _buscaTexto || _recorteCard ||
       document.getElementById('filtro-data')?.value ||
       document.getElementById('filtro-terapeuta')?.value ||
       document.getElementById('filtro-metodo')?.value);
@@ -1456,11 +1510,6 @@ document.addEventListener('DOMContentLoaded', () => {
       _buscaTexto = e.target.value.trim();
       _renderizarListaFiltrada({ interativo: true });
     }, 200);
-  });
-  document.getElementById('btn-carregar-antigos')?.addEventListener('click', () => {
-    // 90 -> 270 -> 450 -> ... até 2 anos; depois carrega tudo (0 = sem corte)
-    _janelaDias = _janelaDias + 180 > 730 ? 0 : _janelaDias + 180;
-    carregarAgendamentos();
   });
   document.getElementById('adm-logout-btn')?.addEventListener('click', _fazerLogout);
 });
