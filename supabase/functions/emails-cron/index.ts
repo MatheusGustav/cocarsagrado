@@ -211,14 +211,19 @@ Deno.serve(async (req) => {
   // Modo prévia (dev): { preview: 'cupom'|'lembrete', to: 'email' } manda um
   // exemplo com dados fictícios — pra revisar o visual sem forjar dados no
   // banco. Não toca em emails_enviados. Exige o mesmo x-cron-secret.
+  //
+  // Dá pra passar `nome` e `payload` (o mesmo formato que a fila devolve)
+  // pra ver o e-mail EXATO de uma linha real de emails_pendentes(), em vez
+  // do exemplo fictício. O `token` continua separado de propósito: mandando
+  // o token de quem vai revisar (e não o do cliente da linha), um clique
+  // no link de descadastro não tira da lista um cliente de verdade.
   const body = await req.json().catch(() => null)
   if (body?.preview && body?.to) {
+    const p = (body.payload || {}) as Record<string, unknown>
     const amostra = body.preview === 'lembrete'
-      // token opcional no body: com ele a prévia sai com o link de
-      // descadastro clicável de verdade (dá pra testar o fluxo inteiro).
-      ? emailLembrete('Matheus', {
-          tipo_nome: 'Leitura de Naipes da Pomba Gira',
-          data: '2026-06-02',
+      ? emailLembrete(String(body.nome || 'Matheus'), {
+          tipo_nome: p.tipo_nome || 'Leitura de Naipes da Pomba Gira',
+          data:      p.data      || '2026-06-02',
           descadastro_token: String(body.token || ''),
         }, String(body.to))
       : body.preview === 'aniversario'
