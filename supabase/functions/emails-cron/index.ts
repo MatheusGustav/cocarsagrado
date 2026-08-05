@@ -168,13 +168,18 @@ function emailLembrete(nome: string, payload: Record<string, unknown>, email = '
     ? `${SITE_URL}/descadastro?e=${encodeURIComponent(email)}&t=${encodeURIComponent(token)}`
     : ''
   return {
-    subject: '✦ As cartas sentem sua falta — Cocar Sagrado',
+    // Texto neutro de propósito: o lote mistura búzios, baralho, Theta,
+    // Registros. "As cartas sentem sua falta" chegava torto pra quem fez
+    // Amarração de Igbo ou Águas de Oxum — soava como se a gente não
+    // lembrasse do que a pessoa pediu. O nome da leitura, esse sim, vem
+    // do banco e aparece no corpo.
+    subject: '✦ Faz uma lua desde a sua última leitura — Cocar Sagrado',
     html: moldura(`
       <p style="margin:0 0 12px;">Olá, <strong>${esc(primeiroNome(nome))}</strong>.</p>
       <p style="margin:0 0 12px;">Já faz uma lua desde a sua
         <strong style="color:#D9B776;">${esc(payload.tipo_nome)}</strong>,
         no dia ${dataBR(payload.data)}. Muita coisa se move em um ciclo — talvez
-        seja hora de olhar as cartas de novo.</p>
+        seja hora de consultar de novo.</p>
       <p style="margin:0;">Quando sentir o chamado, estamos aqui.</p>
       <div style="text-align:center;margin:24px 0 4px;">
         <a href="${SITE_URL}" style="display:inline-block;background:#C0954E;color:#13251A;text-decoration:none;font-weight:bold;font-size:15px;padding:12px 28px;border-radius:999px;">Ver as leituras</a>
