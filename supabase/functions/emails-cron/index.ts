@@ -2,9 +2,15 @@
 // Chamada pelo pg_cron a cada 15 min (job 'emails-cron'); o gate é o header
 // x-cron-secret (mesmo valor no Vault 'cron_emails_secret' e no env CRON_SECRET).
 //
+// Desde 05/08/26 a fila viva é SÓ o lembrete de recompra, montada em
+// cima de agendamentos.cliente_email (o e-mail do checkout) — o motor
+// de conta/opt-in morreu junto com o login de cliente. Os moldes de
+// cupom e aniversário continuam aqui porque o modo prévia usa, mas a
+// RPC não produz mais esses tipos.
+//
 // Garantias:
-// - Só sai e-mail pra quem marcou o opt-in (perfis.aceita_emails) — a fila
-//   inteira vem pronta da RPC emails_pendentes() (service_role).
+// - A fila inteira vem pronta da RPC emails_pendentes() (service_role),
+//   que já exclui quem pediu pra sair (emails_descadastro).
 // - Idempotência: cada envio vira linha em emails_enviados (UNIQUE tipo+ref);
 //   a RPC não devolve de novo o que já foi enviado.
 // - Falha num envio não derruba os demais; falhas disparam aviso no Telegram
@@ -73,7 +79,16 @@ function esc(s: unknown) {
 //   fixa faz o Gmail mobile dar zoom e a letra explodir.
 // - Já nasce escura: cartão claro o modo escuro do Gmail inverte à força
 //   e vira lama; design escuro ele deixa em paz.
-function moldura(miolo: string) {
+// urlSair: link de descadastro DESTE destinatário (token HMAC vindo do
+// payload da fila). Sem conta não existe "Minha conta → desligar
+// novidades" — o rodapé antigo mandava o cliente numa porta pintada na
+// parede. Sem link (modo prévia), o rodapé só não oferece a saída.
+function moldura(miolo: string, urlSair = '') {
+  const rodape = urlSair
+    ? `Você recebe este e-mail porque já fez uma leitura com a gente.
+       Se preferir não receber mais,
+       <a href="${urlSair}" style="color:#D9B776;">é só clicar aqui</a>.`
+    : `Você recebe este e-mail porque já fez uma leitura com a gente.`
   return `<!doctype html>
 <html lang="pt-BR"><body style="margin:0;padding:0;background:#0E2117;">
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#0E2117;">
@@ -87,10 +102,7 @@ function moldura(miolo: string) {
           ${miolo}
         </td></tr>
         <tr><td align="center" style="padding:16px 8px 0;font-family:Georgia,'Times New Roman',serif;color:#7D8F83;font-size:11px;line-height:1.5;">
-          Você recebe estes e-mails porque ativou as novidades na sua conta.
-          Para parar, abra <a href="${SITE_URL}" style="color:#D9B776;">o site</a>,
-          entre em <strong style="color:#D9B776;">Minha conta</strong> e desligue
-          "Receber novidades por e-mail".
+          ${rodape}
         </td></tr>
       </table>
     </td></tr>
@@ -150,7 +162,11 @@ function emailAniversario(nome: string, payload: Record<string, unknown>) {
   }
 }
 
-function emailLembrete(nome: string, payload: Record<string, unknown>) {
+function emailLembrete(nome: string, payload: Record<string, unknown>, email = '') {
+  const token   = String(payload.descadastro_token || '')
+  const urlSair = token && email
+    ? `${SITE_URL}/descadastro?e=${encodeURIComponent(email)}&t=${encodeURIComponent(token)}`
+    : ''
   return {
     subject: '✦ As cartas sentem sua falta — Cocar Sagrado',
     html: moldura(`
@@ -163,7 +179,7 @@ function emailLembrete(nome: string, payload: Record<string, unknown>) {
       <div style="text-align:center;margin:24px 0 4px;">
         <a href="${SITE_URL}" style="display:inline-block;background:#C0954E;color:#13251A;text-decoration:none;font-weight:bold;font-size:15px;padding:12px 28px;border-radius:999px;">Ver as leituras</a>
       </div>
-    `),
+    `, urlSair),
   }
 }
 
@@ -198,7 +214,13 @@ Deno.serve(async (req) => {
   const body = await req.json().catch(() => null)
   if (body?.preview && body?.to) {
     const amostra = body.preview === 'lembrete'
-      ? emailLembrete('Matheus', { tipo_nome: 'Leitura de Naipes da Pomba Gira', data: '2026-06-02' })
+      // token opcional no body: com ele a prévia sai com o link de
+      // descadastro clicável de verdade (dá pra testar o fluxo inteiro).
+      ? emailLembrete('Matheus', {
+          tipo_nome: 'Leitura de Naipes da Pomba Gira',
+          data: '2026-06-02',
+          descadastro_token: String(body.token || ''),
+        }, String(body.to))
       : body.preview === 'aniversario'
         ? emailAniversario('Matheus', { codigo: 'NIVER26-EXEMPLO', valor: 15, expira_em: '2026-07-09T23:59:59-03:00' })
         : emailCupom('Matheus', { codigo: 'EXEMPLO10', valor: 10, expira_em: '2026-07-31T23:59:59-03:00' })
@@ -226,7 +248,7 @@ Deno.serve(async (req) => {
         ? emailCupom(item.nome || 'cliente', item.payload || {})
         : item.tipo === 'aniversario'
           ? emailAniversario(item.nome || 'cliente', item.payload || {})
-          : emailLembrete(item.nome || 'cliente', item.payload || {})
+          : emailLembrete(item.nome || 'cliente', item.payload || {}, item.email)
 
       const resendId = await enviarResend(item.email, subject, html)
 

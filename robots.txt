@@ -3,5 +3,6 @@ Allow: /
 Disallow: /admin/
 Disallow: /supabase/
 Disallow: /aceite
+Disallow: /descadastro
 
 Sitemap: https://cocarsagrado.com.br/sitemap.xml

@@ -1566,20 +1566,29 @@ REVOKE ALL ON FUNCTION public.criar_pedido_complemento(text, bigint, integer, te
 GRANT EXECUTE ON FUNCTION public.criar_pedido_complemento(text, bigint, integer, text) TO authenticated;
 
 -- ============================================================
--- 12) E-MAILS AUTOMÁTICOS (cupom pessoal ganho + lembrete de recompra)
+-- 12) E-MAILS AUTOMÁTICOS (lembrete de recompra)
 --
--- Só sai e-mail pra quem tem perfis.aceita_emails = TRUE (opt-in LGPD).
--- O pg_cron chama a edge function emails-cron a cada 15 min; ela pega a
--- fila em emails_pendentes(), envia via Resend e registra em
--- emails_enviados (UNIQUE tipo+ref = idempotência).
+-- Reescrito em 05/08/26. O motor antigo (cupom pessoal + lembrete)
+-- pendurava a fila em perfis.aceita_emails + auth.users; com o login
+-- de cliente fora do site (19/07) isso zerou e a 20260804213500
+-- derrubou tudo. Hoje sobra SÓ o lembrete de recompra, montado em
+-- cima de agendamentos.cliente_email (o e-mail do checkout).
+--
+-- Régua: passou de 10 dias da última leitura paga e não tem nada
+-- marcado pra frente. O pg_cron chama a edge function emails-cron a
+-- cada 15 min; ela pega a fila em emails_pendentes(), envia via
+-- Resend e registra em emails_enviados (UNIQUE tipo+ref = idempotência).
+--
+-- Sem conta não há "Minha conta → desligar novidades": a saída é o
+-- link com token HMAC no rodapé (emails_descadastro + descadastro.html).
 -- Secret do cron no Vault: 'cron_emails_secret' (= env CRON_SECRET da função).
 -- ============================================================
 
 -- Log/trava de reenvio — só service_role acessa.
 CREATE TABLE IF NOT EXISTS public.emails_enviados (
   id         bigserial PRIMARY KEY,
-  tipo       text NOT NULL,           -- 'cupom_ganho' | 'lembrete_recompra'
-  ref        text NOT NULL,           -- 'cupom:CODIGO' | 'leitura:ID'
+  tipo       text NOT NULL,           -- 'lembrete_recompra'
+  ref        text NOT NULL,           -- 'leitura:ID'
   user_id    uuid,
   email      text NOT NULL,
   resend_id  text,                    -- id no Resend; casa com email_eventos
@@ -1720,7 +1729,44 @@ $$;
 REVOKE ALL ON FUNCTION public.admin_user_por_email(text) FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION public.admin_user_por_email(text) TO authenticated;
 
+-- Quem pediu pra sair do lembrete (rodapé do e-mail).
+CREATE TABLE IF NOT EXISTS public.emails_descadastro (
+  email            text PRIMARY KEY,        -- sempre lower(trim(...))
+  descadastrado_em timestamptz NOT NULL DEFAULT now(),
+  ip               inet,
+  user_agent       text
+);
+ALTER TABLE public.emails_descadastro ENABLE ROW LEVEL SECURITY;
+REVOKE ALL ON public.emails_descadastro FROM anon, authenticated;
+
+-- Segredo do token de descadastro (valor nunca aparece no arquivo).
+DO $do$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM vault.secrets WHERE name = 'emails_descadastro_secret') THEN
+    PERFORM vault.create_secret(encode(extensions.gen_random_bytes(32), 'hex'), 'emails_descadastro_secret');
+  END IF;
+END
+$do$;
+
+-- Token do link de descadastro: HMAC do e-mail. Sem tabela de tokens —
+-- o link confere sozinho, e quem não tem o segredo não forja.
+CREATE OR REPLACE FUNCTION public.email_descadastro_token(p_email text)
+RETURNS text
+LANGUAGE sql
+SECURITY DEFINER
+SET search_path = public, extensions
+STABLE
+AS $$
+  SELECT left(encode(
+    extensions.hmac(
+      lower(trim(p_email)),
+      (SELECT decrypted_secret FROM vault.decrypted_secrets WHERE name = 'emails_descadastro_secret'),
+      'sha256'), 'hex'), 32);
+$$;
+REVOKE ALL ON FUNCTION public.email_descadastro_token(text) FROM PUBLIC, anon, authenticated;
+
 -- emails_pendentes: fila do cron (só service_role).
+-- Só lembrete de recompra, em cima de agendamentos.cliente_email.
 CREATE OR REPLACE FUNCTION public.emails_pendentes()
 RETURNS TABLE (
   tipo    text,
@@ -1736,81 +1782,86 @@ SET search_path = public
 STABLE
 AS $$
   WITH agora_sp AS (
-    SELECT (now() AT TIME ZONE 'America/Sao_Paulo')::date          AS hoje,
-           extract(hour FROM now() AT TIME ZONE 'America/Sao_Paulo')::int AS hora
+    SELECT (now() AT TIME ZONE 'America/Sao_Paulo')::date                   AS hoje,
+           extract(hour FROM now() AT TIME ZONE 'America/Sao_Paulo')::int   AS hora
   ),
-  -- Cupom pessoal ativo cujo dono optou por e-mails e ainda não foi avisado.
-  -- NIVER% = cupom de aniversário: template próprio e só em horário humano.
-  cupom AS (
-    SELECT CASE WHEN c.codigo LIKE 'NIVER%' THEN 'aniversario'
-                ELSE 'cupom_ganho' END     AS tipo,
-           'cupom:' || c.codigo            AS ref,
-           c.user_id,
-           u.email::text                   AS email,
-           pf.nome,
-           jsonb_build_object(
-             'codigo',    c.codigo,
-             'valor',     c.valor_desconto,
-             'expira_em', c.expira_em
-           ) AS payload
-    FROM public.cupons c
-    CROSS JOIN agora_sp h
-    JOIN public.perfis pf ON pf.id = c.user_id AND pf.aceita_emails
-    JOIN auth.users u     ON u.id  = c.user_id
-    WHERE c.user_id IS NOT NULL
-      AND c.ativo
-      AND (c.expira_em IS NULL OR c.expira_em > now())
-      AND (c.codigo NOT LIKE 'NIVER%' OR h.hora BETWEEN 9 AND 20)
-  ),
-  -- Última leitura concluída de cada conta (complementos não contam)
+  -- Última leitura de cada e-mail (complemento não conta como leitura nova)
   ultimas AS (
-    SELECT DISTINCT ON (p.user_id)
-           p.user_id, a.id AS ag_id, a.data_agendamento, t.nome AS tipo_nome
+    SELECT DISTINCT ON (lower(trim(a.cliente_email)))
+           lower(trim(a.cliente_email)) AS email,
+           a.id                         AS ag_id,
+           a.cliente_nome               AS nome,
+           a.data_agendamento,
+           t.nome                       AS tipo_nome
     FROM public.agendamentos a
-    JOIN public.pedidos p       ON p.id = a.pedido_id
     JOIN public.tipos_leitura t ON t.id = a.tipo_leitura_id
-    WHERE p.user_id IS NOT NULL
+    WHERE a.cliente_email IS NOT NULL
+      AND trim(a.cliente_email) <> ''
       AND a.leitura_origem_id IS NULL
       AND a.status IN ('pago', 'confirmado', 'atendido')
-    ORDER BY p.user_id, a.data_agendamento DESC, a.id DESC
-  ),
-  -- Lembrete de recompra: 30 dias após a última leitura. Janela fecha em
-  -- 44 dias — no lançamento da feature, cliente antigo não é ressuscitado.
-  -- Só em horário humano (9h–20h SP); o dedup fica no NOT EXISTS final.
-  lembrete AS (
-    SELECT 'lembrete_recompra'::text  AS tipo,
-           'leitura:' || ul.ag_id     AS ref,
-           ul.user_id,
-           u.email::text              AS email,
-           pf.nome,
-           jsonb_build_object(
-             'tipo_nome', ul.tipo_nome,
-             'data',      ul.data_agendamento
-           ) AS payload
-    FROM ultimas ul
-    CROSS JOIN agora_sp h
-    JOIN public.perfis pf ON pf.id = ul.user_id AND pf.aceita_emails
-    JOIN auth.users u     ON u.id  = ul.user_id
-    WHERE (h.hoje - ul.data_agendamento) BETWEEN 30 AND 44
-      AND h.hora BETWEEN 9 AND 20
-      AND NOT EXISTS (              -- já tem coisa marcada pra frente? não lembra
-        SELECT 1 FROM public.agendamentos a2
-        JOIN public.pedidos p2 ON p2.id = a2.pedido_id
-        WHERE p2.user_id = ul.user_id
-          AND a2.data_agendamento > ul.data_agendamento
-          AND a2.status IN ('pendente', 'pago', 'confirmado')
-      )
+    ORDER BY lower(trim(a.cliente_email)), a.data_agendamento DESC, a.id DESC
   )
-  SELECT q.*
-  FROM (SELECT * FROM cupom UNION ALL SELECT * FROM lembrete) q
-  WHERE NOT EXISTS (
-    SELECT 1 FROM public.emails_enviados e
-    WHERE e.tipo = q.tipo AND e.ref = q.ref
-  );
+  SELECT 'lembrete_recompra'::text,
+         'leitura:' || u.ag_id,
+         NULL::uuid,
+         u.email,
+         u.nome,
+         jsonb_build_object(
+           'tipo_nome',          u.tipo_nome,
+           'data',               u.data_agendamento,
+           'descadastro_token',  public.email_descadastro_token(u.email)
+         )
+  FROM ultimas u
+  CROSS JOIN agora_sp h
+  WHERE (h.hoje - u.data_agendamento) > 10   -- dormente há mais de 10 dias
+    AND h.hora BETWEEN 9 AND 20              -- só em horário humano (SP)
+    AND NOT EXISTS (                         -- pediu pra sair
+      SELECT 1 FROM public.emails_descadastro d WHERE d.email = u.email
+    )
+    AND NOT EXISTS (                         -- já tem coisa marcada pra frente
+      SELECT 1 FROM public.agendamentos a2
+      WHERE lower(trim(a2.cliente_email)) = u.email
+        AND a2.data_agendamento > u.data_agendamento
+        AND a2.status IN ('pendente', 'pago', 'confirmado')
+    )
+    AND NOT EXISTS (                         -- já mandei por esta leitura
+      SELECT 1 FROM public.emails_enviados e
+      WHERE e.tipo = 'lembrete_recompra'
+        AND e.ref  = 'leitura:' || u.ag_id
+    );
 $$;
-
 REVOKE ALL ON FUNCTION public.emails_pendentes() FROM PUBLIC, anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.emails_pendentes() TO service_role;
+
+-- Descadastrar (anon: o token no link é o segredo).
+CREATE OR REPLACE FUNCTION public.descadastrar_email(p_email text, p_token text)
+RETURNS boolean
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_email text := lower(trim(p_email));
+BEGIN
+  IF p_token IS NULL OR v_email = ''
+     OR p_token <> public.email_descadastro_token(v_email) THEN
+    RETURN false;
+  END IF;
+
+  -- Idempotente: clicar duas vezes no link não é erro.
+  INSERT INTO public.emails_descadastro (email, ip, user_agent)
+  VALUES (
+    v_email,
+    inet_client_addr(),
+    left(coalesce(current_setting('request.headers', true)::json ->> 'user-agent', ''), 400)
+  )
+  ON CONFLICT (email) DO NOTHING;
+
+  RETURN true;
+END;
+$$;
+REVOKE ALL ON FUNCTION public.descadastrar_email(text, text) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.descadastrar_email(text, text) TO anon, authenticated;
 
 -- Cron: a cada 15 min chama a edge function emails-cron.
 CREATE EXTENSION IF NOT EXISTS pg_cron;

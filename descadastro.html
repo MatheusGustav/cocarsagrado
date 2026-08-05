@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Não receber mais — Cocar Sagrado</title>
+  <!-- Página privada por token (link no rodapé do e-mail): fora dos buscadores -->
+  <meta name="robots" content="noindex, nofollow" />
+  <link rel="icon" type="image/webp" href="/images/favicon.webp?v=3" />
+  <link rel="apple-touch-icon" href="/images/apple-touch-icon.png" />
+  <meta name="theme-color" content="#142E20" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
+  <link rel="preconnect" href="https://demxedudbislzausvhwx.supabase.co" />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..700;1,9..144,300..700&family=Figtree:ital,wght@0,300..700;1,300..700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/v4-raiz.css">
+  <link rel="stylesheet" href="css/aceite.css">
+</head>
+<body class="aceite-pagina">
+
+  <main class="aceite-wrap">
+
+    <header class="aceite-marca">
+      <img src="images/logo-icone.webp" alt="" class="aceite-logo" width="44" height="44">
+      <span class="aceite-marca-nome">Cocar Sagrado</span>
+    </header>
+
+    <!-- ESTADO: carregando -->
+    <div id="desc-carregando" class="aceite-estado">
+      <div class="aceite-spinner" aria-hidden="true"></div>
+      <p class="aceite-texto-grande">Um instante…</p>
+    </div>
+
+    <!-- ESTADO: link inválido/incompleto -->
+    <div id="desc-invalido" class="aceite-estado" hidden>
+      <div class="aceite-emoji" aria-hidden="true">🤔</div>
+      <h1 class="aceite-titulo">Esse link não funcionou</h1>
+      <p class="aceite-texto-grande">
+        Abra o link direto do e-mail que você recebeu, sem copiar pela metade.
+        Se continuar assim, é só <strong>responder aquele e-mail</strong> pedindo
+        para sair da lista — a gente tira na mão.
+      </p>
+    </div>
+
+    <!-- ESTADO: confirmação. Não descadastra sozinho no clique de propósito:
+         Gmail e Outlook abrem os links do e-mail para checar vírus, e isso
+         tiraria da lista gente que nunca clicou em nada. -->
+    <div id="desc-confirmar" class="aceite-estado" hidden>
+      <div class="aceite-emoji" aria-hidden="true">🌙</div>
+      <h1 class="aceite-titulo">Parar de receber?</h1>
+      <p class="aceite-texto-grande">
+        Você não vai mais receber o lembrete de recompra em
+        <strong id="desc-email">seu e-mail</strong>.
+      </p>
+      <p class="aceite-texto-grande">
+        O e-mail com a sua leitura em áudio <strong>continua chegando</strong> —
+        esse é a entrega do que você comprou, não é aviso de novidade.
+      </p>
+
+      <div class="aceite-rodape">
+        <button type="button" id="desc-btn" class="aceite-btn-aceitar">
+          <span id="desc-btn-txt">NÃO QUERO MAIS RECEBER</span>
+        </button>
+        <p class="aceite-rodape-nota" id="desc-nota">É só tocar uma vez 😉</p>
+      </div>
+    </div>
+
+    <!-- ESTADO: pronto -->
+    <div id="desc-sucesso" class="aceite-estado" hidden>
+      <div class="aceite-check-circulo" aria-hidden="true">
+        <svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+      <h1 class="aceite-titulo">Pronto! 💚</h1>
+      <p class="aceite-texto-grande">
+        Você saiu da lista de lembretes. Não mandamos mais.
+      </p>
+      <p class="aceite-texto-grande">
+        Quando quiser voltar, a gente está em
+        <a href="/" class="aceite-destaque-verde">cocarsagrado.com.br</a>. Axé. 🪶
+      </p>
+    </div>
+
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js" crossorigin="anonymous"></script>
+  <script src="js/supabase-config.js"></script>
+  <script src="js/descadastro.js"></script>
+</body>
+</html>

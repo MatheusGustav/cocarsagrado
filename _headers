@@ -40,6 +40,14 @@
 /aceite.html
   X-Robots-Tag: noindex
 
+# Descadastro do lembrete por e-mail (token no query string): mesma
+# história — link privado, fora dos buscadores
+/descadastro
+  X-Robots-Tag: noindex
+
+/descadastro.html
+  X-Robots-Tag: noindex
+
 
 # Imagens mudam raramente — 7 dias (necessário com Browser Cache TTL
 # da zona em "Respect Existing Headers", senão ficariam sem cache)
